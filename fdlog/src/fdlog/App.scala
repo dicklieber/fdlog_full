@@ -1,11 +1,13 @@
 package fdlog
 
-import os.{Path, read, write}
+
 import scalatags.Text.all.*
 import upickle.default.*
+
 import java.time.format.DateTimeFormatter
 import java.time.{Instant, ZoneOffset}
 import java.util.UUID
+import scala.collection.mutable
 
 // ----- Data model -----
 
@@ -87,7 +89,7 @@ given dupeGroupDtoRW: ReadWriter[DupeGroupDto]   = macroRW
 // ----- Storage / snapshotting -----
 
 object Storage {
-  def loadOrInit(p: Path): LogState = {
+  def loadOrInit(p: os.Path): LogState = {
     if os.exists(p) then
       val text = os.read(p)
       read[LogState](text)
@@ -98,12 +100,12 @@ object Storage {
       )
   }
 
-  def writeSnapshot(p: Path, state: LogState): Unit = {
+  def writeSnapshot(p: os.Path, state: LogState): Unit = {
     val json = write(state, indent = 2)
     os.write.over(p, json, createFolders = true)
   }
 
-  def startSnapshotter(store: QsoStore, path: Path, periodSeconds: Int): Unit = {
+  def startSnapshotter(store: QsoStore, path: os.Path, periodSeconds: Int): Unit = {
     val t = new Thread(() => {
       while true do
         try
@@ -281,7 +283,7 @@ object FdLogApp extends cask.MainRoutes {
         .getOrElse(Array.empty[String])
     )
 
-  private val snapshotPath: Path = os.pwd / "fdlog-snapshot.json"
+  private val snapshotPath: os.Path = os.pwd / "fdlog-snapshot.json"
   private val store = new QsoStore(Storage.loadOrInit(snapshotPath))
 
   // Start background snapshotter and replicator
