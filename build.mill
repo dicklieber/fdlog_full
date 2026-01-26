@@ -1,15 +1,53 @@
+/*
+ * Copyright (c) 2026. Dick Lieber, WA9NNN
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+//| mvnDeps: ["com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION"]
+package build
+
 import mill._
 import mill.scalalib._
+import mill.contrib.buildinfo.BuildInfo
 
-object fdlog extends ScalaModule {
-  def scalaVersion = "3.7.1"
-  def mainClass = Some("fdlog.FdLogApp")
+object fdlog extends ScalaModule with BuildInfo {
+  def scalaVersion = "3.7.4"
+
+  val majorVersion = "0"
+  val version      = s"$majorVersion.0.0"
+  def mainClass    = Some("fdlog.FdLogApp")
+
+  val name = "fdswarm"
+
+  def buildInfoPackageName = "com.organization"
+
+  def buildInfoMembers = Seq(
+    BuildInfo.Value("name",         name),
+    BuildInfo.Value("version",      version),
+    BuildInfo.Value("majorVersion",      majorVersion),
+    BuildInfo.Value("scalaVersion", scalaVersion())
+  )
 
   def mvnDeps = Seq(
     mvn"com.lihaoyi::cask:0.11.3",
     mvn"com.lihaoyi::upickle:4.4.2",
     mvn"com.lihaoyi::os-lib:0.11.6",
     mvn"com.lihaoyi::requests:0.9.0",
-    mvn"com.lihaoyi::scalatags:0.13.1"
+    mvn"com.lihaoyi::scalatags:0.13.1",
+    mvn"org.apache.commons:commons-text:1.10.0",
+
   )
 }
