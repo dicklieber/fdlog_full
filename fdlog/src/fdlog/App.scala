@@ -54,6 +54,9 @@ final case class Qso(
                       notes:         Option[String]
                     )
 
+object Qso:
+  given Ordering[Qso] = Ordering.by(_.time)
+
 final case class NodeMeta(
                            nodeId:  NodeId,
                            nextSeq: Long

@@ -17,8 +17,21 @@
  */
 
 package fdlog.store
+import fdlog.model.*
+import fdlog.util.GenerateId.Id
+import jakarta.inject.*
 
 import scala.collection.concurrent.TrieMap
 
-class Store:
-  private val map:TrieMap
+@Singleton
+class QsoStore:
+  private val map: TrieMap[Id, Qso] = new TrieMap
+  
+  def load(qsos:Iterator[Qso]):Unit=
+    qsos.foreach(qso => map.put(qso.uuid, qso))
+
+  def ids: Seq[Id] =
+    val byTie = map.values.toSeq.sorted
+    byTie.map(_.uuid)
+
+  

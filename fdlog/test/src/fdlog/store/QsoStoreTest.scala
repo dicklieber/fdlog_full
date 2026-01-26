@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2026. Dick Lieber, WA9NNN
  *
@@ -17,20 +16,27 @@
  *
  */
 
-package fdlog.model
+package fdlog.store
 
-import fdlog.model.BandMode.*
-import upickle.default.*
+import fdlog.model.Qso
+import fdlog.util.GenerateId
+import fdlog.util.GenerateId.Id
+import munit.FunSuite
 
-import java.time.Instant
+class QsoStoreTest extends FunSuite:
+  val howMany = 10
+  val qsos: Iterator[Qso] = BigQsosGenerator.qsos(howMany)
+  test("happy path"):
+    val qsoStore = new QsoStore
+    qsoStore.load(qsos)
 
-/**
- * Details about this station
- */
-case class Station(bandName: Band = "20M",
-              modeName: Mode = "PH",
-              rig: String = "",
-              antenna: String = "",
-              operator: CallSign = "") derives ReadWriter
+    val ids = qsoStore.ids.toSeq
+    val last = ids.last
+    val head: Id = ids.head
+    val concated = ids.mkString
+    assertEquals(concated.length, howMany * GenerateId.IdSize)
+    val grouped: Seq[String] = concated.grouped(GenerateId.IdSize).toSeq
+    val last1 = grouped.last
+    assertEquals( last1, last)
 
 

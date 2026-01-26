@@ -20,6 +20,7 @@ package fdlog.util
 
 import org.apache.commons.lang3.Conversion
 
+import java.nio.ByteBuffer
 import java.util
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.{Base64, UUID}
@@ -44,16 +45,24 @@ object GenerateId:
    *
    * @return
    */
-  def generate(): String =
+  def generateId(): Id =
     sequentialIds match
       case Some(sequentialIds) =>
         sequentialIds.getAndIncrement().toString
       case None =>
         nextRandom
 
-  private def nextRandom =
+  private def nextRandom: Id =
     val uuid = UUID.randomUUID
-    val bytes = Conversion.uuidToByteArray(uuid, new Array[Byte](16), 0, 16)
-    val encoder1 = Base64.getUrlEncoder.withoutPadding()
-    encoder1.encodeToString(bytes)
+      val bb = ByteBuffer.allocate(16)
+      bb.putLong(uuid.getMostSignificantBits)
+      bb.putLong(uuid.getLeastSignificantBits)
+      val bytes = bb.array()
+      Base64.getUrlEncoder
+        .withoutPadding()
+        .encodeToString(bytes)
 
+
+
+  type Id = String
+  val IdSize = 22

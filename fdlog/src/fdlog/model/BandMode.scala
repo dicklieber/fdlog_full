@@ -19,7 +19,7 @@
 package fdlog.model
 
 import upickle.ReadWriter
-
+import BandMode.*
 
 /**
  * Allows storng band and mode in a compact why in a [[Qso]]
@@ -35,39 +35,42 @@ case class BandMode(bandName: Band = "20m", modeName: Mode = "PH") derives ReadW
       case _ => "DI"
 
 
-  object BandMode:
-//    implicit val rw: ReadWriter[BandMode] = upickle.readwriter[String].bimap[BandMode](
+object BandMode:
+  type Band = String
+  type Mode = String
+
+  //    implicit val rw: ReadWriter[BandMode] = upickle.readwriter[String].bimap[BandMode](
 //      `x => s"${x.i} ${x.s}",
 //      str => {
 //        val Array(i, s) = str.split(" ", 2)
 //        new BandMode(i.toInt, s)
 //      }
 //    )
-    /**
-     * Use when we don't have an explicit frequency
-     */
-    val bandFreqMap: Map[Band, Band] = {
-      Seq(
-        "160M" -> "1810",
-        "80M" -> "3530",
-        "40M" -> "7030",
-        "20M" -> "14035",
-        "15M" -> "21030",
-        "10M" -> "28030",
-        "6M" -> "28030",
-        "2M" -> "144000",
-        "1.25M" -> "224000",
-        "70cm" -> "442000",
-      ).toMap
-    }
-    private val Parse = """\s*([\d.]+[a-z]+)\s+([A-Z]{2})\s*""".r
+  /**
+   * Use when we don't have an explicit frequency
+   */
+  val bandFreqMap: Map[Band, Band] = {
+    Seq(
+      "160M" -> "1810",
+      "80M" -> "3530",
+      "40M" -> "7030",
+      "20M" -> "14035",
+      "15M" -> "21030",
+      "10M" -> "28030",
+      "6M" -> "28030",
+      "2M" -> "144000",
+      "1.25M" -> "224000",
+      "70cm" -> "442000",
+    ).toMap
+  }
+  private val Parse = """\s*([\d.]+[a-z]+)\s+([A-Z]{2})\s*""".r
 
 
-    def apply(s: String): BandMode = {
+  def apply(s: String): BandMode =
+    s match
+      case Parse(bandName, modeName) =>
+        new BandMode(bandName, modeName)
+      case _ => throw new IllegalArgumentException(s"Can't parse $s")
 
-      val Parse(bandName, modeName) = s
-      new BandMode(bandName, modeName)
-    }
-
-    def bandToFreq(band: String): String =
-      bandFreqMap.getOrElse(band.toUpperCase(), "")
+  def bandToFreq(band: String): String =
+    bandFreqMap.getOrElse(band.toUpperCase(), "")

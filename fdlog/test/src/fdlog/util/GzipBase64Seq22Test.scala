@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2026. Dick Lieber, WA9NNN
  *
@@ -17,20 +16,25 @@
  *
  */
 
-package fdlog.model
+package fdlog.util
 
-import fdlog.model.BandMode.*
-import upickle.default.*
+import fdlog.model.Qso
+import fdlog.store.{BigQsosGenerator, QsoStore}
+import munit.FunSuite
 
-import java.time.Instant
+class GzipBase64Seq22Test extends FunSuite:
+  val howMany = 10000
+  val qsos: Iterator[Qso] = BigQsosGenerator.qsos(howMany)
 
-/**
- * Details about this station
- */
-case class Station(bandName: Band = "20M",
-              modeName: Mode = "PH",
-              rig: String = "",
-              antenna: String = "",
-              operator: CallSign = "") derives ReadWriter
-
+  test("happy path"):
+    val qsoStore = new QsoStore()
+    qsoStore.load(qsos)
+    val ids = qsoStore.ids
+    val noGzipString = ids.mkString
+    val noGzipSize = noGzipString.length
+    val base64Seq22 = GzipBase64Seq22.encode(ids)
+    val backAgain = GzipBase64Seq22.decode(base64Seq22)
+    assertEquals(backAgain, ids)
+    val gzipSize = base64Seq22.length
+    println(s"noGzipSize: $noGzipSize, gzipSize: $gzipSize savings: ${noGzipSize - gzipSize}")
 

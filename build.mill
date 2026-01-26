@@ -1,3 +1,7 @@
+//| mvnDeps:
+//| - com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION
+//| - com.lihaoyi::mill-contrib-scoverage:$MILL_VERSION
+
 /*
  * Copyright (c) 2026. Dick Lieber, WA9NNN
  *
@@ -16,14 +20,14 @@
  *
  */
 
-//| mvnDeps: ["com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION"]
 package build
 
 import mill._
 import mill.scalalib._
 import mill.contrib.buildinfo.BuildInfo
+import mill.contrib.scoverage._
 
-object fdlog extends ScalaModule with BuildInfo {
+object fdlog extends ScalaModule with ScoverageModule with BuildInfo {
   def scalaVersion = "3.7.4"
 
   val majorVersion = "0"
@@ -41,13 +45,39 @@ object fdlog extends ScalaModule with BuildInfo {
     BuildInfo.Value("scalaVersion", scalaVersion())
   )
 
+  def scoverageVersion = "2.1.1"
+
   def mvnDeps = Seq(
+    mvn"com.typesafe.scala-logging::scala-logging:3.9.5",
+    mvn"io.github.classgraph:classgraph:4.8.179",
+    mvn"net.codingwell::scala-guice:7.0.0",
+
     mvn"com.lihaoyi::cask:0.11.3",
     mvn"com.lihaoyi::upickle:4.4.2",
     mvn"com.lihaoyi::os-lib:0.11.6",
     mvn"com.lihaoyi::requests:0.9.0",
     mvn"com.lihaoyi::scalatags:0.13.1",
     mvn"org.apache.commons:commons-text:1.10.0",
+    mvn"com.google.inject:guice:4.2.2",
+    mvn"net.codingwell:scala-guice_2.13:4.2.6",
+    mvn"ch.qos.logback:logback-classic:1.4.11",
+    mvn"ch.qos.logback:logback-core:1.4.11",
+    mvn"com.github.andyglow::typesafe-config-scala:2.0.0",
+    mvn"com.google.inject:guice:7.0.0",
+
 
   )
+
+
+  object test extends ScoverageTests with TestModule.Munit {
+    val log4jV = "2.24.2"
+
+    override def mvnDeps = super.mvnDeps() ++ Seq(
+      mvn"org.apache.logging.log4j:log4j-core:$log4jV",
+      mvn"org.apache.logging.log4j:log4j-core-test:$log4jV",
+    )
+    def scalaVersion = "3.7.1"
+    def munitVersion = "1.0.0"
+  }
+
 }

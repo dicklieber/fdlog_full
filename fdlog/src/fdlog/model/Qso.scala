@@ -19,10 +19,11 @@
 package fdlog.model
 
 
-import fdlog.util.GenerateId
+import fdlog.util.GenerateId.*
+import fdlog.util.JavaTimePickle.given
+import upickle.ReadWriter
 
 import java.time.Instant
-import java.util.UUID
 
 
 /**
@@ -31,7 +32,6 @@ import java.util.UUID
  * @param callSign    of the worked station.
  * @param exchange    from the worked station.
  * @param bandMode    that was used.
- * @param mHz         may not be known if not connectd to a rig
  * @param stamp       when QSO occurred.
  * @param uuid        id unique QSO id in time & space.
  * @param qsoMetadata info about ur station.
@@ -40,17 +40,16 @@ case class Qso(callSign: CallSign,
                exchange: Exchange,
                bandMode: BandMode,
                qsoMetadata: QsoMetadata,
-               mHz: Option[Float] = None,
                stamp: Instant = Instant.now(),
-               uuid: String = GenerateId.generate()) extends Ordered[Qso]:
+               uuid: Id = generateId()) derives ReadWriter:
   def isDup(that: Qso): Boolean =
     this.callSign == that.callSign &&
       this.bandMode == that.bandMode
 
+object Qso:
+  given Ordering[Qso] = Ordering.by(_.stamp)
 
 type CallSign = String
-type Band = String
-type Mode = String
 
 
 
