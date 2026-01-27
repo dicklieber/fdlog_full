@@ -76,6 +76,9 @@ object fdlog extends ScalaModule with ScoverageModule with BuildInfo {
     mvn"com.google.inject:guice:7.0.0",
     mvn"net.codingwell:scala-guice_3:7.0.0",
     mvn"com.github.andyglow::typesafe-config-scala:2.0.0",
+
+    mvn"org.scalafx:scalafx_3:23.0.1-R34",
+
   )
 
 

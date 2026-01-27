@@ -1,5 +1,5 @@
 
-package fdlog
+package fdlog.fx
 
 import _root_.io.github.classgraph.{ClassGraph, ClassInfoList}
 import com.google.inject.AbstractModule
