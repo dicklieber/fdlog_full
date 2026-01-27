@@ -34,6 +34,9 @@ case class BandMode(bandName: Band = "20m", modeName: Mode = "PH") derives ReadW
       case "CW" => "CW"
       case _ => "DI"
 
+  override def toString: String =
+    s"$bandName $modeName"
+
 
 object BandMode:
   type Band = String

@@ -1,0 +1,24 @@
+Configuration:
+  status: warn
+
+  Appenders:
+    Console:
+      name: TestConsole
+      target: SYSTEM_ERR
+      PatternLayout:
+        Pattern: "%highlight{%-5level}{FATAL=bg_red, ERROR=red, WARN=yellow, INFO=green, DEBUG=blue, TRACE=cyan} %msg%n"
+
+
+  Loggers:
+    Logger:
+      - name: "fdlog.store.QsoStore"
+        level: info
+        additivity: true
+#        AppenderRef:
+#          - ref: TestList
+#          - ref: TestConsole
+
+    Root:
+      level: info
+      AppenderRef:
+        - ref: TestConsole

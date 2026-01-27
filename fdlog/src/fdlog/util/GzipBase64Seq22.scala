@@ -25,7 +25,7 @@ import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 
 object GzipBase64Seq22:
   private val MaxIds = 10000
-  private val ChunkSize = GenerateId.IdSize
+  private val ChunkSize = Ids.IdSize
 
   /** Encode a Seq[String] (each exactly ChunkSize chars) to a Base64-encoded GZIP string */
   def encode(parts: Seq[String]): String =

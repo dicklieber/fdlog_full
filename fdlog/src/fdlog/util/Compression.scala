@@ -40,7 +40,7 @@ object Compression:
   def gunzip(data: Array[Byte]): Array[Byte] =
     val bais = new ByteArrayInputStream(data)
     val g    = new GZIPInputStream(bais)
-    val buf  = new Array[Byte](GenerateId.IdSize * 10000)//todo big enough??
+    val buf  = new Array[Byte](Ids.IdSize * 10000)//todo big enough??
     val baos = new ByteArrayOutputStream()
     var n: Int = g.read(buf)
     while n != -1 do

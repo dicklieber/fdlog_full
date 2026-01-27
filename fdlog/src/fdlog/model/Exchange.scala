@@ -28,7 +28,7 @@ import scala.util.matching.Regex
  * @param transmitters how many.
  * @param stationClass
  */
-case class FdClass(transmitters: Int, classLetter: Char) derives ReadWriter:
+case class FdClass(transmitters: Int = 1, classLetter: Char = 'I') derives ReadWriter:
   override def toString: String = s"$transmitters${classLetter}"
 
 object FdClass:
@@ -37,7 +37,7 @@ object FdClass:
       transmitters = transmitters,
       classLetter = stationClass.letter)
 
-case class Exchange(fdClass: FdClass, sectionCode: String) derives ReadWriter:
+case class Exchange(fdClass: FdClass = FdClass(), sectionCode: String = "IL") derives ReadWriter:
 
   /**
    *

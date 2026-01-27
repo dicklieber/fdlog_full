@@ -28,7 +28,7 @@ import java.util.{Base64, UUID}
 /**
  * An ID based on UUID but in a compact form.
  */
-object GenerateId:
+object Ids:
   /**
    * Unit tests can set to true to get sequential, predictable Ids.
    */

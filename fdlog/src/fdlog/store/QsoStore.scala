@@ -17,21 +17,54 @@
  */
 
 package fdlog.store
+
+import com.typesafe.scalalogging.LazyLogging
 import fdlog.model.*
-import fdlog.util.GenerateId.Id
+import fdlog.util.Ids
+import fdlog.util.Ids.Id
 import jakarta.inject.*
 
 import scala.collection.concurrent.TrieMap
 
 @Singleton
-class QsoStore:
+class QsoStore extends LazyLogging:
   private val map: TrieMap[Id, Qso] = new TrieMap
-  
-  def load(qsos:Iterator[Qso]):Unit=
+
+  def size: Int =
+    map.size
+
+  def load(qsos: Iterator[Qso]): Unit =
     qsos.foreach(qso => map.put(qso.uuid, qso))
 
-  def ids: Seq[Id] =
-    val byTie = map.values.toSeq.sorted
-    byTie.map(_.uuid)
+  def add(qso: Qso): Unit =
+    val uuid = qso.uuid
+    val maybeQso = map.putIfAbsent(uuid, qso)
+    maybeQso.foreach(was =>
+      logger.error(s"Was already a qso for uuid: $uuid $qso")
+    )
 
-  
+  /**
+   *
+   * @return uuids for all qso, sorted by stamp.
+   */
+  def ids: String =
+    map.values.toSeq.sorted
+      .map(_.uuid)
+      .mkString
+
+  /**
+   *
+   * @param idsString as returned by [[ids]], on another node.
+   * @return [[Qso.uuid]]s that are not in this node.
+   */
+  def neededIds(idsString: String): Seq[Id] =
+    val idsAtAnotherNode = idsString.grouped(Ids.IdSize)
+    idsAtAnotherNode.flatMap(id =>
+      if map.contains(id) then
+        logger.trace("Have: {}", id)
+        Seq.empty
+      else
+        logger.trace("Need: {}", id)
+        Seq(id)
+    ).toSeq
+

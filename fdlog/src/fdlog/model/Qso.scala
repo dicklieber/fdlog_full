@@ -19,7 +19,7 @@
 package fdlog.model
 
 
-import fdlog.util.GenerateId.*
+import fdlog.util.Ids.*
 import fdlog.util.JavaTimePickle.given
 import upickle.ReadWriter
 
@@ -37,14 +37,18 @@ import java.time.Instant
  * @param qsoMetadata info about ur station.
  */
 case class Qso(callSign: CallSign,
-               exchange: Exchange,
-               bandMode: BandMode,
-               qsoMetadata: QsoMetadata,
+               exchange: Exchange = Exchange(),
+               bandMode: BandMode = BandMode(),
+               qsoMetadata: QsoMetadata = QsoMetadata(),
                stamp: Instant = Instant.now(),
                uuid: Id = generateId()) derives ReadWriter:
   def isDup(that: Qso): Boolean =
     this.callSign == that.callSign &&
       this.bandMode == that.bandMode
+
+  override def toString: String =
+    s"$callSign $bandMode"
+
 
 object Qso:
   given Ordering[Qso] = Ordering.by(_.stamp)
