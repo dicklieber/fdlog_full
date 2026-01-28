@@ -1,0 +1,75 @@
+
+/*
+ * Copyright (C) 2021  Dick Lieber, WA9NNN
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+package fdswarm.fx
+
+import _root_.scalafx.Includes.*
+import _root_.scalafx.scene.control.{TextField, TextFormatter, TextInputControl}
+import _root_.scalafx.scene.input.KeyEvent
+import _root_.scalafx.util.converter.FormatStringConverter
+
+import java.text.NumberFormat
+import scala.util.matching.Regex
+
+object InputHelper :
+  /**
+   *
+   * @param textFields that will ensure uppercase
+   */
+  def forceCaps(textFields: TextInputControl*): Unit = 
+    textFields.foreach {
+      _.setTextFormatter(new TextFormatter[AnyRef]((change: TextFormatter.Change) => {
+        def foo(change: TextFormatter.Change) = {
+          change.setText(change.getText.toUpperCase)
+          change
+        }
+
+        foo(change)
+      }))
+    }
+
+  /**
+   *
+   * @param textField to work with.
+   * @param regex     discard Chars not passing this.
+   */
+  def forceAllowed(textField: TextInputControl, regex: Regex): Unit = 
+    textField.onKeyPressed = { event =>
+      Option(event.text).foreach { ch =>
+        val matches = regex.matches(ch)
+        if (!matches) {
+          event.consume()
+        }
+      }
+    }
+
+  /**
+   *
+   * @param textFields that will ensure integer only
+   */
+  def forceInt(textFields: TextField*): Unit = 
+    val nf: NumberFormat = NumberFormat.getIntegerInstance()
+    val converter: FormatStringConverter[Number] = new FormatStringConverter[Number](nf)
+
+    textFields.foreach { tf =>
+      tf.setTextFormatter(new TextFormatter(converter))
+    }
+
+
+

@@ -1,0 +1,62 @@
+
+/*
+ * Copyright (C) 2021  Dick Lieber, WA9NNN
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+package fdswarm.fx
+
+import _root_.scalafx.beans.binding.{Bindings, BooleanBinding}
+import _root_.scalafx.beans.property.BooleanProperty
+import _root_.scalafx.scene.control.TextInputControl
+import com.typesafe.scalalogging.LazyLogging
+import fdswarm.fx.InputHelper.forceCaps
+/**
+ * Most of the common logic for any qso input field.
+ */
+trait NextField extends TextInputControl with WithDisposition with LazyLogging :
+  forceCaps(this)
+  styleClass += "qsoField"
+  sad()
+
+  var onDoneFunction: String => Unit = (_: String) => {}
+
+  def onDone(f: String => Unit): Unit = 
+    onDoneFunction = f
+
+  val validProperty: BooleanProperty = new BooleanProperty()
+  validProperty.value = false
+  validProperty.onChange{(_,_,nv) =>
+    disposition(nv)
+  }
+
+  def reset(): Unit = 
+    text = ""
+
+  /**
+   * @deprecated handle within the control. Manipulate [[validProperty]]
+   * @param fieldValidator
+   */
+  def setFieldValidator(fieldValidator: FieldValidator) =
+    val b: BooleanBinding = Bindings.createBooleanBinding(
+      () => {
+        fieldValidator.valid(text).isEmpty
+      }
+      ,
+      text
+    )
+    validProperty.bind(b)
+  
