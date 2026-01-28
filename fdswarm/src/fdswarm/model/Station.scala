@@ -32,6 +32,7 @@ case class Station(bandName: Band = "20M",
               modeName: Mode = "PH",
               rig: String = "",
               antenna: String = "",
-              operator: CallSign = "") derives ReadWriter
+              operator: CallSign = "") derives ReadWriter:
+  val bandMode = BandMode(bandName, modeName)
 
 

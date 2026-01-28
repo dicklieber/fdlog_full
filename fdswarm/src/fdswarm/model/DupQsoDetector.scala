@@ -10,4 +10,4 @@ import scala.concurrent.Future
 class DupQsoDetector @Inject()(qsoStore:QsoStore, station: Station):
 
   def apply(startOfCallsign: String): Seq[Qso] =
-    qsoStore.potentialDups(startOfCallsign, stationProperty.bandMode)
+    qsoStore.potentialDups(startOfCallsign, station.bandMode)
