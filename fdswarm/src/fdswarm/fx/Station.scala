@@ -30,12 +30,5 @@ case class Station(bandName: Band = "20m", modeName: Mode = "PH",
 
   lazy val bandMode: BandMode = BandMode(bandName, modeName)
 
-  def isOk: Boolean = 
-
-    operator.nonEmpty &&
-      bandName.nonEmpty &&
-      modeName.nonEmpty
-
-  override def toString: String = s"$bandName $modeName $operator"
 
 

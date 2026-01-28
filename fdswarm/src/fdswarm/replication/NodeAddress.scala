@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2026. Dick Lieber, WA9NNN
  *
@@ -20,12 +19,11 @@
 package fdswarm.replication
 
 import com.typesafe.config.Config
-import fdswarm.fx.{NamedValueCollector, PropertyCellName}
+import fdswarm.fx.PropertyCellName
 import fdswarm.replication
 
 import java.net.{Inet4Address, InetAddress, NetworkInterface, URL}
 import scala.jdk.CollectionConverters.*
-import scala.util.matching.Regex
 
 /**
  * Identifies one node in the cluster.
@@ -60,7 +58,7 @@ case class NodeAddress(url: URL = new URL("http:///"), instance: Option[Int] = N
   }
 
   def fileUrlSafe: String = {
-    s"${url.getHost}${instancePart}"
+    s"${url.getHost}$instancePart"
   }
 
   val qsoNode: String = {

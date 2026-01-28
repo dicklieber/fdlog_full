@@ -23,7 +23,7 @@ import com.typesafe.scalalogging.LazyLogging
 import scalafx.Includes.*
 import scalafx.application.JFXApp3
 import scalafx.geometry.Insets
-import scalafx.scene.Scene
+import scalafx.scene.{Node, Scene}
 import scalafx.scene.control.*
 import scalafx.scene.input.{KeyCode, KeyEvent}
 import scalafx.scene.layout.*
@@ -45,6 +45,15 @@ object fdlog extends  JFXApp3 with LazyLogging:
       height = 650
 
       scene = new Scene {
+
+        private val initial: Station = Station()
+        val panestation: Node = StationCaseFormExample.pane(initial,
+          onSave = s =>
+            logger.info(s"Saving station case: $s")
+        )
+
+
+
         // Global ENTER → save, except when in Notes
         onKeyPressed = (e: KeyEvent) =>
           if e.code == KeyCode.Enter && !e.shiftDown then
@@ -67,6 +76,7 @@ object fdlog extends  JFXApp3 with LazyLogging:
 
         root = new BorderPane {
           center = new VBox {
+            top = panestation
             padding = Insets(8)
             spacing = 4
             children = Seq(
