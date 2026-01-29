@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2026. Dick Lieber, WA9NNN
  *
@@ -17,26 +16,17 @@
  *
  */
 
-package fdswarm.model
+package fdswarm.io
 
-import fdswarm.model.BandMode.*
-import fdswarm.model.Qso.CallSign
-import upickle.default.*
+import jakarta.inject.Singleton
 
-import java.time.Instant
+@Singleton
+class ProductionDirectory extends DirectoryProvider:
+  def apply(): os.Path = 
+    os.home / "fdswarm"
 
 /**
- * Details about this station
+ * Allows test TestDiretory for tests.
  */
-case class Station(bandName: Band,
-              modeName: Mode,
-              rig: String,
-              antenna: String,
-              operator: CallSign) derives ReadWriter:
-  val bandMode = BandMode(bandName, modeName)
-
-
-object Station:
-  val defaultStation:Station = Station("160m", "CW", "Rig 1", "Antenna 1", "WA9NNN")
-
-
+trait DirectoryProvider :
+  def apply(): os.Path

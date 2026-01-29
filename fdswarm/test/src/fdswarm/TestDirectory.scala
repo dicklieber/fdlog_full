@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2026. Dick Lieber, WA9NNN
  *
@@ -17,26 +16,9 @@
  *
  */
 
-package fdswarm.model
+package fdswarm
 
-import fdswarm.model.BandMode.*
-import fdswarm.model.Qso.CallSign
-import upickle.default.*
+import fdswarm.io.DirectoryProvider
 
-import java.time.Instant
-
-/**
- * Details about this station
- */
-case class Station(bandName: Band,
-              modeName: Mode,
-              rig: String,
-              antenna: String,
-              operator: CallSign) derives ReadWriter:
-  val bandMode = BandMode(bandName, modeName)
-
-
-object Station:
-  val defaultStation:Station = Station("160m", "CW", "Rig 1", "Antenna 1", "WA9NNN")
-
-
+object TestDirectory extends DirectoryProvider:
+  def apply(): os.Path = os.home / "testFdSwarm" 

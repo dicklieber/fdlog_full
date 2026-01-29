@@ -9,7 +9,7 @@ import scalafx.scene.layout.{GridPane, Pane, VBox}
 import java.time.Instant
 import scala.deriving.Mirror
 
-class MyCaseForm[T <: Product](initial: T)(using m: Mirror.ProductOf[T]):
+class MyCaseForm[T <: Product](initial: T, onSave: T => Unit)(using m: Mirror.ProductOf[T]):
 
   val fields: IndexedSeq[Field[String]] =
     for
@@ -22,14 +22,18 @@ class MyCaseForm[T <: Product](initial: T)(using m: Mirror.ProductOf[T]):
         promptText = "Enter something"
       }
       val name = initial.productElementName(i)
-      Field(name, tf, new Label(name), () => tf.text.value) // ✅ String, not StringProperty
+      Field(name, tf, new Label(name), () => tf.text.value) 
+      
+  val saveButton = new Button("Save")
+  saveButton.onAction = (event: ActionEvent) =>
+    onSave(result)
 
-  val pane: Pane =
-    val grid = new GridPane:
+  def pane():Pane =
+    val grid = new GridPane {
       hgap = 8
       vgap = 6
       padding = Insets(10)
-
+    }
     fields
       .zipWithIndex
       .foreach { case (field, index) =>
@@ -37,13 +41,8 @@ class MyCaseForm[T <: Product](initial: T)(using m: Mirror.ProductOf[T]):
         grid.add(lbl, 0, index)
         grid.add(field.control, 1, index)
       }
+    new VBox(grid, saveButton)
 
-    val save = new Button("Save")
-    save.onAction = (event: ActionEvent) =>
-      val newData = result
-      println(s"Saving: $newData")
-
-    new VBox(grid, save)
 
   def result: T =
     val values = new Array[Any](initial.productArity)
@@ -61,6 +60,8 @@ class MyCaseForm[T <: Product](initial: T)(using m: Mirror.ProductOf[T]):
 
     m.fromProduct(Tuple.fromArray(values))
 
+ 
+ 
 final case class Field[A](
                            name: String,
                            control: Control,

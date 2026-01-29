@@ -14,9 +14,10 @@ Configuration:
       - name: "fdlog.store.QsoStore"
         level: info
         additivity: true
-#        AppenderRef:
-#          - ref: TestList
-#          - ref: TestConsole
+
+      - name: "fdswarm.StationManager"
+        level: trace
+        additivity: true
 
     Root:
       level: info

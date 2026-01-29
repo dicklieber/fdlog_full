@@ -23,6 +23,7 @@ import _root_.io.github.classgraph.{ClassGraph, ClassInfoList}
 import com.google.inject.AbstractModule
 import com.google.inject.name.Names
 import com.typesafe.config.{Config, ConfigFactory}
+import fdswarm.io.{DirectoryProvider, ProductionDirectory}
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -47,7 +48,7 @@ class ConfigModule() extends AbstractModule with ScalaModule:
 
 //    bind[TickerApi].to[Ticker].asEagerSingleton()
 //    bind[FilesManager].toInstance(new FilesManager(None))
-
+      bind[DirectoryProvider].toInstance(new ProductionDirectory)
     //primaryConfig is config/sarasec.conf, overrides the defaults in application.conf (resource)
     val primaryConfig = ConfigFactory.parseFile((os.pwd / "config" / "sarasec.conf").toIO)
     val defaultConfig: Config = ConfigFactory.load()

@@ -28,6 +28,8 @@ import scalafx.scene.Scene
 import scalafx.scene.control.*
 import scalafx.scene.input.{KeyCode, KeyCombination, KeyEvent}
 import scalafx.scene.layout.*
+import fdswarm.StationManager
+import fdswarm.model.Station
 
 object fdlog extends JFXApp3 with LazyLogging:
   logger.info("fdlog ctor")
@@ -43,13 +45,16 @@ object fdlog extends JFXApp3 with LazyLogging:
       height = 650
 
       scene = new Scene {
-        private val initial: Station = Station()
-        private val caseForm = MyCaseForm(initial)
+        private val stationManager: StationManager =
+          injector.getInstance(classOf[StationManager])
 
+        // Load station from disk (or defaults if missing)
+//        private val initial: Station =
+//          stationManager.load()
+
+//        private val caseForm = MyCaseForm(initial)
         // --- Build the two "views" we want to switch between ---
 
-        private val stationPane: Pane =
-          caseForm.pane
 
         private val qsoEntryPane: Pane =
           new VBox {
@@ -66,13 +71,6 @@ object fdlog extends JFXApp3 with LazyLogging:
         // --- Root layout we can swap the center of ---
         private val rootPane = new BorderPane
 
-        // --- View switching helpers ---
-        private def showStation(): Unit =
-          rootPane.center = stationPane
-
-        private def showQsoEntry(): Unit =
-          rootPane.center = qsoEntryPane
-
         // --- MenuBar with proper toggle behavior ---
         private val viewToggles = new ToggleGroup
 
@@ -80,13 +78,13 @@ object fdlog extends JFXApp3 with LazyLogging:
           toggleGroup = viewToggles
           selected = true
           accelerator = KeyCombination.keyCombination("Shortcut+1")
-          onAction = _ => showStation()
+          onAction = _ => rootPane.center = stationManager.pane()
         }
 
         private val qsoEntryItem = new RadioMenuItem("QSO Entry") {
           toggleGroup = viewToggles
           accelerator = KeyCombination.keyCombination("Shortcut+2")
-          onAction = _ => showQsoEntry()
+          onAction = _ => rootPane.center = qsoEntryPane
         }
 
         private val menuBar = new MenuBar {
@@ -115,7 +113,7 @@ object fdlog extends JFXApp3 with LazyLogging:
 
         // --- Wire it together ---
         rootPane.top = menuBar
-        showStation() // default view
+        rootPane.center = stationManager.pane() // default view
 
         root = rootPane
       }
