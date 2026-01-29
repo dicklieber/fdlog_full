@@ -2,7 +2,6 @@
 package fdswarm.model
 
 
-import fdswarm.model.Qso.CallSign
 import fdswarm.replication.NodeAddress
 
 import java.time.{Instant, LocalDate}
@@ -17,21 +16,23 @@ import java.time.{Instant, LocalDate}
  * @param contestName which contest. We only support FD and Winter Field Day.
  * @param year        which one.
  */
-case class Contest(callSign: CallSign = "",
+case class Contest(callSign: Callsign = "",
                    ourExchange: Exchange = Exchange(),
                    contestName: String = "FieldDay",
                    nodeAddress: NodeAddress = NodeAddress(),
                    password: String = "",
+                   year: Int = LocalDate.now().getYear,
                    stamp: Instant = Instant.now(),
-                  ) extends Stamped[Contest] :
-  
+                  ) extends Stamped[Contest]:
 
-  def fileBase: String = 
-    s"$contestName-${LocalDate.now().getYear.toString}"
 
   val id: String = contestName.filter(_.isUpper)
 
+  def fileBase: String =
+    s"$contestName-${LocalDate.now().getYear.toString}"
+
   def qsoId: String = {
+
     f"$id$callSign"
   }
 

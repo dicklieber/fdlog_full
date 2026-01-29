@@ -33,7 +33,7 @@ import java.time.Instant
 // * @param contestId so old data can't accident be missed with current.
  * @param v         FDCLuster Version that built this so we can detect mismatched versions.
  */
-case class QsoMetadata(operator: fdswarm.model.Qso.CallSign = "",
+case class QsoMetadata(operator: Callsign = "",
                        rig: String = "",
                        ant: String = "",
                        node: String = "localhost;1",

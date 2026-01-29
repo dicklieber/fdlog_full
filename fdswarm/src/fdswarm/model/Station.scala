@@ -20,7 +20,7 @@
 package fdswarm.model
 
 import fdswarm.model.BandMode.*
-import fdswarm.model.Qso.CallSign
+import fdswarm.model.HamBand.B12m
 import upickle.default.*
 
 import java.time.Instant
@@ -28,15 +28,16 @@ import java.time.Instant
 /**
  * Details about this station
  */
-case class Station(bandName: Band,
+case class Station(hamBand: HamBand,
               modeName: Mode,
               rig: String,
               antenna: String,
-              operator: CallSign) derives ReadWriter:
-  val bandMode = BandMode(bandName, modeName)
+              operator: Callsign) derives ReadWriter:
+  val bandMode = BandMode(hamBand.bandName, modeName)
 
 
 object Station:
-  val defaultStation:Station = Station("160m", "CW", "Rig 1", "Antenna 1", "WA9NNN")
+  import Callsign.given_Conversion_String_Callsign
+  val defaultStation:Station = Station(B12m, "CW", "Rig 1", "Antenna 1", "WA9NNN")
 
 

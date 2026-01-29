@@ -21,7 +21,7 @@ class MyCaseFormTest extends FunSuite:
     JavaFxTestKit.runOnFx {
 
       // Set the field named "head1" (or fall back to the first field)
-      val head1Field: Field[String] = myCaseForm.fields.head
+      val head1Field: Field[Any] = myCaseForm.fields.head
       val head1Tf = head1Field.control.asInstanceOf[TextField]
       head1Tf.text.value = "WA9NNN"
       myCaseForm.saveButton.fire()

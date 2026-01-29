@@ -19,7 +19,6 @@
 package fdswarm.model
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.model.Qso.CallSign
 import fdswarm.replication.NodeAddress
 import fdswarm.util.Ids
 
@@ -38,7 +37,7 @@ import fdswarm.util.JavaTimePickle.given_ReadWriter_Instant
  * @param uuid        id unique QSO id in time & space.
  * @param qsoMetadata info about ur station.
  */
-case class Qso(callSign: CallSign,
+case class Qso(callSign: Callsign,
                contestClass: String,
                section:String,
                bandMode: BandMode,
@@ -83,17 +82,16 @@ def cabFreq: String = {
 
 
 object Qso:
-  type CallSign = String
 
   given Ordering[Qso] =
     Ordering.by(_.stamp)
 
-  def apply(callSign: CallSign,
+  def apply(callSign: Callsign,
             exchange: Exchange,
             bandMode: BandMode
            )(using qsoMetadata: QsoMetadata): Qso =
 
-    Qso(callSign = callSign.toUpperCase,
+    Qso(callSign = callSign,
       contestClass = exchange.fdClass.toString,
       section = exchange.sectionCode,
       bandMode = bandMode,
