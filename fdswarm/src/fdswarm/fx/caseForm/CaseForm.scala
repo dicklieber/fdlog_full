@@ -1,7 +1,6 @@
 package fdswarm.fx.caseForm
 
 import scala.deriving.Mirror
-import scala.compiletime.{erasedValue, constValueTuple, summonInline}
 import scalafx.scene.control.{Control, Label}
 
 final case class FieldError(field: String, messages: List[String])
@@ -32,39 +31,54 @@ object CaseForm:
     validateValue: A => List[String]
   )
 
-  inline def apply[T](
+  def apply[T](
+    labels: List[String],
+    controlsByName: Map[String, FieldControl[?]],
     initial: Option[T] = None,
     validations: Map[String, Any => List[String]] = Map.empty
   )(using m: Mirror.ProductOf[T]): CaseForm[T] =
-    type Labels = m.MirroredElemLabels
-    val labels = constValueTuple[Labels].toList.asInstanceOf[List[String]]
-    fromLabels[T](labels, initial, validations)
+    fromLabels[T](labels, controlsByName, initial, validations)
 
-  inline def fromLabels[T](
+  def fromLabels[T](
     labels: List[String],
+    controlsByName: Map[String, FieldControl[?]],
     initial: Option[T],
     validations: Map[String, Any => List[String]]
   )(using m: Mirror.ProductOf[T]): CaseForm[T] =
-    type Elems = m.MirroredElemTypes
 
-    val initialTupleOpt: Option[Elems] =
-      initial.map(t => productToTuple[Elems](t.asInstanceOf[Product]))
+    val initialProduct: Option[Product] = initial.map(_.asInstanceOf[Product])
 
     val fieldsVec: Vector[Field[?]] =
-      buildFields[Elems](labels, initialTupleOpt, validations)
+      labels.zipWithIndex.map { (name, idx) =>
+        val initAny: Option[Any] = initialProduct.map(_.productElement(idx))
+        val tcAny = controlsByName.getOrElse(
+          name,
+          throw new IllegalArgumentException(s"No FieldControl registered for field '$name'")
+        ).asInstanceOf[FieldControl[Any]]
+        makeFieldAny(name, initAny, validations, tcAny)
+      }.toVector
 
     val byName: Map[String, Field[?]] =
       fieldsVec.map(f => f.name -> f).toMap
 
     def buildT(): T =
-      val elems: Elems = tupleFromFields[Elems](fieldsVec.iterator)
-      m.fromProduct(elems)
+      val values: Array[Any] = fieldsVec.map {
+        case f: Field[a] => f.getValue().asInstanceOf[Any]
+      }.toArray
+
+      val prod: Product = new Product {
+        def productArity: Int = values.length
+        def productElement(n: Int): Any = values(n)
+        override def canEqual(that: Any): Boolean = true
+      }
+
+      m.fromProduct(prod)
 
     def validateAll(): List[FieldError] =
       fieldsVec.flatMap {
         case f: Field[a] =>
-          val v: a = f.getValue()
-          val msgs = f.validateValue(v)
+          val v: Any = f.getValue().asInstanceOf[Any]
+          val msgs = f.validateValue(v.asInstanceOf[a])
           f.errorLabel.text = msgs.mkString("\n")
           f.control.style = if msgs.nonEmpty then "-fx-border-color: red;" else ""
           if msgs.nonEmpty then Some(FieldError(f.name, msgs)) else None
@@ -72,55 +86,20 @@ object CaseForm:
 
     new CaseForm[T](fieldsVec, byName, buildT, validateAll)
 
-  private inline def buildFields[Elems <: Tuple](
-    labels: List[String],
-    initial: Option[Elems],
-    validations: Map[String, Any => List[String]]
-  ): Vector[Field[?]] =
-    inline erasedValue[Elems] match
-      case _: EmptyTuple => Vector.empty
-      case _: (h *: t) =>
-        val (name, rest) =
-          labels match
-            case x :: xs => (x, xs)
-            case Nil => throw new IllegalStateException("Not enough labels")
-
-        val headInit = initial.map(_.head).asInstanceOf[Option[h]]
-        val field = makeField[h](name, headInit, validations)
-        val tailInit = initial.map(_.tail.asInstanceOf[t])
-        field +: buildFields[t](rest, tailInit, validations)
-
-  private inline def makeField[A](
+  private def makeFieldAny(
     name: String,
-    initial: Option[A],
-    validations: Map[String, Any => List[String]]
-  ): Field[A] =
-    val tc = summonInline[FieldControl[A]]
+    initial: Option[Any],
+    validations: Map[String, Any => List[String]],
+    tc: FieldControl[Any]
+  ): Field[Any] =
     val c = tc.create(name, initial)
     val lbl = new Label()
     val vAny = validations.getOrElse(name, (_: Any) => Nil)
 
-    Field(
+    Field[Any](
       name,
       c.asInstanceOf[Control],
       lbl,
       () => tc.getValue(c.asInstanceOf[tc.C]),
-      (a: A) => vAny(a)
+      (a: Any) => vAny(a)
     )
-
-  private inline def tupleFromFields[Elems <: Tuple](it: Iterator[Field[?]]): Elems =
-    inline erasedValue[Elems] match
-      case _: EmptyTuple => EmptyTuple.asInstanceOf[Elems]
-      case _: (h *: t) =>
-        val f = it.next().asInstanceOf[Field[h]]
-        (f.getValue() *: tupleFromFields[t](it)).asInstanceOf[Elems]
-
-  private inline def productToTuple[Elems <: Tuple](p: Product): Elems =
-    tupleFromProduct[Elems](p, 0)
-
-  private inline def tupleFromProduct[Elems <: Tuple](p: Product, i: Int): Elems =
-    inline erasedValue[Elems] match
-      case _: EmptyTuple => EmptyTuple.asInstanceOf[Elems]
-      case _: (h *: t) =>
-        (p.productElement(i).asInstanceOf[h] *:
-          tupleFromProduct[t](p, i + 1)).asInstanceOf[Elems]

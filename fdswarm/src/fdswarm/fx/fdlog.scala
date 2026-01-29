@@ -20,6 +20,7 @@ package fdswarm.fx
 
 import com.google.inject.{Guice, Injector}
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.fx.caseForm.MyCaseForm
 import scalafx.Includes.*
 import scalafx.application.JFXApp3
 import scalafx.geometry.Insets
@@ -47,6 +48,10 @@ object fdlog extends  JFXApp3 with LazyLogging:
       scene = new Scene {
 
         private val initial: Station = Station()
+
+
+        private val value = MyCaseForm(initial)
+        
         val panestation: Node = StationCaseFormExample.pane(initial,
           onSave = s =>
             logger.info(s"Saving station case: $s")

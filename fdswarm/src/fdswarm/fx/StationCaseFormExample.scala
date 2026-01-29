@@ -34,7 +34,7 @@ object StationCaseFormExample:
             initial: Station = Station(),
             onSave: Station => Unit
           ): Node =
-
+    println("Creating pane for station case form with initial:")
     val validations: Map[String, Any => List[String]] =
       Map(
         "bandName" -> { any =>
@@ -51,8 +51,23 @@ object StationCaseFormExample:
         }
       )
 
+    // CaseForm now requires labels + a FieldControl registry per field name.
+    // IMPORTANT: label order must match the `Station` case class constructor order.
+    val labels: List[String] =
+      List("bandName", "modeName", "operator", "rig", "antenna", "stamp")
+
+    val controlsByName: Map[String, FieldControl[?]] = Map(
+      "bandName" -> summon[FieldControl[Band]],
+      "modeName" -> summon[FieldControl[Mode]],
+      "operator" -> summon[FieldControl[CallSign]],
+      "rig" -> summon[FieldControl[String]],
+      "antenna" -> summon[FieldControl[String]],
+      // use the local given `instantFieldControl`
+      "stamp" -> instantFieldControl
+    )
+
     val form: CaseForm[Station] =
-      CaseForm[Station](initial = Some(initial), validations = validations)
+      CaseForm[Station](labels, controlsByName, initial = Some(initial), validations = validations)
 
     val grid = new GridPane:
       hgap = 8
