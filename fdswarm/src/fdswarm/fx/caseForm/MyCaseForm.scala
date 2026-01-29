@@ -1,11 +1,10 @@
 package fdswarm.fx.caseForm
 
-import scalafx.geometry.Insets
-import scalafx.scene.Node
-import scalafx.scene.control.{Button, Control, Label, TextField}
-import scalafx.scene.layout.{GridPane, HBox, VBox}
 import scalafx.Includes.*
 import scalafx.event.ActionEvent
+import scalafx.geometry.Insets
+import scalafx.scene.control.{Button, Control, Label, TextField}
+import scalafx.scene.layout.{GridPane, Pane, VBox}
 
 import java.time.Instant
 import scala.deriving.Mirror
@@ -25,35 +24,26 @@ class MyCaseForm[T <: Product](initial: T)(using m: Mirror.ProductOf[T]):
       val name = initial.productElementName(i)
       Field(name, tf, new Label(name), () => tf.text.value) // ✅ String, not StringProperty
 
-  val pane: VBox =
+  val pane: Pane =
     val grid = new GridPane:
       hgap = 8
       vgap = 6
       padding = Insets(10)
 
-    def addRow(row: Int, field: String, labelText: String): Unit =
-      val lbl = new Label(labelText)
-    //    val ctl = form.control(field).getOrElse(sys.error(s"Missing control for '$field'"))
-    //    val err = form.errorLabel(field).getOrElse(sys.error(s"Missing error label for '$field'"))
-    //    err.wrapText = true
-    //    err.maxWidth = 280
-
-    //    grid.add(lbl, 0, row)
-    //    grid.add(ctl, 1, row)
-    //    grid.add(err, 2, row)
     fields
       .zipWithIndex
-      .foreach{case(field, index) =>
-        grid.add(new Label(field.name), 0, index)
-        grid.add(field.control, 1, index)}
+      .foreach { case (field, index) =>
+        val lbl = new Label(field.name)
+        grid.add(lbl, 0, index)
+        grid.add(field.control, 1, index)
+      }
 
-    val save = new Button("Save")   
+    val save = new Button("Save")
     save.onAction = (event: ActionEvent) =>
       val newData = result
       println(s"Saving: $newData")
 
     new VBox(grid, save)
-  
 
   def result: T =
     val values = new Array[Any](initial.productArity)

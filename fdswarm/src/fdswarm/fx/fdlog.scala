@@ -51,7 +51,7 @@ object fdlog extends  JFXApp3 with LazyLogging:
 
 
         private val caseForm = MyCaseForm(initial)
-        
+
 //        val panestation: Node = StationCaseFormExample.pane(initial,
 //          onSave = s =>
 //            logger.info(s"Saving station case: $s")
@@ -81,7 +81,8 @@ object fdlog extends  JFXApp3 with LazyLogging:
 
         root = new BorderPane {
           center = new VBox {
-            top = caseForm.pane
+            private val stationPane: Pane = caseForm.pane
+            top = stationPane
             padding = Insets(8)
             spacing = 4
             children = Seq(
