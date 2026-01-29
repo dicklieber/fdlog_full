@@ -22,12 +22,14 @@ class MyCaseForm[T <: Product](initial: T)(using m: Mirror.ProductOf[T]):
   def result: T =
     val values = new Array[Any](initial.productArity)
 
-    for i <- 0 until initial.productArity do
+    for
+      i <- 0 until initial.productArity
+    do
       initial.productElement(i) match
         case inst: Instant =>
           values(i) = inst // keep original Instants
         case _ =>
-          val name  = initial.productElementName(i)
+          val name = initial.productElementName(i)
           val field = fields.find(_.name == name).get
           values(i) = field.getValue() // ✅ now a String
 
