@@ -30,10 +30,10 @@ enum HamBand(
               val ituRegionAvailability: ItuRegionAvailability
             ) derives ReadWriter:
   // LF
-  case B2200m extends HamBand("2200m", 135_700L, 137_800L, BandClass.LF, ItuRegionAvailability.AllRegions)
+//  case B2200m extends HamBand("2200m", 135_700L, 137_800L, BandClass.LF, ItuRegionAvailability.AllRegions)
 
   // MF
-  case B630m  extends HamBand("630m", 472_000L, 479_000L, BandClass.MF, ItuRegionAvailability.AllRegions)
+//  case B630m  extends HamBand("630m", 472_000L, 479_000L, BandClass.MF, ItuRegionAvailability.AllRegions)
   case B160m  extends HamBand("160m", 1_800_000L, 2_000_000L, BandClass.MF, ItuRegionAvailability.AllRegions)
 
   // HF
@@ -42,9 +42,9 @@ enum HamBand(
   case B40m   extends HamBand("40m", 7_000_000L, 7_300_000L, BandClass.HF, ItuRegionAvailability.AllRegions)
   case B30m   extends HamBand("30m", 10_100_000L, 10_150_000L, BandClass.HF, ItuRegionAvailability.AllRegions)
   case B20m   extends HamBand("20m", 14_000_000L, 14_350_000L, BandClass.HF, ItuRegionAvailability.AllRegions)
-  case B17m   extends HamBand("17m", 18_068_000L, 18_168_000L, BandClass.HF, ItuRegionAvailability.AllRegions)
+//  case B17m   extends HamBand("17m", 18_068_000L, 18_168_000L, BandClass.HF, ItuRegionAvailability.AllRegions)
   case B15m   extends HamBand("15m", 21_000_000L, 21_450_000L, BandClass.HF, ItuRegionAvailability.AllRegions)
-  case B12m   extends HamBand("12m", 24_890_000L, 24_990_000L, BandClass.HF, ItuRegionAvailability.AllRegions)
+//  case B12m   extends HamBand("12m", 24_890_000L, 24_990_000L, BandClass.HF, ItuRegionAvailability.AllRegions)
   case B10m   extends HamBand("10m", 28_000_000L, 29_700_000L, BandClass.HF, ItuRegionAvailability.AllRegions)
 
   // VHF
@@ -63,14 +63,14 @@ enum HamBand(
   case B9cm   extends HamBand("9cm", 3_300_000_000L, 3_500_000_000L, BandClass.SHF, ItuRegionAvailability.AllRegions)
   case B6cm   extends HamBand("6cm", 5_650_000_000L, 5_925_000_000L, BandClass.SHF, ItuRegionAvailability.AllRegions)
   case B3cm   extends HamBand("3cm", 10_000_000_000L, 10_500_000_000L, BandClass.SHF, ItuRegionAvailability.AllRegions)
-  case B1_25cm extends HamBand("1.25cm", 24_000_000_000L, 24_250_000_000L, BandClass.SHF, ItuRegionAvailability.AllRegions)
+//  case B1_25cm extends HamBand("1.25cm", 24_000_000_000L, 24_250_000_000L, BandClass.SHF, ItuRegionAvailability.AllRegions)
 
   // EHF
-  case B6mm   extends HamBand("6mm", 47_000_000_000L, 47_200_000_000L, BandClass.EHF, ItuRegionAvailability.AllRegions)
-  case B4mm   extends HamBand("4mm", 75_500_000_000L, 81_000_000_000L, BandClass.EHF, ItuRegionAvailability.AllRegions)
-  case B2_5mm extends HamBand("2.5mm", 119_000_000_000L, 123_000_000_000L, BandClass.EHF, ItuRegionAvailability.AllRegions)
-  case B2mm   extends HamBand("2mm", 134_000_000_000L, 141_000_000_000L, BandClass.EHF, ItuRegionAvailability.AllRegions)
-  case B1mm   extends HamBand("1mm", 241_000_000_000L, 250_000_000_000L, BandClass.EHF, ItuRegionAvailability.AllRegions)
+//  case B6mm   extends HamBand("6mm", 47_000_000_000L, 47_200_000_000L, BandClass.EHF, ItuRegionAvailability.AllRegions)
+//  case B4mm   extends HamBand("4mm", 75_500_000_000L, 81_000_000_000L, BandClass.EHF, ItuRegionAvailability.AllRegions)
+//  case B2_5mm extends HamBand("2.5mm", 119_000_000_000L, 123_000_000_000L, BandClass.EHF, ItuRegionAvailability.AllRegions)
+//  case B2mm   extends HamBand("2mm", 134_000_000_000L, 141_000_000_000L, BandClass.EHF, ItuRegionAvailability.AllRegions)
+//  case B1mm   extends HamBand("1mm", 241_000_000_000L, 250_000_000_000L, BandClass.EHF, ItuRegionAvailability.AllRegions)
 
 object HamBand:
   /** Convenience list, in declaration order */

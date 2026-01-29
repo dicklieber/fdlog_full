@@ -81,6 +81,11 @@ object fdlog extends JFXApp3 with LazyLogging:
           onAction = _ => rootPane.center = stationManager.pane()
         }
 
+        private val availableBands = new RadioMenuItem("Available Bands") {
+          toggleGroup = viewToggles
+          accelerator = KeyCombination.keyCombination("Shortcut+2")
+          onAction = _ => rootPane.center = HamBandCheckBoxPane(Set(fdswarm.model.HamBand.B20m)).pane
+        }
         private val qsoEntryItem = new RadioMenuItem("QSO Entry") {
           toggleGroup = viewToggles
           accelerator = KeyCombination.keyCombination("Shortcut+2")
@@ -100,7 +105,8 @@ object fdlog extends JFXApp3 with LazyLogging:
             new Menu("View") {
               items = List(
                 stationItem,
-                qsoEntryItem
+                qsoEntryItem,
+                availableBands
               )
             }
           )

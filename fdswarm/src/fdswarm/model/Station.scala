@@ -20,7 +20,7 @@
 package fdswarm.model
 
 import fdswarm.model.BandMode.*
-import fdswarm.model.HamBand.B12m
+import fdswarm.model.HamBand.*
 import upickle.default.*
 
 import java.time.Instant
@@ -38,6 +38,6 @@ case class Station(hamBand: HamBand,
 
 object Station:
   import Callsign.given_Conversion_String_Callsign
-  val defaultStation:Station = Station(B12m, "CW", "Rig 1", "Antenna 1", "WA9NNN")
+  val defaultStation:Station = Station(HamBand.B160m, "CW", "Rig 1", "Antenna 1", "WA9NNN")
 
 
