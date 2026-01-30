@@ -18,4 +18,6 @@
 
 package fdswarm.model
 
-case class AvailableBands(bands:Seq[HamBand])
+import upickle.default.*
+
+case class AvailableBands(bands:Set[HamBand]) derives ReadWriter

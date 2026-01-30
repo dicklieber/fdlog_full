@@ -23,13 +23,14 @@ import _root_.io.github.classgraph.{ClassGraph, ClassInfoList}
 import com.google.inject.AbstractModule
 import com.google.inject.name.Names
 import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.scalalogging.LazyLogging
 import fdswarm.io.{DirectoryProvider, ProductionDirectory}
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 
-class ConfigModule() extends AbstractModule with ScalaModule:
+class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
   val config: Config = com.typesafe.config.ConfigFactory.load() // Reads application.conf
 
 
@@ -58,7 +59,7 @@ class ConfigModule() extends AbstractModule with ScalaModule:
     for (entry <- entries) {
       val key = entry.getKey
       val value = config.getAnyRef(key)
-
+      logger.trace(s"Config entry: $key = $value type: ${value.getClass}")
       // Determine type and bind accordingly
       value match {
         case s: String =>

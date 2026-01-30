@@ -16,6 +16,10 @@ Configuration:
         additivity: true
 
       - name: "fdswarm.StationManager"
+        level: info
+        additivity: true
+
+      - name: "fdswarm.fx.ConfigModule"
         level: trace
         additivity: true
 

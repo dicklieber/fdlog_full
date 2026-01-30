@@ -20,7 +20,8 @@ package fdswarm.fx
 
 import com.google.inject.{Guice, Injector}
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.caseForm.MyCaseForm
+import fdswarm.StationManager
+import fdswarm.fx.bands.AvailableBandsStore
 import scalafx.Includes.*
 import scalafx.application.{JFXApp3, Platform}
 import scalafx.geometry.Insets
@@ -28,8 +29,6 @@ import scalafx.scene.Scene
 import scalafx.scene.control.*
 import scalafx.scene.input.{KeyCode, KeyCombination, KeyEvent}
 import scalafx.scene.layout.*
-import fdswarm.StationManager
-import fdswarm.model.Station
 
 object fdlog extends JFXApp3 with LazyLogging:
   logger.info("fdlog ctor")
@@ -47,12 +46,13 @@ object fdlog extends JFXApp3 with LazyLogging:
       scene = new Scene {
         private val stationManager: StationManager =
           injector.getInstance(classOf[StationManager])
+        private val availableBandsStore = injector.getInstance(classOf[AvailableBandsStore])
 
         // Load station from disk (or defaults if missing)
-//        private val initial: Station =
-//          stationManager.load()
+        //        private val initial: Station =
+        //          stationManager.load()
 
-//        private val caseForm = MyCaseForm(initial)
+        //        private val caseForm = MyCaseForm(initial)
         // --- Build the two "views" we want to switch between ---
 
 
@@ -84,7 +84,7 @@ object fdlog extends JFXApp3 with LazyLogging:
         private val availableBands = new RadioMenuItem("Available Bands") {
           toggleGroup = viewToggles
           accelerator = KeyCombination.keyCombination("Shortcut+2")
-          onAction = _ => rootPane.center = HamBandCheckBoxPane(Set(fdswarm.model.HamBand.B20m)).pane
+          onAction = _ => rootPane.center = availableBandsStore.availableBandsPane
         }
         private val qsoEntryItem = new RadioMenuItem("QSO Entry") {
           toggleGroup = viewToggles
