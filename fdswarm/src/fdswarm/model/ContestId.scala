@@ -16,16 +16,9 @@
  *
  */
 
-package fdswarm.fx.qsoMetadata
+package fdswarm.model
+import upickle.default.*
+case class ContestId(content:Contest, year:Int) derives ReadWriter
 
-import fdswarm.io.DirectoryProvider
-import fdswarm.model.QsoMetadata
-import jakarta.inject.*
-import scalafx.scene.layout.Pane
-
-
-@Singleton()
-class QsoMetadataStore @Inject()(dirProvider: DirectoryProvider)
-  private var qsoMetadata:QsoMetadata =  = QsoMetadata.empty(dirProvider())
-  def pane:Pane=
-    
+enum Contest derives ReadWriter:
+  case WFD, ARRL

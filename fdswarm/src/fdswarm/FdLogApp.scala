@@ -16,10 +16,11 @@
  *
  */
 
-package fdswarm.fx
+package fdswarm
 
 import com.google.inject.{Guice, Injector}
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.fx.{ConfigModule, FdLogUi}
 import scalafx.application.JFXApp3
 
 /** Minimal app bootstrap:
@@ -28,8 +29,6 @@ import scalafx.application.JFXApp3
   *   - delegates all UI construction to [[FdLogUi]]
   */
 object fdlog extends JFXApp3 with LazyLogging:
-
-  logger.info("fdlog ctor")
 
   private lazy val injector: Injector =
     Guice.createInjector(new ConfigModule())

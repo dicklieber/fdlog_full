@@ -25,25 +25,23 @@ import upickle.implicits.*
 
 /**
  * Stuff about a QSO. i.e. not entered as a part of a QSO itself
- * @param operator  who is using app. callSign
- * @param rig       free form usually transceiver model.
- * @param ant       free form antenna description.
- * @param node      what node, in the cluster this came from.
-// * @param contestId so old data can't accident be missed with current.
- * @param v         FDCLuster Version that built this so we can detect mismatched versions.
+ *
+ * @param station can be edited by user.
+ * @param node    what node, in the cluster this came from.
+ *                // * @param contestId so old data can't accident be missed with current.
+ *
+ * @param v       FdSwarm Version that built this so we can detect mismatched versions.
  */
 
 
-case class QsoMetadata(operator: Callsign = "",
-                       rig: String = "",
-                       ant: String = "",
+case class QsoMetadata(station: Station,
                        node: String = "localhost;1",
-                       journal: String = "",
+                       contest: Contest,
+                       ,
                        @serializeDefaults(true)
                        v: String = BuildInfo.version) derives ReadWriter
 //  def forStation(station: Station):QsoMetadata =
 //    copy(operator =  station.operator, rig= station.rig, ant = station.antenna)
-
 
 
 //   def qso(callSign: CallSign, exchange: Exchange, bandMode: BandMode, stamp:Instant = Instant.now): Qso = {
