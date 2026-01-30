@@ -27,6 +27,7 @@ import java.util.UUID
 import fdswarm.util.Ids.Id
 import upickle.ReadWriter
 import fdswarm.util.JavaTimePickle.given_ReadWriter_Instant
+import upickle.implicits.serializeDefaults
 /**
  * This is what's in the store and journal.log.
  *
@@ -42,6 +43,7 @@ case class Qso(callSign: Callsign,
                section:String,
                bandMode: BandMode,
                qsoMetadata: QsoMetadata,
+               @serializeDefaults(true)
                stamp: Instant = Instant.now(),
                uuid: Id = Ids.generateId()) extends  LazyLogging derives ReadWriter:
   lazy val display: String = s"$callSign on $bandMode in $fdHour"

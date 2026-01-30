@@ -21,8 +21,7 @@ package fdswarm.model
 
 import com.organization.BuildInfo
 import upickle.default.*
-import java.time.Instant
-
+import upickle.implicits.*
 
 /**
  * Stuff about a QSO. i.e. not entered as a part of a QSO itself
@@ -33,11 +32,14 @@ import java.time.Instant
 // * @param contestId so old data can't accident be missed with current.
  * @param v         FDCLuster Version that built this so we can detect mismatched versions.
  */
+
+
 case class QsoMetadata(operator: Callsign = "",
                        rig: String = "",
                        ant: String = "",
                        node: String = "localhost;1",
                        journal: String = "",
+                       @serializeDefaults(true)
                        v: String = BuildInfo.version) derives ReadWriter
 //  def forStation(station: Station):QsoMetadata =
 //    copy(operator =  station.operator, rig= station.rig, ant = station.antenna)

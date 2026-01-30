@@ -19,15 +19,18 @@
 package fdswarm.store
 
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.io.DirectoryProvider
 import fdswarm.model.*
 import fdswarm.util.Ids
 import fdswarm.util.Ids.Id
 import jakarta.inject.*
+import upickle.default.*
 
 import scala.collection.concurrent.TrieMap
 
 @Singleton
-class QsoStore() extends LazyLogging:
+class QsoStore @Inject()(directoryProvider:DirectoryProvider) extends LazyLogging:
+  private val journalFile = directoryProvider() / "qsosJournal.json"
   private val map: TrieMap[Id, Qso] = new TrieMap
 
   def size: Int =
@@ -39,6 +42,7 @@ class QsoStore() extends LazyLogging:
   def add(qso: Qso): Unit =
     val uuid = qso.uuid
     val maybeQso = map.putIfAbsent(uuid, qso)
+    writeToJournal(qso)
     maybeQso.foreach(was =>
       logger.error(s"Was already a qso for uuid: $uuid $qso")
     )
@@ -72,3 +76,5 @@ class QsoStore() extends LazyLogging:
         Seq(id)
     ).toSeq
 
+  def writeToJournal(qso: Qso):Unit=
+    os.write.append( journalFile,  write(qso) + "\n", createFolders = true)

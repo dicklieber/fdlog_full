@@ -11,25 +11,26 @@ import mill.contrib.buildinfo.BuildInfo
 import mill.contrib.scoverage._
 
 object fdswarm extends ScalaModule with ScoverageModule with BuildInfo {
+  val majorVersion = "0"
+  val version = s"$majorVersion.0.0"
+  val name = "fdswarm"
+  val log4jV = "2.24.2"
+
   def scalaVersion = "3.7.4"
 
-  val majorVersion = "0"
-  val version      = s"$majorVersion.0.0"
-  def mainClass    = Some("fdlog.fx.fdlog")
-
-  val name = "fdswarm"
+  def mainClass = Some("fdlog.fx.fdlog")
 
   def buildInfoPackageName = "com.organization"
 
   def buildInfoMembers = Seq(
-    BuildInfo.Value("name",         name),
-    BuildInfo.Value("version",      version),
-    BuildInfo.Value("majorVersion",      majorVersion),
-    BuildInfo.Value("scalaVersion", scalaVersion())
+    BuildInfo.Value("name", name),
+    BuildInfo.Value("version", version),
+    BuildInfo.Value("majorVersion", majorVersion),
+    BuildInfo.Value("scalaVersion", scalaVersion()),
+    BuildInfo.Value("dataVersion", majorVersion)
   )
 
   def scoverageVersion = "2.1.1"
-  val log4jV = "2.24.2"
 
   def mvnDeps = Seq(
     mvn"com.typesafe.scala-logging::scala-logging:3.9.5",
@@ -46,7 +47,7 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo {
 
     mvn"com.fasterxml.jackson.core:jackson-databind:2.17.2",
     mvn"com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.17.2",
-    
+
     mvn"io.github.classgraph:classgraph:4.8.179",
     mvn"net.codingwell::scala-guice:7.0.0",
 
@@ -71,7 +72,9 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo {
       mvn"org.apache.logging.log4j:log4j-core:$log4jV",
       mvn"org.apache.logging.log4j:log4j-core-test:$log4jV",
     )
+
     def scalaVersion = "3.7.1"
+
     def munitVersion = "1.0.0"
   }
 
