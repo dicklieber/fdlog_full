@@ -19,16 +19,17 @@
 package fdswarm
 
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.fx.bands.AvailableBandsStore
 import fdswarm.fx.caseForm.MyCaseForm
-import fdswarm.io.{DirectoryProvider, ProductionDirectory}
+import fdswarm.io.DirectoryProvider
 import fdswarm.model.Station
 import jakarta.inject.{Inject, Singleton}
 import scalafx.scene.layout.Pane
 import upickle.default.*
 
 @Singleton
-class StationManager @Inject()(productionDirectory:DirectoryProvider) extends LazyLogging:
-  private var internalStationProvate: Station = Station.defaultStation
+class StationManager @Inject()( productionDirectory:DirectoryProvider, availableBandsStore: AvailableBandsStore) extends LazyLogging:
+  private var internalStationProvate: Station = Station.defaultStation(using availableBandsStore)
 
   private val file: os.Path = productionDirectory() / "station.json"
 
@@ -54,7 +55,7 @@ class StationManager @Inject()(productionDirectory:DirectoryProvider) extends La
       // Ensure parent dir exists (in case you later change `file` to a nested path)
       os.makeDir.all(file / os.up)
       logger.trace("Saving station to {} station: {}", file, internalStationProvate)
-      val json: String = write(internalStationProvate, indent = 2)
+      val json: String = write(Station.toPersisted(internalStationProvate), indent = 2)
       logger.trace("JSON: {}", json)
       os.write.over(file, json)
       logger.info(s"Saved station to $file")
@@ -67,12 +68,13 @@ class StationManager @Inject()(productionDirectory:DirectoryProvider) extends La
     try
       if os.exists(file) then
         val json = os.read(file)
-        setStation(read[Station](json))
+        val persisted = read[Station.Persisted](json)
+        val st        = Station.fromPersisted(persisted)(using availableBandsStore)
+        setStation(st)
         logger.info(s"Loaded station from $file")
       else
         logger.info(s"No station file at $file; using defaults")
     catch
       case t: Throwable =>
         logger.warn(s"Failed to load station from $file; using defaults", t)
-        setStation(Station.defaultStation)
-
+        setStation(Station.defaultStation(using availableBandsStore))

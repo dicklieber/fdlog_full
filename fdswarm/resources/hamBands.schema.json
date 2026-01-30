@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "FdSwarm Ham Bands Config",
+  "type": "object",
+  "properties": {
+    "fdswarm": {
+      "type": "object",
+      "properties": {
+        "hamBands": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/HamBand" },
+          "minItems": 0
+        },
+        "availableBands": {
+          "type": "object",
+          "properties": {
+            "dir": { "type": "string" },
+            "fileName": { "type": "string" }
+          },
+          "required": ["dir", "fileName"],
+          "additionalProperties": true
+        }
+      },
+      "required": ["hamBands", "availableBands"],
+      "additionalProperties": true
+    }
+  },
+  "required": ["fdswarm"],
+  "additionalProperties": true,
+  "$defs": {
+    "ItuRegionAvailability": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["AllRegions", "VariesByCountry", "RegionsOnly"]
+        },
+        "regions": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["R1", "R2", "R3"] },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": ["type"],
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "RegionsOnly" } }, "required": ["type"] },
+          "then": { "required": ["regions"] }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "HamBand": {
+      "type": "object",
+      "properties": {
+        "bandName": { "type": "string", "minLength": 1 },
+        "startFrequencyHz": { "type": "integer", "minimum": 1 },
+        "endFrequencyHz": { "type": "integer", "minimum": 1 },
+        "bandClass": {
+          "type": "string",
+          "enum": ["HF", "VHF", "UHF", "SHF", "EHF", "MF", "LF", "VLF"]
+        },
+        "ituRegionAvailability": { "$ref": "#/$defs/ItuRegionAvailability" }
+      },
+      "required": ["bandName", "startFrequencyHz", "endFrequencyHz", "bandClass", "ituRegionAvailability"],
+      "additionalProperties": false
+    }
+  }
+}

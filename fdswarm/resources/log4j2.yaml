@@ -20,7 +20,7 @@ Configuration:
         additivity: true
 
       - name: "fdswarm.fx.ConfigModule"
-        level: trace
+        level: info
         additivity: true
 
     Root:

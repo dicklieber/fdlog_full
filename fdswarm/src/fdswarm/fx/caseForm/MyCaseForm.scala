@@ -2,12 +2,10 @@ package fdswarm.fx.caseForm
 
 import fdswarm.fx.InputHelper.*
 import fdswarm.model.Callsign
-import scalafx.Includes.*
-import scalafx.collections.ObservableBuffer
-import scalafx.event.ActionEvent
 import javafx.event.{ActionEvent as JfxActionEvent, EventHandler as JfxEventHandler}
+import scalafx.collections.ObservableBuffer
 import scalafx.geometry.Insets
-import scalafx.scene.control.{Button, CheckBox, ComboBox, Control, Label, TextField}
+import scalafx.scene.control.*
 import scalafx.scene.layout.{GridPane, Pane, VBox}
 
 import java.time.Instant
@@ -22,14 +20,14 @@ class MyCaseForm[T <: Product](initial: T, onSave: T => Unit)(using m: Mirror.Pr
     val dollar = n.indexOf('$')
     if dollar < 0 then None
     else
-      val enumTypeName = n.substring(0, dollar) // -> fdswarm.model.HamBand
-      val companionName = enumTypeName + "$"    // -> fdswarm.model.HamBand$
+      val enumTypeName  = n.substring(0, dollar) // -> fdswarm.model.HamBand
+      val companionName = enumTypeName + "$"     // -> fdswarm.model.HamBand$
 
       try
         val companionClass = Class.forName(companionName)
-        val module = companionClass.getField("MODULE$").get(null)
-        val valuesMethod = companionClass.getMethod("values")
-        val values = valuesMethod.invoke(module).asInstanceOf[Array[?]]
+        val module         = companionClass.getField("MODULE$").get(null)
+        val valuesMethod   = companionClass.getMethod("values")
+        val values         = valuesMethod.invoke(module).asInstanceOf[Array[?]]
         Some(values.iterator.map(_.asInstanceOf[AnyRef]).toSeq)
       catch
         case _: ReflectiveOperationException =>
@@ -47,55 +45,69 @@ class MyCaseForm[T <: Product](initial: T, onSave: T => Unit)(using m: Mirror.Pr
       if !fieldValue.isInstanceOf[Instant] // keep Instants as-is
     yield
       val (control, getter): (Control, () => Any) =
-        // First try Scala 3 parameterized enum detection (HamBand, etc.)
-        scala3EnumItems(fieldValue) match
-          case Some(items) =>
-            val combo = new ComboBox[AnyRef](ObservableBuffer.from(items))
-            combo.value.value = fieldValue.asInstanceOf[AnyRef]
-            (combo, () => combo.value.value)
+        fieldValue match
+          // ---- Provided-choice support (e.g. HamBand from AvailableBandsStore) ----
+          case cf: ChoiceField[?] =>
+            val cf0   = cf.asInstanceOf[ChoiceField[AnyRef]]
+            val combo = cf0.comboBox().asInstanceOf[ComboBox[AnyRef]]
+            (combo, () => cf0.withValue(combo.value.value))
 
-          case None =>
-            fieldValue match
-              case cs: Callsign =>
-                val tf = new TextField:
-                  text = cs.value
-                  promptText = "Enter callsign"
-                forceCaps(tf)
-                (tf, () => Callsign(tf.text.value.trim))
-
-              case e: java.lang.Enum[_] =>
-                val items = javaEnumItems(e)
+          case _ =>
+            // First try Scala 3 parameterized enum detection (HamBand, etc.)
+            scala3EnumItems(fieldValue) match
+              case Some(items) =>
                 val combo = new ComboBox[AnyRef](ObservableBuffer.from(items))
-                combo.value.value = e.asInstanceOf[AnyRef]
+                combo.value.value = fieldValue.asInstanceOf[AnyRef]
                 (combo, () => combo.value.value)
 
-              case b: Boolean =>
-                val cb = new CheckBox:
-                  selected = b
-                (cb, () => cb.selected.value)
+              case None =>
+                fieldValue match
+                  case cs: Callsign =>
+                    val tf = new TextField:
+                      text = cs.value
+                      promptText = "Enter callsign"
+                    forceCaps(tf)
+                    (tf, () => Callsign(tf.text.value.trim))
 
-              case s: String =>
-                val tf = new TextField:
-                  text = s
-                (tf, () => tf.text.value)
+                  case e: java.lang.Enum[_] =>
+                    val items = javaEnumItems(e)
+                    val combo = new ComboBox[AnyRef](ObservableBuffer.from(items))
+                    combo.value.value = e.asInstanceOf[AnyRef]
+                    (combo, () => combo.value.value)
 
-              case i0: Int =>
-                val tf = new TextField:
-                  text = i0.toString
-                (tf, () => tf.text.value.trim.toInt)
+                  case cf: ChoiceField[?] =>
+                    val cf0   = cf.asInstanceOf[ChoiceField[AnyRef]]
+                    val combo = cf0.comboBox().asInstanceOf[ComboBox[AnyRef]]
+                    (combo, () => cf0.withValue(combo.value.value))
+                  case b: Boolean =>
+                    val cb = new CheckBox:
+                      selected = b
+                    (cb, () => cb.selected.value)
 
-              case l0: Long =>
-                val tf = new TextField:
-                  text = l0.toString
-                (tf, () => tf.text.value.trim.toLong)
+                  case s: String =>
+                    val tf = new TextField:
+                      text = s
+                    (tf, () => tf.text.value)
 
-              case d0: Double =>
-                val tf = new TextField:
-                  text = d0.toString
-                (tf, () => tf.text.value.trim.toDouble)
+                  case i0: Int =>
+                    val tf = new TextField:
+                      text = i0.toString
+                    (tf, () => tf.text.value.trim.toInt)
 
-              case other =>
-                throw new IllegalArgumentException(s"Unsupported field type: $other (${other.getClass.getName})")
+                  case l0: Long =>
+                    val tf = new TextField:
+                      text = l0.toString
+                    (tf, () => tf.text.value.trim.toLong)
+
+                  case d0: Double =>
+                    val tf = new TextField:
+                      text = d0.toString
+                    (tf, () => tf.text.value.trim.toDouble)
+
+                  case other =>
+                    throw new IllegalArgumentException(
+                      s"Unsupported field type: $other (${other.getClass.getName})"
+                    )
 
       val name = initial.productElementName(i)
       Field(name, control, new Label(name), getter)
@@ -126,7 +138,7 @@ class MyCaseForm[T <: Product](initial: T, onSave: T => Unit)(using m: Mirror.Pr
         case inst: Instant =>
           values(i) = inst // keep original Instants
         case _ =>
-          val name = initial.productElementName(i)
+          val name  = initial.productElementName(i)
           val field = fields.find(_.name == name).get
           values(i) = field.getValue()
 

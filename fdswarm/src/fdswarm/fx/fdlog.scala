@@ -32,12 +32,20 @@ import scalafx.scene.layout.*
 
 object fdlog extends JFXApp3 with LazyLogging:
   logger.info("fdlog ctor")
-  val injector: Injector = Guice.createInjector(new ConfigModule())
+  private val injector: Injector = Guice.createInjector(new ConfigModule())
 
-  val qsoEntryPanel: QsoEntryPanel = injector.getInstance(classOf[QsoEntryPanel])
+  private val qsoEntryPanel: QsoEntryPanel = injector.getInstance(classOf[QsoEntryPanel])
 
   override def start(): Unit =
-
+    val catalog = injector.getInstance(classOf[fdswarm.fx.bands.HamBandCatalog])
+    val issues  = fdswarm.fx.bands.HamBandValidator.validate(catalog.all)
+    issues.foreach { i =>
+      // swap for your logger if you prefer
+//      System.err.println(s"[HamBands/${i.kind}] ${i.message}")
+      logger.error(s"[HamBands/${i.kind}] ${i.message}")
+    }
+        
+    
     stage = new JFXApp3.PrimaryStage {
       title = "FDLog (ScalaFX)"
       width = 1100
