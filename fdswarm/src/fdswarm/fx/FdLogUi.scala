@@ -12,18 +12,18 @@ import scalafx.stage.Stage
 
 import fdswarm.fx.bandmodes.BandModeManagerPane
 
-import scala.util.Try
-
 final class FdLogUi @Inject() (
                                 qsoEntryPanel: QsoEntryPanel,
                                 bandModeManagerPane: BandModeManagerPane
                               ):
 
-  // BandModeManagerPane extends BorderPane => it *is* a Node already
-  private val bandModeNode: Node = bandModeManagerPane
+  // BandModeManagerPane extends BorderPane => it is already a Node
+  private val bandModeNode: Node =
+    bandModeManagerPane
 
-  // QsoEntryPanel is a controller (not a Node). Extract its view Node.
-  private val qsoNode: Node = extractNode(qsoEntryPanel)
+  // QsoEntryPanel is a controller; its apply() builds and returns the Node
+  private val qsoNode: Node =
+    qsoEntryPanel
 
   private val centerPane = new StackPane:
     children = List(qsoNode)
@@ -69,48 +69,3 @@ final class FdLogUi @Inject() (
         new MenuItem("Band / Mode Manager"):
           onAction = _ => showPane(bandModeNode)
       )
-
-  // ---------------- node extraction ----------------
-  // Tries common method/field names used for "view" nodes in controller-style panes.
-  private def extractNode(any: AnyRef): Node =
-    any match
-      case n: Node => n
-      case _ =>
-        val methodNames =
-          List(
-            "root", "pane", "node", "view", "content",
-            "ui", "mainPane", "mainNode", "layout", "container"
-          )
-
-        val fieldNames = methodNames
-
-        def tryMethod(name: String): Option[Node] =
-          Try(any.getClass.getMethod(name)).toOption
-            .flatMap(m => Try(m.invoke(any)).toOption)
-            .collect { case n: Node => n }
-
-        def tryField(name: String): Option[Node] =
-          Try(any.getClass.getDeclaredField(name)).toOption
-            .flatMap { f =>
-              Try {
-                f.setAccessible(true)
-                f.get(any)
-              }.toOption
-            }
-            .collect { case n: Node => n }
-
-        methodNames.iterator.flatMap(tryMethod).toSeq.headOption
-          .orElse(fieldNames.iterator.flatMap(tryField).toSeq.headOption)
-          .getOrElse {
-            // If we get here, we don't know what your panel exposes.
-            // Fail loud with a helpful message listing candidates.
-            val available =
-              any.getClass.getMethods.map(_.getName).distinct.sorted.mkString(", ")
-
-            throw new IllegalStateException(
-              s"QsoEntryPanel (${any.getClass.getName}) is not a scalafx.scene.Node, " +
-                s"and no Node-returning member was found. " +
-                s"Tried methods/fields: ${methodNames.mkString(", ")}. " +
-                s"Available methods include: $available"
-            )
-          }
