@@ -21,10 +21,10 @@ package fdswarm.fx.bands
 import com.typesafe.config.ConfigFactory
 import munit.FunSuite
 
-class HamBandCatalogTest extends FunSuite:
+class BandCatalogTest extends FunSuite:
 
   test("happy path"):
-    val hamBandCatalog = HamBandCatalog(ConfigFactory.load())
+    val hamBandCatalog = BandCatalog(ConfigFactory.load())
     assertEquals(hamBandCatalog.all.size, 19)
 
 

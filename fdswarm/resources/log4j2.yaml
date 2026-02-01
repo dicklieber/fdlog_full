@@ -23,6 +23,10 @@ Configuration:
         level: info
         additivity: true
 
+      - name: "fdswarm.fx.bands.ModeCheckBoxPane"
+        level: debug
+        additivity: true
+
     Root:
       level: info
       AppenderRef:

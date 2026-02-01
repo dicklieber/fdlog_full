@@ -1,9 +1,9 @@
 package fdswarm.fx.bandmodes
 
 import com.typesafe.config.Config
-import fdswarm.fx.bands.AvailableBandsStore
+import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager, BandCheckBoxPane, ModeCatalog, ModeCheckBoxPane}
 import jakarta.inject.{Inject, Singleton}
-import javafx.event.{ActionEvent as JfxActionEvent, EventHandler}
+import javafx.event.{EventHandler, ActionEvent as JfxActionEvent}
 import scalafx.Includes.*
 import scalafx.beans.property.BooleanProperty
 import scalafx.geometry.Insets
@@ -22,65 +22,19 @@ import scala.jdk.CollectionConverters.*
  * - selected cell via SelectedBandModeStore (selected-bandmode.json) through matrix pane
  */
 @Singleton
-final class BandModeManagerPane @Inject() (
-                                            availableBandsStore: AvailableBandsStore,
-                                            config: Config,
-                                            store: BandModeStore,
-                                            matrixPane: BandModeMatrixPane
-                                          ) extends BorderPane:
-
-  private val allBands: Seq[String] =
-    availableBandsStore.availableBands.bandNames.toSeq.sorted
-
-  private val allModes: Seq[String] =
-    config.getStringList("fdswarm.modes").asScala.toSeq.sorted
-
-  // local checkbox props (initialized from store state)
-  private val bandSelected: Map[String, BooleanProperty] =
-    val cur = store.currentBandMode.bands
-    allBands.map(b => b -> BooleanProperty(cur.contains(b))).toMap
-
+final class BandsAndModesPane @Inject()(
+                                         bandCheckBoxPane: BandCheckBoxPane,
+                                         modeCheckBoxPane: ModeCheckBoxPane,
+                                         matrixPane: BandModeMatrixPane
+                                      ) extends BorderPane:
+  
+  top = bandCheckBoxPane
+  left = modeCheckBoxPane.pane
+  center = matrixPane
+/*
   private val modeSelected: Map[String, BooleanProperty] =
     val cur = store.currentBandMode.modes
     allModes.map(m => m -> BooleanProperty(cur.contains(m))).toMap
-
-  // panes
-  private val bandsPane: TitledPane =
-    new TitledPane:
-      text = "Bands"
-      collapsible = false
-      content = new VBox:
-        spacing = 6
-        padding = Insets(8)
-        children = allBands.map { band =>
-          val cb = new CheckBox(band)
-          cb.selected <==> bandSelected(band)
-          cb.selected.onChange { (_, _, _) =>
-            persistSelections()
-          }
-          cb
-        }
-
-  private val modesPane: TitledPane =
-    new TitledPane:
-      text = "Modes"
-      collapsible = false
-      content = new VBox:
-        spacing = 6
-        padding = Insets(8)
-        children = allModes.map { mode =>
-          val cb = new CheckBox(mode)
-          cb.selected <==> modeSelected(mode)
-          cb.selected.onChange { (_, _, _) =>
-            persistSelections()
-          }
-          cb
-        }
-
-  private def handler(body: => Unit): EventHandler[JfxActionEvent] =
-    new EventHandler[JfxActionEvent]:
-      override def handle(e: JfxActionEvent): Unit = body
-
   private val buttons: HBox =
     new HBox:
       spacing = 8
@@ -121,6 +75,10 @@ final class BandModeManagerPane @Inject() (
         }
       )
 
+  private def handler(body: => Unit): EventHandler[JfxActionEvent] =
+    new EventHandler[JfxActionEvent]:
+      override def handle(e: JfxActionEvent): Unit = body
+
   padding = Insets(10)
   left = new VBox:
     spacing = 10
@@ -134,15 +92,6 @@ final class BandModeManagerPane @Inject() (
   matrixPane.refreshEnabledFromStore()
   matrixPane.refreshFromStore()
 
-  private def selectedBandsNow: Seq[String] =
-    allBands.filter(b => bandSelected(b).value)
-
-  private def selectedModesNow: Seq[String] =
-    allModes.filter(m => modeSelected(m).value)
-
-  private def refreshMatrixVisibility(): Unit =
-    matrixPane.setVisible(selectedModesNow, selectedBandsNow)
-
   private def persistSelections(): Unit =
     store.setBands(selectedBandsNow.toSet)
     store.setModes(selectedModesNow.toSet)
@@ -151,3 +100,13 @@ final class BandModeManagerPane @Inject() (
     // Enabled matrix may have changed elsewhere; always re-apply disabled styling.
     matrixPane.refreshEnabledFromStore()
     matrixPane.refreshFromStore()
+
+  private def refreshMatrixVisibility(): Unit =
+    matrixPane.setVisible(selectedModesNow, selectedBandsNow)
+
+  private def selectedBandsNow: Seq[String] =
+    allBands.filter(b => bandSelected(b).value)
+
+  private def selectedModesNow: Seq[String] =
+    allModes.filter(m => modeSelected(m).value)
+*/

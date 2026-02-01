@@ -1,13 +1,15 @@
 package fdswarm.fx.bandmodes
 
 import com.typesafe.config.Config
-import fdswarm.fx.bands.AvailableBandsStore
+import com.typesafe.scalalogging.LazyLogging
+import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager}
+import fdswarm.model.BandMode.{Band, Mode}
 import jakarta.inject.{Inject, Singleton}
-import javafx.event.{ActionEvent as JfxActionEvent, EventHandler}
+import javafx.event.{EventHandler, ActionEvent as JfxActionEvent}
 import scalafx.Includes.*
 import scalafx.geometry.{Insets, Pos}
-import scalafx.scene.control.{Label, ToggleButton, ToggleGroup}
-import scalafx.scene.layout.{GridPane, Priority, Region, VBox}
+import scalafx.scene.control.{Button, Label, TitledPane, ToggleButton, ToggleGroup}
+import scalafx.scene.layout.{GridPane, Pane, Priority, Region, VBox}
 
 import scala.jdk.CollectionConverters.*
 
@@ -24,14 +26,12 @@ import scala.jdk.CollectionConverters.*
  */
 @Singleton
 final class BandModeMatrixPane @Inject() (
-                                           availableBandsStore: AvailableBandsStore,
+                                           availableBandsStore: AvailableBandsManager,
+                                           availableModesManager: AvailableModesManager,
                                            config: Config,
-                                           bandModeStore: BandModeStore,
                                            selectedStore: SelectedBandModeStore
-                                         ) extends VBox:
+                                         ) extends Pane with LazyLogging:
 
-  spacing = 8
-  padding = Insets(8)
 
   private val group = new ToggleGroup()
 
@@ -68,7 +68,19 @@ final class BandModeMatrixPane @Inject() (
     vgap = 8
     alignment = Pos.TopLeft
 
-  children = Seq(grid)
+
+  for
+    (mode,row) <- availableModesManager.modes.zipWithIndex
+    (band,col)<- availableBandsStore.bands.zipWithIndex
+  do
+    logger.info(s"Adding band $band to mode $mode")
+    grid.add(ModeBandButton(band,mode),col,row)
+
+
+  new TitledPane():
+    content = grid
+    text = "Band & Mode"
+  /*
 
   private def allBandsInOrder: Seq[String] =
     availableBandsStore.availableBands.bandNames.toSeq.sorted
@@ -191,26 +203,8 @@ final class BandModeMatrixPane @Inject() (
       case Some(bm) => selectedStore.set(Some(bm))
       case None     => clearSelection()
 
-  private def ensureDefaultSelectionIfNonePersisted(): Unit =
-    if selectedStore.current.isEmpty then
-      // top-left: first mode row + first band col
-      val bmTopLeft =
-        for
-          m <- allModesInOrder.headOption
-          b <- allBandsInOrder.headOption
-        yield BandMode(band = b, mode = m)
-
-      bmTopLeft match
-        case Some(bm) =>
-          // if top-left is enabled, use it; otherwise pick first enabled
-          if bandModeStore.isEnabled(bm.mode, bm.band) then
-            selectedStore.set(Some(bm))
-          else
-            selectFirstEnabledVisibleCellOrClear()
-        case None =>
-          ()
-
-  // ----- reactive wiring -----
+*/
+/*  // ----- reactive wiring -----
 
   // Rebuild once at startup
   buildGrid()
@@ -225,4 +219,13 @@ final class BandModeMatrixPane @Inject() (
   // When enabled-matrix changes, update disabled state in real-time.
   bandModeStore.bandModes.onChange { (_, _, _) =>
     refreshEnabledFromStore()
+  }*/
+
+
+case class ModeBandButton(band:Band, mode:Mode) extends Button(band):
+  graphic = new Region {
+    minWidth = 20
+    minHeight = 20
   }
+  val bandMode = BandMode(band, mode)
+//  onAction =

@@ -18,6 +18,7 @@
 
 package fdswarm.fx.bandmodes
 
+import fdswarm.model.BandMode.{Band, Mode}
 import upickle.default.*
 
 /** A single (band, mode) pair.
@@ -25,6 +26,6 @@ import upickle.default.*
   * This is used for the "currently selected" cell in the Mode × Band matrix.
   */
 final case class BandMode(
-  band: String,
-  mode: String
+  band: Band,
+  mode: Mode
 ) derives ReadWriter

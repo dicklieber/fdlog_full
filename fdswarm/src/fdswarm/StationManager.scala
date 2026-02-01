@@ -19,7 +19,7 @@
 package fdswarm
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.bands.AvailableBandsStore
+import fdswarm.fx.bands.AvailableBandsManager
 import fdswarm.fx.caseForm.MyCaseForm
 import fdswarm.io.DirectoryProvider
 import fdswarm.model.Station
@@ -28,8 +28,8 @@ import scalafx.scene.layout.Pane
 import upickle.default.*
 
 @Singleton
-class StationManager @Inject()( productionDirectory:DirectoryProvider, availableBandsStore: AvailableBandsStore) extends LazyLogging:
-  private var internalStationProvate: Station = Station.defaultStation(using availableBandsStore)
+class StationManager @Inject()( productionDirectory:DirectoryProvider, availableBandsStore: AvailableBandsManager) extends LazyLogging:
+  private var internalStationProvate: Station = throw new NotImplementedError("") //todoStation.defaultStation(using availableBandsStore)
 
   private val file: os.Path = productionDirectory() / "station.json"
 
@@ -38,16 +38,17 @@ class StationManager @Inject()( productionDirectory:DirectoryProvider, available
   private def setStation(station: Station):Unit=
     internalStationProvate = station
 
-  load()
+//  load()
 
   def pane(): Pane =
     logger.info(s"Creating station form for $station")
     val myCaseForm = MyCaseForm[Station](station, newStation =>
       logger.trace("New station: {}", newStation)
       setStation( newStation)
-      save()
+//      save()
     )
     myCaseForm.pane()
+/*
 
   /** Save current _station to station.json. */
   def save(): Unit =
@@ -78,3 +79,4 @@ class StationManager @Inject()( productionDirectory:DirectoryProvider, available
       case t: Throwable =>
         logger.warn(s"Failed to load station from $file; using defaults", t)
         setStation(Station.defaultStation(using availableBandsStore))
+*/

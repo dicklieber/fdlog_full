@@ -17,7 +17,7 @@
 
 package fdswarm.model
 
-import fdswarm.fx.bands.{AvailableBandsStore, HamBand}
+import fdswarm.fx.bands.{AvailableBandsManager, HamBand}
 import fdswarm.fx.caseForm.ChoiceField
 import fdswarm.model.BandMode.*
 import upickle.default.*
@@ -29,7 +29,7 @@ import upickle.default.*
  * so JSON persistence should use Station.Persisted (below).
  */
 final case class Station(
-                          band:     ChoiceField[HamBand],
+                          band:     ChoiceField[HamBand] ,
                           modeName: Mode,
                           rig:      String,
                           antenna:  String,
@@ -44,6 +44,8 @@ final case class Station(
 object Station:
 
   import Callsign.given_Conversion_String_Callsign
+  
+  
 
   /** JSON-friendly shape (no functions inside). */
   final case class Persisted(
@@ -64,12 +66,8 @@ object Station:
       operator = s.operator
     )
 
-  /**
-   * Convert Persisted -> Station by re-attaching the ChoiceField from AvailableBandsStore.
-   *
-   * If bandName isn't found, falls back to whatever the store selects by default.
-   */
-  def fromPersisted(p: Persisted)(using store: AvailableBandsStore): Station =
+/*  
+  def fromPersisted(p: Persisted)(using store: AvailableBandsManager): Station =
     val selectedBand: HamBand =
       val cb = store.hamBandComboBox(Some(p.bandName))
       val b  = cb.value.value
@@ -84,7 +82,7 @@ object Station:
     )
 
   /** Convenient default Station (requires AvailableBandsStore so the ChoiceField can be built). */
-  def defaultStation(using store: AvailableBandsStore): Station =
+  def defaultStation(using store: AvailableBandsManager): Station =
     val defaultBand = store.hamBandComboBox(Some("160m")).value.value
     Station(
       band     = store.hamBandChoice(defaultBand),
@@ -92,4 +90,4 @@ object Station:
       rig      = "Rig 1",
       antenna  = "Antenna 1",
       operator = "WA9NNN"
-    )
+    )*/

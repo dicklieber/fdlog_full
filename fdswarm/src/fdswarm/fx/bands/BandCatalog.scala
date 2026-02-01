@@ -5,7 +5,7 @@ import jakarta.inject.{Inject, Singleton}
 import upickle.default.*
 
 @Singleton
-final class HamBandCatalog @Inject()(config: Config):
+final class BandCatalog @Inject()(config: Config):
 
   // IMPORTANT: define this before any vals that use it
   private val key = "fdswarm.hamBands"
@@ -21,12 +21,3 @@ final class HamBandCatalog @Inject()(config: Config):
   val hamBands: Seq[HamBand] =
     read[Seq[HamBand]](config.getValue(key).render(renderOpts))
 
-  private val byName: Map[String, HamBand] =
-    hamBands
-      .flatMap(b => Seq(b.bandName -> b, b.bandName.toLowerCase -> b))
-      .toMap
-
-  def all: Seq[HamBand] = hamBands
-
-  def get(band: String): Option[HamBand] =
-    byName.get(band)

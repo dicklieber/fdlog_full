@@ -1,7 +1,7 @@
 package fdswarm.fx
 
+import fdswarm.fx.bandmodes.BandsAndModesPane
 import jakarta.inject.Inject
-
 import scalafx.application.Platform
 import scalafx.event.EventIncludes.*
 import scalafx.scene.Scene
@@ -10,11 +10,10 @@ import scalafx.scene.control.*
 import scalafx.scene.layout.*
 import scalafx.stage.Stage
 
-import fdswarm.fx.bandmodes.BandModeManagerPane
 
 final class FdLogUi @Inject() (
                                 qsoEntryPanel: QsoEntryPanel,
-                                bandModeManagerPane: BandModeManagerPane
+                                bandModeManagerPane: BandsAndModesPane
                               ):
 
   // BandModeManagerPane extends BorderPane => it is already a Node
