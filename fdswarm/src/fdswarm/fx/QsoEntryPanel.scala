@@ -25,11 +25,23 @@ import scalafx.geometry.Insets
 import scalafx.scene.layout.GridPane
 import _root_.fdswarm.store.QsoStore
 import com.typesafe.scalalogging.LazyLogging
-import _root_.fdswarm.model.{BandMode, Qso, QsoMetadata}
+import _root_.fdswarm.model.{BandMode, Callsign, Contest, Qso, QsoMetadata, StationPersisted}
 @Singleton
 class QsoEntryPanel @Inject()(qsoStore: QsoStore) extends LazyLogging:
-  val bandMode = BandMode()//todo 
-  val qsoMetadata = QsoMetadata()//todo
+  val bandMode = BandMode()//todo
+
+  val qsoMetadata =
+    QsoMetadata(
+      station = StationPersisted(
+        bandName = "20m",
+        mode     = "CW",
+        rig      = "",
+        antenna  = "",
+        operator = Callsign("")
+      ),
+      node    = "local",
+      contest = Contest.WFD
+    )
   def apply()=
     val callSign:     TextField = new TextField { text = "" }
     val contestClass: TextField = new TextField { text = "" }

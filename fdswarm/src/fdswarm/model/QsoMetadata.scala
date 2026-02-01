@@ -34,10 +34,9 @@ import upickle.implicits.*
  */
 
 
-case class QsoMetadata(station: Station,
+case class QsoMetadata(station: StationPersisted,
                        node: String = "localhost;1",
                        contest: Contest,
-                       ,
                        @serializeDefaults(true)
                        v: String = BuildInfo.version) derives ReadWriter
 //  def forStation(station: Station):QsoMetadata =
