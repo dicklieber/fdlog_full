@@ -3,6 +3,7 @@ package fdswarm.fx.bandmodes
 import com.typesafe.config.Config
 import fdswarm.fx.bands.AvailableBandsStore
 import jakarta.inject.{Inject, Singleton}
+import javafx.event.{ActionEvent as JfxActionEvent, EventHandler}
 import scalafx.Includes.*
 import scalafx.beans.property.BooleanProperty
 import scalafx.geometry.Insets
@@ -26,7 +27,7 @@ final class BandModeManagerPane @Inject() (
                                             config: Config,
                                             store: BandModeStore,
                                             matrixPane: BandModeMatrixPane
-                                          ) extends BorderPane {
+                                          ) extends BorderPane:
 
   private val allBands: Seq[String] =
     availableBandsStore.availableBands.bandNames.toSeq.sorted
@@ -35,22 +36,20 @@ final class BandModeManagerPane @Inject() (
     config.getStringList("fdswarm.modes").asScala.toSeq.sorted
 
   // local checkbox props (initialized from store state)
-  private val bandSelected: Map[String, BooleanProperty] = {
+  private val bandSelected: Map[String, BooleanProperty] =
     val cur = store.currentBandMode.bands
     allBands.map(b => b -> BooleanProperty(cur.contains(b))).toMap
-  }
 
-  private val modeSelected: Map[String, BooleanProperty] = {
+  private val modeSelected: Map[String, BooleanProperty] =
     val cur = store.currentBandMode.modes
     allModes.map(m => m -> BooleanProperty(cur.contains(m))).toMap
-  }
 
   // panes
   private val bandsPane: TitledPane =
-    new TitledPane {
+    new TitledPane:
       text = "Bands"
       collapsible = false
-      content = new VBox {
+      content = new VBox:
         spacing = 6
         padding = Insets(8)
         children = allBands.map { band =>
@@ -61,14 +60,12 @@ final class BandModeManagerPane @Inject() (
           }
           cb
         }
-      }
-    }
 
   private val modesPane: TitledPane =
-    new TitledPane {
+    new TitledPane:
       text = "Modes"
       collapsible = false
-      content = new VBox {
+      content = new VBox:
         spacing = 6
         padding = Insets(8)
         children = allModes.map { mode =>
@@ -79,16 +76,18 @@ final class BandModeManagerPane @Inject() (
           }
           cb
         }
-      }
-    }
+
+  private def handler(body: => Unit): EventHandler[JfxActionEvent] =
+    new EventHandler[JfxActionEvent]:
+      override def handle(e: JfxActionEvent): Unit = body
 
   private val buttons: HBox =
-    new HBox {
+    new HBox:
       spacing = 8
       padding = Insets(6, 0, 0, 0)
       children = Seq(
         new Button("Defaults (all on)") {
-          onAction = _ => {
+          onAction = handler {
             allBands.foreach(b => bandSelected(b).value = true)
             allModes.foreach(m => modeSelected(m).value = true)
 
@@ -98,37 +97,41 @@ final class BandModeManagerPane @Inject() (
             store.setEnabled(enabled)
 
             refreshMatrixVisibility()
+            matrixPane.refreshEnabledFromStore()
             matrixPane.refreshFromStore()
           }
         },
         new Button("Clear") {
-          onAction = _ => {
+          onAction = handler {
             allBands.foreach(b => bandSelected(b).value = false)
             allModes.foreach(m => modeSelected(m).value = false)
             store.setBands(Set.empty)
             store.setModes(Set.empty)
             store.setEnabled(Map.empty)
             refreshMatrixVisibility()
+            matrixPane.refreshEnabledFromStore()
             matrixPane.refreshFromStore()
             matrixPane.clearSelection()
           }
         },
         new Button("Clear Cell Selection") {
-          onAction = _ => matrixPane.clearSelection()
+          onAction = handler {
+            matrixPane.clearSelection()
+          }
         }
       )
-    }
 
   padding = Insets(10)
-  left = new VBox {
+  left = new VBox:
     spacing = 10
     padding = Insets(0, 10, 0, 0)
     children = Seq(bandsPane, modesPane, buttons)
-  }
+
   center = matrixPane
 
   // initial matrix visibility
   refreshMatrixVisibility()
+  matrixPane.refreshEnabledFromStore()
   matrixPane.refreshFromStore()
 
   private def selectedBandsNow: Seq[String] =
@@ -140,11 +143,11 @@ final class BandModeManagerPane @Inject() (
   private def refreshMatrixVisibility(): Unit =
     matrixPane.setVisible(selectedModesNow, selectedBandsNow)
 
-  private def persistSelections(): Unit = {
+  private def persistSelections(): Unit =
     store.setBands(selectedBandsNow.toSet)
     store.setModes(selectedModesNow.toSet)
 
     refreshMatrixVisibility()
+    // Enabled matrix may have changed elsewhere; always re-apply disabled styling.
+    matrixPane.refreshEnabledFromStore()
     matrixPane.refreshFromStore()
-  }
-}

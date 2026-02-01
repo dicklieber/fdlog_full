@@ -40,6 +40,10 @@ final class BandModeStore @Inject() (dirProvider: DirectoryProvider) {
   private val state: ObjectProperty[BandModes] =
     ObjectProperty(load())
 
+
+  /** Exposes the persisted state as an observable property so UIs can react immediately. */
+  val bandModes: ObjectProperty[BandModes] = state
+
   state.onChange { (_, _, nv) =>
     save(nv)
   }
