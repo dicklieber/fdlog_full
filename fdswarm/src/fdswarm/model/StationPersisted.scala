@@ -1,7 +1,7 @@
 package fdswarm.model
 
-import upickle.default.*
 import fdswarm.fx.bands.HamBand
+import upickle.default.*
 import fdswarm.fx.caseForm.ChoiceField
 
 /** Persistable representation of Station.

@@ -21,12 +21,12 @@ package fdswarm.store
 import fdswarm.model.{BandMode, Exchange, FdClass, Qso, QsoMetadata}
 
 object BigQsosGenerator:
-  def qsos(howMany: Int = 100): Iterator[Qso]=
-    val exchange = Exchange(FdClass(1, 'I'), "IL")
-    val bandMode = BandMode("20M", "PH")
-    callsignIterator(howMany)
-      .map(callSign => Qso(callSign, "1H", "IL", bandMode, QsoMetadata()))
-
+//  def qsos(howMany: Int = 100): Iterator[Qso]=
+//    val exchange = Exchange(FdClass(1, 'I'), "IL")
+//    val bandMode = BandMode("20M", "PH")
+//    callsignIterator(howMany)
+//      .map(callSign => Qso(callSign, "1H", "IL", bandMode, QsoMetadata()))
+//
 
   def callsignIterator(howMany: Int = 10, prefix: String = "WA9"): Iterator[String] =
     val i: Iterator[String] = for

@@ -36,8 +36,8 @@ object fdlog extends JFXApp3 with LazyLogging:
     Guice.createInjector(new ConfigModule())
 
   override def start(): Unit =
-    validateHamBands(injector)
-    validateBandModes(injector)
+//    validateHamBands(injector)
+//    validateBandModes(injector)
 
     // IMPORTANT: FdLogUi is injected; ask Guice for it
     val ui = injector.getInstance(classOf[FdLogUi])
@@ -46,13 +46,13 @@ object fdlog extends JFXApp3 with LazyLogging:
     val s = new JFXApp3.PrimaryStage
     ui.start(s)
     stage = s
-
-  private def validateHamBands(injector: Injector): Unit =
-    val catalog = injector.getInstance(classOf[fdswarm.fx.bands.HamBandCatalog])
-    val issues  = fdswarm.fx.bands.HamBandValidator.validate(catalog.all)
-    issues.foreach { i =>
-      logger.error(s"[HamBands/${i.kind}] ${i.message}")
-    }
+//todo do we need this?
+//  private def validateHamBands(injector: Injector): Unit =
+//    val hamBandCatalogx = injector.getInstance(classOf[fdswarm.fx.bands.HamBandCatalog])
+//    val issues  = fdswarm.fx.bands.HamBandValidator.validate(hamBandCatalog.all)
+//    issues.foreach { i =>
+//      logger.error(s"[HamBands/${i.kind}] ${i.message}")
+//    }
 
   /** Keep this validation non-invasive:
     * just verify we can construct the store (which implies config + dir wiring is OK).

@@ -19,7 +19,7 @@ final class AvailableBandsStore @Inject() (
                                             @Named("fdswarm.availableBands.fileName")
                                             fileName: String,
 
-                                            bandCatalog: HamBandCatalog,
+                                            hamBandCatalog: HamBandCatalog,
                                             paneProvider: Provider[HamBandCheckBoxPane]
                                           ):
 
@@ -54,6 +54,8 @@ final class AvailableBandsStore @Inject() (
   def saveNow(): Unit =
     persistToDisk(current)
 
+  val all:Seq[HamBand] = throw new NotImplementedError("")
+
   /** A ComboBox over *all configured* ham bands, with one selected.
    *
    * @param selectedBandName optional bandName to select initially; if not found, selects the first band (if any).
@@ -62,10 +64,11 @@ final class AvailableBandsStore @Inject() (
     // Prefer only enabled/checked bands; if none are enabled, fall back to all configured bands
     val enabledNames: Set[String] = availableBands.bandNames
     val enabledBands: List[HamBand] =
-      if enabledNames.nonEmpty then
-        bandCatalog.all.filter(b => enabledNames.contains(b.bandName))
-      else
-        bandCatalog.all
+      throw new NotImplementedError("")
+//      if enabledNames.nonEmpty then
+//        all.filter(hamBand => enabledNames.contains(hamBand.bandName))
+//      else
+//        hamBandCatalog.all
 
     val items = ObservableBuffer.from(enabledBands)
 
@@ -78,12 +81,12 @@ final class AvailableBandsStore @Inject() (
 
       override def fromString(s: String): HamBand =
         // ComboBox is not editable by default; this is just for completeness.
-        bandCatalog.get(s).orNull
+        hamBandCatalog.get(s).orNull
 
     // Initial selection
     val initial: Option[HamBand] =
       selectedBandName
-        .flatMap(bandCatalog.get)
+        .flatMap(hamBandCatalog.get)
         .filter(b => items.contains(b))
         .orElse(items.headOption)
 
@@ -124,7 +127,7 @@ final class AvailableBandsStore @Inject() (
         val json  = os.read(path)
         val names = read[Seq[String]](json).toSet
         // keep only bands still defined in config
-        val filtered = names.filter(bandCatalog.get(_).nonEmpty)
+        val filtered = names.filter(hamBandCatalog.get(_).nonEmpty)
         Some(AvailableBands(filtered))
       catch
         case _: Throwable => None

@@ -37,14 +37,14 @@ final class HamBandCheckBoxPane @Inject() (
       val cb = new CheckBox(band.bandName)
       cb.selected = initialSelected.contains(band.bandName)
 
-      val regionText =
-        band.ituRegionAvailability match
-          case ItuRegionAvailability.AllRegions        => "All ITU regions"
-          case ItuRegionAvailability.VariesByCountry   => "Varies by country"
-          case ItuRegionAvailability.RegionsOnly(rs)   => s"Regions: ${rs.mkString(",")}"
+//      val regionText =
+//        band.ituRegionAvailability match
+//          case ItuRegionAvailability.AllRegions        => "All ITU regions"
+//          case ItuRegionAvailability.VariesByCountry   => "Varies by country"
+//          case ItuRegionAvailability.RegionsOnly(rs)   => s"Regions: ${rs.mkString(",")}"
 
       cb.tooltip = new Tooltip(
-        s"${band.bandClass}  ${band.startFrequencyHz}–${band.endFrequencyHz} Hz  $regionText"
+        s"${band.bandClass}  ${band.startFrequencyHz}–${band.endFrequencyHz} Hz  ${band.regions.mkString(" ")}"
       )
 
       cb.selected.onChange { (_, _, _) =>

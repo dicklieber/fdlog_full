@@ -16,15 +16,15 @@
  *
  */
 
-package fdswarm
+package fdswarm.fx.bands
 
+import com.typesafe.config.ConfigFactory
 import munit.FunSuite
 
-class StationManagerTest extends FunSuite:
+class HamBandCatalogTest extends FunSuite:
 
   test("happy path"):
-    throw new NotImplementedError("") //todo
-//    val stationManager = StationManager(TestDirectory)
-//
-//    val station = stationManager.station
-//    station
+    val hamBandCatalog = HamBandCatalog(ConfigFactory.load())
+    assertEquals(hamBandCatalog.all.size, 19)
+
+

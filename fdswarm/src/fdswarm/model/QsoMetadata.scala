@@ -33,12 +33,12 @@ import upickle.implicits.*
  * @param v       FdSwarm Version that built this so we can detect mismatched versions.
  */
 
+@serializeDefaults(true)
 
 case class QsoMetadata(station: StationPersisted,
                        node: String = "localhost;1",
                        contest: Contest,
-                       @serializeDefaults(true)
-                       v: String = BuildInfo.version) derives ReadWriter
+                        v: String = BuildInfo.version) derives ReadWriter
 //  def forStation(station: Station):QsoMetadata =
 //    copy(operator =  station.operator, rig= station.rig, ant = station.antenna)
 

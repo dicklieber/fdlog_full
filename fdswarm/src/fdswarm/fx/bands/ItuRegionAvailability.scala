@@ -1,21 +1,27 @@
 package fdswarm.fx.bands
 
-enum BandClass:
+import upickle.default.*
+
+enum BandClass derives ReadWriter:
   case HF, VHF, UHF, SHF, EHF, MF, LF, VLF
 
-enum ItuRegion:
-  case R1, R2, R3
+enum ItuRegion derives ReadWriter:
+  case ALL, R1, R2, R3
 
-sealed trait ItuRegionAvailability
-object ItuRegionAvailability:
-  case object AllRegions extends ItuRegionAvailability
-  case class RegionsOnly(regions: Set[ItuRegion]) extends ItuRegionAvailability
-  case object VariesByCountry extends ItuRegionAvailability
 
-final case class  OMyHamBand(
+/**
+ * These are loaded from application.conf.
+ *
+ * @param bandName 30m, 40m, 80m, etc. Shown in UI.
+ * @param startFrequencyHz used to map radio frequencies to [[HamBand]]
+ * @param endFrequencyHz used to map radio frequencies to [[HamBand]]
+ * @param bandClass common user-friendly name for band, e.g. "VHF"
+ * @param regions where in the world this band is available.
+ */
+final case class HamBand(
                           bandName: String,
                           startFrequencyHz: Long,
                           endFrequencyHz: Long,
                           bandClass: BandClass,
-                          ituRegionAvailability: ItuRegionAvailability
-                        )
+                          regions: Set[ItuRegion] = Set(ItuRegion.ALL)
+                        ) derives ReadWriter
