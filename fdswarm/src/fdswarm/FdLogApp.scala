@@ -30,14 +30,22 @@ import scalafx.application.JFXApp3
   */
 object fdlog extends JFXApp3 with LazyLogging:
 
+  logger.info("fdlog ctor")
+
   private lazy val injector: Injector =
     Guice.createInjector(new ConfigModule())
 
   override def start(): Unit =
     validateHamBands(injector)
+    validateBandModes(injector)
 
-    val ui = new FdLogUi(injector)
-    stage = ui.primaryStage()
+    // IMPORTANT: FdLogUi is injected; ask Guice for it
+    val ui = injector.getInstance(classOf[FdLogUi])
+
+    // Create the primary stage, let the UI configure it, then publish it
+    val s = new JFXApp3.PrimaryStage
+    ui.start(s)
+    stage = s
 
   private def validateHamBands(injector: Injector): Unit =
     val catalog = injector.getInstance(classOf[fdswarm.fx.bands.HamBandCatalog])
@@ -45,3 +53,15 @@ object fdlog extends JFXApp3 with LazyLogging:
     issues.foreach { i =>
       logger.error(s"[HamBands/${i.kind}] ${i.message}")
     }
+
+  /** Keep this validation non-invasive:
+    * just verify we can construct the store (which implies config + dir wiring is OK).
+    * Do NOT call any store API here (names differ between iterations).
+    */
+  private def validateBandModes(injector: Injector): Unit =
+    try
+      injector.getInstance(classOf[fdswarm.fx.bandmodes.BandModeStore])
+      logger.info("BandModeStore constructed OK")
+    catch
+      case t: Throwable =>
+        logger.warn("BandModeStore not available at startup", t)

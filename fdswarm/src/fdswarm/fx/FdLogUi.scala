@@ -1,120 +1,116 @@
-/*
- * Copyright (c) 2026. Dick Lieber, WA9NNN
- *
- * This program is free software: you can redistribute it and/or modify 
- * it under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, or    
- * (at your option) any later version.                                  
- *                                                                      
- * This program is distributed in the hope that it will be useful,      
- * but WITHOUT ANY WARRANTY; without even the implied warranty of       
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the        
- * GNU General Public License for more details.                         
- *                                                                      
- * You should have received a copy of the GNU General Public License    
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- */
-
 package fdswarm.fx
 
-import com.google.inject.Injector
-import com.typesafe.scalalogging.LazyLogging
-import fdswarm.StationManager
-import fdswarm.fx.bands.AvailableBandsStore
-import scalafx.Includes.*
-import scalafx.application.{JFXApp3, Platform}
-import scalafx.geometry.Insets
+import jakarta.inject.Inject
+
+import scalafx.application.Platform
+import scalafx.event.EventIncludes.*
 import scalafx.scene.Scene
+import scalafx.scene.Node
 import scalafx.scene.control.*
-import scalafx.scene.input.{KeyCode, KeyCombination, KeyEvent}
 import scalafx.scene.layout.*
+import scalafx.stage.Stage
 
-/** All UI wiring (menus, panes, scene graph).
-  * App bootstrap lives in [[fdlog]] (FdLogApp.scala).
-  */
-final class FdLogUi(injector: Injector) extends LazyLogging:
+import fdswarm.fx.bandmodes.BandModeManagerPane
 
-  private val qsoEntryPanel: QsoEntryPanel =
-    injector.getInstance(classOf[QsoEntryPanel])
+import scala.util.Try
 
-  def primaryStage(): JFXApp3.PrimaryStage =
-    new JFXApp3.PrimaryStage:
+final class FdLogUi @Inject() (
+                                qsoEntryPanel: QsoEntryPanel,
+                                bandModeManagerPane: BandModeManagerPane
+                              ):
 
-      title = "FDLog (ScalaFX)"
-      width = 1100
-      height = 650
+  // BandModeManagerPane extends BorderPane => it *is* a Node already
+  private val bandModeNode: Node = bandModeManagerPane
 
-      scene = buildScene()
+  // QsoEntryPanel is a controller (not a Node). Extract its view Node.
+  private val qsoNode: Node = extractNode(qsoEntryPanel)
 
-  private def buildScene(): Scene =
-    new Scene:
+  private val centerPane = new StackPane:
+    children = List(qsoNode)
 
-      private val stationManager: StationManager =
-        injector.getInstance(classOf[StationManager])
+  private val menuBar = new MenuBar:
+    menus = Seq(
+      fileMenu,
+      viewMenu,
+      configMenu
+    )
 
-      private val availableBandsStore: AvailableBandsStore =
-        injector.getInstance(classOf[AvailableBandsStore])
+  private val root = new BorderPane:
+    top = menuBar
+    center = centerPane
 
-      // --- Build the "views" we want to switch between ---
+  def start(stage: Stage): Unit =
+    stage.title = "FDLog"
+    stage.scene = new Scene(root, 1100, 800)
+    stage.show()
 
-      private val qsoEntryPane: Pane =
-        new VBox:
-          padding = Insets(8)
-          spacing = 4
-          children = Seq(
-            new Label("QSOs"):
-              style = "-fx-font-size: 16px; -fx-font-weight: bold;"
-            ,
-            qsoEntryPanel()
+  private def showPane(node: Node): Unit =
+    centerPane.children.setAll(node)
+
+  // ---------------- menus ----------------
+
+  private def fileMenu: Menu =
+    new Menu("File"):
+      items = Seq(
+        new MenuItem("Exit"):
+          onAction = _ => Platform.exit()
+      )
+
+  private def viewMenu: Menu =
+    new Menu("View"):
+      items = Seq(
+        new MenuItem("QSO Entry"):
+          onAction = _ => showPane(qsoNode)
+      )
+
+  private def configMenu: Menu =
+    new Menu("Config"):
+      items = Seq(
+        new MenuItem("Band / Mode Manager"):
+          onAction = _ => showPane(bandModeNode)
+      )
+
+  // ---------------- node extraction ----------------
+  // Tries common method/field names used for "view" nodes in controller-style panes.
+  private def extractNode(any: AnyRef): Node =
+    any match
+      case n: Node => n
+      case _ =>
+        val methodNames =
+          List(
+            "root", "pane", "node", "view", "content",
+            "ui", "mainPane", "mainNode", "layout", "container"
           )
 
-      // --- Root layout we can swap the center of ---
-      private val rootPane = new BorderPane
+        val fieldNames = methodNames
 
-      // --- MenuBar with proper toggle behavior ---
-      private val viewToggles = new ToggleGroup
+        def tryMethod(name: String): Option[Node] =
+          Try(any.getClass.getMethod(name)).toOption
+            .flatMap(m => Try(m.invoke(any)).toOption)
+            .collect { case n: Node => n }
 
-      private val stationItem = new RadioMenuItem("Station"):
-        toggleGroup = viewToggles
-        selected = true
-        accelerator = KeyCombination.keyCombination("Shortcut+1")
-        onAction = _ => rootPane.center = stationManager.pane()
+        def tryField(name: String): Option[Node] =
+          Try(any.getClass.getDeclaredField(name)).toOption
+            .flatMap { f =>
+              Try {
+                f.setAccessible(true)
+                f.get(any)
+              }.toOption
+            }
+            .collect { case n: Node => n }
 
-      private val qsoEntryItem = new RadioMenuItem("QSO Entry"):
-        toggleGroup = viewToggles
-        accelerator = KeyCombination.keyCombination("Shortcut+2")
-        onAction = _ => rootPane.center = qsoEntryPane
+        methodNames.iterator.flatMap(tryMethod).toSeq.headOption
+          .orElse(fieldNames.iterator.flatMap(tryField).toSeq.headOption)
+          .getOrElse {
+            // If we get here, we don't know what your panel exposes.
+            // Fail loud with a helpful message listing candidates.
+            val available =
+              any.getClass.getMethods.map(_.getName).distinct.sorted.mkString(", ")
 
-      private val availableBandsItem = new RadioMenuItem("Available Bands"):
-        toggleGroup = viewToggles
-        accelerator = KeyCombination.keyCombination("Shortcut+3")
-        onAction = _ => rootPane.center = availableBandsStore.availableBandsPane
-
-      private val menuBar = new MenuBar:
-        menus = List(
-          new Menu("File"):
-            items = List(
-              new MenuItem("Exit"):
-                accelerator = KeyCombination.keyCombination("Shortcut+Q")
-                onAction = _ => Platform.exit()
+            throw new IllegalStateException(
+              s"QsoEntryPanel (${any.getClass.getName}) is not a scalafx.scene.Node, " +
+                s"and no Node-returning member was found. " +
+                s"Tried methods/fields: ${methodNames.mkString(", ")}. " +
+                s"Available methods include: $available"
             )
-          ,
-          new Menu("View"):
-            items = List(
-              stationItem,
-              qsoEntryItem,
-              availableBandsItem
-            )
-        )
-
-      // Global ENTER handler (left as you had it; currently consumes Enter everywhere)
-      onKeyPressed = (e: KeyEvent) =>
-        if e.code == KeyCode.Enter && !e.shiftDown then
-          e.consume()
-
-      // --- Wire it together ---
-      rootPane.top = menuBar
-      rootPane.center = stationManager.pane() // default view
-
-      root = rootPane
+          }
