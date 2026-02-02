@@ -24,7 +24,7 @@ Configuration:
         additivity: true
 
       - name: "fdswarm.fx.bands.ModeCheckBoxPane"
-        level: debug
+        level: info
         additivity: true
 
     Root:

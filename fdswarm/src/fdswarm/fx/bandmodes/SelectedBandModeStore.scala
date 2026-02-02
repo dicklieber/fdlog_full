@@ -16,27 +16,23 @@ final class SelectedBandModeStore @Inject() (dirProvider: DirectoryProvider):
   private val path: os.Path =
     dir / "selected-bandmode.json"
 
-  val selected: ObjectProperty[Option[BandMode]] =
-    ObjectProperty(load())
+  private var _selected: BandMode = BandMode("??", "??")
 
-  selected.onChange { (_, _, nv) =>
-    persist(nv)
-  }
 
-  def current: Option[BandMode] =
-    selected.value
+  def selected:BandMode = _selected
 
-  def set(value: Option[BandMode]): Unit =
-    selected.value = value
+  def save(value: BandMode): Unit =
+    _selected = value
+    persist()
 
-  private def load(): Option[BandMode] =
-    if !os.exists(path) then None
-    else
-      try read[Option[BandMode]](os.read(path))
-      catch case _: Throwable => None
+  private def load():Unit =
+      try
+        _selected = read[BandMode](os.read(path))
+      catch case _: Throwable =>
+        _selected = BandMode("20m", "Ph")
 
-  private def persist(value: Option[BandMode]): Unit =
-    val json = write(value, indent = 2)
+  private def persist(): Unit =
+    val json = write(_selected, indent = 2)
     val tmp  = path / os.up / s".${path.last}.tmp"
     os.write.over(tmp, json, createFolders = true)
     os.move.over(tmp, path)

@@ -45,7 +45,7 @@ final class BandModeMatrixPane @Inject() (
     _ = grid.addRow(row, new Label(mode))
     (band,col)<- availableBandsStore.bands.zipWithIndex
   do
-    logger.info(s"Adding band $band to mode $mode")
+    logger.trace(s"Adding band $band to mode $mode")
     grid.add(ModeBandButton(band,mode),col+1,row)
 
 
@@ -57,12 +57,14 @@ final class BandModeMatrixPane @Inject() (
     }
 
 
-
   case class ModeBandButton(band:Band, mode:Mode) extends ToggleButton():
+    val bandMode: BandMode = BandMode(band, mode)
     text = band
     graphic = null
     graphicTextGap = 0
     toggleGroup = tg
     styleClass += "custom-radio" // Apply custom CSS class
-
-    val bandMode = BandMode(band, mode)
+    selected.onChange { (_, _, isSelected) =>
+      if isSelected then
+        selectedStore.save(bandMode)
+    }
