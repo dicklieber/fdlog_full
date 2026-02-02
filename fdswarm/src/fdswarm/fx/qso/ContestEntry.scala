@@ -28,10 +28,14 @@ import scalafx.scene.layout.VBox
 
 @Singleton
 class ContestEntry @Inject() (qsoEntryPanel:QsoEntryPanel,
+                              qsoTablePane: QsoTablePane,
                               bandModeMatrixPane: BandModeMatrixPane) extends LazyLogging:
 
-  def node:Node = 
+  def node:Node =
     new VBox {
-      children = Seq(qsoEntryPanel.node, bandModeMatrixPane.node)
-      
+      children = Seq(
+        qsoTablePane.node,
+        qsoEntryPanel.node,
+        bandModeMatrixPane.node)
+
     }

@@ -24,6 +24,7 @@ import fdswarm.model.*
 import fdswarm.util.Ids
 import fdswarm.util.Ids.Id
 import jakarta.inject.*
+import scalafx.collections.ObservableBuffer
 import upickle.default.*
 
 import scala.collection.concurrent.TrieMap
@@ -32,7 +33,8 @@ import scala.collection.concurrent.TrieMap
 class QsoStore @Inject()(directoryProvider:DirectoryProvider) extends LazyLogging:
   private val journalFile = directoryProvider() / "qsosJournal.json"
   private val map: TrieMap[Id, Qso] = new TrieMap
-
+  val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()
+  
   def size: Int =
     map.size
 
@@ -43,6 +45,7 @@ class QsoStore @Inject()(directoryProvider:DirectoryProvider) extends LazyLoggin
     val uuid = qso.uuid
     val maybeQso = map.putIfAbsent(uuid, qso)
     writeToJournal(qso)
+    qsoCollection.add(qso)
     maybeQso.foreach(was =>
       logger.error(s"Was already a qso for uuid: $uuid $qso")
     )
