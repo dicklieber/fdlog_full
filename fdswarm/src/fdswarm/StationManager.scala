@@ -19,27 +19,53 @@
 package fdswarm
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.bands.AvailableBandsManager
-import fdswarm.fx.caseForm.MyCaseForm
 import fdswarm.io.DirectoryProvider
 import fdswarm.model.Station
 import jakarta.inject.{Inject, Singleton}
-import scalafx.scene.layout.Pane
+import scalafx.beans.property.ObjectProperty
+import scalafx.event.subscriptions.Subscription
 import upickle.default.*
 
 @Singleton
-class StationManager @Inject()( productionDirectory:DirectoryProvider, availableBandsStore: AvailableBandsManager) extends LazyLogging:
-  private var internalStationProvate: Station = throw new NotImplementedError("") //todoStation.defaultStation(using availableBandsStore)
+final class StationManager @Inject()(
+                                      productionDirectory: DirectoryProvider
+                                    ) extends LazyLogging:
 
-  private val file: os.Path = productionDirectory() / "station.json"
+  private val file: os.Path =
+    productionDirectory() / "station.json"
+  /**
+   * Observable current station.
+   * None means "no station configured yet" or "failed to load".
+   */
+  val stationProperty: ObjectProperty[Station] =
+    ObjectProperty(load())
 
   def station: Station =
-    internalStationProvate
-  private def setStation(station: Station):Unit=
-    internalStationProvate = station
+    stationProperty.value
 
-//  load()
+  def setStation(newStation: Station): Unit =
+    stationProperty.value = newStation
+    persist()
 
+
+
+  // ---- persistence ----------------------------------------------------------
+
+  private def persist(): Unit =
+    val json = write(station, indent = 2)
+    os.write.over(file, json, createFolders = true)
+
+  private def load(): Station =
+    try {
+      val sJson = os.read(file)
+      read[Station](sJson)
+    }
+    catch
+      case e: Throwable =>
+        logger.warn(s"Failed to load station from $file: ${e.getMessage}")
+        Station("", "", "")
+
+/*
   def pane(): Pane =
     logger.info(s"Creating station form for $station")
     val myCaseForm = MyCaseForm[Station](station, newStation =>
@@ -47,36 +73,4 @@ class StationManager @Inject()( productionDirectory:DirectoryProvider, available
       setStation( newStation)
 //      save()
     )
-    myCaseForm.pane()
-/*
-
-  /** Save current _station to station.json. */
-  def save(): Unit =
-    try
-      // Ensure parent dir exists (in case you later change `file` to a nested path)
-      os.makeDir.all(file / os.up)
-      logger.trace("Saving station to {} station: {}", file, internalStationProvate)
-      val json: String = write(Station.toPersisted(internalStationProvate), indent = 2)
-      logger.trace("JSON: {}", json)
-      os.write.over(file, json)
-      logger.info(s"Saved station to $file")
-    catch
-      case t: Throwable =>
-        logger.error(s"Failed to save station to $file", t)
-
-  /** Load station.json (if present) into _station. Keeps default Station() if missing or invalid. */
-  def load(): Unit =
-    try
-      if os.exists(file) then
-        val json = os.read(file)
-        val persisted = read[Station.Persisted](json)
-        val st        = Station.fromPersisted(persisted)(using availableBandsStore)
-        setStation(st)
-        logger.info(s"Loaded station from $file")
-      else
-        logger.info(s"No station file at $file; using defaults")
-    catch
-      case t: Throwable =>
-        logger.warn(s"Failed to load station from $file; using defaults", t)
-        setStation(Station.defaultStation(using availableBandsStore))
-*/
+    myCaseForm.pane()*/

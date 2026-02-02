@@ -22,7 +22,7 @@ final class FdLogUi @Inject() (
 
   // QsoEntryPanel is a controller; its apply() builds and returns the Node
   private val qsoNode: Node =
-    qsoEntryPanel
+    qsoEntryPanel.node
 
   private val centerPane = new StackPane:
     children = List(qsoNode)

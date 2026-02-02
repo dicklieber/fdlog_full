@@ -15,6 +15,10 @@ Configuration:
         level: info
         additivity: true
 
+      - name: "fdswarm.fx.QsoEntryPanel"
+        level: trace
+        additivity: true
+
       - name: "fdswarm.StationManager"
         level: info
         additivity: true

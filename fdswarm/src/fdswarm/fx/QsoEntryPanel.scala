@@ -6,58 +6,53 @@ import scalafx.geometry.Insets
 import scalafx.scene.layout.GridPane
 import scalafx.Includes.*
 import com.typesafe.scalalogging.LazyLogging
-
+import fdswarm.StationManager
 import fdswarm.store.QsoStore
 import fdswarm.model.*
 import fdswarm.fx.bandmodes.SelectedBandModeStore
+import scalafx.scene.Node
 
 @Singleton
 class QsoEntryPanel @Inject()(
                                qsoStore: QsoStore,
-                               selectedBandModeStore: SelectedBandModeStore
-                             ) extends GridPane, LazyLogging:
+                               selectedBandModeStore: SelectedBandModeStore,
+                               stationManager: StationManager
+                             ) extends LazyLogging:
 
-  // ---- state -------------------------------------------------------------
+  val callSignField = UpperCase(new TextField())
+  val contestClassField = UpperCase(new TextField())
+  val sectionField = UpperCase(new TextField())
 
+  val node: Node =
+
+    val grid = new GridPane {
+
+      add(new Label("Their Callsign:"), 0, 0)
+      add(callSignField, 0, 1)
+
+      add(new Label("Received Class:"), 1, 0)
+      add(contestClassField, 1, 1)
+
+      add(new Label("Received Section:"), 2, 0)
+      add(sectionField, 2, 1)
+    }
+    new TitledPane() {
+      text = "QSO"
+      collapsible = false
+      content = grid
+    }
+  sectionField.onAction = _ =>
+    submit()
   private val bandMode = BandMode() // TODO: wire from SelectedBandModeStore
 
-  private val qsoMetadata =
+  // ---- controls ----------------------------------------------------------
+  private val qsoMetadata = //todo add a QsoMetadataStore
     QsoMetadata(
-      station = StationPersisted(
-        bandName = "20m",
-        mode     = "CW",
-        rig      = "",
-        antenna  = "",
-        operator = Callsign("")
-      ),
-      node    = "local",
+      station = stationManager.station,
+      node = "local",
       contest = Contest.WFD
     )
 
-  // ---- controls ----------------------------------------------------------
-
-  private val callSignField     = new TextField()
-  private val contestClassField = new TextField()
-  private val sectionField      = new TextField()
-
-  // ---- layout ------------------------------------------------------------
-
-  hgap = 8
-  vgap = 8
-  padding = Insets(10)
-
-  add(new Label("Call sign:"), 0, 0)
-  add(callSignField,           1, 0)
-
-  add(new Label("Class:"),     0, 1)
-  add(contestClassField,       1, 1)
-
-  add(new Label("Section:"),   0, 2)
-  add(sectionField,            1, 2)
-
-  // ---- behavior ----------------------------------------------------------
-
-  sectionField.onAction = _ => submit()
 
   private def submit(): Unit =
     logger.debug(

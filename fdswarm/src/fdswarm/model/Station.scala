@@ -17,7 +17,7 @@
 
 package fdswarm.model
 
-import fdswarm.fx.bands.{AvailableBandsManager, HamBand}
+import fdswarm.fx.bands.HamBand
 import fdswarm.fx.caseForm.ChoiceField
 import fdswarm.model.BandMode.*
 import upickle.default.*
@@ -29,65 +29,14 @@ import upickle.default.*
  * so JSON persistence should use Station.Persisted (below).
  */
 final case class Station(
-                          band:     ChoiceField[HamBand] ,
-                          modeName: Mode,
                           rig:      String,
                           antenna:  String,
                           operator: Callsign
-                        ):
-  def bandName: String =
-    band.value.bandName
+                        ) derives ReadWriter
+//
+//object Station:
+//
+//  import Callsign.given_Conversion_String_Callsign
+//  
+//  
 
-  val bandMode: BandMode =
-    BandMode(bandName, modeName)
-
-object Station:
-
-  import Callsign.given_Conversion_String_Callsign
-  
-  
-
-  /** JSON-friendly shape (no functions inside). */
-  final case class Persisted(
-                              bandName: String,
-                              modeName: Mode,
-                              rig:      String,
-                              antenna:  String,
-                              operator: Callsign
-                            ) derives ReadWriter
-
-  /** Convert runtime Station -> JSON-friendly Persisted. */
-  def toPersisted(s: Station): Persisted =
-    Persisted(
-      bandName = s.band.value.bandName,
-      modeName = s.modeName,
-      rig      = s.rig,
-      antenna  = s.antenna,
-      operator = s.operator
-    )
-
-/*  
-  def fromPersisted(p: Persisted)(using store: AvailableBandsManager): Station =
-    val selectedBand: HamBand =
-      val cb = store.hamBandComboBox(Some(p.bandName))
-      val b  = cb.value.value
-      if b != null then b else store.hamBandComboBox(None).value.value
-
-    Station(
-      band     = store.hamBandChoice(selectedBand),
-      modeName = p.modeName,
-      rig      = p.rig,
-      antenna  = p.antenna,
-      operator = p.operator
-    )
-
-  /** Convenient default Station (requires AvailableBandsStore so the ChoiceField can be built). */
-  def defaultStation(using store: AvailableBandsManager): Station =
-    val defaultBand = store.hamBandComboBox(Some("160m")).value.value
-    Station(
-      band     = store.hamBandChoice(defaultBand),
-      modeName = "CW",
-      rig      = "Rig 1",
-      antenna  = "Antenna 1",
-      operator = "WA9NNN"
-    )*/
