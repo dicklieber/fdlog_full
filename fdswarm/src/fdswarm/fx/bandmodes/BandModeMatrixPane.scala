@@ -228,9 +228,10 @@ final class BandModeMatrixPane @Inject() (
 
 
 case class ModeBandButton(band:Band, mode:Mode) extends Button(band):
-  graphic = new Region {
-    minWidth = 20
-    minHeight = 20
-  }
+  graphic = null
+  graphicTextGap = 0
+  padding = Insets(3, 7, 3, 7) // optional: tighten overall button padding
+
+
   val bandMode = BandMode(band, mode)
 //  onAction =
