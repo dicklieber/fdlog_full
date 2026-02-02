@@ -1,16 +1,33 @@
-package fdswarm.fx
+/*
+ * Copyright (c) 2026. Dick Lieber, WA9NNN
+ *
+ * This program is free software: you can redistribute it and/or modify 
+ * it under the terms of the GNU General Public License as published by 
+ * the Free Software Foundation, either version 3 of the License, or    
+ * (at your option) any later version.                                  
+ *                                                                      
+ * This program is distributed in the hope that it will be useful,      
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of       
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the        
+ * GNU General Public License for more details.                         
+ *                                                                      
+ * You should have received a copy of the GNU General Public License    
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
 
-import jakarta.inject.{Inject, Singleton}
-import scalafx.scene.control.*
-import scalafx.geometry.Insets
-import scalafx.scene.layout.GridPane
-import scalafx.Includes.*
+package fdswarm.fx.qso
+
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.StationManager
-import fdswarm.store.QsoStore
-import fdswarm.model.*
+import fdswarm.fx.UpperCase
 import fdswarm.fx.bandmodes.SelectedBandModeStore
+import fdswarm.model.*
+import fdswarm.store.QsoStore
+import jakarta.inject.{Inject, Singleton}
 import scalafx.scene.Node
+import scalafx.scene.control.*
+import scalafx.scene.layout.GridPane
 
 @Singleton
 class QsoEntryPanel @Inject()(

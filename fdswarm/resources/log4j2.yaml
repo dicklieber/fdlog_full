@@ -15,7 +15,7 @@ Configuration:
         level: info
         additivity: true
 
-      - name: "fdswarm.fx.QsoEntryPanel"
+      - name: "fdswarm.fx.qso.QsoEntryPanel"
         level: trace
         additivity: true
 

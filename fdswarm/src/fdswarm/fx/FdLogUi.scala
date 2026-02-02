@@ -1,6 +1,7 @@
 package fdswarm.fx
 
 import fdswarm.fx.bandmodes.BandsAndModesPane
+import fdswarm.fx.qso.{ContestEntry, QsoEntryPanel}
 import jakarta.inject.Inject
 import scalafx.application.Platform
 import scalafx.event.EventIncludes.*
@@ -12,7 +13,7 @@ import scalafx.stage.Stage
 
 
 final class FdLogUi @Inject() (
-                                qsoEntryPanel: QsoEntryPanel,
+                                contestEntry: ContestEntry,
                                 bandModeManagerPane: BandsAndModesPane
                               ):
 
@@ -22,7 +23,7 @@ final class FdLogUi @Inject() (
 
   // QsoEntryPanel is a controller; its apply() builds and returns the Node
   private val qsoNode: Node =
-    qsoEntryPanel.node
+    contestEntry.node
 
   private val centerPane = new StackPane:
     children = List(qsoNode)
