@@ -26,11 +26,12 @@ final class BandsAndModesPane @Inject()(
                                          bandCheckBoxPane: BandCheckBoxPane,
                                          modeCheckBoxPane: ModeCheckBoxPane,
                                          matrixPane: BandModeMatrixPane
-                                      ) extends BorderPane:
-  
-  top = bandCheckBoxPane
-  left = modeCheckBoxPane.pane
-  center = matrixPane
+                                      ) extends GridPane:
+
+  add(modeCheckBoxPane.node, 0, 1)
+  add(bandCheckBoxPane.node, 1, 0)
+  add(matrixPane.node, 1,1)
+
 /*
   private val modeSelected: Map[String, BooleanProperty] =
     val cur = store.currentBandMode.modes

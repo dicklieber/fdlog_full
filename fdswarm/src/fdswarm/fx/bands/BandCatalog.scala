@@ -6,8 +6,6 @@ import upickle.default.*
 
 @Singleton
 final class BandCatalog @Inject()(config: Config):
-
-  // IMPORTANT: define this before any vals that use it
   private val key = "fdswarm.hamBands"
 
   private val renderOpts =
@@ -20,4 +18,7 @@ final class BandCatalog @Inject()(config: Config):
   /** Decode JSON → Seq[HamBand] */
   val hamBands: Seq[HamBand] =
     read[Seq[HamBand]](config.getValue(key).render(renderOpts))
+
+
+
 

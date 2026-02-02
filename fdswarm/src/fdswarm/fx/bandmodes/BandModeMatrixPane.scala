@@ -8,6 +8,7 @@ import jakarta.inject.{Inject, Singleton}
 import javafx.event.{EventHandler, ActionEvent as JfxActionEvent}
 import scalafx.Includes.*
 import scalafx.geometry.{Insets, Pos}
+import scalafx.scene.Node
 import scalafx.scene.control.{Button, Label, TitledPane, ToggleButton, ToggleGroup}
 import scalafx.scene.layout.{GridPane, Pane, Priority, Region, VBox}
 
@@ -30,7 +31,7 @@ final class BandModeMatrixPane @Inject() (
                                            availableModesManager: AvailableModesManager,
                                            config: Config,
                                            selectedStore: SelectedBandModeStore
-                                         ) extends Pane with LazyLogging:
+                                         ) extends  LazyLogging:
 
 
   private val group = new ToggleGroup()
@@ -71,15 +72,19 @@ final class BandModeMatrixPane @Inject() (
 
   for
     (mode,row) <- availableModesManager.modes.zipWithIndex
+    _ = grid.addRow(row, new Label(mode))
     (band,col)<- availableBandsStore.bands.zipWithIndex
   do
     logger.info(s"Adding band $band to mode $mode")
-    grid.add(ModeBandButton(band,mode),col,row)
+    grid.add(ModeBandButton(band,mode),col+1,row)
 
 
-  new TitledPane():
-    content = grid
-    text = "Band & Mode"
+  val node:Node =
+    new TitledPane {
+      content = grid
+      collapsible = false
+      text = "Band & Mode"
+    }
   /*
 
   private def allBandsInOrder: Seq[String] =

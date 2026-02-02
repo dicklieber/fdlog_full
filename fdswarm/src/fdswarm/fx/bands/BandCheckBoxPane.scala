@@ -2,47 +2,59 @@ package fdswarm.fx.bands
 
 import fdswarm.model.BandMode.Band
 import jakarta.inject.{Inject, Singleton}
-import scalafx.Includes.*
-import scalafx.geometry.Insets
 import scalafx.scene.Node
-import scalafx.scene.control.{CheckBox, ScrollPane, Tooltip}
-import scalafx.scene.layout.{HBox, VBox}
+import scalafx.scene.control.{CheckBox, Label, TitledPane, Tooltip}
+import scalafx.scene.layout.GridPane
 
 @Singleton
 final class BandCheckBoxPane @Inject()(
                                         availableBandsManager: AvailableBandsManager,
                                         hamBandCatalog: BandCatalog
-                                      ) extends HBox:
+                                      ):
 
-  private val spacingPx = 6.0
-
-  // Build the checkboxes first (no self-reference while constructing)
-  private val checkBoxes: Seq[CheckBox] =
-    hamBandCatalog.hamBands.map { band =>
-      val cb = new CheckBox(band.bandName)
-
-      cb.tooltip = new Tooltip(
-        s"${band.bandClass}  ${band.startFrequencyHz}–${band.endFrequencyHz} Hz"
-      )
-
-      cb
+  val checkBoxes: Seq[BandCheckBox] =
+    hamBandCatalog.hamBands.map { hamBand =>
+      BandCheckBox(hamBand)
     }
-
-  private def saveSelected(): Unit =
-    val names: Set[Band] =
-      checkBoxes.iterator
-        .filter(_.selected.value)
-        .map(_.text.value: Band)
-        .toSet
-
-    availableBandsManager.save(names)
-
-  // Now wire listeners (after checkBoxes is fully initialized)
-  checkBoxes.foreach { cb =>
-    cb.selected.onChange { (_, _, _) =>
-      saveSelected()
-    }
+  private val grid = new GridPane {
+    hgap = 12.0
+    vgap = 6.0
   }
+  val node: Node =
+    new TitledPane {
+      content = grid
+      text = "Ham bands"
+      collapsible = false
+    }
+  private val byBandClass: Map[BandClass, Seq[BandCheckBox]] =
+    checkBoxes.groupBy(_.hamBand.bandClass)
 
-  // Layout
-  children = checkBoxes.map(_.asInstanceOf[Node])
+
+  for
+    (bandClass, row) <- BandClass.values.zipWithIndex
+    if byBandClass.contains(bandClass)
+    _ = grid.addRow(row, new Label(bandClass.toString))
+    (bandCheckBox, col) <- byBandClass(bandClass).zipWithIndex
+  do
+    grid.add(bandCheckBox, col + 1, row)
+
+  def setChecks(): Unit = checkBoxes
+    .foreach(bandCheckBox =>
+      bandCheckBox.selected.value =
+        availableBandsManager.bands.contains(bandCheckBox.bandName))
+  setChecks()//todo
+
+  private def checked: Seq[Band] =
+    checkBoxes.filter(_.selected.value).map(_.bandName)
+
+  case class BandCheckBox(hamBand: HamBand) extends CheckBox {
+    text = hamBand.bandName
+    selected = availableBandsManager.bands.contains(hamBand.bandName)
+    tooltip = new Tooltip(
+      s"${hamBand.bandClass}  ${hamBand.startFrequencyHz}–${hamBand.endFrequencyHz} Hz"
+    )
+    selected.onChange { (_, _, _) =>
+      availableBandsManager.save(checked)
+    }
+    val bandName: String = hamBand.bandName
+  }

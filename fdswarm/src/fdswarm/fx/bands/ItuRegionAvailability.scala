@@ -3,7 +3,7 @@ package fdswarm.fx.bands
 import upickle.default.*
 
 enum BandClass derives ReadWriter:
-  case HF, VHF, UHF, SHF, EHF, MF, LF, VLF
+  case LF, VLF, MF, HF, VHF, UHF, SHF, EHF
 
 enum ItuRegion derives ReadWriter:
   case ALL, R1, R2, R3

@@ -3,6 +3,7 @@ package fdswarm.fx.bands
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.model.BandMode.Band
 import jakarta.inject.{Inject, Singleton}
+import scalafx.geometry.Insets
 import scalafx.scene.Node
 import scalafx.scene.control.{CheckBox, TitledPane}
 import scalafx.scene.layout.{Pane, VBox}
@@ -45,9 +46,12 @@ final class ModeCheckBoxPane @Inject()(
 
 // Layout
 
-  val pane: Node =
+  val node: Node =
     new TitledPane() {
       text = "Modes"
       collapsible = false
-      content = VBox(checkBoxes *)
+      content = new VBox {
+        spacing = 12.0
+        children = checkBoxes
+      }
     }

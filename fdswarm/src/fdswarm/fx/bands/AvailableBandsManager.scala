@@ -21,8 +21,8 @@ final class AvailableBandsManager @Inject()(
                                            ):
 
   private val path: os.Path =
-    dirProvider() / "availableBands.json"
-  private var _current: Seq[Band] = Seq.empty
+    dirProvider() / "bands.json"
+  private var _current: Seq[Band] = loadFromDisk()
 
   def bands: Seq[Band] = _current
 
@@ -34,13 +34,10 @@ final class AvailableBandsManager @Inject()(
     val json = write(_current, indent = 2)
     os.write.over(path, json, createFolders = true)
 
-  private def loadFromDisk(): Set[Band] =
+  private def loadFromDisk(): Seq[Band] =
     try
       val json = os.read(path)
       read(json)
     catch
       case _: Throwable =>
-        Set("20m")
-
-
-final case class AvailableBands(bandNames: Set[String])
+        Seq("20m")

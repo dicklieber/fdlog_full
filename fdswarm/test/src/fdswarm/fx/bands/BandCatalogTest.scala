@@ -25,6 +25,6 @@ class BandCatalogTest extends FunSuite:
 
   test("happy path"):
     val hamBandCatalog = BandCatalog(ConfigFactory.load())
-    assertEquals(hamBandCatalog.all.size, 19)
+    assertEquals(hamBandCatalog.hamBands.size, 19)
 
 
