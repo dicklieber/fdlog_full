@@ -1,0 +1,28 @@
+.custom-radio .radio {
+    -fx-shape: "";
+    -fx-min-width: 0;
+    -fx-min-height: 0;
+    -fx-pref-width: 0;
+    -fx-pref-height: 0;
+    -fx-max-width: 0;
+    -fx-max-height: 0;
+}
+
+.custom-radio {
+    -fx-padding: 3 3 3 3;
+    -fx-graphic-text-gap: 0;
+}
+.custom-radio:selected {
+    -fx-background-color: lightblue;
+    -fx-border-color: blue; /* Outline color when selected */
+    -fx-border-width: 2; /* Outline thickness */
+    -fx-border-radius: 5; /* Rounded corners for outline */
+    /*-fx-padding: 5; !* Optional: Inner padding *!*/
+}
+
+.custom-radio:hover {
+    -fx-background-color: lightgray; /* Optional: Hover effect */
+    -fx-border-width: 2;
+    -fx-border-radius: 5;
+
+}

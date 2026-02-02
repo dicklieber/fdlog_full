@@ -40,7 +40,9 @@ final class FdLogUi @Inject() (
 
   def start(stage: Stage): Unit =
     stage.title = "FDLog"
-    stage.scene = new Scene(root, 1100, 800)
+    stage.scene = new Scene(root, 1100, 800) {
+      stylesheets = Seq(getClass.getResource("/styles/app.css").toExternalForm)
+    }
     stage.show()
 
   private def showPane(node: Node): Unit =
