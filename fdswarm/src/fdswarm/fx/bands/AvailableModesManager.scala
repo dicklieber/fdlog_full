@@ -1,43 +1,43 @@
 package fdswarm.fx.bands
 
 import fdswarm.io.DirectoryProvider
-import jakarta.inject.{Inject, Named, Provider, Singleton}
-import scalafx.collections.{ObservableBuffer, ObservableHashSet}
-import scalafx.scene.control.ComboBox
-import scalafx.scene.layout.Pane
-import scalafx.Includes.*
+import fdswarm.model.BandMode.Mode
+import jakarta.inject.{Inject, Singleton}
+import scalafx.collections.ObservableBuffer
+import javafx.collections.ListChangeListener
 import upickle.default.*
-import fdswarm.fx.caseForm.ChoiceField
-import fdswarm.model.BandMode.Band
 
-/**
- * User can select which bands are available for QSOs.
- *
- * @param dirProvider where files go.
- */
 @Singleton
 final class AvailableModesManager @Inject()(
                                              dirProvider: DirectoryProvider
                                            ):
   private val path: os.Path =
     dirProvider() / "modes.json"
-  private var _current: Set[Band] = loadFromDisk()
 
-  def save(availableBands: Iterable[Band]): Unit =
-    _current = availableBands.toSet
-    persistToDisk()
+  /** Single source of truth (ScalaFX-friendly) */
+  val modes: ObservableBuffer[Mode] =
+    ObservableBuffer.from(loadFromDisk())
 
-  def modes: Seq[Band] = _current.toSeq.sorted
+  // Persist automatically when the buffer changes (same pattern as AvailableBandsManager)
+  modes.delegate.addListener(
+    new ListChangeListener[Mode]:
+      override def onChanged(c: ListChangeListener.Change[_ <: Mode]): Unit =
+        persist()
+  )
 
-  private def persistToDisk(): Unit =
-    val json = write(_current, indent = 2)
+  /** Replace everything in the buffer from a Seq[Mode] */
+  def setModes(newModes: Seq[Mode]): Unit =
+    modes.setAll(newModes*)
+
+  // ---- persistence ------------------------------------------------------------
+
+  private def persist(): Unit =
+    val json = write(modes.toSeq, indent = 2)
     os.write.over(path, json, createFolders = true)
 
-  private def loadFromDisk(): Set[Band] =
+  private def loadFromDisk(): Seq[Mode] =
     try
-      val json = os.read(path)
-      read(json)
+      read[Seq[Mode]](os.read(path))
     catch
       case _: Throwable =>
-        Set("20m")
-
+        Seq("SSB")

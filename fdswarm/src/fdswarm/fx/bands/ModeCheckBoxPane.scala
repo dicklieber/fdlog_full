@@ -29,13 +29,13 @@ final class ModeCheckBoxPane @Inject()(
     }
 
   private def saveSelected(): Unit =
-    val names: Set[Band] =
+    val bands: Seq[Band] =
       checkBoxes.iterator
         .filter(_.selected.value)
         .map(_.text.value: Band)
-        .toSet
+        .toSeq
 
-    availableModesManager.save(names)
+    availableModesManager.modes.setAll(bands*)
 
 // Now wire listeners (after checkBoxes is fully initialized)
 //  checkBoxes.foreach { cb =>

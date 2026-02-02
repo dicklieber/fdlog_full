@@ -4,6 +4,9 @@ import com.typesafe.config.{Config, ConfigRenderOptions}
 import jakarta.inject.{Inject, Singleton}
 import upickle.default.*
 
+/**
+ * This is loaded from application.conf, defines all known radio bands.
+ */
 @Singleton
 final class BandCatalog @Inject()(config: Config):
   private val key = "fdswarm.hamBands"

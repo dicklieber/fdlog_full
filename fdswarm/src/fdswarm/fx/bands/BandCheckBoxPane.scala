@@ -54,7 +54,7 @@ final class BandCheckBoxPane @Inject()(
       s"${hamBand.bandClass}  ${hamBand.startFrequencyHz}–${hamBand.endFrequencyHz} Hz"
     )
     selected.onChange { (_, _, _) =>
-      availableBandsManager.save(checked)
+      availableBandsManager.bands.setAll(checked*)
     }
     val bandName: String = hamBand.bandName
   }

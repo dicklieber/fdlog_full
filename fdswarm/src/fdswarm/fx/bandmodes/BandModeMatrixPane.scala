@@ -30,31 +30,32 @@ final class BandModeMatrixPane @Inject() (
 
   private val tg = new ToggleGroup()
 
-  // (mode, band) -> button
-  private val buttonsByKey = scala.collection.mutable.Map.empty[(String, String), ToggleButton]
-  // BandMode -> (mode, band)
-  private val keyByBandMode = scala.collection.mutable.Map.empty[BandMode, (String, String)]
+  private val pane: TitledPane = new TitledPane {
+//    content = grid
+    collapsible = false
+    text = "Band & Mode"
+  }
+  buildGrid()
 
-  private val grid = new GridPane:
-    hgap = 3
-    vgap = 3
-//    alignment = Pos.TopLeft
+  // rebuild whenever bands change
+  availableBandsStore.bands.onChange {
+    buildGrid()
+  }
 
-  for
-    (mode,row) <- availableModesManager.modes.zipWithIndex
-    _ = grid.addRow(row, new Label(mode))
-    (band,col)<- availableBandsStore.bands.zipWithIndex
-  do
-    logger.trace(s"Adding band $band to mode $mode")
-    grid.add(ModeBandButton(band,mode),col+1,row)
+  def buildGrid():Unit=
+    val grid = new GridPane(3,3)
 
+    for
+      (mode,row) <- availableModesManager.modes.zipWithIndex
+      _ = grid.addRow(row, new Label(mode))
+      (band,col)<- availableBandsStore.bands.zipWithIndex
+    do
+      logger.trace(s"Adding band $band to mode $mode")
+      grid.add(ModeBandButton(band,mode),col+1,row)
+    pane.content = grid
 
   val node:Node =
-    new TitledPane {
-      content = grid
-      collapsible = false
-      text = "Band & Mode"
-    }
+    pane
 
 
   case class ModeBandButton(band:Band, mode:Mode) extends ToggleButton():
