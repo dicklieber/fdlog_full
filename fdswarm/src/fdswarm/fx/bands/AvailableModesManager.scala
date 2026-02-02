@@ -21,7 +21,7 @@ final class AvailableModesManager @Inject()(
   // Persist automatically when the buffer changes (same pattern as AvailableBandsManager)
   modes.delegate.addListener(
     new ListChangeListener[Mode]:
-      override def onChanged(c: ListChangeListener.Change[_ <: Mode]): Unit =
+      override def onChanged(c: ListChangeListener.Change[? <: Mode]): Unit =
         persist()
   )
 

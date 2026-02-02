@@ -27,31 +27,3 @@ object StationPersisted:
    */
   private def selectedHamBand(cf: ChoiceField[HamBand]): HamBand =
     cf.value
-
-  /** Convert UI Station -> persistable StationPersisted */
-  def fromStation(s: Station): StationPersisted =
-    StationPersisted(
-      bandName = selectedHamBand(s.band).bandName,
-      mode     = s.modeName,
-      rig      = s.rig,
-      antenna  = s.antenna,
-      operator = s.operator
-    )
-
-  /** Convert persistable StationPersisted -> UI Station.
-   *
-   * You MUST provide a function that can build the ChoiceField[HamBand] for the UI.
-   * Typically you already have something like `hamBandChoice(current: HamBand): ChoiceField[HamBand]`.
-   */
-  def toStation(
-                 p: StationPersisted,
-                 makeBandChoice: HamBand => ChoiceField[HamBand],
-                 lookupBand: String => HamBand
-               ): Station =
-    Station(
-      band     = makeBandChoice(lookupBand(p.bandName)),
-      modeName = p.mode,
-      rig      = p.rig,
-      antenna  = p.antenna,
-      operator = p.operator
-    )

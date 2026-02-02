@@ -7,7 +7,9 @@ import jakarta.inject.*
 import scala.concurrent.Future
 
 @Singleton
-class DupQsoDetector @Inject()(qsoStore:QsoStore, station: Station):
+class DupQsoDetector @Inject()(qsoStore:QsoStore):
 
   def apply(startOfCallsign: String): Seq[Qso] =
-    qsoStore.potentialDups(startOfCallsign, station.bandMode)
+//    qsoStore.qsoStorepotentialDups(startOfCallsign, station.bandMode)
+    Seq.empty
+    

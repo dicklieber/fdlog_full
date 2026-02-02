@@ -2,7 +2,7 @@ package fdswarm.fx.bandmodes
 
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager}
+import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager, HamBand}
 import fdswarm.model.BandMode.{Band, Mode}
 import jakarta.inject.{Inject, Singleton}
 import scalafx.scene.Node
@@ -31,14 +31,15 @@ final class BandModeMatrixPane @Inject() (
   private val tg = new ToggleGroup()
 
   private val pane: TitledPane = new TitledPane {
-//    content = grid
     collapsible = false
     text = "Band & Mode"
   }
   buildGrid()
 
-  // rebuild whenever bands change
   availableBandsStore.bands.onChange {
+    buildGrid()
+  }
+  availableModesManager.modes.onChange {
     buildGrid()
   }
 
@@ -51,14 +52,14 @@ final class BandModeMatrixPane @Inject() (
       (band,col)<- availableBandsStore.bands.zipWithIndex
     do
       logger.trace(s"Adding band $band to mode $mode")
-      grid.add(ModeBandButton(band,mode),col+1,row)
+      grid.add(ModeBandButton(band,mode, selectedStore.selected),col+1,row)
     pane.content = grid
 
   val node:Node =
     pane
 
 
-  case class ModeBandButton(band:Band, mode:Mode) extends ToggleButton():
+  case class ModeBandButton(band:Band, mode:Mode, selectedHamBand:BandMode) extends ToggleButton():
     val bandMode: BandMode = BandMode(band, mode)
     text = band
     graphic = null
@@ -69,3 +70,5 @@ final class BandModeMatrixPane @Inject() (
       if isSelected then
         selectedStore.save(bandMode)
     }
+    if selectedHamBand == bandMode then
+      selected.value = true

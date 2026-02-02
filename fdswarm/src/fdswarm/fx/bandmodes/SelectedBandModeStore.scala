@@ -2,7 +2,6 @@ package fdswarm.fx.bandmodes
 
 import jakarta.inject.{Inject, Singleton}
 import fdswarm.io.DirectoryProvider
-import scalafx.beans.property.ObjectProperty
 import upickle.default.*
 
 @Singleton
@@ -16,7 +15,7 @@ final class SelectedBandModeStore @Inject() (dirProvider: DirectoryProvider):
   private val path: os.Path =
     dir / "selected-bandmode.json"
 
-  private var _selected: BandMode = BandMode("??", "??")
+  private var _selected: BandMode = load()
 
 
   def selected:BandMode = _selected
@@ -25,11 +24,13 @@ final class SelectedBandModeStore @Inject() (dirProvider: DirectoryProvider):
     _selected = value
     persist()
 
-  private def load():Unit =
-      try
-        _selected = read[BandMode](os.read(path))
+  private def load():BandMode =
+      try {
+        val bandMode = read[BandMode](os.read(path))
+        bandMode
+      }
       catch case _: Throwable =>
-        _selected = BandMode("20m", "Ph")
+        BandMode("20m", "Ph")
 
   private def persist(): Unit =
     val json = write(_selected, indent = 2)
