@@ -1,18 +1,22 @@
 package fdswarm.fx.qso
 
+import fdswarm.model.Qso
 import fdswarm.store.QsoStore
 import jakarta.inject.*
 import scalafx.collections.ObservableBuffer
 import scalafx.scene.Node
 import scalafx.scene.control.*
 
-import java.time.{Instant, ZoneId}
 import java.time.format.DateTimeFormatter
+import java.time.{Instant, ZoneId}
 
-// Adjust import to your actual Qso type location
-import fdswarm.model.Qso
-@Singleton 
+/**
+ * Table of QSOs.
+ * @param qsoStore where qsos live [[QsoStore.qsoCollection]]
+ */
+@Singleton
 class QsoTablePane @Inject(qsoStore:QsoStore):
+  private val qsoCollection: ObservableBuffer[Qso] = qsoStore.qsoCollection
 
   private val timeFmt =
     DateTimeFormatter.ofPattern("HH:mm:ss")
@@ -25,8 +29,8 @@ class QsoTablePane @Inject(qsoStore:QsoStore):
     // show kHz with 1 decimal if you like; tweak as desired
     f"${hz.toDouble / 1000.0}%.1f kHz"
 
-  private val table = new TableView[Qso](qsoStore.qsoCollection):
-    columnResizePolicy = TableView.ConstrainedResizePolicy
+  private val table = new TableView[Qso](qsoCollection):
+    columnResizePolicy = javafx.scene.control.TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN
     placeholder = new Label("No QSOs yet")
 
   private def col[S](title: String, value: Qso => S): TableColumn[Qso, S] =
@@ -43,7 +47,7 @@ class QsoTablePane @Inject(qsoStore:QsoStore):
   private val opCol = col[String]("Op", _.qsoMetadata.station.operator.value)
 
   table.columns ++= Seq(
-    timeCol, bandCol, modeCol, theirCallCol,  rcvdCol, opCol
+    timeCol, theirCallCol, bandCol, modeCol,  rcvdCol, opCol
   )
 
   // Optional: make “Their” callsign stand out a bit (still text-only)
@@ -60,10 +64,15 @@ class QsoTablePane @Inject(qsoStore:QsoStore):
 */
 
 
-//  private val countLabel = new Label:
-//    text <== scalafx.beans.binding.Bindings.createStringBinding(
-//      () => s"${qsoCollection.size} QSOs",
-//      qsoCollection
-//    )
+  private val countLabel = new Label:
+    text <== scalafx.beans.binding.Bindings.createStringBinding(
+      () => s"${qsoCollection.size} QSOs",
+      qsoCollection
+    )
 
-  val node: Node = table
+  val node: Node = new TitledPane() {
+//    text = "QSOs"
+    collapsible = false
+    graphic = countLabel
+    content = table
+  }
