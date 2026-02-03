@@ -25,13 +25,11 @@ import upickle.default.*
 /**
  * Details about this station.
  *
- * NOTE: Station is now a UI-friendly model (has a ChoiceField),
- * so JSON persistence should use Station.Persisted (below).
  */
 final case class Station(
-                          rig:      String,
-                          antenna:  String,
-                          operator: Callsign
+                          rig:      String = "",
+                          antenna:  String = "",
+                          operator: Callsign = Callsign(""),
                         ) derives ReadWriter
 //
 //object Station:

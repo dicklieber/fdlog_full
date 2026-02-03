@@ -1,7 +1,8 @@
 package fdswarm.fx
 
 import fdswarm.fx.bandmodes.BandsAndModesPane
-import fdswarm.fx.qso.{ContestEntry, QsoEntryPanel}
+import fdswarm.fx.qso.ContestEntry
+import fdswarm.fx.station.StationEditor
 import jakarta.inject.Inject
 import scalafx.application.Platform
 import scalafx.event.EventIncludes.*
@@ -9,24 +10,32 @@ import scalafx.scene.Scene
 import scalafx.scene.Node
 import scalafx.scene.control.*
 import scalafx.scene.layout.*
-import scalafx.stage.Stage
-
+import scalafx.stage.{Stage, Window}
 
 final class FdLogUi @Inject() (
                                 contestEntry: ContestEntry,
-                                bandModeManagerPane: BandsAndModesPane
+                                bandModeManagerPane: BandsAndModesPane,
+                                stationEditor: StationEditor
                               ):
 
-  // BandModeManagerPane extends BorderPane => it is already a Node
   private val bandModeNode: Node =
     bandModeManagerPane
 
-  // QsoEntryPanel is a controller; its apply() builds and returns the Node
   private val qsoNode: Node =
     contestEntry.node
 
   private val centerPane = new StackPane:
     children = List(qsoNode)
+
+  private var ownerWindow: Window | Null = null
+
+  private val stationMenuItem: MenuItem =
+    new MenuItem("Station"):
+      disable = true
+      onAction = _ =>
+        ownerWindow match
+          case w: Window => stationEditor.show(w)
+          case _         => ()
 
   private val menuBar = new MenuBar:
     menus = Seq(
@@ -40,6 +49,9 @@ final class FdLogUi @Inject() (
     center = centerPane
 
   def start(stage: Stage): Unit =
+    ownerWindow = stage
+    stationMenuItem.disable = false
+
     stage.title = "FDLog"
     stage.scene = new Scene(root, 1100, 800) {
       stylesheets = Seq(getClass.getResource("/styles/app.css").toExternalForm)
@@ -48,8 +60,6 @@ final class FdLogUi @Inject() (
 
   private def showPane(node: Node): Unit =
     centerPane.children.setAll(node)
-
-  // ---------------- menus ----------------
 
   private def fileMenu: Menu =
     new Menu("File"):
@@ -69,5 +79,6 @@ final class FdLogUi @Inject() (
     new Menu("Config"):
       items = Seq(
         new MenuItem("Band / Mode Manager"):
-          onAction = _ => showPane(bandModeNode)
+          onAction = _ => showPane(bandModeNode),
+          stationMenuItem
       )
