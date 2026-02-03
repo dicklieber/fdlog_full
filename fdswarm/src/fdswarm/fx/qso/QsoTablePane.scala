@@ -19,7 +19,7 @@ class QsoTablePane @Inject(qsoStore:QsoStore):
   private val qsoCollection: ObservableBuffer[Qso] = qsoStore.qsoCollection
 
   private val timeFmt =
-    DateTimeFormatter.ofPattern("HH:mm:ss")
+    DateTimeFormatter.ofPattern("MMM dd, h:mm a")
       .withZone(ZoneId.systemDefault())
 
   private def fmtInstant(i: Instant): String =
