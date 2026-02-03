@@ -28,32 +28,43 @@ import scalafx.collections.ObservableBuffer
 import upickle.default.*
 
 import scala.collection.concurrent.TrieMap
+import scala.util.Using
 
 @Singleton
-class QsoStore @Inject()(directoryProvider:DirectoryProvider) extends LazyLogging:
+class QsoStore @Inject()(directoryProvider: DirectoryProvider) extends LazyLogging:
+  val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()
   private val journalFile = directoryProvider() / "qsosJournal.json"
   private val map: TrieMap[Id, Qso] = new TrieMap
-  val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()
-  
+
   def size: Int =
     map.size
 
-  def load(qsos: Iterator[Qso]): Unit =
-    qsos.foreach(qso => map.put(qso.uuid, qso))
+  if os.exists(journalFile) then
+    os.read.lines(journalFile)
+      .iterator
+      .map(_.trim)
+      .filter(_.nonEmpty)
+      .foreach { line =>
+        val qso = read[Qso](line)
+        map.put(qso.uuid, qso)
+        qsoCollection.add(qso)
+      }
 
   def add(qso: Qso): Unit =
     val uuid = qso.uuid
     val maybeQso = map.putIfAbsent(uuid, qso)
-    writeToJournal(qso)
+    os.write.append(journalFile, write(qso) + "\n", createFolders = true)
     qsoCollection.add(qso)
     maybeQso.foreach(was =>
       logger.error(s"Was already a qso for uuid: $uuid $qso")
     )
-  def potentialDups(startOfCallsign:String, bandmode: BandMode):Seq[Qso]=
-    map.filter(kv => 
-      kv._2.callSign.startsWith(startOfCallsign) && kv._2.bandMode == bandmode)
+
+  def potentialDups(startOfCallsign: String, bandmode: BandMode): Seq[Qso] =
+    map.filter(kv =>
+        kv._2.callSign.startsWith(startOfCallsign) && kv._2.bandMode == bandmode)
       .values
       .toSeq
+
   /**
    *
    * @return uuids for all qso, sorted by stamp.
@@ -78,6 +89,3 @@ class QsoStore @Inject()(directoryProvider:DirectoryProvider) extends LazyLoggin
         logger.trace("Need: {}", id)
         Seq(id)
     ).toSeq
-
-  def writeToJournal(qso: Qso):Unit=
-    os.write.append( journalFile,  write(qso) + "\n", createFolders = true)
