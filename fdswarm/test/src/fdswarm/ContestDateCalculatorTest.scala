@@ -18,11 +18,11 @@
 
 package fdswarm
 
+import fdswarm.fx.contest.Contest
 import munit.FunSuite
+
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
 import java.time.DayOfWeek
-
-import fdswarm.model.Contest
 
 final class ContestDateCalculatorTest extends FunSuite:
 

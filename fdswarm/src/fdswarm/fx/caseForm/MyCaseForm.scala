@@ -3,12 +3,14 @@ package fdswarm.fx.caseForm
 import fdswarm.fx.InputHelper.*
 import fdswarm.model.Callsign
 import javafx.event.{ActionEvent as JfxActionEvent, EventHandler as JfxEventHandler}
+import scalafx.Includes.*
 import scalafx.collections.ObservableBuffer
 import scalafx.geometry.Insets
+import scalafx.scene.Node
 import scalafx.scene.control.*
-import scalafx.scene.layout.{GridPane, Pane, VBox}
+import scalafx.scene.layout.{GridPane, HBox, Pane, VBox}
 
-import java.time.Instant
+import java.time.{Instant, LocalTime, ZoneId, ZonedDateTime}
 import scala.deriving.Mirror
 
 class MyCaseForm[T <: Product](initial: T, onSave: T => Unit)(using m: Mirror.ProductOf[T]):
@@ -42,10 +44,19 @@ class MyCaseForm[T <: Product](initial: T, onSave: T => Unit)(using m: Mirror.Pr
     for
       i <- 0 until initial.productArity
       fieldValue = initial.productElement(i)
-      if !fieldValue.isInstanceOf[Instant] // keep Instants as-is
+      if !fieldValue.isInstanceOf[Instant] && !fieldValue.isInstanceOf[fdswarm.ContestDates] // keep Instants and ContestDates as-is
     yield
-      val (control, getter): (Control, () => Any) =
+      val (control, getter): (Node, () => Any) =
         fieldValue match
+          case zdt: ZonedDateTime =>
+            val datePicker = new DatePicker(zdt.toLocalDate)
+            val hourSpinner = new Spinner[Int](0, 23, zdt.getHour)
+            hourSpinner.prefWidth = 60
+            val minSpinner = new Spinner[Int](0, 59, zdt.getMinute)
+            minSpinner.prefWidth = 60
+            val hb = new HBox(5, datePicker, new Label("H:"), hourSpinner, new Label("M:"), minSpinner)
+            (hb, () => ZonedDateTime.of(datePicker.value.value, LocalTime.of(hourSpinner.value.value, minSpinner.value.value), zdt.getZone))
+
           // ---- Provided-choice support (e.g. HamBand from AvailableBandsStore) ----
           case cf: ChoiceField[?] =>
             val cf0   = cf.asInstanceOf[ChoiceField[AnyRef]]
@@ -137,6 +148,8 @@ class MyCaseForm[T <: Product](initial: T, onSave: T => Unit)(using m: Mirror.Pr
       initial.productElement(i) match
         case inst: Instant =>
           values(i) = inst // keep original Instants
+        case cd: fdswarm.ContestDates =>
+          values(i) = cd
         case _ =>
           val name  = initial.productElementName(i)
           val field = fields.find(_.name == name).get
@@ -146,7 +159,7 @@ class MyCaseForm[T <: Product](initial: T, onSave: T => Unit)(using m: Mirror.Pr
 
 final case class Field[A](
                            name: String,
-                           control: Control,
+                           control: Node,
                            errorLabel: Label,
                            getValue: () => A
                          )

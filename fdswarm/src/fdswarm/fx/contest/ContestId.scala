@@ -16,26 +16,25 @@
  *
  */
 
-package fdswarm.fx.qso
+package fdswarm.fx.contest
 
-import com.google.inject.Inject
-import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.bandmodes.BandModeMatrixPane
-import fdswarm.fx.contest.ContestId
-import jakarta.inject.Singleton
-import scalafx.scene.Node
-import scalafx.scene.layout.VBox
+import fdswarm.ContestDates
+import upickle.default.*
+import fdswarm.util.JavaTimePickle.given_ReadWriter_ZonedDateTime
 
-@Singleton
-class ContestEntry @Inject() (qsoEntryPanel:QsoEntryPanel,
-                              qsoTablePane: QsoTablePane,
-                              bandModeMatrixPane: BandModeMatrixPane) extends LazyLogging:
+import java.time.{LocalDate, LocalDateTime, ZonedDateTime}
+case class ContestId(content:Contest, year:Int) derives ReadWriter
 
-  def node:Node =
-    new VBox {
-      children = Seq(
-        qsoTablePane.node,
-        qsoEntryPanel.node,
-        bandModeMatrixPane.node)
+enum Contest derives ReadWriter:
+  case WFD, ARRL
 
-    }
+/**
+ *
+ * @param contentName usually WFD or ARRL
+ * @param classChars e.g. "HIOM" (for WFD) or "ACBDE" etc. (for ARRL)
+ * @param localDate
+ */
+case class ContestDetail(contentName:String,
+                         classChars:String,
+                         start:ZonedDateTime,
+                         end:ZonedDateTime) derives ReadWriter

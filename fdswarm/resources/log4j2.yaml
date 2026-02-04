@@ -31,6 +31,10 @@ Configuration:
         level: info
         additivity: true
 
+      - name: "fdswarm.fx.bandmodes.BandModeMatrixPane"
+        level: trace
+        additivity: true
+
     Root:
       level: info
       AppenderRef:

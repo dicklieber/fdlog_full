@@ -20,6 +20,7 @@
 package fdswarm.model
 
 import com.organization.BuildInfo
+import fdswarm.fx.contest.Contest
 import upickle.default.*
 import upickle.implicits.*
 

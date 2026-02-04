@@ -22,6 +22,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.StationManager
 import fdswarm.fx.UpperCase
 import fdswarm.fx.bandmodes.SelectedBandModeStore
+import fdswarm.fx.contest.Contest
 import fdswarm.model.*
 import fdswarm.store.QsoStore
 import jakarta.inject.{Inject, Singleton}

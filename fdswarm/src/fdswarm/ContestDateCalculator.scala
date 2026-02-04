@@ -1,7 +1,7 @@
 package fdswarm
 
+import fdswarm.fx.contest.Contest
 import java.time.*
-import fdswarm.model.Contest
 import upickle.default.*
 import fdswarm.util.JavaTimePickle.given
 

@@ -1,6 +1,7 @@
 package fdswarm.fx
 
 import fdswarm.fx.bandmodes.BandsAndModesPane
+import fdswarm.fx.contest.ContestManager
 import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.station.StationEditor
 import jakarta.inject.Inject
@@ -15,7 +16,8 @@ import scalafx.stage.{Stage, Window}
 final class FdLogUi @Inject() (
                                 contestEntry: ContestEntry,
                                 bandModeManagerPane: BandsAndModesPane,
-                                stationEditor: StationEditor
+                                stationEditor: StationEditor,
+                                contestManager: ContestManager,
                               ):
 
   private val bandModeNode: Node =
@@ -27,7 +29,15 @@ final class FdLogUi @Inject() (
   private val centerPane = new StackPane:
     children = List(qsoNode)
 
-  private var ownerWindow: Window | Null = null
+  private var ownerWindow: Window = null.asInstanceOf[Window]
+
+  private val contestMenuItem: MenuItem =
+    new MenuItem("Contest"):
+      disable = true
+      onAction = _ =>
+        ownerWindow match
+          case w: Window => contestManager.show(w)
+          case _         => ()
 
   private val stationMenuItem: MenuItem =
     new MenuItem("Station"):
@@ -51,6 +61,7 @@ final class FdLogUi @Inject() (
   def start(stage: Stage): Unit =
     ownerWindow = stage
     stationMenuItem.disable = false
+    contestMenuItem.disable = false
 
     stage.title = "FDLog"
     stage.scene = new Scene(root, 1100, 800) {
@@ -78,7 +89,9 @@ final class FdLogUi @Inject() (
   private def configMenu: Menu =
     new Menu("Config"):
       items = Seq(
-        new MenuItem("Band / Mode Manager"):
-          onAction = _ => showPane(bandModeNode),
-          stationMenuItem
+        new MenuItem("Band / Mode Manager") {
+          onAction = _ => showPane(bandModeNode)
+        },
+        stationMenuItem,
+        contestMenuItem
       )

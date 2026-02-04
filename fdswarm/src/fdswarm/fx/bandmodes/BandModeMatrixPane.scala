@@ -21,12 +21,7 @@ import scalafx.scene.layout.GridPane
  * - If there is no persisted BandMode, the top-left cell is selected (or the first enabled one if available)
  */
 @Singleton
-final class BandModeMatrixPane @Inject() (
-                                           availableBandsStore: AvailableBandsManager,
-                                           availableModesManager: AvailableModesManager,
-                                           config: Config,
-                                           selectedStore: SelectedBandModeStore
-                                         ) extends  LazyLogging:
+final class BandModeMatrixPane @Inject()(availableBandsStore: AvailableBandsManager, availableModesManager: AvailableModesManager, selectedStore: SelectedBandModeStore) extends  LazyLogging:
 
   private val tg = new ToggleGroup()
 
@@ -51,7 +46,7 @@ final class BandModeMatrixPane @Inject() (
       _ = grid.addRow(row, new Label(mode))
       (band,col)<- availableBandsStore.bands.zipWithIndex
     do
-      logger.trace(s"Adding band $band to mode $mode")
+      logger.trace(s"Adding band $band and mode $mode cell to grid.")
       grid.add(ModeBandButton(band,mode, selectedStore.selected),col+1,row)
     pane.content = grid
 

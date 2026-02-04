@@ -18,7 +18,7 @@
 
 package fdswarm.store
 
-import fdswarm.model.Contest.WFD
+import fdswarm.fx.contest.Contest.WFD
 import fdswarm.model.*
 import jakarta.inject.*
 
