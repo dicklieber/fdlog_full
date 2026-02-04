@@ -21,7 +21,6 @@ package fdswarm.fx
 
 import _root_.scalafx.beans.property.StringProperty
 import _root_.scalafx.scene.control.TextInputControl
-import fdswarm.model.Sections
 
 import scala.util.matching.Regex
 
@@ -29,10 +28,11 @@ import scala.util.matching.Regex
 object ContestSectionValidator extends FieldValidator :
 
   def valid(value: String): Option[String] = 
-    if  Sections.byCode(value).isEmpty then //todo what is logic here?
-      None
-    else
-      Option(errMessage)
+//    if  Sections.byCode(value).isEmpty then //todo what is logic here?
+//      None
+//    else
+//      Option(errMessage)
+    throw new NotImplementedError("") //todo
 
   override def errMessage = "ARRL Section"
 

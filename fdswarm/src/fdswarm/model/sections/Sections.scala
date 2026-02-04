@@ -16,20 +16,9 @@
  *
  */
 
-package fdswarm.model
-import fdswarm.ContestDates
-import upickle.default.*
+package fdswarm.model.sections
 
-import java.time.LocalDate
-case class ContestId(content:Contest, year:Int) derives ReadWriter
-
-enum Contest derives ReadWriter:
-  case WFD, ARRL
-
-/**
- *
- * @param contentName usually WFD or ARRL
- * @param classChars e.g. HIOM (for WFD) or ACBDEN (for ARRL)
- * @param localDate
- */
-case class ContestDetail(contentName:String, classChars:String, contestDates: ContestDates) derives ReadWriter
+final case class Section(
+                          code: String,
+                          name: String
+                        )

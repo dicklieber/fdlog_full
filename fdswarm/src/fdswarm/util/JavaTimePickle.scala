@@ -42,6 +42,12 @@ object JavaTimePickle:
       LocalDateTime.parse
     )
 
+  given ReadWriter[ZonedDateTime] = readwriter[String]
+    .bimap[ZonedDateTime](
+      _.format(DateTimeFormatter.ISO_ZONED_DATE_TIME),
+      ZonedDateTime.parse
+    )
+
   private def formatter = new DateTimeFormatterBuilder()
     .appendInstant(2) // Limit fractional digits to 2 on write.
     .toFormatter()
