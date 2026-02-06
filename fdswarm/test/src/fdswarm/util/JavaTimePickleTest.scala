@@ -16,16 +16,26 @@
  *
  */
 
-package fdswarm.fx.bandmodes
+package fdswarm.util
 
-import fdswarm.model.BandMode.{Band, Mode}
+import munit.FunSuite
 import upickle.default.*
+import java.time.LocalDateTime
+import JavaTimePickle.given
 
-/** A single (band, mode) pair.
-  *
-  * This is used for the "currently selected" cell in the Mode × Band matrix.
-  */
-final case class BandMode(
-  band: Band,
-  mode: Mode
-) derives ReadWriter
+class JavaTimePickleTest extends FunSuite:
+  test("LocalDateTime ReadWriter"):
+    val ldt = LocalDateTime.of(2026, 2, 4, 7, 42, 0)
+    val json = write(ldt)
+    assertEquals(json, """"2026-02-04T07:42:00"""")
+    val back = read[LocalDateTime](json)
+    assertEquals(back, ldt)
+
+  test("ZonedDateTime ReadWriter"):
+    import java.time.ZonedDateTime
+    import java.time.ZoneOffset
+    val zdt = ZonedDateTime.of(2026, 2, 4, 7, 42, 0, 0, ZoneOffset.UTC)
+    val json = write(zdt)
+    assertEquals(json, """"2026-02-04T07:42:00Z"""")
+    val back = read[ZonedDateTime](json)
+    assertEquals(back, zdt)

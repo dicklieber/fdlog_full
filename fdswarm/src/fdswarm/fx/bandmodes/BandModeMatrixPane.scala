@@ -3,6 +3,7 @@ package fdswarm.fx.bandmodes
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager, HamBand}
+import fdswarm.model.BandMode
 import fdswarm.model.BandMode.{Band, Mode}
 import jakarta.inject.{Inject, Singleton}
 import scalafx.scene.Node
@@ -20,8 +21,9 @@ import scalafx.scene.layout.GridPane
  * - Cells are disabled when the BandModeStore's enabled-matrix says that pair is illegal
  * - If there is no persisted BandMode, the top-left cell is selected (or the first enabled one if available)
  */
-@Singleton
-final class BandModeMatrixPane @Inject()(availableBandsStore: AvailableBandsManager, availableModesManager: AvailableModesManager, selectedStore: SelectedBandModeStore) extends  LazyLogging:
+final class BandModeMatrixPane @Inject()(availableBandsStore: AvailableBandsManager,
+                                         availableModesManager: AvailableModesManager,
+                                         selectedStore: SelectedBandModeStore) extends  LazyLogging:
 
   private val tg = new ToggleGroup()
 
@@ -47,7 +49,7 @@ final class BandModeMatrixPane @Inject()(availableBandsStore: AvailableBandsMana
       (band,col)<- availableBandsStore.bands.zipWithIndex
     do
       logger.trace(s"Adding band $band and mode $mode cell to grid.")
-      grid.add(ModeBandButton(band,mode, selectedStore.selected),col+1,row)
+      grid.add(ModeBandButton(band,mode, selectedStore.selected.value),col+1,row)
     pane.content = grid
 
   val node:Node =

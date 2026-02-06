@@ -21,10 +21,10 @@ package fdswarm.fx.qso
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.StationManager
 import fdswarm.fx.UpperCase
-import fdswarm.fx.bandmodes.SelectedBandModeStore
 import fdswarm.fx.contest.Contest
 import fdswarm.model.*
 import fdswarm.store.QsoStore
+import fdswarm.fx.bandmodes.SelectedBandModeStore
 import jakarta.inject.{Inject, Singleton}
 import scalafx.scene.Node
 import scalafx.scene.control.*
@@ -61,7 +61,6 @@ class QsoEntryPanel @Inject()(
     }
   sectionField.onAction = _ =>
     submit()
-  private val bandMode = BandMode() // TODO: wire from SelectedBandModeStore
 
   // ---- controls ----------------------------------------------------------
   private val qsoMetadata = //todo add a QsoMetadataStore
@@ -83,7 +82,7 @@ class QsoEntryPanel @Inject()(
       callSignField.text.value,
       contestClassField.text.value,
       sectionField.text.value,
-      bandMode,
+      selectedBandModeStore.selected.value,
       qsoMetadata
     )
 

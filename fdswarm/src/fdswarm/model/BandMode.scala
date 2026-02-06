@@ -24,9 +24,9 @@ import BandMode.*
 /**
  * Allows storng band and mode in a compact why in a [[Qso]]
  */
-case class BandMode(bandName: Band = "20m", modeName: Mode = "PH") derives ReadWriter:
+case class BandMode(band: Band = "20m", mode: Mode = "PH") derives ReadWriter:
   def cabMode: Band =
-    modeName match
+    mode match
       case "USB" => "PH"
       case "LSB" => "PH"
       case "SSB" => "PH"
@@ -35,7 +35,7 @@ case class BandMode(bandName: Band = "20m", modeName: Mode = "PH") derives ReadW
       case _ => "DI"
 
   override def toString: String =
-    s"$bandName $modeName"
+    s"$band $mode"
 
 
 object BandMode:
@@ -71,8 +71,8 @@ object BandMode:
 
   def apply(s: String): BandMode =
     s match
-      case Parse(bandName, modeName) =>
-        new BandMode(bandName, modeName)
+      case Parse(band, mode) =>
+        new BandMode(band, mode)
       case _ => throw new IllegalArgumentException(s"Can't parse $s")
 
   def bandToFreq(band: String): String =

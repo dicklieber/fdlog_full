@@ -40,8 +40,8 @@ class QsoTablePane @Inject(qsoStore:QsoStore):
   // --- columns ---------------------------------------------------------------
 
   private val timeCol = col[String]("Time", q => fmtInstant(q.stamp))
-  private val bandCol = col[String]("Band", _.bandMode.bandName)
-  private val modeCol = col[String]("Mode", _.bandMode.modeName)
+  private val bandCol = col[String]("Band", _.bandMode.band)
+  private val modeCol = col[String]("Mode", _.bandMode.mode)
   private val theirCallCol = col[String]("Their Call", _.callSign.value)
   private val rcvdCol   = col[String]("Rcvd", q => s"${q.contestClass} ${q.section}".trim)
   private val opCol = col[String]("Op", _.qsoMetadata.station.operator.value)

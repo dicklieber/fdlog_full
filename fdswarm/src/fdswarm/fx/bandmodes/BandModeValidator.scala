@@ -1,5 +1,6 @@
 package fdswarm.fx.bandmodes
 
+import fdswarm.model.BandMode
 import jakarta.inject.{Inject, Singleton}
 
 /** Simple validation helper for user-chosen band/mode pairs. */
