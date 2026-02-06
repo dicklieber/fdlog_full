@@ -20,7 +20,7 @@ package fdswarm.fx.qso
 
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.StationManager
-import fdswarm.fx.UpperCase
+import fdswarm.fx.{GridUtils, UpperCase}
 import fdswarm.fx.contest.Contest
 import fdswarm.model.*
 import fdswarm.store.QsoStore
@@ -42,12 +42,8 @@ class QsoEntryPanel @Inject()(
   private val contestClassField = UpperCase(new TextField())
   private val sectionField = UpperCase(new TextField())
 
-  def sectionFieldProperty: scalafx.beans.property.StringProperty = sectionField.text
-
   val node: Node =
-
     val grid = new GridPane {
-
       add(new Label("Their Callsign:"), 0, 0)
       add(callSignField, 0, 1)
 
@@ -57,14 +53,7 @@ class QsoEntryPanel @Inject()(
       add(new Label("Received Section:"), 2, 0)
       add(sectionField, 2, 1)
     }
-    new TitledPane() {
-      text = "QSO"
-      collapsible = false
-      content = grid
-    }
-  sectionField.onAction = _ =>
-    submit()
-
+    GridUtils.fieldSet("QSO", grid)
   // ---- controls ----------------------------------------------------------
   private val qsoMetadata = //todo add a QsoMetadataStore
     QsoMetadata(
@@ -72,7 +61,10 @@ class QsoEntryPanel @Inject()(
       node = "local",
       contest = Contest.WFD
     )
+  sectionField.onAction = _ =>
+    submit()
 
+  def sectionFieldProperty: scalafx.beans.property.StringProperty = sectionField.text
 
   private def submit(): Unit =
     logger.debug(
