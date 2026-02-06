@@ -25,28 +25,33 @@ import jakarta.inject.Inject
 import scalafx.geometry.Insets
 import scalafx.scene.Node
 import scalafx.scene.control.Label
-import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority, Region}
+import scalafx.scene.layout.{HBox, Priority, Region, VBox}
 
 class SectionPanel @Inject()(sectionsProvider: SectionsProvider, qsoEntryPanel: QsoEntryPanel) extends LazyLogging:
-  val gridPane = new GridPane():
-    hgap = 5
-    vgap = 5
+  val mainVBox = new VBox():
+    spacing = 10
     padding = Insets(5)
-    columnConstraints = Seq(
-      new ColumnConstraints() { hgrow = Priority.Never },
-      new ColumnConstraints() { hgrow = Priority.Always }
-    )
 
   for
     case (sectionGroup, row) <- sectionsProvider.sectionGroups.zipWithIndex
   do
     val nameLabel = new Label(sectionGroup.name):
       minWidth = Region.USE_PREF_SIZE
-    gridPane.add(nameLabel, 0, row)
+      padding = Insets(0, 10, 0, 0)
+      style = "-fx-font-weight: bold;"
+
     sectionGroup.sections.foreach(_.onSelect(qsoEntryPanel.sectionFieldProperty))
     val groupGrid = GridUtils.toGrid(sectionGroup.sections, 10)
     groupGrid.maxWidth = Double.MaxValue
-    gridPane.add(groupGrid, 1, row)
+    HBox.setHgrow(groupGrid, Priority.Always)
 
-  val node: Node = GridUtils.fieldSet("Sections", gridPane)
+    val rowContainer = new HBox():
+      children = Seq(nameLabel, groupGrid)
+      padding = Insets(5)
+      style = "-fx-background-color: #f4f4f4; -fx-background-radius: 5; -fx-border-color: #cccccc; -fx-border-radius: 5; -fx-border-width: 1;"
+      alignment = scalafx.geometry.Pos.CenterLeft
+
+    mainVBox.children.add(rowContainer)
+
+  val node: Node = GridUtils.fieldSet("Sections", mainVBox)
 
