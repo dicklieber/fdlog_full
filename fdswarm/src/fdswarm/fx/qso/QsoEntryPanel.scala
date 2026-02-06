@@ -20,13 +20,14 @@ package fdswarm.fx.qso
 
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.StationManager
-import fdswarm.fx.{GridUtils, UpperCase}
+import fdswarm.fx.{CallSignField, GridUtils, UpperCase}
 import fdswarm.fx.contest.Contest
 import fdswarm.model.*
 import fdswarm.store.QsoStore
 import fdswarm.fx.bandmodes.SelectedBandModeStore
 import fdswarm.fx.sections.SectionPanel
 import jakarta.inject.{Inject, Singleton}
+import scalafx.application.Platform
 import scalafx.scene.Node
 import scalafx.scene.control.*
 import scalafx.scene.layout.GridPane
@@ -35,17 +36,27 @@ import scalafx.scene.layout.GridPane
 class QsoEntryPanel @Inject()(
                                qsoStore: QsoStore,
                                selectedBandModeStore: SelectedBandModeStore,
-                               stationManager: StationManager
+                               stationManager: StationManager,
+                               callsignField: CallSignField
                              ) extends LazyLogging:
 
-  private val callSignField = UpperCase(new TextField())
   private val contestClassField = UpperCase(new TextField())
   private val sectionField = UpperCase(new TextField())
+  callsignField.onDoneFunction = (chForNext =>
+    logger.debug("Callsign done: {} current: {}", chForNext, contestClassField.text.value)
+    Platform.runLater {
+      contestClassField.text = if chForNext.trim.isEmpty then "" else chForNext
+      logger.debug("new class field: {}", contestClassField.text.value)
 
+      contestClassField.requestFocus()
+      contestClassField.end()
+      logger.debug("new class field2: {}", contestClassField.text.value)
+    }
+  )
   val node: Node =
     val grid = new GridPane {
       add(new Label("Their Callsign:"), 0, 0)
-      add(callSignField, 0, 1)
+      add(callsignField, 0, 1)
 
       add(new Label("Received Class:"), 1, 0)
       add(contestClassField, 1, 1)
@@ -68,13 +79,13 @@ class QsoEntryPanel @Inject()(
 
   private def submit(): Unit =
     logger.debug(
-      s"Submitting QSO: call=${callSignField.text.value}, " +
+      s"Submitting QSO: call=${callsignField.text.value}, " +
         s"class=${contestClassField.text.value}, " +
         s"section=${sectionField.text.value}"
     )
 
     val qso = Qso(
-      callSignField.text.value,
+      callsignField.text.value,
       contestClassField.text.value,
       sectionField.text.value,
       selectedBandModeStore.selected.value,
@@ -82,4 +93,4 @@ class QsoEntryPanel @Inject()(
     )
 
     qsoStore.add(qso)
-    callSignField.text.value = ""
+    callsignField.text.value = ""

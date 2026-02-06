@@ -24,6 +24,8 @@ import _root_.scalafx.beans.property.BooleanProperty
 import _root_.scalafx.scene.control.TextInputControl
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.InputHelper.forceCaps
+import scalafx.scene.input.KeyCode
+import scalafx.Includes.*
 /**
  * Most of the common logic for any qso input field.
  */
@@ -32,10 +34,35 @@ trait NextField extends TextInputControl with WithDisposition with LazyLogging :
   styleClass += "qsoField"
   sad()
 
-  var onDoneFunction: String => Unit = (_: String) => {}
+  def isValid(str: String): Boolean
+  
+  var onDoneFunction: String => Unit =
+    (_) => {}
 
-  def onDone(f: String => Unit): Unit = 
-    onDoneFunction = f
+  onKeyPressed = { event =>
+    val key: KeyCode = event.code
+    val isValidCallsign = isValid(text.value)
+    if (isValidCallsign && (key.isDigitKey || key == KeyCode.Space || key == KeyCode.Enter || key == KeyCode.Tab))
+      event.consume()
+      val str: String = NextField.toChar(key).toString
+      onDoneFunction(str)
+    else if (key == KeyCode.Enter || key == KeyCode.Tab)
+      event.consume()
+  }
+
+  onKeyTyped = { event =>
+    if (isValid(text.value))
+      event.consume()
+  }
+
+  onKeyReleased = { event =>
+    if (isValid(text.value))
+      event.consume()
+  }
+
+
+//  def onDone(f: String => Unit): Unit = 
+//    onDoneFunction = f
 
   val validProperty: BooleanProperty = new BooleanProperty()
   validProperty.value = false
@@ -46,17 +73,13 @@ trait NextField extends TextInputControl with WithDisposition with LazyLogging :
   def reset(): Unit = 
     text = ""
 
-  /**
-   * @deprecated handle within the control. Manipulate [[validProperty]]
-   * @param fieldValidator
-   */
-  def setFieldValidator(fieldValidator: FieldValidator) =
-    val b: BooleanBinding = Bindings.createBooleanBinding(
-      () => {
-        fieldValidator.valid(text).isEmpty
-      }
-      ,
-      text
-    )
-    validProperty.bind(b)
-  
+object NextField:
+  def toChar(key: KeyCode): Char =
+    key match
+      case KeyCode.Space => ' '
+      case KeyCode.Enter => '\n'
+      case KeyCode.Tab   => '\t'
+      case _ if key.isLetterKey => key.name.head
+      case _ if key.isDigitKey  => key.name.last
+      case _ => ' '
+

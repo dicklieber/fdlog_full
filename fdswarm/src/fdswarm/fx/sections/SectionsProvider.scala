@@ -36,3 +36,5 @@ class SectionsProvider @Inject()(config: Config):
       }.toSeq
       SectionGroup(name, sections)
     }.toSeq
+
+  val allSections: Seq[Section] = sectionGroups.flatMap(_.sections)

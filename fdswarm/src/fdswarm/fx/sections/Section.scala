@@ -37,3 +37,8 @@ case class Section(code: String, name: String) extends Label derives ReadWriter:
     onMouseClicked = _ => sectionField.value = code
     onMouseEntered = _ => style = "-fx-background-color: lightgray; -fx-cursor: hand;"
     onMouseExited = _ => style = "-fx-background-color: transparent; -fx-cursor: default;"
+
+import jakarta.inject.{Inject, Singleton}
+@Singleton
+class Sections @Inject()(sectionsProvider: SectionsProvider):
+  val all: Seq[Section] = sectionsProvider.allSections

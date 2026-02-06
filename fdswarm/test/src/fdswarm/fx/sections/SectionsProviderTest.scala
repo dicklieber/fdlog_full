@@ -47,6 +47,13 @@ class SectionsProviderTest extends FunSuite:
     val dxGroup = groups.find(_.name == "DX")
     assert(dxGroup.isDefined)
     assert(dxGroup.get.sections.exists(_.code == "DX"))
+
+    val allSections = provider.allSections
+    assert(allSections.nonEmpty)
+    assertEquals(allSections.size, groups.map(_.sections.size).sum)
+    assert(allSections.exists(_.code == "IL"))
+    assert(allSections.exists(_.code == "QC"))
+    assert(allSections.exists(_.code == "DX"))
   }
 
   test("Section properties are correctly initialized") {

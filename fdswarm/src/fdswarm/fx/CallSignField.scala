@@ -22,47 +22,27 @@ package fdswarm.fx
 import _root_.scalafx.Includes.*
 import _root_.scalafx.scene.control.TextField
 import _root_.scalafx.scene.input.{KeyCode, KeyEvent}
+import fdswarm.fx.CallSignField.regex
 import fdswarm.model.DupQsoDetector
 import jakarta.inject.Inject
+
+import scala.util.matching.Regex
 
 /**
  * Callsign entry field
  * sad or happy as validated while typing.
  *
  */
-class CallSignField @Inject()( dupQsoDetector: DupQsoDetector) extends TextField with NextField {
+class CallSignField @Inject()(dupQsoDetector: DupQsoDetector) extends TextField with NextField :
   styleClass += "qsoCallSign"
 
-/*  setFieldValidator(CallsignValidator)
-    text.onChange { (_, _, nv) =>
-      actionResult.clear()
-      if (!validProperty.value) {
-        if (text.value.isEmpty) {
-  
-        } else {
-//          actionResult.potentiaDup(nv) //todo
-        }
-      }
-    }*/ //todo: remove?
+  //  def onNextField(ch:Char => Unit):Unit=
+  //    onKeyReleased = event => ch(event.getText.head)
 
-  onKeyPressed = { event =>
-    val key: KeyCode = event.code
-    if (key.isDigitKey && validProperty.value) {
-      event.consume()
-      val str: String = key.name
-      onDoneFunction(str)
-    }else{
-      val text1 = event.text
-//      actionResult.apply( dupQsoDetector(text.value))
-    }
-  }
-  onKeyReleased = event => {
-    val text1 = event.getText
-//    event.toString
-//    actionResult.apply( dupQsoDetector(text.value))
-  }
-//  onAction = event => {
-//    actionResult.apply( dupQsoDetector(text.value))
-//  }
-}
+
+  def isValid(str: String): Boolean = CallSignField.isValid(str)
+
+object CallSignField:
+  def isValid(str: String): Boolean = regex.findFirstIn(str).isDefined
+  protected val regex: Regex = """^(?=.{3,12}$)[A-Z0-9]{1,3}[0-9][A-Z0-9]{1,4}(?:/(?:P|M|MM|AM|QRP|[A-Z0-9]{1,4}))?$""".r
 

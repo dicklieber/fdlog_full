@@ -31,8 +31,8 @@ Configuration:
         level: info
         additivity: true
 
-      - name: "fdswarm.fx.bandmodes.BandModeMatrixPane"
-        level: info
+      - name: "fdswarm.fx.qso.QsoEntryPanel"
+        level: trace
         additivity: true
 
     Root:

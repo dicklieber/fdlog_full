@@ -19,17 +19,18 @@
 
 package fdswarm.fx
 
+import scala.util.matching.Regex
 
-object CallsignValidator extends FieldValidator :
 
-  private val callsignRegx =
-    """(\p{Upper}{1,2})(\d)(\p{Upper}{1,3})""".r
+object CallsignValidator extends FieldValidator:
 
-  def valid(string: String): Option[String] = {
-    if (callsignRegx.findFirstIn(string).isDefined)
+
+  private val intlHamish: Regex = """^(?=.{3,12}$)[A-Z0-9]{1,3}[0-9][A-Z0-9]{1,4}(?:/(?:P|M|MM|AM|QRP|[A-Z0-9]{1,4}))?$""".r
+
+  def valid(string: String): Option[String] =
+    if intlHamish.findFirstIn(string).isDefined then
       None
     else
       Some(errMessage)
-  }
 
   override def errMessage: String = "Not callSign!"
