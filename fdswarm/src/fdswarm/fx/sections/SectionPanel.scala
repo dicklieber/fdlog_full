@@ -28,7 +28,7 @@ import scalafx.scene.control.Label
 import scalafx.scene.layout.{HBox, Priority, Region, VBox}
 
 class SectionPanel @Inject()(sectionsProvider: SectionsProvider, qsoEntryPanel: QsoEntryPanel) extends LazyLogging:
-  val mainVBox = new VBox():
+  val mainVBox: VBox = new VBox():
     spacing = 10
     padding = Insets(5)
 

@@ -47,14 +47,14 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider) extends LazyLoggi
       .foreach { line =>
         val qso = read[Qso](line)
         map.put(qso.uuid, qso)
-        qsoCollection.add(qso)
+        qsoCollection.prepend(qso)
       }
 
   def add(qso: Qso): Unit =
     val uuid = qso.uuid
     val maybeQso = map.putIfAbsent(uuid, qso)
     os.write.append(journalFile, write(qso) + "\n", createFolders = true)
-    qsoCollection.add(qso)
+    qsoCollection.prepend(qso)
     maybeQso.foreach(was =>
       logger.error(s"Was already a qso for uuid: $uuid $qso")
     )
