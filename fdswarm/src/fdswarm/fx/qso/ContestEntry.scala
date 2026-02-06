@@ -20,22 +20,33 @@ package fdswarm.fx.qso
 
 import com.google.inject.Inject
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.fx.GridUtils
 import fdswarm.fx.bandmodes.BandModeMatrixPane
 import fdswarm.fx.contest.ContestId
+import fdswarm.fx.sections.SectionPanel
 import jakarta.inject.Singleton
 import scalafx.scene.Node
-import scalafx.scene.layout.VBox
+import scalafx.scene.layout.{GridPane, VBox}
+import GridUtils.*
 
 @Singleton
-class ContestEntry @Inject() (qsoEntryPanel:QsoEntryPanel,
-                              qsoTablePane: QsoTablePane,
-                              bandModeMatrixPane: BandModeMatrixPane) extends LazyLogging:
+class ContestEntry @Inject()(qsoEntryPanel: QsoEntryPanel,
+                             qsoTablePane: QsoTablePane,
+                             bandModeMatrixPane: BandModeMatrixPane,
+                             sectionPanel: SectionPanel
+                            ) extends LazyLogging:
 
-  def node:Node =
-    new VBox {
-      children = Seq(
-        qsoTablePane.node,
-        qsoEntryPanel.node,
-        bandModeMatrixPane.node)
-
+  def node: Node =
+    new GridPane {
+      add(qsoTablePane.node, 0, 0, 2, 1)
+      add(qsoEntryPanel.node, 0, 1, 1, 1)
+      add(sectionPanel.node, 1, 1, 1, 1)
+      add(bandModeMatrixPane.node, 0, 2, 2, 1)
     }
+//    new VBox {
+//      children = Seq(
+//        qsoTablePane.node,
+//        qsoEntryPanel.node,
+//        bandModeMatrixPane.node)
+//
+//    }

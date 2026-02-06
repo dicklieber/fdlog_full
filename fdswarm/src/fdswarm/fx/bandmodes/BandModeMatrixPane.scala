@@ -2,13 +2,15 @@ package fdswarm.fx.bandmodes
 
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.fx.GridUtils
 import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager, HamBand}
 import fdswarm.model.BandMode
 import fdswarm.model.BandMode.{Band, Mode}
 import jakarta.inject.{Inject, Singleton}
+import scalafx.geometry.Insets
 import scalafx.scene.Node
 import scalafx.scene.control.*
-import scalafx.scene.layout.GridPane
+import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority}
 
 /**
  * Mode × Band matrix.
@@ -27,10 +29,7 @@ final class BandModeMatrixPane @Inject()(availableBandsStore: AvailableBandsMana
 
   private val tg = new ToggleGroup()
 
-  private val pane: TitledPane = new TitledPane {
-    collapsible = false
-    text = "Band & Mode"
-  }
+  private val container = new scalafx.scene.layout.StackPane()
   buildGrid()
 
   availableBandsStore.bands.onChange {
@@ -41,24 +40,37 @@ final class BandModeMatrixPane @Inject()(availableBandsStore: AvailableBandsMana
   }
 
   def buildGrid():Unit=
-    val grid = new GridPane(3,3)
+    val grid = new GridPane():
+      hgap = 2
+      vgap = 2
+
+    val nBands = availableBandsStore.bands.size
+    val firstColCc = new ColumnConstraints() { hgrow = Priority.Never }
+    val bandColCc = new ColumnConstraints() {
+      percentWidth = 100.0 / (nBands + 1)
+      hgrow = Priority.Always
+    }
+    grid.columnConstraints = Seq(firstColCc) ++ (1 to nBands).map(_ => bandColCc)
 
     for
       (mode,row) <- availableModesManager.modes.zipWithIndex
-      _ = grid.addRow(row, new Label(mode))
-      (band,col)<- availableBandsStore.bands.zipWithIndex
     do
-      logger.trace(s"Adding band $band and mode $mode cell to grid.")
-      grid.add(ModeBandButton(band,mode, selectedStore.selected.value),col+1,row)
-    pane.content = grid
+      grid.add(new Label(mode), 0, row)
+      for (band, col) <- availableBandsStore.bands.zipWithIndex do
+        logger.trace(s"Adding band $band and mode $mode cell to grid.")
+        grid.add(ModeBandButton(band,mode, selectedStore.selected.value),col+1,row)
+    container.children = Seq(GridUtils.fieldSet("Band & Mode", grid))
 
   val node:Node =
-    pane
+    container
 
 
   case class ModeBandButton(band:Band, mode:Mode, selectedHamBand:BandMode) extends ToggleButton():
     val bandMode: BandMode = BandMode(band, mode)
     text = band
+    maxWidth = Double.MaxValue
+    padding = Insets(2, 4, 2, 4)
+    minWidth = 0
     graphic = null
     graphicTextGap = 0
     toggleGroup = tg

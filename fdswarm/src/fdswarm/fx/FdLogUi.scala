@@ -4,6 +4,7 @@ import fdswarm.fx.bandmodes.BandsAndModesPane
 import fdswarm.fx.contest.ContestManager
 import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.station.StationEditor
+import fdswarm.fx.tools.HowManyDialogService
 import jakarta.inject.Inject
 import scalafx.application.Platform
 import scalafx.event.EventIncludes.*
@@ -18,6 +19,7 @@ final class FdLogUi @Inject() (
                                 bandModeManagerPane: BandsAndModesPane,
                                 stationEditor: StationEditor,
                                 contestManager: ContestManager,
+                                howManyDialogService: HowManyDialogService
                               ):
 
   private val bandModeNode: Node =
@@ -51,7 +53,8 @@ final class FdLogUi @Inject() (
     menus = Seq(
       fileMenu,
       viewMenu,
-      configMenu
+      configMenu,
+      devMenu
     )
 
   private val root = new BorderPane:
@@ -94,4 +97,14 @@ final class FdLogUi @Inject() (
         },
         stationMenuItem,
         contestMenuItem
+      )
+
+  private def devMenu: Menu =
+    new Menu("Dev"):
+      items = Seq(
+        new MenuItem("Generate QSOs"):
+          onAction = _ =>
+            ownerWindow match
+              case w: Window => howManyDialogService.showAndGenerate(w)
+              case _         => ()
       )

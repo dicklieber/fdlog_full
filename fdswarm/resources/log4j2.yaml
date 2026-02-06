@@ -6,7 +6,7 @@ Configuration:
       name: TestConsole
       target: SYSTEM_ERR
       PatternLayout:
-        Pattern: "%highlight{%-5level}{FATAL=bg_red, ERROR=red, WARN=yellow, INFO=green, DEBUG=blue, TRACE=cyan} %msg%n"
+        Pattern: "%highlight{%-5level}{FATAL=bg_red, ERROR=red, WARN=yellow, INFO=green, DEBUG=blue, info=cyan} %msg%n"
 
 
   Loggers:
@@ -16,7 +16,7 @@ Configuration:
         additivity: true
 
       - name: "fdswarm.fx.qso.QsoEntryPanel"
-        level: trace
+        level: info
         additivity: true
 
       - name: "fdswarm.StationManager"
@@ -32,7 +32,7 @@ Configuration:
         additivity: true
 
       - name: "fdswarm.fx.bandmodes.BandModeMatrixPane"
-        level: trace
+        level: info
         additivity: true
 
     Root:

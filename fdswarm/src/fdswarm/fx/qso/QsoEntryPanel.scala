@@ -25,6 +25,7 @@ import fdswarm.fx.contest.Contest
 import fdswarm.model.*
 import fdswarm.store.QsoStore
 import fdswarm.fx.bandmodes.SelectedBandModeStore
+import fdswarm.fx.sections.SectionPanel
 import jakarta.inject.{Inject, Singleton}
 import scalafx.scene.Node
 import scalafx.scene.control.*
@@ -37,9 +38,11 @@ class QsoEntryPanel @Inject()(
                                stationManager: StationManager
                              ) extends LazyLogging:
 
-  val callSignField = UpperCase(new TextField())
-  val contestClassField = UpperCase(new TextField())
-  val sectionField = UpperCase(new TextField())
+  private val callSignField = UpperCase(new TextField())
+  private val contestClassField = UpperCase(new TextField())
+  private val sectionField = UpperCase(new TextField())
+
+  def sectionFieldProperty: scalafx.beans.property.StringProperty = sectionField.text
 
   val node: Node =
 
