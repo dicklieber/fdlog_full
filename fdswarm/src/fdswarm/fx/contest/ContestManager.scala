@@ -20,7 +20,9 @@ package fdswarm.fx.contest
 
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.{ContestDateCalculator, ContestDates}
+import fdswarm.fx.UpperCase
 import fdswarm.fx.caseForm.MyCaseForm
+import fdswarm.fx.contest.Contest.WFD
 import fdswarm.io.{DirectoryProvider, ProductionDirectory}
 import jakarta.inject.*
 import scalafx.Includes.*
@@ -45,7 +47,7 @@ class ContestManager @Inject()(directoryProvider: DirectoryProvider) extends Laz
     val year = LocalDate.now().getYear
     val contestDates = ContestDateCalculator.datesFor(Contest.WFD, year)
     ContestDetail(
-      contentName = "WFD",
+      contest = WFD,
       classChars = "HIOM",
       start = contestDates.startUtc,
       end = contestDates.endUtc,
@@ -74,21 +76,25 @@ class ContestManager @Inject()(directoryProvider: DirectoryProvider) extends Laz
     }
 
   def show(ownerWindow: Window): Unit =
-    val form = MyCaseForm(currentDetailProperty.value, detail => {
-      currentDetailProperty.value = detail
-      save()
-      println(s"Saved contest detail: $detail")
-    })
+    val form = MyCaseForm(currentDetailProperty.value)
+    UpperCase(form.control[TextField]("classChars"))
 
     val dialog = new Dialog[ButtonType] {
       initOwner(ownerWindow)
       title = "Contest Detail"
+      dialogPane().content = form.pane()
+      dialogPane().buttonTypes = Seq(ButtonType.OK, ButtonType.Cancel)
     }
 
-    dialog.dialogPane().content = form.pane()
-    dialog.dialogPane().buttonTypes = Seq(ButtonType.Close)
-
-    dialog.showAndWait()
+    val result = dialog.showAndWait()
+    result match
+      case Some(ButtonType.OK) =>
+        val detail = form.result
+        currentDetailProperty.value = detail
+        save()
+        println(s"Saved contest detail: $detail")
+      case _ =>
+        println("Contest detail edit cancelled")
 
   def menuItem(using owningWindow: Window): MenuItem =
     new MenuItem("Contest Detail"):

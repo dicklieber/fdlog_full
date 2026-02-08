@@ -8,12 +8,12 @@ import scalafx.collections.ObservableBuffer
 import scalafx.geometry.Insets
 import scalafx.scene.Node
 import scalafx.scene.control.*
-import scalafx.scene.layout.{GridPane, HBox, Pane, VBox}
+import scalafx.scene.layout.{GridPane, HBox, Pane}
 
 import java.time.{Instant, LocalTime, ZoneId, ZonedDateTime}
 import scala.deriving.Mirror
 
-class MyCaseForm[T <: Product](initial: T, onSave: T => Unit)(using m: Mirror.ProductOf[T]):
+class MyCaseForm[T <: Product](initial: T)(using m: Mirror.ProductOf[T]):
 
   /** For Scala 3 enums that are *not* Java enums at runtime (e.g. `enum HamBand(val ...)`). */
   private def scala3EnumItems(value: Any): Option[Seq[AnyRef]] =
@@ -123,11 +123,6 @@ class MyCaseForm[T <: Product](initial: T, onSave: T => Unit)(using m: Mirror.Pr
       val name = initial.productElementName(i)
       Field(name, control, new Label(name), getter)
 
-  val saveButton = new Button("Save")
-  saveButton.onAction = new JfxEventHandler[JfxActionEvent]:
-    override def handle(e: JfxActionEvent): Unit =
-      onSave(result)
-
   def pane(): Pane =
     val grid = new GridPane:
       hgap = 8
@@ -139,7 +134,10 @@ class MyCaseForm[T <: Product](initial: T, onSave: T => Unit)(using m: Mirror.Pr
       grid.add(field.control, 1, index)
     }
 
-    new VBox(grid, saveButton)
+    grid
+  
+  def control[T <: Control](name: String): T =
+    fields.find(_.name == name).get.control.asInstanceOf[T]
 
   def result: T =
     val values: Array[Any] = new Array[Any](initial.productArity)

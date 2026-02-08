@@ -68,9 +68,6 @@ final class StationManager @Inject()(
 /*
   def pane(): Pane =
     logger.info(s"Creating station form for $station")
-    val myCaseForm = MyCaseForm[Station](station, newStation =>
-      logger.trace("New station: {}", newStation)
-      setStation( newStation)
-//      save()
-    )
+    val myCaseForm = MyCaseForm[Station](station)
+    logger.trace("New station result will be handled by container")
     myCaseForm.pane()*/

@@ -30,11 +30,12 @@ enum Contest derives ReadWriter:
 
 /**
  *
- * @param contentName usually WFD or ARRL
+ * @param contest which one
  * @param classChars e.g. "HIOM" (for WFD) or "ACBDE" etc. (for ARRL)
- * @param localDate
+ * @param start when contest started.
+ * @param end when contest ends.
  */
-case class ContestDetail(contentName:String,
+case class ContestDetail(contest:Contest,
                          classChars:String,
                          start:ZonedDateTime,
                          end:ZonedDateTime) derives ReadWriter
