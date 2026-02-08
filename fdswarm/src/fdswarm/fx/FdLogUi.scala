@@ -37,17 +37,17 @@ final class FdLogUi @Inject() (
     new MenuItem("Contest"):
       disable = true
       onAction = _ =>
-        ownerWindow match
-          case w: Window => contestManager.show(w)
-          case _         => ()
+        Option(ownerWindow) match
+          case Some(w) => contestManager.show(w)
+          case None    => ()
 
   private val stationMenuItem: MenuItem =
     new MenuItem("Station"):
       disable = true
       onAction = _ =>
-        ownerWindow match
-          case w: Window => stationEditor.show(w)
-          case _         => ()
+        Option(ownerWindow) match
+          case Some(w) => stationEditor.show(w)
+          case None    => ()
 
   private val menuBar = new MenuBar:
     menus = Seq(
@@ -104,7 +104,7 @@ final class FdLogUi @Inject() (
       items = Seq(
         new MenuItem("Generate QSOs"):
           onAction = _ =>
-            ownerWindow match
-              case w: Window => howManyDialogService.showAndGenerate(w)
-              case _         => ()
+            Option(ownerWindow) match
+              case Some(w) => howManyDialogService.showAndGenerate(w)
+              case None    => ()
       )

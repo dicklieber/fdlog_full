@@ -20,12 +20,11 @@ package fdswarm.fx.qso
 
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.StationManager
+import fdswarm.fx.bandmodes.SelectedBandModeStore
+import fdswarm.fx.contest.ContestType
 import fdswarm.fx.{CallSignField, GridUtils, UpperCase}
-import fdswarm.fx.contest.{ContestManager, ContestType}
 import fdswarm.model.*
 import fdswarm.store.QsoStore
-import fdswarm.fx.bandmodes.SelectedBandModeStore
-import fdswarm.fx.sections.SectionPanel
 import jakarta.inject.{Inject, Singleton}
 import scalafx.application.Platform
 import scalafx.scene.Node
@@ -41,10 +40,24 @@ class QsoEntryPanel @Inject()(
                                contestClassField: ContestClassField
                              ) extends LazyLogging:
 
-  val sectionField = UpperCase(new TextField())
+  private val sectionField = UpperCase(new TextField())
+
+  private val clearButton = new Button("\u21BA") {
+    styleClass += "clear-button"
+    tooltip = Tooltip("Clear fields")
+    onAction.set(new javafx.event.EventHandler[javafx.event.ActionEvent] {
+      override def handle(event: javafx.event.ActionEvent): Unit =
+        callsignField.text = ""
+        contestClassField.text = ""
+        sectionField.text = ""
+        callsignField.requestFocus()
+    })
+  }
+
   val node: Node =
 
     val grid = new GridPane {
+      hgap = 5
       add(new Label("Their Callsign:"), 0, 0)
       add(callsignField, 0, 1)
 
@@ -53,6 +66,8 @@ class QsoEntryPanel @Inject()(
 
       add(new Label("Received Section:"), 2, 0)
       add(sectionField, 2, 1)
+
+      add(clearButton, 3, 1)
     }
     GridUtils.fieldSet("QSO", grid)
 
@@ -95,7 +110,7 @@ class QsoEntryPanel @Inject()(
     )
 
     val qso = Qso(
-      callsignField.text.value,
+      Callsign(callsignField.text.value),
       contestClassField.text.value,
       sectionField.text.value,
       selectedBandModeStore.selected.value,

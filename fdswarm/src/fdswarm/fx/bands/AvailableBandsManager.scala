@@ -22,7 +22,7 @@ final class AvailableBandsManager @Inject()(
   // Persist automatically when the buffer changes
   bands.delegate.addListener(
     new ListChangeListener[Band]:
-      override def onChanged(c: ListChangeListener.Change[_ <: Band]): Unit =
+      override def onChanged(c: ListChangeListener.Change[? <: Band]): Unit =
         persist()
   )
 

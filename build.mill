@@ -17,6 +17,7 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo {
   val log4jV = "2.24.2"
 
   def scalaVersion = "3.7.4"
+  def scalacOptions = Seq("-feature", "-deprecation")
 
   def mainClass = Some("fdlog.fx.fdlog")
 

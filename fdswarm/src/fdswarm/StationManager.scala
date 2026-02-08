@@ -20,7 +20,7 @@ package fdswarm
 
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.io.DirectoryProvider
-import fdswarm.model.Station
+import fdswarm.model.{Callsign, Station}
 import jakarta.inject.{Inject, Singleton}
 import scalafx.beans.property.ObjectProperty
 import scalafx.event.subscriptions.Subscription
@@ -63,7 +63,7 @@ final class StationManager @Inject()(
     catch
       case e: Throwable =>
         logger.warn(s"Failed to load station from $file: ${e.getMessage}")
-        Station("", "", "")
+        Station("", "", Callsign(""))
 
 /*
   def pane(): Pane =

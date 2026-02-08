@@ -26,3 +26,17 @@
     -fx-border-radius: 5;
 
 }
+
+.clear-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+
+.clear-button:hover {
+    -fx-background-color: lightgray; /* Optional: Hover effect */
+    /*-fx-text-fill: lightgray;*/
+    -fx-border-width: 2;
+    -fx-border-radius: 5;
+
+}

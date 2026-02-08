@@ -37,7 +37,7 @@ final class BigQsosGenerator @Inject()(qsoStore: QsoStore):
         .take(howMany)
         .foreach { callSign =>
           val qsoMetadata = QsoMetadata(station = Station(), contest = WFD)
-          val qso = Qso(callSign, "1H", "IL", bandMode, qsoMetadata)
+          val qso = Qso(Callsign(callSign), "1H", "IL", bandMode, qsoMetadata)
           qsoStore.add(qso)
         }
 

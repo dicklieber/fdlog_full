@@ -22,7 +22,7 @@ import com.typesafe.config.Config
 import fdswarm.fx.PropertyCellName
 import fdswarm.replication
 
-import java.net.{Inet4Address, InetAddress, NetworkInterface, URL}
+import java.net.{Inet4Address, InetAddress, NetworkInterface, URI, URL}
 import scala.jdk.CollectionConverters.*
 
 /**
@@ -34,7 +34,7 @@ import scala.jdk.CollectionConverters.*
  * @param instance  from application.conf or command line e.g -Dinstance=2
  */
 //case class NodeAddress(ipAddress: String = "", hostName: String = "localhost", instance: Option[Int] = None, port: Int = 8080)
-case class NodeAddress(url: URL = new URL("http:///"), instance: Option[Int] = None)
+case class NodeAddress(url: URL = URI.create("http:///").toURL, instance: Option[Int] = None)
   extends Ordered[NodeAddress]
     with NodeValueProvider
     with PropertyCellName {
@@ -74,7 +74,7 @@ case class NodeAddress(url: URL = new URL("http:///"), instance: Option[Int] = N
     {} //todo
 
   override def compare(that: NodeAddress): Int = {
-    val ret = url.toExternalForm compareTo that.url.toExternalForm
+    val ret = url.toExternalForm.compareTo(that.url.toExternalForm)
     if (ret == 0) {
       val thisI = instance.getOrElse(-1)
       val thatI = that.instance.getOrElse(-1)
@@ -95,7 +95,7 @@ object NodeAddress {
     val inetAddress = determineIp()
     val address: String = inetAddress.getHostAddress
     val port = instance.map(_ + httpPort).getOrElse(httpPort)
-    val url = new URL("http", address, port, "")
+    val url = URI.create(s"http://$address:$port").toURL
     new NodeAddress(url, instance)
   }
 
