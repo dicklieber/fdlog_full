@@ -20,7 +20,7 @@
 package fdswarm.model
 
 import com.organization.BuildInfo
-import fdswarm.fx.contest.Contest
+import fdswarm.fx.contest.ContestType
 import upickle.default.*
 import upickle.implicits.*
 
@@ -37,5 +37,5 @@ import upickle.implicits.*
 
 case class QsoMetadata(station: Station,
                        node: String = "localhost;1",
-                       contest: Contest,
+                       contest: ContestType,
                        v: String = BuildInfo.version) derives ReadWriter

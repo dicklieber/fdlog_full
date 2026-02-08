@@ -23,9 +23,9 @@ import upickle.default.*
 import fdswarm.util.JavaTimePickle.given_ReadWriter_ZonedDateTime
 
 import java.time.{LocalDate, LocalDateTime, ZonedDateTime}
-case class ContestId(content:Contest, year:Int) derives ReadWriter
+case class ContestId(content:ContestType, year:Int) derives ReadWriter
 
-enum Contest derives ReadWriter:
+enum ContestType derives ReadWriter:
   case WFD, ARRL
 
 /**
@@ -35,7 +35,7 @@ enum Contest derives ReadWriter:
  * @param start when contest started.
  * @param end when contest ends.
  */
-case class ContestDetail(contest:Contest,
+case class ContestDetail(contest:ContestType,
                          classChars:String,
                          start:ZonedDateTime,
                          end:ZonedDateTime) derives ReadWriter

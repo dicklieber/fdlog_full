@@ -22,7 +22,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.{ContestDateCalculator, ContestDates}
 import fdswarm.fx.UpperCase
 import fdswarm.fx.caseForm.MyCaseForm
-import fdswarm.fx.contest.Contest.WFD
+import fdswarm.fx.contest.ContestType.WFD
 import fdswarm.io.{DirectoryProvider, ProductionDirectory}
 import jakarta.inject.*
 import scalafx.Includes.*
@@ -30,7 +30,6 @@ import scalafx.beans.property.ObjectProperty
 import scalafx.scene.control.*
 import scalafx.stage.Window
 import upickle.default.*
-import fdswarm.util.JavaTimePickle.given_ReadWriter_ZonedDateTime
 
 import java.time.LocalDate
 
@@ -45,7 +44,7 @@ class ContestManager @Inject()(directoryProvider: DirectoryProvider) extends Laz
 
   private def defaultDetail: ContestDetail =
     val year = LocalDate.now().getYear
-    val contestDates = ContestDateCalculator.datesFor(Contest.WFD, year)
+    val contestDates = ContestDateCalculator.datesFor(ContestType.WFD, year)
     ContestDetail(
       contest = WFD,
       classChars = "HIOM",

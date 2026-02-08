@@ -35,14 +35,20 @@ trait NextField extends TextInputControl with WithDisposition with LazyLogging :
   sad()
 
   def isValid(str: String): Boolean
-  
+
+  /**
+   * Keys that will trigger transition to the next field if the current field is valid.
+   */
+  def isTransitionKey(key: KeyCode): Boolean =
+    key.isDigitKey || key == KeyCode.Space || key == KeyCode.Enter || key == KeyCode.Tab
+
   var onDoneFunction: String => Unit =
     (_) => {}
 
   onKeyPressed = { event =>
     val key: KeyCode = event.code
-    val isValidCallsign = isValid(text.value)
-    if (isValidCallsign && (key.isDigitKey || key == KeyCode.Space || key == KeyCode.Enter || key == KeyCode.Tab))
+    val isFieldValid = isValid(text.value)
+    if (isFieldValid && isTransitionKey(key))
       event.consume()
       val str: String = NextField.toChar(key).toString
       onDoneFunction(str)

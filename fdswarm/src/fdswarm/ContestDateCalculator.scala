@@ -1,6 +1,6 @@
 package fdswarm
 
-import fdswarm.fx.contest.Contest
+import fdswarm.fx.contest.ContestType
 import java.time.*
 import upickle.default.*
 import fdswarm.util.JavaTimePickle.given
@@ -12,16 +12,16 @@ object ContestDateCalculator:
   // ---- Public API -----------------------------------------------------------
 
   /** One entry point: compute UTC window for a contest + year. */
-  def datesFor(contest: Contest, year: Int): ContestDates =
+  def datesFor(contest: ContestType, year: Int): ContestDates =
     contest match
-      case Contest.WFD =>
+      case ContestType.WFD =>
         val (sat, sun) = lastFullWeekend(year, Month.JANUARY)
         ContestDates(
           startUtc = sat.atTime(19, 0).atZone(ZoneOffset.UTC),  // 1900Z Sat
           endUtc   = sun.atTime(18, 59).atZone(ZoneOffset.UTC)  // 1859Z Sun
         )
 
-      case Contest.ARRL =>
+      case ContestType.ARRL =>
         val (sat, sun) = nthFullWeekend(year, Month.JUNE, n = 4) // 4th full weekend in June
         ContestDates(
           startUtc = sat.atTime(18, 0).atZone(ZoneOffset.UTC),  // 1800Z Sat

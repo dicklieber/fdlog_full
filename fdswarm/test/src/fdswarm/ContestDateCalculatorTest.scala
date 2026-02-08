@@ -18,7 +18,7 @@
 
 package fdswarm
 
-import fdswarm.fx.contest.Contest
+import fdswarm.fx.contest.ContestType
 import munit.FunSuite
 
 import java.time.{LocalDate, ZoneOffset, ZonedDateTime}
@@ -30,7 +30,7 @@ final class ContestDateCalculatorTest extends FunSuite:
     d.atTime(h, m).atZone(ZoneOffset.UTC)
 
   test("WFD 2026: last full weekend of January + correct UTC window"):
-    val cd = ContestDateCalculator.datesFor(Contest.WFD, 2026)
+    val cd = ContestDateCalculator.datesFor(ContestType.WFD, 2026)
 
     assertEquals(cd.startUtc.toLocalDate, LocalDate.of(2026, 1, 24))
     assertEquals(cd.endUtc.toLocalDate, LocalDate.of(2026, 1, 25))
@@ -42,7 +42,7 @@ final class ContestDateCalculatorTest extends FunSuite:
     assertEquals(cd.endUtc,   zdtUtc(LocalDate.of(2026, 1, 25), 18, 59))  // 1859Z Sun
 
   test("ARRL 2026: 4th full weekend of June + correct UTC window"):
-    val cd = ContestDateCalculator.datesFor(Contest.ARRL, 2026)
+    val cd = ContestDateCalculator.datesFor(ContestType.ARRL, 2026)
 
     assertEquals(cd.startUtc.toLocalDate, LocalDate.of(2026, 6, 27))
     assertEquals(cd.endUtc.toLocalDate, LocalDate.of(2026, 6, 28))
@@ -57,13 +57,13 @@ final class ContestDateCalculatorTest extends FunSuite:
     val years = Seq(2024, 2025, 2026, 2027)
 
     years.foreach { y =>
-      val wfd = ContestDateCalculator.datesFor(Contest.WFD, y)
+      val wfd = ContestDateCalculator.datesFor(ContestType.WFD, y)
       assertEquals(wfd.startUtc.getDayOfWeek, DayOfWeek.SATURDAY)
       assertEquals(wfd.endUtc.getDayOfWeek, DayOfWeek.SUNDAY)
       assertEquals(wfd.startUtc.getMonthValue, 1)
       assertEquals(wfd.endUtc.getMonthValue, 1)
 
-      val arrl = ContestDateCalculator.datesFor(Contest.ARRL, y)
+      val arrl = ContestDateCalculator.datesFor(ContestType.ARRL, y)
       assertEquals(arrl.startUtc.getDayOfWeek, DayOfWeek.SATURDAY)
       assertEquals(arrl.endUtc.getDayOfWeek, DayOfWeek.SUNDAY)
       assertEquals(arrl.startUtc.getMonthValue, 6)

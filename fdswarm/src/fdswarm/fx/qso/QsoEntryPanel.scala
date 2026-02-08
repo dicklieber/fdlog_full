@@ -21,7 +21,7 @@ package fdswarm.fx.qso
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.StationManager
 import fdswarm.fx.{CallSignField, GridUtils, UpperCase}
-import fdswarm.fx.contest.Contest
+import fdswarm.fx.contest.{ContestManager, ContestType}
 import fdswarm.model.*
 import fdswarm.store.QsoStore
 import fdswarm.fx.bandmodes.SelectedBandModeStore
@@ -37,23 +37,13 @@ class QsoEntryPanel @Inject()(
                                qsoStore: QsoStore,
                                selectedBandModeStore: SelectedBandModeStore,
                                stationManager: StationManager,
-                               callsignField: CallSignField
+                               callsignField: CallSignField,
+                               contestClassField: ContestClassField
                              ) extends LazyLogging:
 
-  private val contestClassField = UpperCase(new TextField())
-  private val sectionField = UpperCase(new TextField())
-  callsignField.onDoneFunction = (chForNext =>
-    logger.debug("Callsign done: {} current: {}", chForNext, contestClassField.text.value)
-    Platform.runLater {
-      contestClassField.text = if chForNext.trim.isEmpty then "" else chForNext
-      logger.debug("new class field: {}", contestClassField.text.value)
-
-      contestClassField.requestFocus()
-      contestClassField.end()
-      logger.debug("new class field2: {}", contestClassField.text.value)
-    }
-  )
+  val sectionField = UpperCase(new TextField())
   val node: Node =
+
     val grid = new GridPane {
       add(new Label("Their Callsign:"), 0, 0)
       add(callsignField, 0, 1)
@@ -65,12 +55,32 @@ class QsoEntryPanel @Inject()(
       add(sectionField, 2, 1)
     }
     GridUtils.fieldSet("QSO", grid)
+
+  callsignField.onDoneFunction = chForNext =>
+    logger.debug("Callsign done: {} current: {}", chForNext, contestClassField.text.value)
+    Platform.runLater {
+      contestClassField.text = if chForNext.trim.isEmpty then "" else chForNext
+      logger.debug("new class field: {}", contestClassField.text.value)
+
+      contestClassField.requestFocus()
+      contestClassField.end()
+      logger.debug("new class field2: {}", contestClassField.text.value)
+    }
+  contestClassField.onDoneFunction = chForNext =>
+    Platform.runLater {
+      sectionField.text = if chForNext.trim.isEmpty then "" else chForNext
+
+      sectionField.requestFocus()
+      sectionField.end()
+    }
+
+
   // ---- controls ----------------------------------------------------------
   private val qsoMetadata = //todo add a QsoMetadataStore
     QsoMetadata(
       station = stationManager.station,
       node = "local",
-      contest = Contest.WFD
+      contest = ContestType.WFD
     )
   sectionField.onAction = _ =>
     submit()
