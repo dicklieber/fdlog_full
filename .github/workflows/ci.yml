@@ -1,23 +1,45 @@
-permissions:
-  checks: write
-  pull-requests: write
+name: CI
 
-steps:
-  - uses: actions/checkout@v4
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
 
-  - name: Run tests
-    id: tests
-    run: ./mill fdswarm.test
-    continue-on-error: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-  - name: Publish JUnit report
-    if: always()
-    uses: dorny/test-reporter@v1
-    with:
-      name: fdswarm tests
-      path: "**/test-reports/**/*.xml"   # <-- adjust to where Mill/framework writes XML
-      reporter: java-junit
+    permissions:
+      checks: write
+      pull-requests: write
 
-  - name: Fail job if tests failed
-    if: steps.tests.outcome != 'success'
-    run: exit 1
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Make mill executable
+        run: chmod +x ./mill
+
+      - name: Run tests
+        id: tests
+        run: ./mill fdswarm.test.testLocal
+        continue-on-error: true
+
+      - name: Publish JUnit report
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: fdswarm tests
+          path: "**/test-reports/**/*.xml"
+          reporter: java-junit
+
+      - name: Fail job if tests failed
+        if: steps.tests.outcome != 'success'
+        run: exit 1
