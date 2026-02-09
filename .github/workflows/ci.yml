@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Make mill executable
+        run: chmod +x ./mill
+
+      - name: Run Tests
+        run: ./mill fdswarm.test.testLocal
+
+      - name: Generate Test Report
+        run: ./mill fdswarm.test.htmlReport
+        if: always()
+
+      - name: Generate Coverage Report
+        run: ./mill fdswarm.scoverage.htmlReport
+        if: always()
+
+      - name: Upload Test Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-report
+          path: out/fdswarm/test/htmlReport.dest/
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: out/fdswarm/scoverage/htmlReport.dest/
