@@ -3,7 +3,7 @@ package fdswarm.fx.bandmodes
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.GridUtils
-import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager, HamBand}
+import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager, BandModeBuilder, HamBand}
 import fdswarm.model.BandMode
 import fdswarm.model.BandMode.{Band, Mode}
 import jakarta.inject.{Inject, Singleton}
@@ -25,7 +25,8 @@ import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority}
  */
 final class BandModeMatrixPane @Inject()(availableBandsStore: AvailableBandsManager,
                                          availableModesManager: AvailableModesManager,
-                                         selectedStore: SelectedBandModeStore) extends  LazyLogging:
+                                         selectedStore: SelectedBandModeStore,
+                                         bandModeBuilder: BandModeBuilder) extends  LazyLogging:
 
   private val tg = new ToggleGroup()
 
@@ -66,7 +67,7 @@ final class BandModeMatrixPane @Inject()(availableBandsStore: AvailableBandsMana
 
 
   case class ModeBandButton(band:Band, mode:Mode, selectedHamBand:BandMode) extends ToggleButton():
-    val bandMode: BandMode = BandMode(band, mode)
+    val bandMode: BandMode = bandModeBuilder(band, mode)
     text = band
     maxWidth = Double.MaxValue
     padding = Insets(2, 4, 2, 4)

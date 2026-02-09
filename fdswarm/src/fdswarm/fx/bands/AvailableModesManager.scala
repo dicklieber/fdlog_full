@@ -40,4 +40,4 @@ final class AvailableModesManager @Inject()(
       read[Seq[Mode]](os.read(path))
     catch
       case _: Throwable =>
-        Seq("SSB")
+        Seq("PH")

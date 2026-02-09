@@ -18,19 +18,20 @@
 
 package fdswarm.store
 
+import fdswarm.fx.bands.BandModeBuilder
 import fdswarm.fx.contest.ContestType.WFD
 import fdswarm.model.*
 import jakarta.inject.*
 
 @Singleton
-final class BigQsosGenerator @Inject()(qsoStore: QsoStore):
+final class BigQsosGenerator @Inject()(qsoStore: QsoStore, bandModeBuilder: BandModeBuilder):
 
   /** Generate synthetic QSOs and *immediately* add them to QsoStore.
    *
    * IMPORTANT: Iterator#map is lazy; we must consume the iterator or nothing happens.
    */
     val exchange = Exchange(FdClass(1, 'I'), "IL")
-    val bandMode  = BandMode("20M", "PH")
+    val bandMode  = bandModeBuilder("20M", "PH")
 
     def qsos(howMany: Int, prefix: String): Unit =
       callsignIterator(prefix)
@@ -42,8 +43,9 @@ final class BigQsosGenerator @Inject()(qsoStore: QsoStore):
         }
 
     def callsignIterator(prefix: String): Iterator[String] =
+      val alphabet = 'A' to 'Z'
       for
-        a <- Iterator.from('A'.toInt).map(_.toChar)
-        b <- Iterator.from('A'.toInt).map(_.toChar)
-        c <- Iterator.from('A'.toInt).map(_.toChar)
+        a <- alphabet.iterator
+        b <- alphabet.iterator
+        c <- alphabet.iterator
       yield s"$prefix$a$b$c"

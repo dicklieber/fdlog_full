@@ -37,7 +37,8 @@ class QsoEntryPanel @Inject()(
                                selectedBandModeStore: SelectedBandModeStore,
                                stationManager: StationManager,
                                callsignField: CallSignField,
-                               contestClassField: ContestClassField
+                               contestClassField: ContestClassField,
+                               dupPanel:DupPanel
                              ) extends LazyLogging:
 
   private val sectionField = UpperCase(new TextField())
@@ -68,6 +69,7 @@ class QsoEntryPanel @Inject()(
       add(sectionField, 2, 1)
 
       add(clearButton, 3, 1)
+      add(dupPanel.pane(callsignField.text), 0, 4, 3, 1)
     }
     GridUtils.fieldSet("QSO", grid)
 

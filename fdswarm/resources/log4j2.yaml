@@ -6,7 +6,7 @@ Configuration:
       name: TestConsole
       target: SYSTEM_ERR
       PatternLayout:
-        Pattern: "%highlight{%-5level}{FATAL=bg_red, ERROR=red, WARN=yellow, INFO=green, DEBUG=blue, info=cyan} %msg%n"
+        Pattern: "%logger{36} %highlight{%-5level}{FATAL=bg_red, ERROR=red, WARN=yellow, INFO=green, DEBUG=blue, info=cyan}  %msg%n"
 
 
   Loggers:
@@ -31,8 +31,8 @@ Configuration:
         level: info
         additivity: true
 
-      - name: "fdswarm.fx.qso.QsoEntryPanel"
-        level: trace
+      - name: "fdswarm.store.QsoStore"
+        level: info
         additivity: true
 
     Root:

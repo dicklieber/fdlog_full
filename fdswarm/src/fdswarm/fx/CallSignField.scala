@@ -20,7 +20,7 @@
 package fdswarm.fx
 
 import _root_.scalafx.Includes.*
-import _root_.scalafx.scene.control.TextField
+import _root_.scalafx.scene.control.{TextField, TextFormatter}
 import _root_.scalafx.scene.input.{KeyCode, KeyEvent}
 import fdswarm.fx.CallSignField.regex
 import fdswarm.fx.bandmodes.{BandModeStore, SelectedBandModeStore}
@@ -37,18 +37,31 @@ import scala.util.matching.Regex
 class CallSignField @Inject()(qsoStore: QsoStore, selectedBsndModeStore: SelectedBandModeStore) extends TextField with NextField:
   styleClass += "qsoCallSign"
 
-  //  def onNextField(ch:Char => Unit):Unit=
-  //    onKeyReleased = event => ch(event.getText.head)
-
+  textFormatter = new TextFormatter[String]((change: TextFormatter.Change) => {
+    if (change.isContentChange) {
+      change.setText(change.getText.toUpperCase)
+    }
+    val newText = change.controlNewText
+    // Match partial strings during typing.
+    // The target regex is ^[A-Z0-9]{1,3}[0-9][A-Z]{1,3}$
+    // Partial regex:
+    // 1-3 A-Z0-9
+    // followed by a digit
+    // followed by 1-3 A-Z
+    val typingPattern = "^([A-Z0-9]{1,3}[0-9]?[A-Z]{0,3})$"
+    if (newText.matches(typingPattern)) {
+      change
+    } else {
+      null
+    }
+  })
 
   def isValid(str: String): Boolean =
-    val mayDups = qsoStore.potentialDups(str, selectedBsndModeStore.selected.value)
-    logger.info(s"Potential duplicates: $mayDups")
     CallSignField.isValid(str)
 
 object CallSignField:
 
-  protected val regex: Regex = """^(?=.{3,12}$)[A-Z0-9]{1,3}[0-9][A-Z0-9]{1,4}(?:/(?:P|M|MM|AM|QRP|[A-Z0-9]{1,4}))?$""".r
+  protected val regex: Regex = """^[A-Z0-9]{1,3}[0-9][A-Z]{1,3}$""".r
 
   def isValid(str: String): Boolean =
     regex.findFirstIn(str).isDefined

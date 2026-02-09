@@ -40,3 +40,7 @@
     -fx-border-radius: 5;
 
 }
+
+.dupCallsign {
+    -fx-text-fill: red;
+}

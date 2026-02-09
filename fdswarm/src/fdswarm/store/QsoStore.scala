@@ -60,8 +60,11 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider) extends LazyLoggi
     )
 
   def potentialDups(startOfCallsign: String, bandmode: BandMode): Seq[Qso] =
-    map.filter(kv =>
-        kv._2.callSign.startsWith(startOfCallsign) && kv._2.bandMode == bandmode)
+    map.filter{case(id,qso) =>
+      val bandModeMatch = qso.bandMode == bandmode
+      logger.trace("qso.bandMode {} against {} mmatch: {}", qso.bandMode, bandmode, bandModeMatch)
+        val startMatch = qso.callSign.startsWith(startOfCallsign)
+        startMatch && bandModeMatch}
       .values
       .toSeq
 

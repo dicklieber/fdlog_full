@@ -24,7 +24,7 @@ import BandMode.*
 /**
  * Allows storng band and mode in a compact why in a [[Qso]]
  */
-case class BandMode(band: Band = "20m", mode: Mode = "PH") derives ReadWriter:
+case class BandMode private[fdswarm] (band: Band, mode: Mode) derives ReadWriter:
   def cabMode: Band =
     mode match
       case "USB" => "PH"
@@ -69,7 +69,7 @@ object BandMode:
   private val Parse = """\s*([\d.]+[a-z]+)\s+([A-Z]{2})\s*""".r
 
 
-  def apply(s: String): BandMode =
+  private[fdswarm] def apply(s: String): BandMode =
     s match
       case Parse(band, mode) =>
         new BandMode(band, mode)
