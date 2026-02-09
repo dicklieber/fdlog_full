@@ -44,3 +44,8 @@
 .dupCallsign {
     -fx-text-fill: red;
 }
+
+.callSignOk{
+    -fx-text-fill: green;
+    -fx-font-weight: bold;
+}

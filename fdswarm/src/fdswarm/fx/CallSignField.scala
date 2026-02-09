@@ -37,6 +37,16 @@ import scala.util.matching.Regex
 class CallSignField @Inject()(qsoStore: QsoStore, selectedBsndModeStore: SelectedBandModeStore) extends TextField with NextField:
   styleClass += "qsoCallSign"
 
+  text.onChange((_, _, newText) => {
+    if (isValid(newText)) {
+      if (!styleClass.contains("callSignOk")) {
+        styleClass += "callSignOk"
+      }
+    } else {
+      styleClass -= "callSignOk"
+    }
+  })
+
   textFormatter = new TextFormatter[String]((change: TextFormatter.Change) => {
     if (change.isContentChange) {
       change.setText(change.getText.toUpperCase)
