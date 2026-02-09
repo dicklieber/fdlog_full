@@ -49,3 +49,10 @@
     -fx-text-fill: green;
     -fx-font-weight: bold;
 }
+
+.section-match {
+    -fx-background-color: yellow;
+    -fx-border-color: orange;
+    -fx-border-width: 1;
+    -fx-border-radius: 2;
+}

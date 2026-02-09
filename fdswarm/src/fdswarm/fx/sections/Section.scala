@@ -38,6 +38,14 @@ case class Section(code: String, name: String) extends Label derives ReadWriter:
     onMouseEntered = _ => style = "-fx-background-color: lightgray; -fx-cursor: hand;"
     onMouseExited = _ => style = "-fx-background-color: transparent; -fx-cursor: default;"
 
+    sectionField.onChange { (_, _, newValue) =>
+      val input = if newValue == null then "" else newValue.trim.toUpperCase
+      if input.nonEmpty && code.toUpperCase.startsWith(input) then
+        if !styleClass.contains("section-match") then styleClass.add("section-match")
+      else
+        styleClass.remove("section-match")
+    }
+
 import jakarta.inject.{Inject, Singleton}
 @Singleton
 class Sections @Inject()(sectionsProvider: SectionsProvider):
