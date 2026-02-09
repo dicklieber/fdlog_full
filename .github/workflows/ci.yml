@@ -18,17 +18,6 @@ steps:
       path: "**/test-reports/**/*.xml"   # <-- adjust to where Mill/framework writes XML
       reporter: java-junit
 
-  - name: HTML report
-    if: always()
-    run: ./mill fdswarm.test.htmlReport
-
-  - name: Upload HTML report artifact
-    if: always()
-    uses: actions/upload-artifact@v4
-    with:
-      name: test-html-report
-      path: out/**/test/htmlReport/**
-
   - name: Fail job if tests failed
     if: steps.tests.outcome != 'success'
     run: exit 1

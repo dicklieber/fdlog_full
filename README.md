@@ -25,13 +25,6 @@ To generate an HTML coverage report:
 ```
 The report will be available at: `out/fdswarm/scoverage/htmlReport.dest/index.html`
 
-### Unit Test Reports
-To generate an HTML unit test report:
-```bash
-./mill fdswarm.test.htmlReport
-```
-The report will be available at: `out/fdswarm/test/htmlReport.dest/index.html`
-
 Other coverage report formats:
 - **XML Report**: `./mill fdswarm.scoverage.xmlReport`
 - **Console Report**: `./mill fdswarm.scoverage.consoleReport`
