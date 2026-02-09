@@ -77,6 +77,44 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo {
     def scalaVersion = "3.7.1"
 
     def munitVersion = "1.0.0"
+
+    def htmlReport() = Task.Command {
+      val reports = os.walk(os.pwd / os.up / os.up / os.up).filter(_.last == "test-report.xml")
+      if (reports.isEmpty) {
+        throw new Exception("No test reports found. Run tests first.")
+      } else {
+        val dest = Task.dest
+        os.makeDir.all(dest)
+        val htmlContent = new StringBuilder()
+        htmlContent.append("<html><head><title>Test Report</title><style>")
+        htmlContent.append("body { font-family: sans-serif; }")
+        htmlContent.append("table { border-collapse: collapse; width: 100%; }")
+        htmlContent.append("th, td { text-align: left; padding: 8px; border-bottom: 1px solid #ddd; }")
+        htmlContent.append("tr:hover { background-color: #f5f5f5; }")
+        htmlContent.append(".failure { color: red; }")
+        htmlContent.append("</style></head><body>")
+        htmlContent.append("<h1>Test Report Summary</h1>")
+        htmlContent.append("<table><tr><th>Suite</th><th>Tests</th><th>Failures</th><th>Errors</th><th>Skipped</th><th>Time</th></tr>")
+
+        reports.foreach { r =>
+          val xml = scala.xml.XML.loadFile(r.toIO)
+          
+          (xml \ "testsuite").foreach { suite =>
+            val suiteName = (suite \ "@name").text
+            val sTests = (suite \ "@tests").text
+            val sFailures = (suite \ "@failures").text
+            val sErrors = (suite \ "@errors").text
+            val sSkipped = (suite \ "@skipped").text
+            val sTime = (suite \ "@time").text
+            val rowClass = if (sFailures.toInt > 0 || sErrors.toInt > 0) "class='failure'" else ""
+            htmlContent.append(s"<tr $rowClass><td>$suiteName</td><td>$sTests</td><td>$sFailures</td><td>$sErrors</td><td>$sSkipped</td><td>$sTime</td></tr>")
+          }
+        }
+        htmlContent.append("</table></body></html>")
+        os.write(dest / "index.html", htmlContent.toString())
+        println(s"Test report generated at $dest/index.html")
+      }
+    }
   }
 
 }
