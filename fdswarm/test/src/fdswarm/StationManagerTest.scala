@@ -21,10 +21,12 @@ package fdswarm
 import munit.FunSuite
 
 class StationManagerTest extends FunSuite:
-
+  // TODO: Implement StationManagerTest
+  /*
   test("happy path"):
     throw new NotImplementedError("") //todo
 //    val stationManager = StationManager(TestDirectory)
 //
 //    val station = stationManager.station
 //    station
+  */

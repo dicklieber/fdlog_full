@@ -32,9 +32,18 @@ object JavaFxTestKit :
   def init(): Unit =
     if (started.compareAndSet(false, true)) {
       val latch = CountDownLatch(1)
-      Platform.startup(() => latch.countDown()) // starts toolkit + FX thread
-      if (!latch.await(10, TimeUnit.SECONDS))
-        throw new RuntimeException("JavaFX Platform.startup timed out")
+      try {
+        Platform.startup(() => latch.countDown()) // starts toolkit + FX thread
+        if (!latch.await(10, TimeUnit.SECONDS))
+          throw new RuntimeException("JavaFX Platform.startup timed out")
+      } catch {
+        case e: IllegalStateException if e.getMessage.contains("Toolkit already initialized") =>
+          // Already initialized by another test or elsewhere, ignore
+          latch.countDown()
+        case e: Throwable =>
+          started.set(false)
+          throw e
+      }
     }
 
   /** Run code on the FX thread and wait for completion (useful for UI mutations). */
