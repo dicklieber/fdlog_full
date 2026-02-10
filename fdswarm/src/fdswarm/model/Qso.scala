@@ -21,13 +21,12 @@ package fdswarm.model
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.replication.NodeAddress
 import fdswarm.util.Ids
+import fdswarm.util.Ids.Id
+import fdswarm.util.JavaTimePickle.given_ReadWriter_Instant
+import upickle.ReadWriter
+import upickle.implicits.serializeDefaults
 
 import java.time.Instant
-import java.util.UUID
-import fdswarm.util.Ids.Id
-import upickle.ReadWriter
-import fdswarm.util.JavaTimePickle.given_ReadWriter_Instant
-import upickle.implicits.serializeDefaults
 /**
  * This is what's in the store and journal.log.
  *
@@ -50,38 +49,8 @@ case class Qso(callSign: Callsign,
   lazy val fdHour: FdHour =
     FdHour(stamp)
 
-/*
-*
- * @see https://wwrof.org/cabrillo/cabrillo-qso-data/
- * @return frequency for a cab file.
- *         As integer KHz
- 
-def cabFreq: String = {
-
-  mHz.map { mHz =>
-    val kHz = mHz * 1000.0F
-    f"${kHz}%.0f"
-  }.getOrElse(bandMode.cabFreq)
-}*/
-
-
-/*
-  def log(): Unit = 
-  
-    logger.info("newqso {} {} {} {} {} {}",
-      kv("callsign", callSign),
-      kv("operator", qsoMetadata.operator),
-      kv("class", exchange.entryClass),
-      kv("section", exchange.sectionCode),
-      kv("band", bandMode.bandName),
-      kv("mode", bandMode.modeName),
-      kv("frequency", mHz),
-    )
-*/
-
 
 object Qso:
-
   given Ordering[Qso] =
     Ordering.by(_.stamp)
 

@@ -28,8 +28,11 @@ class QsoRoutes @Inject()(qsoStore: QsoStore) extends Routes:
   @get("/qsos")
   def allQsos(): Response[String] =
     Response(
-      data = write(qsoStore.all),
-      headers = Seq("Content-Type" -> "application/json")
+      data = write(qsoStore.all, indent = 2),
+      headers = Seq(
+        "Content-Type" -> "application/json",
+        "Content-Disposition" -> "attachment; filename=qsos.json"
+      )
     )
 
   initialize()

@@ -1,0 +1,73 @@
+Yes — definitely more than 1,000 QSOs — but how much more depends on your target use case.
+
+Given what you’re building with your Scala / ScalaFX Field Day logging ecosystem, here’s a practical sizing guide.
+
+⸻
+
+📊 Realistic QSO Volumes by Station Type
+
+🏠 Small / Casual / Home Stations
+	•	Typical: 200–1,500 QSOs
+	•	Single operator or small family setup
+	•	Low concurrency
+	•	Simple logging OK
+
+⛺ Club Portable (2A–4A class)
+	•	Typical: 1,500–6,000 QSOs
+	•	Multiple transmitters
+	•	Multiple logging positions
+	•	Concurrent log writes
+	•	Network sync required
+
+🏆 Large / High-Performance Stations
+	•	Typical: 6,000–10,000+ QSOs
+	•	Multi-op contest-grade stations
+	•	Parallel operators
+	•	High rate bursts (150–250 QSOs/hour per transmitter)
+
+⸻
+
+⚡ Rate Matters More Than Total
+
+Your logger design should handle burst rates, not just totals.
+
+Peak observed rates at big sites:
+	•	3 transmitters × 200 QSOs/hour = 600 QSOs/hour
+	•	That’s:
+	•	10 QSOs/min
+	•	One every 6 seconds
+	•	With multiple operators entering simultaneously.
+
+For distributed logging (like your FDLog / FdSwarm style system):
+
+You should design for:
+	•	✅ Concurrent writes
+	•	✅ Conflict-free merge
+	•	✅ Network partitions
+	•	✅ Replay / journal recovery
+	•	✅ Duplicate detection at scale
+
+⸻
+
+🧠 Practical Engineering Target (Recommended)
+
+For a modern Field Day logging app:
+
+Design capacity targets:
+	•	📦 15,000 QSOs per event
+	•	👥 10–20 concurrent operators
+	•	🔁 Real-time replication across nodes
+	•	💾 Append-only journal safe to ~50k records
+	•	⚡ UI filtering/search under 50 ms at 10k records
+
+That gives you comfortable headroom beyond typical Field Day usage.
+
+⸻
+
+🧪 Good Test Numbers for Your Scala Test Suite
+
+Since you’re using Mill + MUnit already, I’d suggest load tests with:
+	•	1k QSOs — baseline
+	•	5k QSOs — club portable
+	•	10k QSOs — high-end site
+	•	25k QSOs — stress / soak test

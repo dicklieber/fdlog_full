@@ -21,7 +21,7 @@ package fdswarm.model
 
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.PropertyCellName
-
+import upickle.default.*
 import java.time.{Instant, ZoneId, ZonedDateTime}
 import scala.collection.concurrent.TrieMap
 
@@ -30,8 +30,8 @@ import scala.collection.concurrent.TrieMap
  * Its just a LocalDateTime with only any hour.
  *
  */
-case class FdHour private(day: Int, hour: Int) extends Ordered[FdHour] with PropertyCellName {
-  override val toolTip = s"utc date: $day hour: $hour"
+case class FdHour private(day: Int, hour: Int) extends Ordered[FdHour] derives ReadWriter:
+  val toolTip: String = s"utc date: $day hour: $hour"
   override val toString: String = {
     s"$day:$hour"
   }
@@ -60,11 +60,9 @@ case class FdHour private(day: Int, hour: Int) extends Ordered[FdHour] with Prop
     else
       ret
 
-  override def name: String = display
+  def name: String = display
 
-}
-
-object FdHour extends LazyLogging {
+object FdHour extends LazyLogging :
   lazy val knownHours: TrieMap[FdHour, FdHour] = new TrieMap[FdHour, FdHour]()
   /**
    * Used to match any FdHour in [[FdHour.equals()]]
@@ -90,4 +88,3 @@ object FdHour extends LazyLogging {
 
     knownHours.getOrElseUpdate(candidate, candidate)
   }
-}

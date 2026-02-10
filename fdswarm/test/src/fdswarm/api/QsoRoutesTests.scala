@@ -52,6 +52,10 @@ class QsoRoutesTests extends munit.FunSuite {
     val contentType = response.headers.find(_._1.equalsIgnoreCase("Content-Type")).map(_._2)
     assertEquals(contentType, Some("application/json"))
 
+    // Verify content disposition (download as file)
+    val contentDisp = response.headers.find(_._1.equalsIgnoreCase("Content-Disposition")).map(_._2)
+    assertEquals(contentDisp, Some("attachment; filename=qsos.json"))
+
     val responseData = response.data
     // Verify response is a JSON array and contains the QSO
     assert(responseData.startsWith("[") && responseData.endsWith("]"))
