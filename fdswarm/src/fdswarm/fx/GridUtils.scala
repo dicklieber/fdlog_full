@@ -45,7 +45,7 @@ object GridUtils:
       vgap = 2
     
     val cc = new ColumnConstraints() {
-      percentWidth = 100.0 / nCols
+      hgrow = Priority.Never
     }
     grid.columnConstraints = (0 until nCols).map(_ => cc)
 

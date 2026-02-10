@@ -28,7 +28,6 @@ case class SectionGroup(name: String, sections: Seq[Section]) derives ReadWriter
 case class Section(code: String, name: String) extends Label derives ReadWriter:
   text = code
   tooltip = Tooltip(name)
-  maxWidth = Double.MaxValue
   padding = Insets(2, 4, 2, 4)
   minWidth = 0
   textOverrun = OverrunStyle.Clip

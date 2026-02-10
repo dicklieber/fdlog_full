@@ -1,11 +1,13 @@
 package fdswarm.fx.qso
 
+import fdswarm.fx.GridUtils
 import fdswarm.model.Qso
 import fdswarm.store.QsoStore
 import jakarta.inject.*
 import scalafx.collections.ObservableBuffer
 import scalafx.scene.Node
 import scalafx.scene.control.*
+import scalafx.scene.layout.VBox
 
 import java.time.format.DateTimeFormatter
 import java.time.{Instant, ZoneId}
@@ -66,13 +68,14 @@ class QsoTablePane @Inject(qsoStore:QsoStore):
 
   private val countLabel = new Label:
     text <== scalafx.beans.binding.Bindings.createStringBinding(
-      () => s"${qsoCollection.size} QSOs",
+      () => f"${qsoCollection.size}%,d QSOs",
       qsoCollection
     )
 
-  val node: Node = new TitledPane() {
-//    text = "QSOs"
-    collapsible = false
-    graphic = countLabel
-    content = table
-  }
+  val node: Node =
+    GridUtils.fieldSet("QSOs", new VBox {
+      children = Seq(
+        countLabel,
+        table
+      )
+    })

@@ -28,6 +28,10 @@ final class BandsAndModesPane @Inject()(
                                          matrixPane: BandModeMatrixPane
                                       ) extends GridPane:
 
+  padding = Insets(10)
+  hgap = 10
+  vgap = 10
+
   add(modeCheckBoxPane.node, 0, 1)
   add(bandCheckBoxPane.node, 1, 0)
   add(matrixPane.node, 1,1)

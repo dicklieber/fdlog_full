@@ -1,11 +1,12 @@
 package fdswarm.fx.bands
 
+import fdswarm.fx.GridUtils
 import fdswarm.io.DirectoryProvider
 import fdswarm.model.BandMode.Band
 import jakarta.inject.{Inject, Singleton}
 import os.Path
 import scalafx.scene.Node
-import scalafx.scene.control.{CheckBox, Label, TitledPane, Tooltip}
+import scalafx.scene.control.{CheckBox, Label, Tooltip}
 import scalafx.scene.layout.GridPane
 
 @Singleton
@@ -35,10 +36,7 @@ final class BandCheckBoxPane @Inject()(
     grid.add(bandCheckBox, col + 1, row)
 
   val node: Node =
-    new TitledPane:
-      content = grid
-      text = "Ham bands"
-      collapsible = false
+    GridUtils.fieldSet("Ham bands", grid)
 
   private def checked: Seq[Band] =
     checkBoxes.iterator.filter(_.selected.value).map(_.bandName).toSeq

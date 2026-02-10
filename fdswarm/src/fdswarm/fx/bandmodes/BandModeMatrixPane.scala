@@ -48,8 +48,7 @@ final class BandModeMatrixPane @Inject()(availableBandsStore: AvailableBandsMana
     val nBands = availableBandsStore.bands.size
     val firstColCc = new ColumnConstraints() { hgrow = Priority.Never }
     val bandColCc = new ColumnConstraints() {
-      percentWidth = 100.0 / (nBands + 1)
-      hgrow = Priority.Always
+      hgrow = Priority.Never
     }
     grid.columnConstraints = Seq(firstColCc) ++ (1 to nBands).map(_ => bandColCc)
 
@@ -69,7 +68,6 @@ final class BandModeMatrixPane @Inject()(availableBandsStore: AvailableBandsMana
   case class ModeBandButton(band:Band, mode:Mode, selectedHamBand:BandMode) extends ToggleButton():
     val bandMode: BandMode = bandModeBuilder(band, mode)
     text = band
-    maxWidth = Double.MaxValue
     padding = Insets(2, 4, 2, 4)
     minWidth = 0
     graphic = null

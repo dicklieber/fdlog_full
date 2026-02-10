@@ -25,6 +25,7 @@ import fdswarm.fx.bandmodes.BandModeMatrixPane
 import fdswarm.fx.contest.ContestId
 import fdswarm.fx.sections.SectionPanel
 import jakarta.inject.Singleton
+import scalafx.geometry.Insets
 import scalafx.scene.Node
 import scalafx.scene.layout.{GridPane, VBox}
 import GridUtils.*
@@ -38,6 +39,9 @@ class ContestEntry @Inject()(qsoEntryPanel: QsoEntryPanel,
 
   def node: Node =
     new GridPane {
+      padding = Insets(10)
+      hgap = 10
+      vgap = 10
       add(qsoTablePane.node, 0, 0, 2, 1)
       add(qsoEntryPanel.node, 0, 1, 1, 1)
       add(sectionPanel.node, 1, 1, 1, 1)
