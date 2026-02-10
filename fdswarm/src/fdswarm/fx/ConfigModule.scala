@@ -53,7 +53,12 @@ class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
     //primaryConfig is config/sarasec.conf, overrides the defaults in application.conf (resource)
     val primaryConfig = ConfigFactory.parseFile((os.pwd / "config" / "sarasec.conf").toIO)
     val defaultConfig: Config = ConfigFactory.load()
-    val config: Config = primaryConfig.withFallback(defaultConfig)
+    var config: Config = primaryConfig.withFallback(defaultConfig)
+
+    // Override port with PORT env var if present
+    sys.env.get("PORT").foreach { p =>
+      config = ConfigFactory.parseString(s"fdswarm.port = $p").withFallback(config)
+    }
 
     val entries = config.entrySet().asScala.toSeq
     for (entry <- entries) {

@@ -50,9 +50,6 @@ case class Qso(callSign: Callsign,
   lazy val fdHour: FdHour =
     FdHour(stamp)
 
-  def isDup(that: Qso): Boolean =
-    this.callSign == that.callSign &&
-      this.bandMode == that.bandMode
 /*
 *
  * @see https://wwrof.org/cabrillo/cabrillo-qso-data/

@@ -16,6 +16,12 @@
  *
  */
 
-package fdswarm.replication
+package fdswarm.api
 
-final case class NodeAddress(host: String, port: Int)
+class SampleRoutesTests extends munit.FunSuite {
+  test("hello endpoint returns Hello API") {
+    val routes = new SampleRoutes()
+    val response = routes.hello()
+    assertEquals(response, "Hello API")
+  }
+}

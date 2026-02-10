@@ -20,7 +20,9 @@ package fdswarm
 
 import com.google.inject.{Guice, Injector}
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.api.ApiService
 import fdswarm.fx.{ConfigModule, FdLogUi}
+import fdswarm.replication.NetworkConfig
 import scalafx.application.JFXApp3
 
 /** Minimal app bootstrap:
@@ -28,7 +30,7 @@ import scalafx.application.JFXApp3
   *   - runs startup validation checks
   *   - delegates all UI construction to [[FdLogUi]]
   */
-object fdlog extends JFXApp3 with LazyLogging:
+object FdLogApp extends JFXApp3 with LazyLogging:
 
   logger.info("fdlog ctor")
 
@@ -36,11 +38,16 @@ object fdlog extends JFXApp3 with LazyLogging:
     Guice.createInjector(new ConfigModule())
 
   override def start(): Unit =
-//    validateHamBands(injector)
-//    validateBandModes(injector)
 
     // IMPORTANT: FdLogUi is injected; ask Guice for it
+    val networkConfig = injector.getInstance(classOf[NetworkConfig])
     val ui = injector.getInstance(classOf[FdLogUi])
+    val apiService = injector.getInstance(classOf[ApiService])
+
+    // Start API service in a separate thread
+    val apiThread = new Thread(() => apiService.start())
+    apiThread.setDaemon(true)
+    apiThread.start()
 
     // Create the primary stage, let the UI configure it, then publish it
     val s = new JFXApp3.PrimaryStage

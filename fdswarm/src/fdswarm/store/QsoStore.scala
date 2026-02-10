@@ -39,6 +39,13 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider) extends LazyLoggi
   def size: Int =
     map.size
 
+  /**
+   * Thread-safe snapshot of all QSOs, sorted by stamp.
+   * Prefer this over reading `qsoCollection` from non-JavaFX threads (e.g., Cask routes).
+   */
+  def all: Seq[Qso] =
+    map.values.toSeq.sorted
+
   if os.exists(journalFile) then
     os.read.lines(journalFile)
       .iterator

@@ -16,6 +16,26 @@
  *
  */
 
-package fdswarm.replication
+package fdswarm.api
 
-final case class NodeAddress(host: String, port: Int)
+import cask.*
+import com.google.inject.{Inject, Singleton}
+import com.typesafe.scalalogging.LazyLogging
+import fdswarm.replication.NetworkConfig
+
+@Singleton
+class ApiService @Inject() (
+    networkConfig: NetworkConfig,
+    qsoRoutes: QsoRoutes
+) extends Main with LazyLogging:
+  override def port: Int = networkConfig.url.getPort
+  override def host: String = networkConfig.url.getHost
+
+  val allRoutes = Seq(
+    SampleRoutes(),
+    qsoRoutes
+  )
+
+  def start(): Unit =
+    logger.info(s"Starting Cask API on http://$host:$port")
+    main(Array.empty)

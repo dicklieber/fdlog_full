@@ -16,6 +16,14 @@
  *
  */
 
-package fdswarm.replication
+package fdswarm.api
 
-final case class NodeAddress(host: String, port: Int)
+import cask.*
+
+class SampleRoutes() extends Routes:
+
+  @get("/")
+  def hello(): String =
+    "Hello API"
+
+  initialize()

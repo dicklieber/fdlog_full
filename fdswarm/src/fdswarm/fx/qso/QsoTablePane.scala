@@ -4,6 +4,7 @@ import fdswarm.fx.GridUtils
 import fdswarm.model.Qso
 import fdswarm.store.QsoStore
 import jakarta.inject.*
+import scalafx.Includes.*
 import scalafx.collections.ObservableBuffer
 import scalafx.scene.Node
 import scalafx.scene.control.*
@@ -21,7 +22,7 @@ class QsoTablePane @Inject(qsoStore:QsoStore):
   private val qsoCollection: ObservableBuffer[Qso] = qsoStore.qsoCollection
 
   private val timeFmt =
-    DateTimeFormatter.ofPattern("MMM dd, h:mm a")
+    DateTimeFormatter.ofPattern("MMM dd, h:mm a z")
       .withZone(ZoneId.systemDefault())
 
   private def fmtInstant(i: Instant): String =
@@ -56,14 +57,11 @@ class QsoTablePane @Inject(qsoStore:QsoStore):
   theirCallCol.styleClass += "qso-their-call"
 
   // Optional: double click row to do something
-/*
   table.onMouseClicked = e =>
     if e.clickCount == 2 then
       val sel = table.selectionModel().getSelectedItem
       if sel != null then
-        // hook your own behavior here
-        println(s"Double-click: ${sel.theirCall} on ${sel.band} ${sel.mode}")
-*/
+        QsoDialog.show(sel)
 
 
   private val countLabel = new Label:

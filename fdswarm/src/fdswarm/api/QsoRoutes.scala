@@ -16,6 +16,20 @@
  *
  */
 
-package fdswarm.replication
+package fdswarm.api
 
-final case class NodeAddress(host: String, port: Int)
+import cask.*
+import com.google.inject.Inject
+import fdswarm.store.QsoStore
+import upickle.default.*
+
+class QsoRoutes @Inject()(qsoStore: QsoStore) extends Routes:
+
+  @get("/qsos")
+  def allQsos(): Response[String] =
+    Response(
+      data = write(qsoStore.all),
+      headers = Seq("Content-Type" -> "application/json")
+    )
+
+  initialize()
