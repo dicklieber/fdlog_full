@@ -58,7 +58,7 @@ class CallSignField @Inject()(qsoStore: QsoStore, selectedBsndModeStore: Selecte
     // 1-3 A-Z0-9
     // followed by a digit
     // followed by 1-3 A-Z
-    val typingPattern = "^([A-Z0-9]{1,3}[0-9]?[A-Z]{0,3})$"
+    val typingPattern = "^([A-Z0-9]{1,3}[0-9]?[A-Z]{0,3})?$"
     if (newText.matches(typingPattern)) {
       change
     } else {

@@ -29,7 +29,8 @@ import jakarta.inject.{Inject, Singleton}
 import scalafx.application.Platform
 import scalafx.scene.Node
 import scalafx.scene.control.*
-import scalafx.scene.layout.GridPane
+import scalafx.scene.layout.{GridPane, VBox}
+import scalafx.util.Duration
 
 @Singleton
 class QsoEntryPanel @Inject()(
@@ -42,7 +43,6 @@ class QsoEntryPanel @Inject()(
                              ) extends LazyLogging:
 
   private val sectionField = UpperCase(new TextField())
-
   private val clearButton = new Button("\u21BA") {
     styleClass += "clear-button"
     tooltip = Tooltip("Clear fields")
@@ -54,24 +54,30 @@ class QsoEntryPanel @Inject()(
         callsignField.requestFocus()
     })
   }
+  private val grid = new GridPane {
+    hgap = 5
+    add(new Label("Their Callsign:"), 0, 0)
+    add(callsignField, 0, 1)
+
+    add(new Label("Received Class:"), 1, 0)
+    add(contestClassField, 1, 1)
+
+    add(new Label("Received Section:"), 2, 0)
+    add(sectionField, 2, 1)
+
+    add(clearButton, 3, 1)
+  }
+
+  private val mainLayout = new VBox {
+    spacing = 10
+    children = Seq(
+      grid,
+      dupPanel.pane(callsignField.text)
+    )
+  }
 
   val node: Node =
-
-    val grid = new GridPane {
-      hgap = 5
-      add(new Label("Their Callsign:"), 0, 0)
-      add(callsignField, 0, 1)
-
-      add(new Label("Received Class:"), 1, 0)
-      add(contestClassField, 1, 1)
-
-      add(new Label("Received Section:"), 2, 0)
-      add(sectionField, 2, 1)
-
-      add(clearButton, 3, 1)
-      add(dupPanel.pane(callsignField.text), 0, 4, 3, 1)
-    }
-    GridUtils.fieldSet("QSO", grid)
+    GridUtils.fieldSet("QSO", mainLayout)
 
   callsignField.onDoneFunction = chForNext =>
     logger.debug("Callsign done: {} current: {}", chForNext, contestClassField.text.value)
@@ -120,4 +126,22 @@ class QsoEntryPanel @Inject()(
     )
 
     qsoStore.add(qso)
-    callsignField.text.value = ""
+
+    if !grid.styleClass.contains("qso-submit-highlight") then
+      grid.styleClass += "qso-submit-highlight"
+
+    import scalafx.animation.{KeyFrame, Timeline}
+    import scalafx.Includes.*
+
+    val timeline = new Timeline {
+      keyFrames = Seq(
+        KeyFrame(Duration(1000), onFinished = _ => {
+          grid.styleClass -= "qso-submit-highlight"
+          callsignField.text = ""
+          contestClassField.text = ""
+          sectionField.text = ""
+          callsignField.requestFocus()
+        })
+      )
+    }
+    timeline.play()
