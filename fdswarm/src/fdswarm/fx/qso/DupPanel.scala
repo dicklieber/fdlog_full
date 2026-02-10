@@ -56,13 +56,21 @@ class DupPanel @Inject()(
             root.managed = false
           else
             grid.children.clear()
-            dups.zipWithIndex.foreach { (qso, index) =>
+            val displayedDups = dups.take(45)
+            displayedDups.zipWithIndex.foreach { (qso, index) =>
               val label = new Label(qso.callSign.toString) {
                 styleClass += "dupCallsign"
                 tooltip = Tooltip(localFrom(qso.stamp))
               }
-              grid.add(label, index % 5, index / 5)
+              grid.add(label, index % 9, index / 9)
             }
+            if dups.size > 45 then
+              val moreLabel = new Label(s"${dups.size - 45} more possible dups") {
+                styleClass +=  "dupCallsignMore"
+              }
+              // Place in the next row, spanning all columns
+              val nextRow = (displayedDups.size + 8) / 9
+              grid.add(moreLabel, 0, nextRow, 9, 1) 
             root.visible = true
             root.managed = true
         }
