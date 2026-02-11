@@ -28,7 +28,7 @@ import scala.jdk.CollectionConverters.*
 class NetworkConfig @Inject() (config: Config):
   private val port:Int = sys.env.get("PORT")
     .map(_.toInt)
-    .getOrElse(config.getInt("fdswarm.port"))
+    .getOrElse(config.getInt("fdswarm.httpPort"))
   val url: URL =
     val address = findNonLocalhostIPv4().getOrElse("127.0.0.1")
     URL(s"http://$address:$port")

@@ -19,83 +19,144 @@
 package fdswarm.fx.contest
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.{ContestDateCalculator, ContestDates}
-import fdswarm.fx.UpperCase
 import fdswarm.fx.caseForm.MyCaseForm
-import fdswarm.fx.contest.ContestType.WFD
-import fdswarm.io.{DirectoryProvider, ProductionDirectory}
-import jakarta.inject.*
+import fdswarm.io.DirectoryProvider
+import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
 import scalafx.beans.property.ObjectProperty
 import scalafx.scene.control.*
+import scalafx.scene.layout.*
 import scalafx.stage.Window
 import upickle.default.*
-
-import java.time.LocalDate
+import fdswarm.util.JavaTimePickle.given_ReadWriter_ZonedDateTime
+import java.time.*
 
 @Singleton
-class ContestManager @Inject()(directoryProvider: DirectoryProvider) extends LazyLogging:
+final class ContestManager @Inject()(
+                                      productionDirectory: DirectoryProvider,
+                                      contestCatalog: ContestCatalog
+                                    ) extends LazyLogging:
 
   private val file: os.Path =
-    directoryProvider() / "contest.json"
+    productionDirectory() / "contest.json"
 
-  val currentDetailProperty: ObjectProperty[ContestDetail] =
+  val configProperty: ObjectProperty[ContestConfig] =
     ObjectProperty(load())
 
-  private def defaultDetail: ContestDetail =
-    val year = LocalDate.now().getYear
-    val contestDates = ContestDateCalculator.datesFor(ContestType.WFD, year)
+  val currentDetailProperty: ObjectProperty[ContestDetail] =
+    ObjectProperty(toDetail(configProperty.value))
+
+  // Keep detail in sync with config
+  configProperty.onChange { (_, _, newValue) =>
+    currentDetailProperty.value = toDetail(newValue)
+    persist()
+  }
+
+  def config: ContestConfig = configProperty.value
+
+  def setConfig(newConfig: ContestConfig): Unit =
+    configProperty.value = newConfig
+    configProperty.value = newConfig
+
+  private def toDetail(config: ContestConfig): ContestDetail =
+    val catalogEntry = contestCatalog.contests.find(_.name == config.contest)
     ContestDetail(
-      contest = WFD,
-      classChars = "HIOM",
-      start = contestDates.startUtc,
-      end = contestDates.endUtc,
+      contest = config.contest,
+      start = config.start,
+      end = config.end,
+      classChars = catalogEntry.map(_.classChars.map(_.ch).mkString).getOrElse("")
     )
 
-  private def load(): ContestDetail =
-    try {
-      if os.exists(file) then
-        val json = os.read(file)
-        read[ContestDetail](json)
-      else
-        defaultDetail
-    } catch {
-      case e: Throwable =>
-        logger.warn(s"Failed to load contest detail from $file: ${e.getMessage}")
-        defaultDetail
-    }
-
-  private def save(): Unit =
-    try {
-      val json = write(currentDetailProperty.value, indent = 2)
-      os.write.over(file, json, createFolders = true)
-    } catch {
-      case e: Throwable =>
-        logger.error(s"Failed to save contest detail to $file: ${e.getMessage}")
-    }
-
   def show(ownerWindow: Window): Unit =
-    val form = MyCaseForm(currentDetailProperty.value)
-    UpperCase(form.control[TextField]("classChars"))
+    val myCaseForm = MyCaseForm[ContestConfig](config)
+    val pane = myCaseForm.pane()
 
-    val dialog = new Dialog[ButtonType] {
+    // Setup listener for contest type change to prompt for year
+    val contestCombo = myCaseForm.control[ComboBox[ContestType]]("contest")
+    contestCombo.onAction = _ => {
+      val newType = contestCombo.value.value
+      promptForYear(ownerWindow).foreach { year =>
+        val newDates = newType.dates(year)
+        updateZonedDateTimeControl(myCaseForm, "start", newDates.startUtc)
+        updateZonedDateTimeControl(myCaseForm, "end", newDates.endUtc)
+      }
+    }
+
+    val recalculateButton = new Button("Recalculate Dates") {
+      onAction = _ => {
+        val currentType = contestCombo.value.value
+        promptForYear(ownerWindow).foreach { year =>
+          val newDates = currentType.dates(year)
+          updateZonedDateTimeControl(myCaseForm, "start", newDates.startUtc)
+          updateZonedDateTimeControl(myCaseForm, "end", newDates.endUtc)
+        }
+      }
+    }
+
+    val dialogContent = new VBox(10, pane, recalculateButton)
+
+    val d = new Dialog[ContestConfig]() {
       initOwner(ownerWindow)
       title = "Contest Detail"
-      dialogPane().content = form.pane()
+      headerText = "Edit Contest Configuration"
+      dialogPane().content = dialogContent
       dialogPane().buttonTypes = Seq(ButtonType.OK, ButtonType.Cancel)
+      resultConverter = {
+        case ButtonType.OK => myCaseForm.result
+        case _ => null
+      }
     }
 
-    val result = dialog.showAndWait()
+    val result = d.showAndWait()
     result match
-      case Some(ButtonType.OK) =>
-        val detail = form.result
-        currentDetailProperty.value = detail
-        save()
-        println(s"Saved contest detail: $detail")
-      case _ =>
-        println("Contest detail edit cancelled")
+      case Some(c: ContestConfig) => setConfig(c)
+      case _ => ()
 
-  def menuItem(using owningWindow: Window): MenuItem =
-    new MenuItem("Contest Detail"):
-      onAction = _ => show(owningWindow)
-  
+  private def promptForYear(ownerWindow: Window): Option[Int] =
+    val d = new TextInputDialog(LocalDate.now().getYear.toString) {
+      initOwner(ownerWindow)
+      title = "Select Year"
+      headerText = "Enter the year for the contest"
+      contentText = "Year:"
+    }
+    d.showAndWait().flatMap(_.toIntOption)
+
+  private def updateZonedDateTimeControl(form: MyCaseForm[ContestConfig], fieldName: String, zdt: ZonedDateTime): Unit =
+    // MyCaseForm uses an HBox for ZonedDateTime with DatePicker and two Spinners
+    val field = form.fields.find(_.name == fieldName).get
+    val hb = field.control.asInstanceOf[scalafx.scene.layout.HBox]
+    val datePicker = hb.children(0).asInstanceOf[javafx.scene.control.DatePicker]
+    val hourSpinner = hb.children(2).asInstanceOf[javafx.scene.control.Spinner[Int]]
+    val minSpinner = hb.children(4).asInstanceOf[javafx.scene.control.Spinner[Int]]
+
+    datePicker.value = zdt.toLocalDate
+    hourSpinner.getValueFactory.setValue(zdt.getHour)
+    minSpinner.getValueFactory.setValue(zdt.getMinute)
+
+  // ---- persistence ----------------------------------------------------------
+
+  private def persist(): Unit =
+    try {
+      val json = write(configProperty.value, indent = 2)
+      os.write.over(file, json, createFolders = true)
+    } catch {
+      case e: Throwable => logger.error(s"Failed to persist contest config to $file", e)
+    }
+
+  private def load(): ContestConfig =
+    try {
+      if (os.exists(file)) {
+        val json = os.read(file)
+        read[ContestConfig](json)
+      } else {
+        defaultConfig()
+      }
+    } catch {
+      case e: Throwable =>
+        logger.warn(s"Failed to load contest config from $file: ${e.getMessage}. Using default.")
+        defaultConfig()
+    }
+
+  private def defaultConfig(): ContestConfig =
+    val now = ZonedDateTime.now(ZoneOffset.UTC)
+    ContestConfig(ContestType.WFD, now, now.plusHours(24))
