@@ -22,7 +22,6 @@ import com.google.inject.Inject
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.GridUtils
 import fdswarm.fx.bandmodes.BandModeMatrixPane
-import fdswarm.fx.contest.ContestId
 import fdswarm.fx.sections.SectionPanel
 import jakarta.inject.Singleton
 import scalafx.geometry.Insets

@@ -5,7 +5,7 @@ import fdswarm.fx.contest.ContestManager
 import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.station.StationEditor
 import fdswarm.fx.tools.HowManyDialogService
-import fdswarm.replication.{FdHourDigest, Repl}
+import fdswarm.replication.{BroadcastSender, FdHourDigest, Repl}
 import jakarta.inject.Inject
 import scalafx.application.Platform
 import scalafx.event.EventIncludes.*
@@ -22,7 +22,8 @@ final class FdLogUi @Inject() (
                                 stationEditor: StationEditor,
                                 contestManager: ContestManager,
                                 howManyDialogService: HowManyDialogService,
-                                repl: Repl
+                                repl: Repl,
+                                broadcastSender: BroadcastSender
                               ):
 
   private val bandModeNode: Node =
@@ -120,5 +121,10 @@ final class FdLogUi @Inject() (
             println(s"Decoded JSON: $json")
             val s:Seq[FdHourDigest] = read(json)
             println(s"Decoded FdHourDigests: $s")
+          },
+        new MenuItem("Broadcast FdHour"):
+          onAction = _ => {
+            val base64 = repl.byFdHourJsonGzipBase64
+            broadcastSender.broadcast(base64)
           }
       )

@@ -11,34 +11,45 @@ object ContestDateCalculator:
 
   // ---- Public API -----------------------------------------------------------
 
-  /** One entry point: compute UTC window for a contest + year. */
-  def datesFor(contest: ContestType, year: Int): ContestDates =
-    contest match
-      case ContestType.WFD =>
-        val (sat, sun) = lastFullWeekend(year, Month.JANUARY)
-        ContestDates(
-          startUtc = sat.atTime(19, 0).atZone(ZoneOffset.UTC),  // 1900Z Sat
-          endUtc   = sun.atTime(18, 59).atZone(ZoneOffset.UTC)  // 1859Z Sun
-        )
+  def datesFor(contest: fx.contest.ContestType, year: Int): ContestDates =
+    contest.dates(year)
 
-      case ContestType.ARRL =>
-        val (sat, sun) = nthFullWeekend(year, Month.JUNE, n = 4) // 4th full weekend in June
-        ContestDates(
-          startUtc = sat.atTime(18, 0).atZone(ZoneOffset.UTC),  // 1800Z Sat
-          endUtc   = sun.atTime(20, 59).atZone(ZoneOffset.UTC)  // 2059Z Sun
-        )
+  /**
+   * WFD
+   * @param year for the event.
+   * @return start and end UTC ZonedDateTimes for the contest.
+   */
+  def lastFull(year: Int): ContestDates =
+    val (sat, sun) = lastFullWeekend(year, Month.JANUARY)
+    ContestDates(
+      startUtc = sat.atTime(19, 0).atZone(ZoneOffset.UTC), // 1900Z Sat
+      endUtc = sun.atTime(18, 59).atZone(ZoneOffset.UTC) // 1859Z Sun
+    )
+
+  /**
+   * ARRL
+   *
+   * @param year for the event.
+   * @return
+   */
+  def forthFullWeekend(year: Int): ContestDates =
+    val (sat, sun) = nthFullWeekend(year, Month.JUNE, n = 4) // 4th full weekend in June
+    ContestDates(
+      startUtc = sat.atTime(18, 0).atZone(ZoneOffset.UTC), // 1800Z Sat
+      endUtc = sun.atTime(20, 59).atZone(ZoneOffset.UTC) // 2059Z Sun
+    )
 
   // ---- Helpers --------------------------------------------------------------
 
   /** Nth full weekend (Sat/Sun both in the same month), n is 1-based. */
-  private def nthFullWeekend(year: Int, month: Month, n: Int): (LocalDate, LocalDate) =
+  def nthFullWeekend(year: Int, month: Month, n: Int): (LocalDate, LocalDate) =
     require(n >= 1, s"n must be >= 1, got $n")
 
     val (firstSat, firstSun) = firstFullWeekend(year, month)
     (firstSat.plusWeeks((n - 1).toLong), firstSun.plusWeeks((n - 1).toLong))
 
   /** First full weekend (Sat/Sun both in the same month). */
-  private def firstFullWeekend(year: Int, month: Month): (LocalDate, LocalDate) =
+  def firstFullWeekend(year: Int, month: Month): (LocalDate, LocalDate) =
     val firstDay = LocalDate.of(year, month, 1)
 
     val daysToSat =
@@ -50,7 +61,7 @@ object ContestDateCalculator:
     (sat, sun)
 
   /** Last full weekend (Sat/Sun both in the same month). */
-  private def lastFullWeekend(year: Int, month: Month): (LocalDate, LocalDate) =
+  def lastFullWeekend(year: Int, month: Month): (LocalDate, LocalDate) =
     val lastDay = LocalDate.of(year, month, month.length(Year.isLeap(year.toLong)))
 
     val daysBackToSat =

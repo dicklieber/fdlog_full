@@ -18,19 +18,21 @@
 
 package fdswarm.fx.contest
 
-import com.typesafe.config.{Config, ConfigRenderOptions}
+import com.typesafe.config.{Config, ConfigRenderOptions, ConfigValue}
 import jakarta.inject.{Inject, Singleton}
 import upickle.default.*
 
-case class ClassCharConfig(
+case class ContestClassChar(
                             ch: String,
                             description: String
                           ) derives ReadWriter
 
 case class Contest(
-                    contestType: ContestType,
-                    classChars: Seq[ClassCharConfig]
-                  ) derives ReadWriter
+                    name: ContestType,
+                    classChars: Seq[ContestClassChar]
+                  ) derives ReadWriter:
+  def isValidClass(classChar: String): Boolean =
+    classChars.exists(_.ch == classChar)
 
 @Singleton
 final class ContestCatalog @Inject()(config: Config):
@@ -41,5 +43,6 @@ final class ContestCatalog @Inject()(config: Config):
       .setJson(true)
       .setComments(false)
       .setOriginComments(false)
+  private val configValue: ConfigValue = config.getValue(key)
   val contests: Seq[Contest] =
-    read[Seq[Contest]](config.getValue(key).render(renderOpts))
+    read[Seq[Contest]](configValue.render(renderOpts))

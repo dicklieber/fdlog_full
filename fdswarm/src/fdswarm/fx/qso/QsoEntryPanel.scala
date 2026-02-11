@@ -21,7 +21,7 @@ package fdswarm.fx.qso
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.StationManager
 import fdswarm.fx.bandmodes.SelectedBandModeStore
-import fdswarm.fx.contest.ContestType
+import fdswarm.fx.contest.{ContestManager, ContestType}
 import fdswarm.fx.{CallSignField, GridUtils, UpperCase}
 import fdswarm.model.*
 import fdswarm.store.QsoStore
@@ -37,6 +37,7 @@ class QsoEntryPanel @Inject()(
                                qsoStore: QsoStore,
                                selectedBandModeStore: SelectedBandModeStore,
                                stationManager: StationManager,
+                               contestManager: ContestManager,
                                callsignField: CallSignField,
                                contestClassField: ContestClassField,
                                dupPanel:DupPanel
@@ -99,11 +100,11 @@ class QsoEntryPanel @Inject()(
 
 
   // ---- controls ----------------------------------------------------------
-  private val qsoMetadata = //todo add a QsoMetadataStore
+  private def qsoMetadata =
     QsoMetadata(
       station = stationManager.station,
       node = "local",
-      contest = ContestType.WFD
+      contest = contestManager.config.contest
     )
   sectionField.onAction = _ =>
     submit()

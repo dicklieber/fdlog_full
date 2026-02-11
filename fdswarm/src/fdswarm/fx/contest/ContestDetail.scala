@@ -18,24 +18,28 @@
 
 package fdswarm.fx.contest
 
-import fdswarm.ContestDates
+import fdswarm.{ContestDateCalculator, ContestDates}
 import upickle.default.*
 import fdswarm.util.JavaTimePickle.given_ReadWriter_ZonedDateTime
 
-import java.time.{LocalDate, LocalDateTime, ZonedDateTime}
-case class ContestId(content:ContestType, year:Int) derives ReadWriter
+import java.time.*
 
-enum ContestType derives ReadWriter:
-  case WFD, ARRL
+enum ContestType(val compute: Int => ContestDates) derives ReadWriter:
+  def dates(year: Int): ContestDates = compute(year)
+
+  case WFD extends ContestType(ContestDateCalculator.lastFull)
+  case ARRL extends ContestType(ContestDateCalculator.forthFullWeekend)
 
 /**
- *
- * @param contest which one
- * @param classChars e.g. "HIOM" (for WFD) or "ACBDE" etc. (for ARRL)
- * @param start when contest started.
- * @param end when contest ends.
+ * What a user can choose in a dialog.
+ * @param contest WFD or ARRL
+ * @param start 1st day/time of contest
+ * @param end last day/time of contest
  */
-case class ContestDetail(contest:ContestType,
-                         classChars:String,
+case class ContestConfig(contest:ContestType,
                          start:ZonedDateTime,
                          end:ZonedDateTime) derives ReadWriter
+case class ContestDetail(contest:ContestType,
+                         start:ZonedDateTime,
+                         end:ZonedDateTime,
+                         classChars: String)
