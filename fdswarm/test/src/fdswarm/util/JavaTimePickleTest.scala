@@ -39,3 +39,11 @@ class JavaTimePickleTest extends FunSuite:
     assertEquals(json, """"2026-02-04T07:42:00Z"""")
     val back = read[ZonedDateTime](json)
     assertEquals(back, zdt)
+
+  test("URL ReadWriter"):
+    import java.net.URL
+    val url = URL("http://127.0.0.1:8080")
+    val json = write(url)
+    assertEquals(json, """"http://127.0.0.1:8080"""")
+    val back = read[URL](json)
+    assertEquals(back, url)

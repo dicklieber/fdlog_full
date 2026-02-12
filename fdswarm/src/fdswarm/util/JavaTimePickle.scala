@@ -22,8 +22,14 @@ import upickle.default.*
 
 import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
 import java.time.*
+import java.net.{URI, URL}
 
 object JavaTimePickle:
+
+  given ReadWriter[URL] = readwriter[String].bimap[URL](
+    _.toExternalForm,
+    s => URI.create(s).toURL
+  )
 
   given localTimeRW: ReadWriter[LocalTime] = readwriter[String].bimap[LocalTime](
     time => time.format(DateTimeFormatter.ISO_LOCAL_TIME), // Serialize as String
