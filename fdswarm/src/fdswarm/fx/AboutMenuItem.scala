@@ -18,21 +18,79 @@
 
 package fdswarm.fx
 
-import scalafx.scene.control.Alert
+import com.organization.BuildInfo.*
+import scalafx.geometry.Insets
+import scalafx.scene.control.{Alert, Label, MenuItem, Hyperlink, TextArea, ScrollPane}
 import scalafx.scene.control.Alert.AlertType
-import scalafx.scene.control.MenuItem
+import scalafx.scene.layout.{GridPane, VBox}
 import scalafx.stage.Window
+import fdswarm.io.DirectoryProvider
 import jakarta.inject.Inject
+import scalafx.Includes.*
+import fdswarm.fx.utils.JsonPrettyPrinter
 
-class AboutMenuItem @Inject() () extends MenuItem("About"):
+class AboutMenuItem @Inject() (directoryProvider: DirectoryProvider) extends MenuItem("About"):
   def showAboutDialog(window: Window): Unit =
+    val grid = new GridPane:
+      hgap = 10
+      vgap = 10
+      padding = Insets(20, 150, 10, 10)
+
+    val dataPath = directoryProvider()
+    val dataFilesNode = if os.exists(dataPath) && os.isDir(dataPath) then
+      val files = os.list(dataPath)
+        .filter(p => os.isFile(p) && !p.last.startsWith("."))
+        .map(_.last)
+        .sorted
+      new VBox:
+        children = files.map { fileName =>
+          new Hyperlink(fileName):
+            onAction = _ =>
+              val fileContent = try
+                os.read(dataPath / fileName)
+              catch
+                case e: Exception => s"Error reading file: ${e.getMessage}"
+              
+              new Alert(AlertType.Information):
+                initOwner(window)
+                title = fileName
+                headerText = s"Contents of $fileName"
+                dialogPane().content = if fileName.endsWith(".json") || fileName.endsWith(".ndjson") then
+                  new ScrollPane:
+                    content = JsonPrettyPrinter.colorize(fileContent)
+                    prefViewportHeight = 400
+                    prefViewportWidth = 600
+                else
+                  new TextArea:
+                    text = fileContent
+                    editable = false
+                    prefRowCount = 20
+                    prefColumnCount = 50
+              .showAndWait()
+        }
+    else
+      new Label("Directory does not exist")
+
+    grid.add(new Label("Name:"), 0, 0)
+    grid.add(new Label(name), 1, 0)
+    grid.add(new Label("Version:"), 0, 1)
+    grid.add(new Label(version), 1, 1)
+    grid.add(new Label("Major Version:"), 0, 2)
+    grid.add(new Label(majorVersion), 1, 2)
+    grid.add(new Label("Scala Version:"), 0, 3)
+    grid.add(new Label(scalaVersion), 1, 3)
+    grid.add(new Label("Data Version:"), 0, 4)
+    grid.add(new Label(dataVersion), 1, 4)
+    grid.add(new Label("Data Directory:"), 0, 5)
+    grid.add(new Label(dataPath.toString), 1, 5)
+    grid.add(new Label("Data Files:"), 0, 6)
+    grid.add(dataFilesNode, 1, 6)
+
     new Alert(AlertType.Information):
       initOwner(window)
-      title = "About FDLog"
-      headerText = "FDLog Swarm"
-      contentText = s"Version: ${com.organization.BuildInfo.version}\n" +
-        s"Scala: ${com.organization.BuildInfo.scalaVersion}\n" +
-        "Copyright (c) 2026 Dick Lieber, WA9NNN"
+      title = "About FdSwarm"
+      headerText = "fdswarm build information"
+      dialogPane().content = grid
     .showAndWait()
 
   def setOwner(window: Window): Unit =
