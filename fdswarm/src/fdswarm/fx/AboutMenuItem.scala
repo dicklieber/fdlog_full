@@ -20,14 +20,16 @@ package fdswarm.fx
 
 import com.organization.BuildInfo.*
 import scalafx.geometry.Insets
-import scalafx.scene.control.{Alert, Label, MenuItem, Hyperlink, TextArea, ScrollPane}
+import scalafx.scene.control.{Alert, Label, MenuItem, Hyperlink, TextArea, ScrollPane, Button}
 import scalafx.scene.control.Alert.AlertType
-import scalafx.scene.layout.{GridPane, VBox}
+import scalafx.scene.layout.{GridPane, VBox, HBox, Priority}
 import scalafx.stage.Window
 import fdswarm.io.DirectoryProvider
 import jakarta.inject.Inject
 import scalafx.Includes.*
 import fdswarm.fx.utils.JsonPrettyPrinter
+import scalafx.scene.input.Clipboard
+import scalafx.scene.input.ClipboardContent
 
 class AboutMenuItem @Inject() (directoryProvider: DirectoryProvider) extends MenuItem("About"):
   def showAboutDialog(window: Window): Unit =
@@ -55,17 +57,29 @@ class AboutMenuItem @Inject() (directoryProvider: DirectoryProvider) extends Men
                 initOwner(window)
                 title = fileName
                 headerText = s"Contents of $fileName"
-                dialogPane().content = if fileName.endsWith(".json") || fileName.endsWith(".ndjson") then
-                  new ScrollPane:
-                    content = JsonPrettyPrinter.colorize(fileContent)
-                    prefViewportHeight = 400
-                    prefViewportWidth = 600
-                else
-                  new TextArea:
-                    text = fileContent
-                    editable = false
-                    prefRowCount = 20
-                    prefColumnCount = 50
+                val copyButton = new Button("Copy to Clipboard"):
+                  onAction = _ =>
+                    val content = new ClipboardContent()
+                    content.putString(fileContent)
+                    Clipboard.systemClipboard.setContent(content)
+                
+                dialogPane().content = new VBox:
+                  spacing = 10
+                  children = Seq(
+                    copyButton,
+                    if fileName.endsWith(".json") || fileName.endsWith(".ndjson") then
+                      new ScrollPane:
+                        content = JsonPrettyPrinter.colorize(fileContent)
+                        prefViewportHeight = 400
+                        prefViewportWidth = 600
+                    else
+                      new TextArea:
+                        text = fileContent
+                        editable = false
+                        prefRowCount = 20
+                        prefColumnCount = 50
+                        styleClass.add("fixed-width")
+                  )
               .showAndWait()
         }
     else
@@ -86,11 +100,31 @@ class AboutMenuItem @Inject() (directoryProvider: DirectoryProvider) extends Men
     grid.add(new Label("Data Files:"), 0, 6)
     grid.add(dataFilesNode, 1, 6)
 
+    val labels = grid.children.collect { case l: javafx.scene.control.Label => l }
+    labels.foreach(_.getStyleClass.add("fixed-width"))
+
+    val copyAllButton = new Button("Copy All to Clipboard"):
+      onAction = _ =>
+        val sb = new StringBuilder
+        sb.append(s"Name: $name\n")
+        sb.append(s"Version: $version\n")
+        sb.append(s"Major Version: $majorVersion\n")
+        sb.append(s"Scala Version: $scalaVersion\n")
+        sb.append(s"Data Version: $dataVersion\n")
+        sb.append(s"Data Directory: $dataPath\n")
+        val content = new ClipboardContent()
+        content.putString(sb.toString())
+        Clipboard.systemClipboard.setContent(content)
+
+    val contentBox = new VBox:
+      spacing = 10
+      children = Seq(copyAllButton, grid)
+
     new Alert(AlertType.Information):
       initOwner(window)
       title = "About FdSwarm"
       headerText = "fdswarm build information"
-      dialogPane().content = grid
+      dialogPane().content = contentBox
     .showAndWait()
 
   def setOwner(window: Window): Unit =

@@ -43,53 +43,55 @@ object JsonPrettyPrinter:
         else
           ujson.read(json)
 
-      val textFlow = new TextFlow()
+      val textFlow = new TextFlow():
+        styleClass.add("json-pretty-print")
       renderValue(data, 0, textFlow)
       textFlow
     catch
       case e: Exception =>
-        val flow = new TextFlow()
-        flow.children.add(new Text(s"Invalid JSON: ${e.getMessage}") { fill = Color.Red })
+        val flow = new TextFlow():
+          styleClass.add("fixed-width")
+        flow.children.add(new Text(s"Invalid JSON: ${e.getMessage}") { fill = Color.Red; styleClass.add("fixed-width") })
         flow
 
   private def renderValue(value: Value, indent: Int, flow: TextFlow): Unit =
     value match
       case ujson.Obj(items) =>
-        flow.children.add(new Text("{"))
+        flow.children.add(new Text("{") { styleClass.add("fixed-width") })
         if items.nonEmpty then
-          flow.children.add(new Text("\n"))
+          flow.children.add(new Text("\n") { styleClass.add("fixed-width") })
           items.zipWithIndex.foreach { case ((k, v), i) =>
-            flow.children.add(new Text("  " * (indent + 1)))
-            flow.children.add(new Text(s"\"$k\"") { fill = Color.Purple })
-            flow.children.add(new Text(": "))
+            flow.children.add(new Text("  " * (indent + 1)) { styleClass.add("fixed-width") })
+            flow.children.add(new Text(s"\"$k\"") { fill = Color.Purple; styleClass.add("fixed-width") })
+            flow.children.add(new Text(": ") { styleClass.add("fixed-width") })
             renderValue(v, indent + 1, flow)
-            if i < items.size - 1 then flow.children.add(new Text(","))
-            flow.children.add(new Text("\n"))
+            if i < items.size - 1 then flow.children.add(new Text(",") { styleClass.add("fixed-width") })
+            flow.children.add(new Text("\n") { styleClass.add("fixed-width") })
           }
-          flow.children.add(new Text("  " * indent))
-        flow.children.add(new Text("}"))
+          flow.children.add(new Text("  " * indent) { styleClass.add("fixed-width") })
+        flow.children.add(new Text("}") { styleClass.add("fixed-width") })
 
       case ujson.Arr(items) =>
-        flow.children.add(new Text("["))
+        flow.children.add(new Text("[") { styleClass.add("fixed-width") })
         if items.nonEmpty then
-          flow.children.add(new Text("\n"))
+          flow.children.add(new Text("\n") { styleClass.add("fixed-width") })
           items.zipWithIndex.foreach { (v, i) =>
-            flow.children.add(new Text("  " * (indent + 1)))
+            flow.children.add(new Text("  " * (indent + 1)) { styleClass.add("fixed-width") })
             renderValue(v, indent + 1, flow)
-            if i < items.size - 1 then flow.children.add(new Text(","))
-            flow.children.add(new Text("\n"))
+            if i < items.size - 1 then flow.children.add(new Text(",") { styleClass.add("fixed-width") })
+            flow.children.add(new Text("\n") { styleClass.add("fixed-width") })
           }
-          flow.children.add(new Text("  " * indent))
-        flow.children.add(new Text("]"))
+          flow.children.add(new Text("  " * indent) { styleClass.add("fixed-width") })
+        flow.children.add(new Text("]") { styleClass.add("fixed-width") })
 
       case ujson.Str(s) =>
-        flow.children.add(new Text(s"\"$s\"") { fill = Color.Green })
+        flow.children.add(new Text(s"\"$s\"") { fill = Color.Green; styleClass.add("fixed-width") })
 
       case ujson.Num(n) =>
-        flow.children.add(new Text(n.toString) { fill = Color.Blue })
+        flow.children.add(new Text(n.toString) { fill = Color.Blue; styleClass.add("fixed-width") })
 
       case ujson.Bool(b) =>
-        flow.children.add(new Text(b.toString) { fill = Color.Orange })
+        flow.children.add(new Text(b.toString) { fill = Color.Orange; styleClass.add("fixed-width") })
 
       case ujson.Null =>
-        flow.children.add(new Text("null") { fill = Color.Gray })
+        flow.children.add(new Text("null") { fill = Color.Gray; styleClass.add("fixed-width") })
