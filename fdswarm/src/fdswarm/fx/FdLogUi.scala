@@ -1,6 +1,7 @@
 package fdswarm.fx
 
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.bandmodes.BandsAndModesPane
 import fdswarm.fx.contest.ContestManager
 import fdswarm.fx.qso.ContestEntry
@@ -13,38 +14,35 @@ import scalafx.event.EventIncludes.*
 import scalafx.scene.Scene
 import scalafx.scene.Node
 import scalafx.scene.control.*
+import scalafx.scene.control.Alert.AlertType
 import scalafx.scene.layout.*
 import scalafx.stage.{Stage, Window}
 import upickle.default.*
 
-final class FdLogUi @Inject() (
-                                contestEntry: ContestEntry,
-                                bandModeManagerPane: BandsAndModesPane,
-                                stationEditor: StationEditor,
-                                contestManager: ContestManager,
-                                howManyDialogService: HowManyDialogService,
-                                repl: Repl,
-                                discoveryService: DiscoveryService
-                              ) extends LazyLogging:
+final class FdLogUi @Inject()(
+                               contestEntry: ContestEntry,
+                               bandModeManagerPane: BandsAndModesPane,
+                               stationEditor: StationEditor,
+                               contestManager: ContestManager,
+                               howManyDialogService: HowManyDialogService,
+                               repl: Repl,
+                               discoveryService: DiscoveryService,
+                               aboutMenuItem: AboutMenuItem
+                             ) extends LazyLogging:
 
   private val bandModeNode: Node =
     bandModeManagerPane
-
   private val qsoNode: Node =
     contestEntry.node
-
   private val centerPane = new StackPane:
     children = List(qsoNode)
-
-  private var ownerWindow: Window = null.asInstanceOf[Window]
-
   private val contestMenuItem: MenuItem =
     new MenuItem("Contest"):
       disable = true
       onAction = _ =>
         Option(ownerWindow) match
           case Some(w) => contestManager.show(w)
-          case None    => ()
+          case None => ()
 
   private val stationMenuItem: MenuItem =
     new MenuItem("Station"):
@@ -52,36 +50,36 @@ final class FdLogUi @Inject() (
       onAction = _ =>
         Option(ownerWindow) match
           case Some(w) => stationEditor.show(w)
-          case None    => ()
+          case None => ()
 
   private val menuBar = new MenuBar:
+    useSystemMenuBar = isMac
     menus = Seq(
       fileMenu,
       viewMenu,
       configMenu,
-      devMenu
+      devMenu,
+      helpMenu,
     )
 
   private val root = new BorderPane:
     top = menuBar
     center = centerPane
+  private var ownerWindow: Window = null.asInstanceOf[Window]
 
   def start(stage: Stage): Unit =
     val discovered = discoveryService.discover()
-//    logger.info(triedConfig.toString)
+    //    logger.info(triedConfig.toString)
 
     ownerWindow = stage
+    aboutMenuItem.setOwner(stage)
     stationMenuItem.disable = false
     contestMenuItem.disable = false
 
     stage.title = "FDLog"
-    stage.scene = new Scene(root, 1100, 800) {
+    stage.scene = new Scene(root, 1100, 800):
       stylesheets = Seq(getClass.getResource("/styles/app.css").toExternalForm)
-    }
     stage.show()
-
-  private def showPane(node: Node): Unit =
-    centerPane.children.setAll(node)
 
   private def fileMenu: Menu =
     new Menu("File"):
@@ -97,15 +95,22 @@ final class FdLogUi @Inject() (
           onAction = _ => showPane(qsoNode)
       )
 
+  private def showPane(node: Node): Unit =
+    centerPane.children.setAll(node)
+
   private def configMenu: Menu =
     new Menu("Config"):
       items = Seq(
-        new MenuItem("Band / Mode Manager") {
+        new MenuItem("Band / Mode Manager"):
           onAction = _ => showPane(bandModeNode)
-        },
+        ,
         stationMenuItem,
         contestMenuItem
       )
+
+  private def helpMenu: Menu =
+    new Menu("Help"):
+      items = Seq(aboutMenuItem)
 
   private def devMenu: Menu =
     new Menu("Dev"):
@@ -114,21 +119,25 @@ final class FdLogUi @Inject() (
           onAction = _ =>
             Option(ownerWindow) match
               case Some(w) => howManyDialogService.showAndGenerate(w)
-              case None    => (),
+              case None => ()
+        ,
         new MenuItem("FdHour"):
-          onAction = _ => {
+          onAction = _ =>
             val base64 = repl.byFdHourJsonGzipBase64
             val decoded = java.util.Base64.getDecoder.decode(base64)
             val bais = new java.io.ByteArrayInputStream(decoded)
             val gzis = new java.util.zip.GZIPInputStream(bais)
             val json = new String(gzis.readAllBytes(), "UTF-8")
             println(s"Decoded JSON: $json")
-            val s:Seq[FdHourDigest] = read(json)
+            val s: Seq[FdHourDigest] = read(json)
             println(s"Decoded FdHourDigests: $s")
-          },
+        ,
         new MenuItem("Broadcast FdHour"):
-          onAction = _ => {
+          onAction = _ =>
             val base64 = repl.byFdHourJsonGzipBase64
-//            broadcastSender.broadcast(base64)
-          }
+            //            broadcastSender.broadcast(base64)
       )
+
+object FdLogUi:
+  lazy val isMac: Boolean =
+    System.getProperty("os.name").toLowerCase.contains("mac")
