@@ -82,8 +82,8 @@ final class ContestManager @Inject()(
       }
     }
 
-    val recalculateButton = new Button("Recalculate Dates") {
-      onAction = _ => {
+    val recalculateButton = new Button("Recalculate Dates"):
+      onAction = (e: javafx.event.ActionEvent) => {
         val currentType = contestCombo.value.value
         promptForYear(ownerWindow).foreach { year =>
           val newDates = currentType.dates(year)
@@ -91,7 +91,6 @@ final class ContestManager @Inject()(
           updateZonedDateTimeControl(myCaseForm, "end", newDates.endUtc)
         }
       }
-    }
 
     val dialogContent = new VBox(10, pane, recalculateButton)
 

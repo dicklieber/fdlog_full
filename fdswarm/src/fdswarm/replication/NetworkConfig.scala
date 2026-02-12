@@ -21,7 +21,7 @@ package fdswarm.replication
 import com.google.inject.{Inject, Singleton}
 import com.typesafe.config.Config
 
-import java.net.{Inet4Address, NetworkInterface, URL}
+import java.net.{Inet4Address, NetworkInterface, URI, URL}
 import scala.jdk.CollectionConverters.*
 
 @Singleton
@@ -31,7 +31,7 @@ class NetworkConfig @Inject() (config: Config):
     .getOrElse(config.getInt("fdswarm.httpPort"))
   val url: URL =
     val address = findNonLocalhostIPv4().getOrElse("127.0.0.1")
-    URL(s"http://$address:$port")
+    URI.create(s"http://$address:$port").toURL()
 
   private def findNonLocalhostIPv4(): Option[String] =
     NetworkInterface.getNetworkInterfaces.asScala

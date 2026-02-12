@@ -22,7 +22,7 @@ import com.google.inject.{Guice, Injector}
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.api.ApiService
 import fdswarm.fx.{ConfigModule, FdLogUi}
-import fdswarm.replication.NetworkConfig
+import fdswarm.replication.{DiscoveryService, NetworkConfig}
 import scalafx.application.JFXApp3
 
 /** Minimal app bootstrap:
@@ -43,7 +43,10 @@ object FdLogApp extends JFXApp3 with LazyLogging:
     val networkConfig = injector.getInstance(classOf[NetworkConfig])
     val ui = injector.getInstance(classOf[FdLogUi])
     val apiService = injector.getInstance(classOf[ApiService])
-
+    val discoveryService = injector.getInstance(classOf[DiscoveryService])
+    val strings = discoveryService.discover()
+    if strings.nonEmpty then
+      logger.info(s"Discovered nodes: $strings")
     // Start API service in a separate thread
     val apiThread = new Thread(() => apiService.start())
     apiThread.setDaemon(true)
