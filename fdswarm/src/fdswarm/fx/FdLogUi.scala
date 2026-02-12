@@ -1,11 +1,12 @@
 package fdswarm.fx
 
+import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.bandmodes.BandsAndModesPane
 import fdswarm.fx.contest.ContestManager
 import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.station.StationEditor
 import fdswarm.fx.tools.HowManyDialogService
-import fdswarm.replication.{FdHourDigest, Repl}
+import fdswarm.replication.{DiscoveryService, FdHourDigest, Repl}
 import jakarta.inject.Inject
 import scalafx.application.Platform
 import scalafx.event.EventIncludes.*
@@ -22,8 +23,9 @@ final class FdLogUi @Inject() (
                                 stationEditor: StationEditor,
                                 contestManager: ContestManager,
                                 howManyDialogService: HowManyDialogService,
-                                repl: Repl
-                              ):
+                                repl: Repl,
+                                discoveryService: DiscoveryService
+                              ) extends LazyLogging:
 
   private val bandModeNode: Node =
     bandModeManagerPane
@@ -65,6 +67,9 @@ final class FdLogUi @Inject() (
     center = centerPane
 
   def start(stage: Stage): Unit =
+    val discovered = discoveryService.discover()
+//    logger.info(triedConfig.toString)
+
     ownerWindow = stage
     stationMenuItem.disable = false
     contestMenuItem.disable = false

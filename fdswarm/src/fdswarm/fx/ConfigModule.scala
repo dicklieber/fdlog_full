@@ -73,22 +73,22 @@ class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
             .toInstance(s)
 
         case i: Integer =>
-          bind(classOf[Int])
+          bind[Int]
             .annotatedWith(Names.named(key))
             .toInstance(i.intValue)
 
         case l: java.lang.Long =>
-          bind(classOf[Long])
+          bind[Long]
             .annotatedWith(Names.named(key))
             .toInstance(l)
 
         case d: java.lang.Double =>
-          bind(classOf[Double])
+          bind[Double]
             .annotatedWith(Names.named(key))
             .toInstance(d)
 
         case b: java.lang.Boolean =>
-          bind(classOf[Boolean])
+          bind[Boolean]
             .annotatedWith(Names.named(key))
             .toInstance(b)
 
@@ -98,7 +98,7 @@ class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
     }
 
     // Optionally bind the entire config too
-    bind(classOf[Config]).toInstance(config)
+    bind[Config].toInstance(config)
    
 
 object ConfigModule:

@@ -19,7 +19,7 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo {
   def scalaVersion = "3.7.4"
   def scalacOptions = Seq("-feature", "-deprecation")
 
-  def mainClass = Some("fdlog.fx.fdlog")
+  def mainClass = Some("fdswarm.FdLogApp")
 
   def buildInfoPackageName = "com.organization"
 

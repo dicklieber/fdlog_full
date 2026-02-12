@@ -27,8 +27,8 @@ Configuration:
         level: info
         additivity: true
 
-      - name: "fdswarm.fx.bands.ModeCheckBoxPane"
-        level: info
+      - name: "fdswarm.replication.DiscoveryService"
+        level: debug
         additivity: true
 
       - name: "fdswarm.store.QsoStore"
