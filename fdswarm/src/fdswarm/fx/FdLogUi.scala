@@ -1,20 +1,18 @@
 package fdswarm.fx
 
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.FdLogApp.injector
 import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.bandmodes.BandsAndModesPane
 import fdswarm.fx.contest.ContestManager
 import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.station.StationEditor
 import fdswarm.fx.tools.HowManyDialogService
-import fdswarm.replication.{DiscoveryService, FdHourDigest, Repl}
+import fdswarm.replication.{DiscoveryService, FdHourDigest, NodeStatusService, Repl}
 import jakarta.inject.Inject
 import scalafx.application.Platform
-import scalafx.event.EventIncludes.*
-import scalafx.scene.Scene
-import scalafx.scene.Node
+import scalafx.scene.{Node, Scene}
 import scalafx.scene.control.*
-import scalafx.scene.control.Alert.AlertType
 import scalafx.scene.layout.*
 import scalafx.stage.{Stage, Window}
 import upickle.default.*
@@ -27,6 +25,7 @@ final class FdLogUi @Inject()(
                                howManyDialogService: HowManyDialogService,
                                repl: Repl,
                                discoveryService: DiscoveryService,
+                               nodeStatusService: NodeStatusService,
                                aboutMenuItem: AboutMenuItem
                              ) extends LazyLogging:
 
@@ -69,7 +68,9 @@ final class FdLogUi @Inject()(
 
   def start(stage: Stage): Unit =
     val discovered = discoveryService.discover()
-    //    logger.info(triedConfig.toString)
+    logger.info(s"todo Discovered: $discovered")
+    nodeStatusService.start()
+
 
     ownerWindow = stage
     aboutMenuItem.setOwner(stage)
@@ -154,7 +155,7 @@ final class FdLogUi @Inject()(
         new MenuItem("Broadcast FdHour"):
           onAction = _ =>
             val base64 = repl.byFdHourJsonGzipBase64
-            //            broadcastSender.broadcast(base64)
+        //            broadcastSender.broadcast(base64)
       )
 
 object FdLogUi:

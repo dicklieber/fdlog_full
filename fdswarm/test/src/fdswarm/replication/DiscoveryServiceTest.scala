@@ -23,13 +23,12 @@ import fdswarm.fx.contest.{ContestCatalog, ContestConfig, ContestManager, Contes
 import fdswarm.io.DirectoryProvider
 import munit.FunSuite
 
-import java.net.{DatagramPacket, DatagramSocket}
+import java.net.DatagramSocket
 import java.time.ZonedDateTime
-import scala.util.Success
 
-class DiscoveryServiceTest extends FunSuite {
+class DiscoveryServiceTest extends FunSuite:
 
-  test("DiscoveryService responds to FDSWARM|DISCOVER and can discover other nodes") {
+  test("DiscoveryService responds to UDPHeader(Service.Discovery) and can discover other nodes"):
     // Find an available port
     val tempSocket = new DatagramSocket(0)
     val port = tempSocket.getLocalPort
@@ -69,13 +68,51 @@ class DiscoveryServiceTest extends FunSuite {
 
     discoveryService.start()
 
-    try {
-      // Test discover method (it sends FDSWARM|DISCOVER and waits for response)
-      // With self-ignore enabled, a single node should NOT discover itself
+    try
+      // Test discover method (it sends UDPHeader(Service.Discovery) and waits for response)
+      // With self-ignore enabled (default), a single node should NOT discover itself
       val results = discoveryService.discover()
-      assert(results.isEmpty, s"Discovery should be empty when alone, but found: ${results}")
-    } finally {
+      assert(results.isEmpty, s"Discovery should be empty when alone and ignoreSelf is true, but found: $results")
+    finally
       discoveryService.stop()
+
+  test("DiscoveryService can discover itself when ignoreSelf is false"):
+    // Find an available port
+    val tempSocket = new DatagramSocket(0)
+    val port = tempSocket.getLocalPort
+    tempSocket.close()
+
+    val config = ConfigFactory.parseString(
+      s"""
+         |fdswarm.discovery.Port = $port
+         |fdswarm.broadcastAddress = "127.0.0.1"
+         |fdswarm.discovery.timeoutMs = 1000
+         |fdswarm.discovery.ignoreSelf = false
+         |fdswarm.contests = [
+         |  {
+         |    name = WFD
+         |    classChars = []
+         |  }
+         |]
+         |""".stripMargin
+    )
+
+    val tmpDir = os.temp.dir()
+    val directoryProvider = new DirectoryProvider {
+      override def apply(): os.Path = tmpDir
     }
-  }
-}
+    val contestCatalog = new ContestCatalog(config)
+    val contestManager = new ContestManager(directoryProvider, contestCatalog)
+    val expectedConfig = ContestConfig(ContestType.WFD, ZonedDateTime.now(), ZonedDateTime.now().plusHours(1))
+    contestManager.setConfig(expectedConfig)
+
+    val discoveryService = new DiscoveryService(contestManager, config)
+    discoveryService.start()
+
+    try
+      // With self-ignore disabled, it should discover itself
+      val results = discoveryService.discover()
+      assert(results.nonEmpty, "Discovery should NOT be empty when alone and ignoreSelf is false")
+      assertEquals(results.head.contest, expectedConfig.contest)
+    finally
+      discoveryService.stop()

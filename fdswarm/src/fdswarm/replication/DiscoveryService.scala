@@ -36,18 +36,20 @@ class DiscoveryService @Inject()(
 
   private val discoveryPort = config.getInt("fdswarm.discovery.Port")
   private val timeoutMs = config.getLong("fdswarm.discovery.timeoutMs")
+  private val ignoreSelf = if config.hasPath("fdswarm.discovery.ignoreSelf") then config.getBoolean("fdswarm.discovery.ignoreSelf") else true
   private val broadcastAddress = config.getString("fdswarm.broadcastAddress")
+  private var activeQueue:Option[LinkedBlockingQueue[ContestConfig]] = None
 
   private var socket: Option[DatagramSocket] = None
-  private var activeDiscovery: Option[LinkedBlockingQueue[ContestConfig]] = None
 
   private lazy val myAddresses: Set[InetAddress] =
     NetworkInterface.getNetworkInterfaces.asScala
       .flatMap(_.getInetAddresses.asScala)
       .toSet
 
-  private val receiverThread = new Thread(() => {
+  private val receiverThread = new Thread(() =>
     logger.info(s"DiscoveryService receiver listening on port $discoveryPort")
+
     val buffer = new Array[Byte](65535)
     while !Thread.currentThread().isInterrupted do
       try
@@ -55,32 +57,31 @@ class DiscoveryService @Inject()(
           val packet = new DatagramPacket(buffer, buffer.length)
           s.receive(packet)
           val sender = packet.getAddress
-          if myAddresses.contains(sender) then
+          if ignoreSelf && myAddresses.contains(sender) then
             logger.debug(s"Ignoring our own message from $sender")
           else
-            val data = new Array[Byte](packet.getLength)
-            System.arraycopy(packet.getData, packet.getOffset, data, 0, packet.getLength)
-            val message = new String(data, "UTF-8")
-            if message == "FDSWARM|DISCOVER" then
-              logger.info(s"Received FDSWARM|DISCOVER from $sender, responding with ContestConfig")
-              val response = write(contestManager.config)
-              send(response.getBytes("UTF-8"))
-            else
-              activeDiscovery.foreach { queue =>
-                try
-                  val config = read[ContestConfig](message)
-                  queue.offer(config)
-                catch
-                  case e: Exception =>
-                    logger.warn(s"Received unknown message from $sender: ${message.take(100)}")
-              }
+            val receivedData: Array[Byte] = new Array[Byte](packet.getLength)
+            System.arraycopy(packet.getData, packet.getOffset, receivedData, 0, packet.getLength)
+            UDPHeader.parse(receivedData) match
+              case UDPHeaderData(Service.Discovery, _) =>
+                val jsonBytes = writeToByteArray(contestManager.config)
+                logger.debug("Received Discovery request from {} current ContestCOnfig", sender)
+                send(UDPHeader(Service.Discovered, jsonBytes))
+              case UDPHeaderData(Service.Discovered, jsonPayload) =>
+                activeQueue.foreach { queue =>
+                  val contestConfig = read[ContestConfig](jsonPayload)
+                  queue.offer(contestConfig)
+                }
+              case x =>
+                logger.warn(s"Received unknown message from $sender: $x")
         }
       catch
         case _: InterruptedException => Thread.currentThread().interrupt()
         case e: Exception =>
           if socket.exists(!_.isClosed) then
             logger.error("Error receiving UDP packet in DiscoveryService", e)
-  }, "DiscoveryService-Receiver")
+  , "DiscoveryService-Receiver")
+
 
   receiverThread.setDaemon(true)
 
@@ -102,15 +103,17 @@ class DiscoveryService @Inject()(
     socket = None
 
   def discover(): Seq[ContestConfig] =
-    logger.debug(s"Sending FDSWARM|DISCOVER waiting for $timeoutMs ms")
-    val queue = new LinkedBlockingQueue[ContestConfig]()
-    activeDiscovery = Some(queue)
+    logger.debug(s"Sending Discovery request waiting for $timeoutMs ms")
+    activeQueue = Option(new LinkedBlockingQueue[ContestConfig]())
     try
-      send("FDSWARM|DISCOVER".getBytes("UTF-8"))
+      val bytes = UDPHeader(Service.Discovery)
+      send(bytes)
 
-      val entry = queue.poll(timeoutMs, TimeUnit.MILLISECONDS)
-      val results = if entry != null then Seq(entry) else Seq.empty
-      logger.debug("Discovered {} nodes", results.size)
-      results
+      activeQueue.map { queue =>
+        val entry: ContestConfig = queue.poll(timeoutMs, TimeUnit.MILLISECONDS)
+        if entry != null then Seq(entry) else Seq.empty
+      }.getOrElse(Seq.empty)
+    catch
+      case _: InterruptedException => Seq.empty
     finally
-      activeDiscovery = None
+      activeQueue = None

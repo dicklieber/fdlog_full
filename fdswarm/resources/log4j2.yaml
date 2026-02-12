@@ -30,6 +30,9 @@ Configuration:
       - name: "fdswarm.replication.DiscoveryService"
         level: debug
         additivity: true
+      - name: "fdswarm.replication.NodeStatusService"
+        level: trace
+        additivity: true
 
       - name: "fdswarm.store.QsoStore"
         level: info

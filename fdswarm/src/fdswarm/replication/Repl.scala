@@ -42,7 +42,7 @@ class Repl @Inject()(qsoStore: QsoStore):
       FdHourDigest(fdHour, qsos.size, digest)
     r.toSeq
 
-  def byFdHourJsonGzipBase64: String =
+  def byFdHourJsonGzip: Array[Byte] =
     val json = write(byFdHour)
     val baos = new ByteArrayOutputStream()
     val gzos = new GZIPOutputStream(baos)
@@ -50,7 +50,10 @@ class Repl @Inject()(qsoStore: QsoStore):
       gzos.write(json.getBytes("UTF-8"))
     finally
       gzos.close()
-    Base64.getEncoder.encodeToString(baos.toByteArray)
+    baos.toByteArray
+
+  def byFdHourJsonGzipBase64: String =
+    Base64.getEncoder.encodeToString(byFdHourJsonGzip)
     
 
 case class FdHourDigest(fdHour: FdHour, count: Int, digest: String) derives ReadWriter

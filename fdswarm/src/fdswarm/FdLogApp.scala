@@ -22,7 +22,7 @@ import com.google.inject.{Guice, Injector}
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.api.ApiService
 import fdswarm.fx.{ConfigModule, FdLogUi}
-import fdswarm.replication.{DiscoveryService, NetworkConfig}
+import fdswarm.replication.{DiscoveryService, NetworkConfig, NodeStatusService}
 import net.codingwell.scalaguice.InjectorExtensions.*
 import scalafx.application.JFXApp3
 
@@ -61,7 +61,9 @@ object FdLogApp extends JFXApp3 with LazyLogging:
   override def stopApp(): Unit =
     logger.info("stopApp")
     val discoveryService = injector.instance[DiscoveryService]
+    val nodeStatus = injector.instance[NodeStatusService]
     discoveryService.stop()
+    nodeStatus.stop()
   
 
   
