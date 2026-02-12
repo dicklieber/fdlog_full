@@ -73,6 +73,25 @@ final class FdLogUi @Inject()(
 
     ownerWindow = stage
     aboutMenuItem.setOwner(stage)
+
+    if isMac then
+      try
+        if java.awt.Desktop.isDesktopSupported then
+          val desktop = java.awt.Desktop.getDesktop
+          if desktop.isSupported(java.awt.Desktop.Action.APP_ABOUT) then
+            desktop.setAboutHandler(_ =>
+              Platform.runLater {
+                aboutMenuItem.showAboutDialog(ownerWindow)
+              }
+            )
+            logger.info("Successfully registered macOS About handler")
+          else
+            logger.info("macOS About handler not supported by Desktop")
+        else
+          logger.info("Desktop API not supported on this platform")
+      catch
+        case e: Exception => logger.warn("Could not set macOS about handler", e)
+
     stationMenuItem.disable = false
     contestMenuItem.disable = false
 

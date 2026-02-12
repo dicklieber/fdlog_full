@@ -25,13 +25,15 @@ import scalafx.stage.Window
 import jakarta.inject.Inject
 
 class AboutMenuItem @Inject() () extends MenuItem("About"):
+  def showAboutDialog(window: Window): Unit =
+    new Alert(AlertType.Information):
+      initOwner(window)
+      title = "About FDLog"
+      headerText = "FDLog Swarm"
+      contentText = s"Version: ${com.organization.BuildInfo.version}\n" +
+        s"Scala: ${com.organization.BuildInfo.scalaVersion}\n" +
+        "Copyright (c) 2026 Dick Lieber, WA9NNN"
+    .showAndWait()
+
   def setOwner(window: Window): Unit =
-    onAction = _ =>
-      new Alert(AlertType.Information):
-        initOwner(window)
-        title = "About FDLog"
-        headerText = "FDLog Swarm"
-        contentText = s"Version: ${com.organization.BuildInfo.version}\n" +
-          s"Scala: ${com.organization.BuildInfo.scalaVersion}\n" +
-          "Copyright (c) 2026 Dick Lieber, WA9NNN"
-      .showAndWait()
+    onAction = _ => showAboutDialog(window)
