@@ -24,6 +24,21 @@ import com.organization.BuildInfo
 import com.typesafe.scalalogging.LazyLogging
 import java.net.{DatagramPacket, DatagramSocket, InetAddress}
 
+
+/**
+ * Periodically broadcasts the current node's status to other nodes in the swarm.
+ *
+ * This service runs a background daemon thread that periodically (every `broadcastPeriodSec`)
+ * fetches a gzipped JSON representation of the local hourly QSO digests from [[Repl]]
+ * and broadcasts it as a UDP packet to the configured `broadcastAddress` and `statusPort`.
+ *
+ * The UDP packets are prefixed with a standard [[UDPHeader]] with [[Service.Status]].
+ *
+ * @param repl source of the node's status data (gzipped JSON)
+ * @param statusPort UDP port to send status broadcasts to
+ * @param broadcastAddress destination address for UDP broadcasts (e.g., "255.255.255.255" or a subnet broadcast)
+ * @param broadcastPeriodSec interval between broadcasts in seconds
+ */
 @Singleton
 class NodeStatusService @Inject()(
     repl: Repl,
