@@ -40,7 +40,7 @@ import java.net.{DatagramPacket, DatagramSocket, InetAddress}
  * @param broadcastPeriodSec interval between broadcasts in seconds
  */
 @Singleton
-class NodeStatusService @Inject()(
+class NodeStatusSenderService @Inject()(
     repl: Repl,
     @Named("fdswarm.statusPort") statusPort: Int,
     @Named("fdswarm.broadcastAddress") broadcastAddress: String,

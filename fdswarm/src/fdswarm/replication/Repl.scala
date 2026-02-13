@@ -36,7 +36,7 @@ class Repl @Inject()(qsoStore: QsoStore):
       (fdHour, qsos) <- hourToQsos
     yield
       val sortedIds = qsos.map(_.uuid).sorted.mkString
-      val digest = java.security.MessageDigest.getInstance("MD5")
+      val digest = java.security.MessageDigest.getInstance("SHA-256")
         .digest(sortedIds.getBytes("UTF-8"))
         .map("%02x".format(_)).mkString
       FdHourDigest(fdHour, qsos.size, digest)

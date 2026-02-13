@@ -53,13 +53,10 @@ class CallSignField @Inject()(qsoStore: QsoStore, selectedBsndModeStore: Selecte
     }
     val newText = change.controlNewText
     // Match partial strings during typing.
-    // The target regex is ^[A-Z0-9]{1,3}[0-9][A-Z]{1,3}$
-    // Partial regex:
-    // 1-3 A-Z0-9
-    // followed by a digit
-    // followed by 1-3 A-Z
-    val typingPattern = "^([A-Z0-9]{1,3}[0-9]?[A-Z]{0,3})?$"
-    if (newText.matches(typingPattern)) {
+    // The target regex is ^(?=.{3,12}$)[A-Z0-9]{1,3}[0-9][A-Z0-9]{1,4}(?:/[A-Z0-9]{1,4})?$
+    // Partial regex must allow building up to this.
+    val typingPattern = """^(?:[A-Z0-9]{0,3}(?:[0-9][A-Z0-9]{0,4}(?:/?[A-Z0-9]{0,4})?)?)?$"""
+    if (newText.length <= 12 && newText.matches(typingPattern)) {
       change
     } else {
       null
@@ -71,7 +68,14 @@ class CallSignField @Inject()(qsoStore: QsoStore, selectedBsndModeStore: Selecte
 
 object CallSignField:
 
-  protected val regex: Regex = """^[A-Z0-9]{1,3}[0-9][A-Z]{1,3}$""".r
+  /**
+   * regex that matches a valid callsign.
+   *
+   * Standard format: [A-Z0-9]{1,3}[0-9][A-Z0-9]{1,4}
+   * Optional suffix: /[A-Z0-9]{1,4}
+   * Total length restricted by lookahead: (?=.{3,12}$)
+   */
+  protected val regex: Regex = """^(?=.{3,12}$)[A-Z0-9]{1,3}[0-9][A-Z0-9]{1,4}(?:/[A-Z0-9]{1,4})?$""".r
 
   def isValid(str: String): Boolean =
     regex.findFirstIn(str).isDefined

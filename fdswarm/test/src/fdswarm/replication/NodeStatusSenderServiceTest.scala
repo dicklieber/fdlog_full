@@ -26,7 +26,7 @@ import munit.FunSuite
 import java.net.{DatagramPacket, DatagramSocket}
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 
-class NodeStatusServiceTest extends FunSuite:
+class NodeStatusSenderServiceTest extends FunSuite:
 
   test("NodeStatus broadcasts periodically"):
     // Find two available ports
@@ -50,7 +50,7 @@ class NodeStatusServiceTest extends FunSuite:
     val qsoStore = new QsoStore(directoryProvider)
     val repl = new Repl(qsoStore)
 
-    val nodeStatus = new NodeStatusService(
+    val nodeStatus = new NodeStatusSenderService(
       repl,
       statusPort,
       "127.0.0.1",
