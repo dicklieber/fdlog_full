@@ -28,6 +28,23 @@ import java.net.{DatagramPacket, DatagramSocket, InetAddress, NetworkInterface}
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 import scala.jdk.CollectionConverters.*
 
+/**
+ * Handles node discovery within the fdswarm network using UDP broadcasts.
+ *
+ * This service provides mechanisms for:
+ * 1.  **Responding to Discovery Requests**: Listens on a configured UDP port for `Service.Discovery` messages
+ *     and responds with the local node's current [[ContestConfig]] using a `Service.Discovered` message.
+ * 2.  **Active Discovery**: Sends a broadcast `Service.Discovery` request and waits for responses from other
+ *     nodes to build a list of available contest configurations in the swarm.
+ *
+ * The service runs a background daemon thread ("DiscoveryService-Receiver") that handles all incoming
+ * UDP traffic on the discovery port.
+ *
+ * Hoever sending discovery brodcast only happens when [[discover()]] is called.
+ *
+ * @param contestManager provides the local node's contest configuration for outgoing discovery responses
+ * @param config application configuration containing discovery port, timeout, and broadcast address
+ */
 @Singleton
 class DiscoveryService @Inject()(
     contestManager: ContestManager,
