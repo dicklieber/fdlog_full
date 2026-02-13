@@ -1,3 +1,21 @@
+/*
+ * Copyright (c) 2026. Dick Lieber, WA9NNN
+ *
+ * This program is free software: you can redistribute it and/or modify 
+ * it under the terms of the GNU General Public License as published by 
+ * the Free Software Foundation, either version 3 of the License, or    
+ * (at your option) any later version.                                  
+ *                                                                      
+ * This program is distributed in the hope that it will be useful,      
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of       
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the        
+ * GNU General Public License for more details.                         
+ *                                                                      
+ * You should have received a copy of the GNU General Public License    
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 package fdswarm.fx.tools
 
 import fdswarm.store.BigQsosGenerator
@@ -25,6 +43,11 @@ final class HowManyDialogService @Inject() (
       promptText = "e.g. 100"
     }
 
+    val howManyPerHourField = new TextField {
+      text = "60"
+      promptText = "e.g. 60"
+    }
+
     val prefixField = new TextField {
       text = defaultPrefix
       promptText = "e.g. WA9"
@@ -48,8 +71,11 @@ final class HowManyDialogService @Inject() (
       add(new Label("How many:"), 0, 0)
       add(howManyField, 1, 0)
 
-      add(new Label("Callsign prefix:"), 0, 1)
-      add(prefixField, 1, 1)
+      add(new Label("How many per hour:"), 0, 1)
+      add(howManyPerHourField, 1, 1)
+
+      add(new Label("Callsign prefix:"), 0, 2)
+      add(prefixField, 1, 2)
     }
 
     def validHowMany(s: String): Boolean =
@@ -63,8 +89,10 @@ final class HowManyDialogService @Inject() (
     val disableBinding = Bindings.createBooleanBinding(
       () =>
         !validHowMany(howManyField.text.value.trim) ||
+          !validHowMany(howManyPerHourField.text.value.trim) ||
           !validPrefix(prefixField.text.value.trim),
       howManyField.text,
+      howManyPerHourField.text,
       prefixField.text
     )
     generateBtnNode.disable <== disableBinding
@@ -76,7 +104,8 @@ final class HowManyDialogService @Inject() (
     val opt = dialog.delegate.showAndWait() // java.util.Optional[ButtonType]
     if opt.isPresent && opt.get == generateButtonType then
       val howMany = howManyField.text.value.trim.toInt
+      val howManyPerHour = howManyPerHourField.text.value.trim.toInt
       val prefix  = prefixField.text.value.trim.toUpperCase
-      bigQsosGenerator.qsos(howMany, prefix)
+      bigQsosGenerator.qsos(howMany, howManyPerHour, prefix)
   }
 }
