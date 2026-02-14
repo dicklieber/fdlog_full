@@ -26,9 +26,21 @@ import scala.util.Try
 
 case class UDPHeaderData(service: Service, jsonPayload: String)
 
+/**
+ * UDP Header format:
+ * FDSWARM|SERVICE|VERSION|\n
+ * JSON_PAYLOAD
+ */
 object UDPHeader:
   private val headerRegx = s"""^FDSWARM\\|(${Service.values.map(_.toString).mkString("|")})\\|(\\d+)\\|$$""".r
 
+  /**
+   * Creates a UDP packet from a Header.
+   *
+   * @param service what this data is about.
+   * @param payload contents of the packet.
+   * @return suitable for sending over UDP.
+   */
   def apply(service: Service, payload: Array[Byte] = Array.emptyByteArray): Array[Byte] =
     val header = s"FDSWARM|$service|${BuildInfo.dataVersion}|\n"
     val headerBytes = header.getBytes("UTF-8")
@@ -39,6 +51,7 @@ object UDPHeader:
 
   /**
    * Parses a UDP packet into a UDPHeaderData.
+   *
    * @param packet received.
    * @return
    */
