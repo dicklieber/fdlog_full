@@ -48,7 +48,8 @@ class NodeStatusSenderServiceTest extends FunSuite:
     }
 
     val qsoStore = new QsoStore(directoryProvider)
-    val repl = new Repl(qsoStore)
+    val nodeStatusReceiverService = new NodeStatusReceiverService(statusPort, false)
+    val repl = new Repl(qsoStore, nodeStatusReceiverService)
 
     val nodeStatus = new NodeStatusSenderService(
       repl,

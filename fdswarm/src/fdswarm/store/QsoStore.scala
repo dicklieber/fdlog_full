@@ -21,6 +21,7 @@ package fdswarm.store
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.io.DirectoryProvider
 import fdswarm.model.*
+import fdswarm.replication.FdHourDigest
 import fdswarm.util.Ids
 import fdswarm.util.Ids.Id
 import jakarta.inject.*
@@ -35,16 +36,10 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider) extends LazyLoggi
   val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()
   private val journalFile = directoryProvider() / "qsosJournal.json"
   private val map: TrieMap[Id, Qso] = new TrieMap
+  private var fdHourDigests: Map[FdHour, FdHourDigest] = Map.empty
 
   def size: Int =
     map.size
-
-  /**
-   * Thread-safe snapshot of all QSOs, sorted by stamp.
-   * Prefer this over reading `qsoCollection` from non-JavaFX threads (e.g., Cask routes).
-   */
-  def all: Seq[Qso] =
-    map.values.toSeq.sorted
 
   if os.exists(journalFile) then
     os.read.lines(journalFile)
@@ -56,6 +51,13 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider) extends LazyLoggi
         map.put(qso.uuid, qso)
         qsoCollection.prepend(qso)
       }
+
+  /**
+   * Thread-safe snapshot of all QSOs, sorted by stamp.
+   * Prefer this over reading `qsoCollection` from non-JavaFX threads (e.g., Cask routes).
+   */
+  def all: Seq[Qso] =
+    map.values.toSeq.sorted
 
   def add(qso: Qso): Unit =
     val uuid = qso.uuid
@@ -74,28 +76,3 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider) extends LazyLoggi
         startMatch && bandModeMatch}
       .values
       .toSeq
-
-  /**
-   *
-   * @return uuids for all qso, sorted by stamp.
-   */
-  def ids: String =
-    map.values.toSeq.sorted
-      .map(_.uuid)
-      .mkString
-
-  /**
-   *
-   * @param idsString as returned by [[ids]], on another node.
-   * @return [[Qso.uuid]]s that are not in this node.
-   */
-  def neededIds(idsString: String): Seq[Id] =
-    val idsAtAnotherNode = idsString.grouped(Ids.IdSize)
-    idsAtAnotherNode.flatMap(id =>
-      if map.contains(id) then
-        logger.trace("Have: {}", id)
-        Seq.empty
-      else
-        logger.trace("Need: {}", id)
-        Seq(id)
-    ).toSeq

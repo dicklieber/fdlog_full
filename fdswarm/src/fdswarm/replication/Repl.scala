@@ -22,12 +22,44 @@ import fdswarm.model.{FdHour, Qso}
 import fdswarm.store.QsoStore
 import jakarta.inject.Inject
 import upickle.default.*
+
 import java.io.ByteArrayOutputStream
 import java.util.Base64
 import java.util.zip.GZIPOutputStream
 import scala.collection.immutable
+import com.typesafe.scalalogging.LazyLogging
+import fdswarm.util.Ids.Id
 
-class Repl @Inject()(qsoStore: QsoStore):
+class Repl @Inject()(qsoStore: QsoStore, nodeStatusReceiverService: NodeStatusReceiverService) extends LazyLogging:
+
+  private var thread: Option[Thread] = None
+
+  def start(): Unit =
+    if thread.isEmpty then
+      val t = new Thread(() =>
+        logger.info("Repl thread started")
+        while !Thread.currentThread().isInterrupted do
+          try
+            val payload = nodeStatusReceiverService.queue.take()
+            val message = new String(payload, "UTF-8")
+            val r: Seq[FdHourDigest] = read[Seq[FdHourDigest]](message)
+            logger.info(s"Repl received message: $message")
+            
+          catch
+            case _: InterruptedException =>
+              Thread.currentThread().interrupt()
+            case e: Exception =>
+              logger.error("Error in Repl thread", e)
+      , "Repl-Receiver")
+      t.setDaemon(true)
+      t.start()
+      thread = Some(t)
+
+  def stop(): Unit =
+    thread.foreach(_.interrupt())
+    thread = None
+
+  
 
   def byFdHour: Seq[FdHourDigest] =
 
@@ -54,6 +86,19 @@ class Repl @Inject()(qsoStore: QsoStore):
 
   def byFdHourJsonGzipBase64: String =
     Base64.getEncoder.encodeToString(byFdHourJsonGzip)
-    
 
+
+/**
+ * 
+ * @param fdHour for when.
+ * @param count number of QSOs.
+ * @param digest based on the [[Id]]s of the QSOs.
+ */
 case class FdHourDigest(fdHour: FdHour, count: Int, digest: String) derives ReadWriter
+
+/**
+ * 
+ * @param fdHour for when.
+ * @param specificQsos what we need. If [[Seq.empty]], all QSOs for the given hour are returned.
+ */
+case class FdHourRequest(fdHour: FdHour, specificQsos: Seq[Id] = Seq.empty) derives ReadWriter

@@ -33,7 +33,8 @@ class ReplTests extends munit.FunSuite {
     }
 
     val qsoStore = new QsoStore(directoryProvider)
-    val repl = new Repl(qsoStore)
+    val nodeStatusReceiverService = new NodeStatusReceiverService(8888, false)
+    val repl = new Repl(qsoStore, nodeStatusReceiverService)
 
     // Use sequential IDs for predictability in test
     Ids.useSeqentialStartingAt(0)
@@ -68,7 +69,8 @@ class ReplTests extends munit.FunSuite {
       override def apply(): os.Path = tmpDir
     }
     val qsoStore = new QsoStore(directoryProvider)
-    val repl = new Repl(qsoStore)
+    val nodeStatusReceiverService = new NodeStatusReceiverService(8888, false)
+    val repl = new Repl(qsoStore, nodeStatusReceiverService)
 
     val qso = Qso(
       callSign = Callsign("W1AW"),
@@ -97,6 +99,34 @@ class ReplTests extends munit.FunSuite {
     assertEquals(digests.head.count, 1)
   }
 
+  test("Repl thread processes messages from queue") {
+    val tmpDir = os.temp.dir()
+    val directoryProvider = new DirectoryProvider {
+      override def apply(): os.Path = tmpDir
+    }
+    val qsoStore = new QsoStore(directoryProvider)
+    val nodeStatusReceiverService = new NodeStatusReceiverService(0, false)
+    val repl = new Repl(qsoStore, nodeStatusReceiverService)
+
+    repl.start()
+    try {
+      val message = "Hello Repl"
+      nodeStatusReceiverService.queue.offer(message.getBytes("UTF-8"))
+
+      // Since the thread just logs for now, we don't have an easy way to verify it other than it doesn't crash
+      // and we can see it taking the message from the queue.
+      var timeout = 100 // 1 second
+      while (nodeStatusReceiverService.queue.size() > 0 && timeout > 0) {
+        Thread.sleep(10)
+        timeout -= 1
+      }
+      assertEquals(nodeStatusReceiverService.queue.size(), 0, "Queue should be empty after Repl thread processes the message")
+    } finally {
+      repl.stop()
+      os.remove.all(tmpDir)
+    }
+  }
+
   test("byFdHour groups by FdHour") {
     val tmpDir = os.temp.dir()
     val directoryProvider = new DirectoryProvider {
@@ -104,7 +134,8 @@ class ReplTests extends munit.FunSuite {
     }
 
     val qsoStore = new QsoStore(directoryProvider)
-    val repl = new Repl(qsoStore)
+    val nodeStatusReceiverService = new NodeStatusReceiverService(8888, false)
+    val repl = new Repl(qsoStore, nodeStatusReceiverService)
     
     val baseInstant = java.time.Instant.parse("2026-02-10T10:00:00Z")
     
