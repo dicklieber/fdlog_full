@@ -19,7 +19,7 @@
 package fdswarm.replication
 
 import fdswarm.model.{FdHour, Qso}
-import fdswarm.store.QsoStore
+import fdswarm.store.{FdHourDigest, QsoStore}
 import jakarta.inject.Inject
 import upickle.default.*
 
@@ -62,17 +62,10 @@ class Repl @Inject()(qsoStore: QsoStore, nodeStatusReceiverService: NodeStatusRe
   
 
   def byFdHour: Seq[FdHourDigest] =
-
     val hourToQsos: Map[FdHour, Seq[Qso]] = qsoStore.all.groupBy(_.fdHour)
-    val r: Iterable[FdHourDigest] = for
-      (fdHour, qsos) <- hourToQsos
-    yield
-      val sortedIds = qsos.map(_.uuid).sorted.mkString
-      val digest = java.security.MessageDigest.getInstance("SHA-256")
-        .digest(sortedIds.getBytes("UTF-8"))
-        .map("%02x".format(_)).mkString
-      FdHourDigest(fdHour, qsos.size, digest)
-    r.toSeq
+    hourToQsos.map { case (fdHour, qsos) =>
+      FdHourDigest(fdHour, qsos)
+    }.toSeq
 
   def byFdHourJsonGzip: Array[Byte] =
     val json = write(byFdHour)
@@ -88,13 +81,6 @@ class Repl @Inject()(qsoStore: QsoStore, nodeStatusReceiverService: NodeStatusRe
     Base64.getEncoder.encodeToString(byFdHourJsonGzip)
 
 
-/**
- * 
- * @param fdHour for when.
- * @param count number of QSOs.
- * @param digest based on the [[Id]]s of the QSOs.
- */
-case class FdHourDigest(fdHour: FdHour, count: Int, digest: String) derives ReadWriter
 
 /**
  * 

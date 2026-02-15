@@ -26,7 +26,8 @@ import fdswarm.fx.contest.ContestManager
 import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.station.StationEditor
 import fdswarm.fx.tools.HowManyDialogService
-import fdswarm.replication.{DiscoveryService, FdHourDigest, NodeStatusSenderService, Repl}
+import fdswarm.replication.{DiscoveryService, NodeStatusSenderService, Repl}
+import fdswarm.store.FdHourDigest
 import jakarta.inject.Inject
 import scalafx.application.Platform
 import scalafx.scene.{Node, Scene}

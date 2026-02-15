@@ -21,7 +21,6 @@ package fdswarm.store
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.io.DirectoryProvider
 import fdswarm.model.*
-import fdswarm.replication.FdHourDigest
 import fdswarm.util.Ids
 import fdswarm.util.Ids.Id
 import jakarta.inject.*

@@ -20,7 +20,7 @@ package fdswarm.replication
 
 import fdswarm.io.DirectoryProvider
 import fdswarm.model.*
-import fdswarm.store.QsoStore
+import fdswarm.store.{FdHourDigest, QsoStore}
 import fdswarm.fx.contest.ContestType
 import fdswarm.util.Ids
 
