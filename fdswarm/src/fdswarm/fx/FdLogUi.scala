@@ -26,7 +26,7 @@ import fdswarm.fx.contest.ContestManager
 import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.station.StationEditor
 import fdswarm.fx.tools.{FdHourDialogService, HowManyDialogService}
-import fdswarm.replication.{DiscoveryService, NodeStatusSender, Repl}
+import fdswarm.replication.{NodeStatusSender, NodeStatusHandler}
 import fdswarm.store.FdHourDigest
 import jakarta.inject.Inject
 import scalafx.application.Platform
@@ -43,8 +43,7 @@ final class FdLogUi @Inject()(
                                contestManager: ContestManager,
                                howManyDialogService: HowManyDialogService,
                                fdHourDialogService: FdHourDialogService,
-                               repl: Repl,
-                               discoveryService: DiscoveryService,
+                               repl: NodeStatusHandler,
                                nodeStatusService: NodeStatusSender,
                                aboutMenuItem: AboutMenuItem
                              ) extends LazyLogging:
@@ -87,8 +86,6 @@ final class FdLogUi @Inject()(
   private var ownerWindow: Window = null.asInstanceOf[Window]
 
   def start(stage: Stage): Unit =
-    val discovered = discoveryService.discover()
-    logger.info(s"todo Discovered: $discovered")
     nodeStatusService.start()
 
 

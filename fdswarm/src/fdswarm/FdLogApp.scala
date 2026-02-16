@@ -22,7 +22,7 @@ import com.google.inject.{Guice, Injector}
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.api.ApiService
 import fdswarm.fx.{ConfigModule, FdLogUi}
-import fdswarm.replication.{DiscoveryService, NetworkConfig, NodeStatusReceiver, NodeStatusSender, Repl}
+import fdswarm.replication.NodeStatus
 import net.codingwell.scalaguice.InjectorExtensions.*
 import scalafx.application.JFXApp3
 
@@ -41,21 +41,14 @@ object FdLogApp extends JFXApp3 with LazyLogging:
   override def start(): Unit =
 
     // IMPORTANT: FdLogUi is injected; ask Guice for it
-    val networkConfig = injector.instance[NetworkConfig]
+    val nodeStatus = injector.instance[NodeStatus]
     val ui = injector.instance[FdLogUi]
     val apiService = injector.instance[ApiService]
-    val discoveryService = injector.instance[DiscoveryService]
-    val nodeStatusReceiver = injector.instance[NodeStatusReceiver]
-    val repl = injector.instance[Repl]
 
     // Start API service in a separate thread
     val apiThread = new Thread(() => apiService.start())
     apiThread.setDaemon(true)
     apiThread.start()
-
-    discoveryService.start()
-    nodeStatusReceiver.start()
-    repl.start()
 
     // Create the primary stage, let the UI configure it, then publish it
     val s = new JFXApp3.PrimaryStage
@@ -64,14 +57,8 @@ object FdLogApp extends JFXApp3 with LazyLogging:
 
   override def stopApp(): Unit =
     logger.info("stopApp")
-    val discoveryService = injector.instance[DiscoveryService]
-    val nodeStatus = injector.instance[NodeStatusSender]
-    val nodeStatusReceiver = injector.instance[NodeStatusReceiver]
-    val repl = injector.instance[Repl]
-    discoveryService.stop()
+    val nodeStatus = injector.instance[NodeStatus]
     nodeStatus.stop()
-    nodeStatusReceiver.stop()
-    repl.stop()
   
 
   

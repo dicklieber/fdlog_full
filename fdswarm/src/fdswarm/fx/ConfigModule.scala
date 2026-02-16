@@ -25,6 +25,7 @@ import com.google.inject.name.Names
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.io.{DirectoryProvider, ProductionDirectory}
+import fdswarm.replication.MulticastTransport
 import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala

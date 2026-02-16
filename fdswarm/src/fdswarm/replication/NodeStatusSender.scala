@@ -25,13 +25,14 @@ import fdswarm.store.QsoStore
 import fdswarm.util.{HostAndPort, HostAndPortProvider}
 
 import java.net.{DatagramPacket, DatagramSocket, InetAddress}
+import scala.compiletime.uninitialized
 
 
 /**
- * Periodically broadcasts the current node's status to other nodes in the swarm.
+ * Periodically broadcasts, via the [[MulticastTransport]] the current node's status to other nodes in the swarm.
  *
  * This service runs a background daemon thread that periodically (every `broadcastPeriodSec`)
- * fetches a gzipped JSON representation of the local hourly QSO digests from [[Repl]]
+ * fetches a gzipped JSON representation of the local hourly QSO digests from [[NodeStatusHandler]]
  * and broadcasts it as a UDP packet to the configured `broadcastAddress` and `statusPort`.
  *
  * The UDP packets are prefixed with a standard [[UDPHeader]] with [[Service.Status]].
@@ -40,36 +41,25 @@ import java.net.{DatagramPacket, DatagramSocket, InetAddress}
 @Singleton
 class NodeStatusSender @Inject()(
                                   qsoStore: QsoStore,
+                                  multicastTransport: MulticastTransport,
                                   hostAndPortProvider: HostAndPortProvider,
-                                  @Named("fdswarm.statusPort") statusPort: Int,
-                                  @Named("fdswarm.broadcastAddress") broadcastAddress: String,
                                   @Named("fdswarm.broadcastPeriodSec") broadcastPeriodSec: Int
                                 ) extends LazyLogging:
-
-  private var socket: Option[DatagramSocket] = None
-  private var thread: Option[Thread] = None
+  var maybeThread:Option[Thread] = None
 
   def start(): Unit =
-    logger.info(s"Starting NodeStatusSender (every $broadcastPeriodSec s to $broadcastAddress:$statusPort)")
-    val s = new DatagramSocket()
-    s.setBroadcast(true)
-    socket = Some(s)
+    logger.info(s"Starting NodeStatusSender (every $broadcastPeriodSec)")
 
     val t = new Thread(() =>
       while !Thread.currentThread().isInterrupted do
         try
-
           val statusMessage = StatusMessage(
             hostAndPort = hostAndPortProvider.http,
             fdDigests = qsoStore.digests())
-
           logger.trace(s"Broadcasting: $statusMessage")
           val gzipBytes = statusMessage.toPacket
           val bytes = UDPHeader(Service.Status, gzipBytes)
-
-          val address = InetAddress.getByName(broadcastAddress)
-          val packet = new DatagramPacket(bytes, bytes.length, address, statusPort)
-          s.send(packet)
+          multicastTransport.send(bytes)
         catch
           case _: InterruptedException => Thread.currentThread().interrupt()
           case e: Exception =>
@@ -83,11 +73,9 @@ class NodeStatusSender @Inject()(
       , "NodeStatus-Broadcaster")
     t.setDaemon(true)
     t.start()
-    thread = Some(t)
+    maybeThread = Some(t)
 
   def stop(): Unit =
-    logger.info("Stopping NodeStatus broadcaster")
-    thread.foreach(_.interrupt())
-    socket.foreach(_.close())
-    thread = None
-    socket = None
+    logger.info("Stopping NodeStatusSender")
+    maybeThread.foreach(_.interrupt())
+    maybeThread = None

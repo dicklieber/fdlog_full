@@ -31,7 +31,11 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.qso.FdHour
 import fdswarm.util.Ids.Id
 
-class Repl @Inject()(qsoStore: QsoStore, nodeStatusReceiver: NodeStatusReceiver) extends LazyLogging:
+import java.net.InetAddress
+
+import fdswarm.util.HostAndPortProvider
+
+class NodeStatusHandler @Inject()(qsoStore: QsoStore, multicastTransport: MulticastTransport, hostAndPortProvider: HostAndPortProvider) extends LazyLogging:
 
   private var thread: Option[Thread] = None
 
@@ -39,11 +43,15 @@ class Repl @Inject()(qsoStore: QsoStore, nodeStatusReceiver: NodeStatusReceiver)
     val t = new Thread(() =>
       while !Thread.currentThread().isInterrupted do
         try
-          val payload = nodeStatusReceiver.queue.take()
-          val statusMessage = StatusMessage(payload)
-          val needed = qsoStore.neededQsos(statusMessage.fdDigests)
-          if needed.nonEmpty then
-            logger.info(s"Needed FdHours from ${statusMessage.hostAndPort}: $needed")
+          val payload: Array[Byte] = multicastTransport.queue.take()
+          val udpHeader: UDPHeaderData = UDPHeader.parse(payload)
+          val statusMessage = StatusMessage(udpHeader.payload)
+          if statusMessage.hostAndPort == hostAndPortProvider.http then
+            logger.trace(s"Ignoring our own message from ${statusMessage.hostAndPort}")
+          else
+            val needed = qsoStore.neededQsos(statusMessage.fdDigests)
+            if needed.nonEmpty then
+              logger.info(s"Needed FdHours from ${statusMessage.hostAndPort}: $needed")
         catch
           case _: InterruptedException => Thread.currentThread().interrupt()
           case e: Exception =>

@@ -29,11 +29,12 @@ class NetworkConfig @Inject() (config: Config):
   private val port:Int = sys.env.get("PORT")
     .map(_.toInt)
     .getOrElse(config.getInt("fdswarm.httpPort"))
-  val url: URL =
-    val address = findNonLocalhostIPv4().getOrElse("127.0.0.1")
+  def url: URL =
+    val address = NetworkConfig.findNonLocalhostIPv4().getOrElse("127.0.0.1")
     URI.create(s"http://$address:$port").toURL()
 
-  private def findNonLocalhostIPv4(): Option[String] =
+object NetworkConfig:
+  def findNonLocalhostIPv4(): Option[String] =
     NetworkInterface.getNetworkInterfaces.asScala
       .filter(ni => ni.isUp && !ni.isLoopback)
       .flatMap(_.getInetAddresses.asScala)
