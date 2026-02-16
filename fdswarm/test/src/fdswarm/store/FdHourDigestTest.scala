@@ -20,6 +20,7 @@ package fdswarm.store
 
 import fdswarm.model.*
 import fdswarm.fx.contest.ContestType
+import fdswarm.fx.qso.FdHour
 import fdswarm.util.Ids
 import munit.FunSuite
 

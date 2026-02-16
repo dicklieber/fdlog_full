@@ -17,11 +17,12 @@
  *
  */
 
-package fdswarm.model
+package fdswarm.fx.qso
 
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.PropertyCellName
 import upickle.default.*
+
 import java.time.{Instant, ZoneId, ZonedDateTime}
 import scala.collection.concurrent.TrieMap
 

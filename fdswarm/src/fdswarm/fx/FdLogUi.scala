@@ -25,8 +25,8 @@ import fdswarm.fx.bandmodes.BandsAndModesPane
 import fdswarm.fx.contest.ContestManager
 import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.station.StationEditor
-import fdswarm.fx.tools.HowManyDialogService
-import fdswarm.replication.{DiscoveryService, NodeStatusSenderService, Repl}
+import fdswarm.fx.tools.{FdHourDialogService, HowManyDialogService}
+import fdswarm.replication.{DiscoveryService, NodeStatusSender, Repl}
 import fdswarm.store.FdHourDigest
 import jakarta.inject.Inject
 import scalafx.application.Platform
@@ -42,9 +42,10 @@ final class FdLogUi @Inject()(
                                stationEditor: StationEditor,
                                contestManager: ContestManager,
                                howManyDialogService: HowManyDialogService,
+                               fdHourDialogService: FdHourDialogService,
                                repl: Repl,
                                discoveryService: DiscoveryService,
-                               nodeStatusService: NodeStatusSenderService,
+                               nodeStatusService: NodeStatusSender,
                                aboutMenuItem: AboutMenuItem
                              ) extends LazyLogging:
 
@@ -160,6 +161,13 @@ final class FdLogUi @Inject()(
               case Some(w) => howManyDialogService.showAndGenerate(w)
               case None => ()
         ,
+        new MenuItem("Send FdHour"):
+          onAction = _ =>
+            Option(ownerWindow) match
+              case Some(w) => fdHourDialogService.show(w)
+              case None => ()
+        
+/*
         new MenuItem("FdHour"):
           onAction = _ =>
             val base64 = repl.byFdHourJsonGzipBase64
@@ -170,11 +178,14 @@ final class FdLogUi @Inject()(
             println(s"Decoded JSON: $json")
             val s: Seq[FdHourDigest] = read(json)
             println(s"Decoded FdHourDigests: $s")
+*/
         ,
+/*
         new MenuItem("Broadcast FdHour"):
           onAction = _ =>
             val base64 = repl.byFdHourJsonGzipBase64
         //            broadcastSender.broadcast(base64)
+*/
       )
 
 object FdLogUi:

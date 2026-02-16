@@ -18,7 +18,7 @@
 
 package fdswarm.replication
 
-import fdswarm.model.{FdHour, Qso}
+import fdswarm.model.Qso
 import fdswarm.store.{FdHourDigest, QsoStore}
 import jakarta.inject.Inject
 import upickle.default.*
@@ -28,63 +28,34 @@ import java.util.Base64
 import java.util.zip.GZIPOutputStream
 import scala.collection.immutable
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.fx.qso.FdHour
 import fdswarm.util.Ids.Id
 
-class Repl @Inject()(qsoStore: QsoStore, nodeStatusReceiverService: NodeStatusReceiverService) extends LazyLogging:
+class Repl @Inject()(qsoStore: QsoStore, nodeStatusReceiver: NodeStatusReceiver) extends LazyLogging:
 
   private var thread: Option[Thread] = None
 
   def start(): Unit =
-    if thread.isEmpty then
-      val t = new Thread(() =>
-        logger.info("Repl thread started")
-        while !Thread.currentThread().isInterrupted do
-          try
-            val payload = nodeStatusReceiverService.queue.take()
-            val message = new String(payload, "UTF-8")
-            val r: Seq[FdHourDigest] = read[Seq[FdHourDigest]](message)
-            logger.info(s"Repl received message: $message")
-            
-          catch
-            case _: InterruptedException =>
-              Thread.currentThread().interrupt()
-            case e: Exception =>
-              logger.error("Error in Repl thread", e)
-      , "Repl-Receiver")
-      t.setDaemon(true)
-      t.start()
-      thread = Some(t)
+    val t = new Thread(() =>
+      while !Thread.currentThread().isInterrupted do
+        try
+          val payload = nodeStatusReceiver.queue.take()
+          val statusMessage = StatusMessage(payload)
+          val needed = qsoStore.neededQsos(statusMessage.fdDigests)
+          if needed.nonEmpty then
+            logger.info(s"Needed FdHours from ${statusMessage.hostAndPort}: $needed")
+        catch
+          case _: InterruptedException => Thread.currentThread().interrupt()
+          case e: Exception =>
+            logger.error("Error in Repl processing loop", e)
+    , "Repl-Processor")
+    t.setDaemon(true)
+    t.start()
+    thread = Some(t)
 
   def stop(): Unit =
+    logger.info("Stopping Repl service")
     thread.foreach(_.interrupt())
     thread = None
 
-  
-
-  def byFdHour: Seq[FdHourDigest] =
-    val hourToQsos: Map[FdHour, Seq[Qso]] = qsoStore.all.groupBy(_.fdHour)
-    hourToQsos.map { case (fdHour, qsos) =>
-      FdHourDigest(fdHour, qsos)
-    }.toSeq
-
-  def byFdHourJsonGzip: Array[Byte] =
-    val json = write(byFdHour)
-    val baos = new ByteArrayOutputStream()
-    val gzos = new GZIPOutputStream(baos)
-    try
-      gzos.write(json.getBytes("UTF-8"))
-    finally
-      gzos.close()
-    baos.toByteArray
-
-  def byFdHourJsonGzipBase64: String =
-    Base64.getEncoder.encodeToString(byFdHourJsonGzip)
-
-
-
-/**
- * 
- * @param fdHour for when.
- * @param specificQsos what we need. If [[Seq.empty]], all QSOs for the given hour are returned.
- */
-case class FdHourRequest(fdHour: FdHour, specificQsos: Seq[Id] = Seq.empty) derives ReadWriter
+ 

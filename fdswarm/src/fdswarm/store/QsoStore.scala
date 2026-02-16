@@ -19,9 +19,11 @@
 package fdswarm.store
 
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
 import fdswarm.model.*
-import fdswarm.util.Ids
+import fdswarm.replication.StatusMessage
+import fdswarm.util.{HostAndPort, Ids}
 import fdswarm.util.Ids.Id
 import jakarta.inject.*
 import scalafx.collections.ObservableBuffer
@@ -37,8 +39,15 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider) extends LazyLoggi
   private val map: TrieMap[Id, Qso] = new TrieMap
   private var fdHourDigests: Map[FdHour, FdHourDigest] = Map.empty
 
-  def size: Int =
-    map.size
+  def add(qso: Qso): Unit =
+    val uuid = qso.uuid
+    val maybeQso = map.putIfAbsent(uuid, qso)
+    os.write.append(journalFile, write(qso) + "\n", createFolders = true)
+    qsoCollection.prepend(qso)
+    buildFdHourDigests()
+    maybeQso.foreach(was =>
+      logger.error(s"Was already a qso for uuid: $uuid $qso")
+    )
 
   if os.exists(journalFile) then
     os.read.lines(journalFile)
@@ -50,6 +59,13 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider) extends LazyLoggi
         map.put(qso.uuid, qso)
         qsoCollection.prepend(qso)
       }
+    buildFdHourDigests()
+
+  private def buildFdHourDigests(): Unit =
+    val hourToQsos: Map[FdHour, Seq[Qso]] = all.groupBy(_.fdHour)
+    fdHourDigests = hourToQsos.map { case (fdHour, qsos) =>
+      fdHour -> FdHourDigest(fdHour, qsos)
+    }
 
   /**
    * Thread-safe snapshot of all QSOs, sorted by stamp.
@@ -58,20 +74,45 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider) extends LazyLoggi
   def all: Seq[Qso] =
     map.values.toSeq.sorted
 
-  def add(qso: Qso): Unit =
-    val uuid = qso.uuid
-    val maybeQso = map.putIfAbsent(uuid, qso)
-    os.write.append(journalFile, write(qso) + "\n", createFolders = true)
-    qsoCollection.prepend(qso)
-    maybeQso.foreach(was =>
-      logger.error(s"Was already a qso for uuid: $uuid $qso")
-    )
-
   def potentialDups(startOfCallsign: String, bandmode: BandMode): Seq[Qso] =
-    map.filter{case(id,qso) =>
-      val bandModeMatch = qso.bandMode == bandmode
-      logger.trace("qso.bandMode {} against {} mmatch: {}", qso.bandMode, bandmode, bandModeMatch)
+    map.filter { case (id, qso) =>
+        val bandModeMatch = qso.bandMode == bandmode
+        logger.trace("qso.bandMode {} against {} mmatch: {}", qso.bandMode, bandmode, bandModeMatch)
         val startMatch = qso.callSign.startsWith(startOfCallsign)
-        startMatch && bandModeMatch}
+        startMatch && bandModeMatch
+      }
       .values
       .toSeq
+
+  /**
+   * Returns the QSOs that are needed for the given hour.
+   *
+   * @param statusMessage as received from an FdSwarm node.
+   * @return all the [[FdHour]]s that aren't on the [[QsoStore]] or don't match.
+   */
+  def neededQsos(incoming: Seq[FdHourDigest]): Seq[FdHour] =
+    // this might be updated by another thread so we save a reference so it can't change under us.
+    val cpy: Map[FdHour, FdHourDigest] = fdHourDigests
+    incoming.flatMap { remoteFdHourDigest =>
+      val remoteFdHour = remoteFdHourDigest.fdHour
+      cpy.get(remoteFdHour) match
+        // we have one, is it the same?
+        case Some(localFdDigest) =>
+          Option.when(localFdDigest != remoteFdHourDigest) {
+            remoteFdHour
+          }
+        case None => // we don't have it yet, so we need it.
+          Some(remoteFdHour)
+
+    }
+
+  /**
+   * current digests for all FdHours.
+   *
+   * @return
+   */
+  def digests(): Seq[FdHourDigest] = fdHourDigests.values.toSeq.sorted
+
+  def idsForHour(fdHour: FdHour): FdHourIds =
+    val ids = all.filter(_.fdHour == fdHour).map(_.uuid)
+    FdHourIds(fdHour, ids)

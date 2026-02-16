@@ -23,8 +23,40 @@ import fdswarm.model.*
 import fdswarm.store.QsoStore
 import upickle.default.*
 import fdswarm.fx.contest.ContestType
+import fdswarm.fx.qso.FdHour
+import fdswarm.store.{FdHourIds, QsoStore}
 
 class QsoRoutesTests extends munit.FunSuite {
+
+  test("hourIds endpoint returns FdHourIds for a given hour") {
+    val tmpDir = os.temp.dir()
+    val directoryProvider = new DirectoryProvider {
+      override def apply(): os.Path = tmpDir
+    }
+    val qsoStore = new QsoStore(directoryProvider)
+    val routes = new QsoRoutes(qsoStore)
+
+    val fdHour = FdHour(15, 10)
+    val stamp = java.time.ZonedDateTime.of(2026, 2, 15, 10, 0, 0, 0, java.time.ZoneId.of("UTC")).toInstant
+    val qso1 = Qso(
+      callSign = Callsign("W1AW"),
+      contestClass = "1A",
+      section = "CT",
+      bandMode = BandMode("20m", "CW"),
+      qsoMetadata = QsoMetadata(Station("S1", "Home", Callsign("WA9NNN")), "node1", ContestType.WFD),
+      stamp = stamp
+    )
+    qsoStore.add(qso1)
+
+    val requestBody = write(fdHour)
+    val response = routes.hourIds(fdHour)
+
+    assertEquals(response.headers.find(_._1 == "Content-Type").map(_._2), Some("application/json"))
+    
+    val fdHourIds = read[FdHourIds](response.data)
+    assertEquals(fdHourIds.fdHour, fdHour)
+    assertEquals(fdHourIds.ids, Seq(qso1.uuid))
+  }
 
   test("qsos endpoint returns JSON list of QSOs") {
     // Setup a mock directory provider for QsoStore

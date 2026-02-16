@@ -18,4 +18,6 @@
 
 package fdswarm.replication
 
-final case class NodeAddress(host: String, port: Int)
+import upickle.default.ReadWriter
+
+final case class NodeAddress(host: String, port: Int) derives ReadWriter

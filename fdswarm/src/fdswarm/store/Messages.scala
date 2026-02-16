@@ -18,17 +18,20 @@
 
 package fdswarm.store
 
-import fdswarm.model.{FdHour, Qso}
+import fdswarm.fx.qso.FdHour
+import fdswarm.model.Qso
+import fdswarm.util.Ids.Id
 import upickle.default.*
 
-/**\
- *
+/**
+ * What gets broacasted to all nodes.
  *
  * @param fdHour for when.
  * @param count number of QSOs.
  * @param digest based on the [[Id]]s of the QSOs.
  */
-case class FdHourDigest(fdHour: FdHour, count: Int, digest: String) derives ReadWriter
+case class FdHourDigest(fdHour: FdHour, count: Int, digest: String) extends Ordered[FdHourDigest] derives ReadWriter:
+  override def compare(that: FdHourDigest): Int = this.fdHour.compare(that.fdHour)
 
 object FdHourDigest:
   def apply(fdHour: FdHour, qsos: Seq[Qso]): FdHourDigest =
@@ -37,3 +40,16 @@ object FdHourDigest:
       .digest(sortedIds.getBytes("UTF-8"))
       .map("%02x".format(_)).mkString
     FdHourDigest(fdHour, qsos.size, digest)
+
+/**
+ * Can be sent to an FdSwarm node to get some or all of the QSOs for a given hour.
+ * @param fdHour for when.
+ * @param specificQsos what we need. If [[Seq.empty]], all QSOs for the given hour are returned.
+ */
+case class FdHourRequest(fdHour: FdHour, specificQsos: Seq[Id] = Seq.empty) derives ReadWriter
+
+/**
+ * @param fdHour for when
+ * @param ids QSOs for the given hour, the the node has or that a node needs.
+ */
+case class FdHourIds(fdHour: FdHour, ids:Seq[Id]) derives ReadWriter

@@ -29,7 +29,7 @@ class ApiService @Inject() (
     qsoRoutes: QsoRoutes
 ) extends Main with LazyLogging:
   override def port: Int = networkConfig.url.getPort
-  override def host: String = networkConfig.url.getHost
+  override def host: String = "0.0.0.0"
 
   val allRoutes = Seq(
     SampleRoutes(),

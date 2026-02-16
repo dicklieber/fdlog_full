@@ -20,8 +20,10 @@ package fdswarm.replication
 
 import com.google.inject.{Inject, Singleton}
 import com.google.inject.name.Named
-import com.organization.BuildInfo
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.store.QsoStore
+import fdswarm.util.{HostAndPort, HostAndPortProvider}
+
 import java.net.{DatagramPacket, DatagramSocket, InetAddress}
 
 
@@ -34,24 +36,21 @@ import java.net.{DatagramPacket, DatagramSocket, InetAddress}
  *
  * The UDP packets are prefixed with a standard [[UDPHeader]] with [[Service.Status]].
  *
- * @param repl source of the node's status data (gzipped JSON)
- * @param statusPort UDP port to send status broadcasts to
- * @param broadcastAddress destination address for UDP broadcasts (e.g., "255.255.255.255" or a subnet broadcast)
- * @param broadcastPeriodSec interval between broadcasts in seconds
- */
+ * one */
 @Singleton
-class NodeStatusSenderService @Inject()(
-    repl: Repl,
-    @Named("fdswarm.statusPort") statusPort: Int,
-    @Named("fdswarm.broadcastAddress") broadcastAddress: String,
-    @Named("fdswarm.broadcastPeriodSec") broadcastPeriodSec: Int
-) extends LazyLogging:
+class NodeStatusSender @Inject()(
+                                  qsoStore: QsoStore,
+                                  hostAndPortProvider: HostAndPortProvider,
+                                  @Named("fdswarm.statusPort") statusPort: Int,
+                                  @Named("fdswarm.broadcastAddress") broadcastAddress: String,
+                                  @Named("fdswarm.broadcastPeriodSec") broadcastPeriodSec: Int
+                                ) extends LazyLogging:
 
   private var socket: Option[DatagramSocket] = None
   private var thread: Option[Thread] = None
 
   def start(): Unit =
-    logger.info(s"Starting NodeStatus broadcaster (every $broadcastPeriodSec s to $broadcastAddress:$statusPort)")
+    logger.info(s"Starting NodeStatusSender (every $broadcastPeriodSec s to $broadcastAddress:$statusPort)")
     val s = new DatagramSocket()
     s.setBroadcast(true)
     socket = Some(s)
@@ -59,24 +58,29 @@ class NodeStatusSenderService @Inject()(
     val t = new Thread(() =>
       while !Thread.currentThread().isInterrupted do
         try
-          val gzipBytes = repl.byFdHourJsonGzip
+
+          val statusMessage = StatusMessage(
+            hostAndPort = hostAndPortProvider.http,
+            fdDigests = qsoStore.digests())
+
+          logger.trace(s"Broadcasting: $statusMessage")
+          val gzipBytes = statusMessage.toPacket
           val bytes = UDPHeader(Service.Status, gzipBytes)
-          
+
           val address = InetAddress.getByName(broadcastAddress)
           val packet = new DatagramPacket(bytes, bytes.length, address, statusPort)
           s.send(packet)
-          logger.trace(s"Broadcasted status: ${bytes.length} bytes")
         catch
           case _: InterruptedException => Thread.currentThread().interrupt()
           case e: Exception =>
             logger.error("Error broadcasting node status", e)
-        
+
         if !Thread.currentThread().isInterrupted then
           try
             Thread.sleep(broadcastPeriodSec * 1000L)
           catch
             case _: InterruptedException => Thread.currentThread().interrupt()
-    , "NodeStatus-Broadcaster")
+      , "NodeStatus-Broadcaster")
     t.setDaemon(true)
     t.start()
     thread = Some(t)

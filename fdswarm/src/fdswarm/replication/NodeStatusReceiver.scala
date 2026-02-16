@@ -37,7 +37,7 @@ import scala.jdk.CollectionConverters.*
  * @param queue the destination queue for received status payloads
  */
 @Singleton
-class NodeStatusReceiverService @Inject()(
+class NodeStatusReceiver @Inject()(
     @Named("fdswarm.statusPort") statusPort: Int,
     @Named("fdswarm.discovery.ignoreSelf") ignoreSelf: Boolean
 ) extends LazyLogging:
@@ -74,9 +74,11 @@ class NodeStatusReceiverService @Inject()(
             try
               val headerData = UDPHeader.parse(receivedData)
               if headerData.service == Service.Status then
-                val payloadBytes = headerData.jsonPayload.getBytes("UTF-8")
-                queue.offer(payloadBytes)
-                logger.trace(s"Received and queued status from $sender: ${payloadBytes.length} bytes")
+                val statusMessage = StatusMessage(headerData.payload)
+                // For now, we still queue the raw payload bytes if Repl expects them, 
+                // but let's check Repl.scala to see what it expects in the queue.
+                queue.offer(headerData.payload)
+                logger.trace(s"Received and queued status from $sender: ${headerData.payload.length} bytes")
               else
                 logger.debug(s"Received non-status message on status port from $sender: ${headerData.service}")
             catch

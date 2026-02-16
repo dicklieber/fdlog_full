@@ -50,12 +50,16 @@ class UDPHeaderTest extends FunSuite:
 
   test("UDPHeader.parse correctly parses valid Discovery header with Unit"):
     val header = s"FDSWARM|Discovery|${BuildInfo.dataVersion}|\n".getBytes("UTF-8")
-    assertEquals(UDPHeader.parse(header), UDPHeaderData(Service.Discovery, ""))
+    val result = UDPHeader.parse(header)
+    assertEquals(result.service, Service.Discovery)
+    assert(result.payload.isEmpty)
 
   test("UDPHeader.parse correctly parses valid Status header with String payload"):
     val jsonPayload = "\"status-ok\""
     val header = (s"FDSWARM|Status|${BuildInfo.dataVersion}|\n" + jsonPayload).getBytes("UTF-8")
-    assertEquals(UDPHeader.parse(header), UDPHeaderData(Service.Status, "\"status-ok\""))
+    val result = UDPHeader.parse(header)
+    assertEquals(result.service, Service.Status)
+    assertEquals(new String(result.payload, "UTF-8"), jsonPayload)
 
   test("UDPHeader.parse correctly parses gzipped payload"):
     val jsonPayload = "\"gzipped-payload\""
@@ -70,7 +74,9 @@ class UDPHeaderTest extends FunSuite:
     System.arraycopy(headerPart, 0, packet, 0, headerPart.length)
     System.arraycopy(gzippedPayload, 0, packet, headerPart.length, gzippedPayload.length)
     
-    assertEquals(UDPHeader.parse(packet), UDPHeaderData(Service.Status, "\"gzipped-payload\""))
+    val result = UDPHeader.parse(packet)
+    assertEquals(result.service, Service.Status)
+    assert(result.payload.sameElements(gzippedPayload))
 
   test("UDPHeader.parse fails on invalid prefix"):
     val header = s"INVALID|Status|${BuildInfo.dataVersion}|\n".getBytes("UTF-8")

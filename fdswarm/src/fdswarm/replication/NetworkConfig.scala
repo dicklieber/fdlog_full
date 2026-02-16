@@ -24,7 +24,7 @@ import com.typesafe.config.Config
 import java.net.{Inet4Address, NetworkInterface, URI, URL}
 import scala.jdk.CollectionConverters.*
 
-@Singleton
+@Singleton 
 class NetworkConfig @Inject() (config: Config):
   private val port:Int = sys.env.get("PORT")
     .map(_.toInt)

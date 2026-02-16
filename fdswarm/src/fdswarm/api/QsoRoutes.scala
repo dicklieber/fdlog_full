@@ -20,6 +20,7 @@ package fdswarm.api
 
 import cask.*
 import com.google.inject.Inject
+import fdswarm.fx.qso.FdHour
 import fdswarm.store.QsoStore
 import upickle.default.*
 
@@ -33,6 +34,13 @@ class QsoRoutes @Inject()(qsoStore: QsoStore) extends Routes:
         "Content-Type" -> "application/json",
         "Content-Disposition" -> "attachment; filename=qsos.json"
       )
+    )
+
+  @postJson("/hourIds")
+  def hourIds(fdHour: FdHour): Response[String] =
+    Response(
+      data = write(qsoStore.idsForHour(fdHour), indent = 2),
+      headers = Seq("Content-Type" -> "application/json")
     )
 
   initialize()

@@ -38,6 +38,14 @@ Configuration:
         level: info
         additivity: true
 
+      - name: "fdswarm.replication.NodeStatusSender"
+        level: trace
+        additivity: true
+
+      - name: "fdswarm.fx.tools.FdHourDialogService"
+        level: trace
+        additivity: true
+
     Root:
       level: info
       AppenderRef:

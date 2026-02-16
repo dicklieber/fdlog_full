@@ -20,18 +20,24 @@ package fdswarm.fx
 
 import com.organization.BuildInfo.*
 import scalafx.geometry.Insets
-import scalafx.scene.control.{Alert, Label, MenuItem, Hyperlink, TextArea, ScrollPane, Button}
+import scalafx.scene.control.{Alert, Button, Hyperlink, Label, MenuItem, ScrollPane, TextArea}
 import scalafx.scene.control.Alert.AlertType
-import scalafx.scene.layout.{GridPane, VBox, HBox, Priority}
+import scalafx.scene.layout.{GridPane, HBox, Priority, VBox}
 import scalafx.stage.Window
 import fdswarm.io.DirectoryProvider
 import jakarta.inject.Inject
 import scalafx.Includes.*
 import fdswarm.fx.utils.JsonPrettyPrinter
+import fdswarm.util.HostAndPortProvider
 import scalafx.scene.input.Clipboard
 import scalafx.scene.input.ClipboardContent
 
-class AboutMenuItem @Inject() (directoryProvider: DirectoryProvider) extends MenuItem("About"):
+class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
+                              hostAndPortProvider: HostAndPortProvider)
+  extends MenuItem("About"):
+  def setOwner(window: Window): Unit =
+    onAction = _ => showAboutDialog(window)
+
   def showAboutDialog(window: Window): Unit =
     val grid = new GridPane:
       hgap = 10
@@ -52,8 +58,8 @@ class AboutMenuItem @Inject() (directoryProvider: DirectoryProvider) extends Men
                 os.read(dataPath / fileName)
               catch
                 case e: Exception => s"Error reading file: ${e.getMessage}"
-              
-              new Alert(AlertType.Information):
+
+              val alert = new Alert(AlertType.Information):
                 initOwner(window)
                 title = fileName
                 headerText = s"Contents of $fileName"
@@ -62,7 +68,7 @@ class AboutMenuItem @Inject() (directoryProvider: DirectoryProvider) extends Men
                     val content = new ClipboardContent()
                     content.putString(fileContent)
                     Clipboard.systemClipboard.setContent(content)
-                
+
                 dialogPane().content = new VBox:
                   spacing = 10
                   children = Seq(
@@ -80,7 +86,7 @@ class AboutMenuItem @Inject() (directoryProvider: DirectoryProvider) extends Men
                         prefColumnCount = 50
                         styleClass.add("fixed-width")
                   )
-              .showAndWait()
+              alert.showAndWait()
         }
     else
       new Label("Directory does not exist")
@@ -99,6 +105,8 @@ class AboutMenuItem @Inject() (directoryProvider: DirectoryProvider) extends Men
     grid.add(new Label(dataPath.toString), 1, 5)
     grid.add(new Label("Data Files:"), 0, 6)
     grid.add(dataFilesNode, 1, 6)
+    grid.add(new Label("Host:"), 0, 7)
+    grid.add(new Label(hostAndPortProvider.http.toString), 1, 7)
 
     val labels = grid.children.collect { case l: javafx.scene.control.Label => l }
     labels.foreach(_.getStyleClass.add("fixed-width"))
@@ -112,6 +120,7 @@ class AboutMenuItem @Inject() (directoryProvider: DirectoryProvider) extends Men
         sb.append(s"Scala Version: $scalaVersion\n")
         sb.append(s"Data Version: $dataVersion\n")
         sb.append(s"Data Directory: $dataPath\n")
+        sb.append(s"Host: ${hostAndPortProvider.http}\n")
         val content = new ClipboardContent()
         content.putString(sb.toString())
         Clipboard.systemClipboard.setContent(content)
@@ -120,12 +129,9 @@ class AboutMenuItem @Inject() (directoryProvider: DirectoryProvider) extends Men
       spacing = 10
       children = Seq(copyAllButton, grid)
 
-    new Alert(AlertType.Information):
+    val aboutAlert = new Alert(AlertType.Information):
       initOwner(window)
       title = "About FdSwarm"
       headerText = "fdswarm build information"
       dialogPane().content = contentBox
-    .showAndWait()
-
-  def setOwner(window: Window): Unit =
-    onAction = _ => showAboutDialog(window)
+    aboutAlert.showAndWait()

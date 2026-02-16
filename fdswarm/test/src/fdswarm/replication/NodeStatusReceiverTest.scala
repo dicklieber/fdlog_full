@@ -25,7 +25,7 @@ import munit.FunSuite
 import java.net.{DatagramPacket, DatagramSocket, InetAddress}
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 
-class NodeStatusReceiverServiceTest extends FunSuite:
+class NodeStatusReceiverTest extends FunSuite:
 
   test("NodeStatusReceiverService receives and queues status updates"):
     // Find an available port
@@ -33,7 +33,7 @@ class NodeStatusReceiverServiceTest extends FunSuite:
     val statusPort = s1.getLocalPort
     s1.close()
 
-    val receiver = new NodeStatusReceiverService(
+    val receiver = new NodeStatusReceiver(
       statusPort = statusPort,
       ignoreSelf = false
     )
@@ -72,7 +72,7 @@ class NodeStatusReceiverServiceTest extends FunSuite:
     val statusPort = s1.getLocalPort
     s1.close()
 
-    val receiver = new NodeStatusReceiverService(
+    val receiver = new NodeStatusReceiver(
       statusPort = statusPort,
       ignoreSelf = false
     )

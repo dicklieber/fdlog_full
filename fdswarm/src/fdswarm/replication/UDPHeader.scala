@@ -24,7 +24,7 @@ import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import java.util.zip.GZIPInputStream
 import scala.util.Try
 
-case class UDPHeaderData(service: Service, jsonPayload: String)
+case class UDPHeaderData(service: Service, payload: Array[Byte])
 
 /**
  * UDP Header format:
@@ -71,12 +71,8 @@ object UDPHeader:
 
           val service = Service.valueOf(sService)
 
-          val jsonString = if isGzip(payloadBytes) then
-            ungzip(payloadBytes)
-          else
-            new String(payloadBytes, "UTF-8")
-
-          UDPHeaderData(service, jsonString)
+          val payload = payloadBytes
+          UDPHeaderData(service, payload)
         case _ =>
           throw new IllegalArgumentException(s"Invalid header format: $headerStr")
     }.get

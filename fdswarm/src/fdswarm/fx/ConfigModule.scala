@@ -55,10 +55,10 @@ class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
     val defaultConfig: Config = ConfigFactory.load()
     var config: Config = primaryConfig.withFallback(defaultConfig)
 
-    // Override port with PORT env var if present
-    sys.env.get("PORT").foreach { p =>
-      config = ConfigFactory.parseString(s"fdswarm.port = $p").withFallback(config)
-    }
+//    // Override port with PORT env var if present
+//    sys.env.get("PORT").foreach { p =>
+//      config = ConfigFactory.parseString(s"fdswarm.port = $p").withFallback(config)
+//    }
 
     val entries = config.entrySet().asScala.toSeq
     for (entry <- entries) {

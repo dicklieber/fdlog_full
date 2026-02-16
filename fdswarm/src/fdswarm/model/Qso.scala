@@ -19,6 +19,7 @@
 package fdswarm.model
 
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.fx.qso.FdHour
 import fdswarm.replication.NodeAddress
 import fdswarm.util.Ids
 import fdswarm.util.Ids.Id
@@ -72,7 +73,7 @@ object Qso:
  * @param qso         the new QSO
  * @param nodeAddress where this came from.
  */
-case class DistributedQso(qso: Qso, nodeAddress: NodeAddress) extends  LazyLogging
+case class DistributedQso(qso: Qso, nodeAddress: NodeAddress) extends  LazyLogging derives ReadWriter
 
 
 
