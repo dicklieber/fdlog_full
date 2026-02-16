@@ -38,8 +38,7 @@ import scala.jdk.CollectionConverters.*
  */
 @Singleton
 class NodeStatusReceiver @Inject()(
-    @Named("fdswarm.statusPort") statusPort: Int,
-    @Named("fdswarm.discovery.ignoreSelf") ignoreSelf: Boolean
+    @Named("fdswarm.statusPort") statusPort: Int
 ) extends LazyLogging:
 
   val queue = new LinkedBlockingQueue[Array[Byte]]()
@@ -65,7 +64,7 @@ class NodeStatusReceiver @Inject()(
           s.receive(packet)
           val sender = packet.getAddress
           
-          if ignoreSelf && myAddresses.contains(sender) then
+          if myAddresses.contains(sender) then
             logger.debug(s"Ignoring our own status message from $sender")
           else
             val receivedData = new Array[Byte](packet.getLength)

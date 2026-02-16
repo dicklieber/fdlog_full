@@ -1,0 +1,24 @@
+@startuml
+skinparam monochrome true
+skinparam shadowing false
+
+title Scala (Cask + UDP + ScalaFX) – Message Flow
+
+participant "ScalaFX UI" as UI
+participant "Core Service" as Core
+participant "UDP Listener" as Rx
+participant "UDP Broadcaster" as Tx
+participant "Cask HTTP" as Http
+
+UI -> Core: startNode()
+Core -> Rx: start()
+Core -> Tx: start()
+
+Tx -> "UDP LAN" : broadcast Discovery
+"UDP LAN" -> Rx: Discovery from peer
+Rx -> Core: onDiscovery(peer)
+Core -> UI: runLater(updatePeerList)
+
+Http -> Core: snapshot()
+Core --> Http: state JSON
+@enduml

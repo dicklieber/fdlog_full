@@ -53,7 +53,6 @@ class DiscoveryService @Inject()(
 
   private val discoveryPort = config.getInt("fdswarm.discovery.Port")
   private val timeoutMs = config.getLong("fdswarm.discovery.timeoutMs")
-  private val ignoreSelf = if config.hasPath("fdswarm.discovery.ignoreSelf") then config.getBoolean("fdswarm.discovery.ignoreSelf") else true
   private val broadcastAddress = config.getString("fdswarm.broadcastAddress")
   private var activeQueue:Option[LinkedBlockingQueue[ContestConfig]] = None
 
@@ -74,7 +73,7 @@ class DiscoveryService @Inject()(
           val packet = new DatagramPacket(buffer, buffer.length)
           s.receive(packet)
           val sender = packet.getAddress
-          if ignoreSelf && myAddresses.contains(sender) then
+          if myAddresses.contains(sender) then
             logger.debug(s"Ignoring our own message from $sender")
           else
             val receivedData: Array[Byte] = new Array[Byte](packet.getLength)
