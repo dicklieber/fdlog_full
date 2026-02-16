@@ -24,7 +24,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.contest.{ContestConfig, ContestManager}
 import upickle.default.*
 
-import java.net.{DatagramPacket, DatagramSocket, InetAddress, NetworkInterface}
+import java.net.{DatagramPacket, DatagramSocket, InetAddress, InetSocketAddress, NetworkInterface}
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 import scala.jdk.CollectionConverters.*
 
@@ -54,6 +54,7 @@ class DiscoveryService @Inject()(
   private val discoveryPort = config.getInt("fdswarm.discovery.Port")
   private val timeoutMs = config.getLong("fdswarm.discovery.timeoutMs")
   private val broadcastAddress = config.getString("fdswarm.broadcastAddress")
+  private val ignoreSelf = if config.hasPath("fdswarm.discovery.ignoreSelf") then config.getBoolean("fdswarm.discovery.ignoreSelf") else true
   private var activeQueue:Option[LinkedBlockingQueue[ContestConfig]] = None
 
   private var socket: Option[DatagramSocket] = None
@@ -73,7 +74,7 @@ class DiscoveryService @Inject()(
           val packet = new DatagramPacket(buffer, buffer.length)
           s.receive(packet)
           val sender = packet.getAddress
-          if myAddresses.contains(sender) then
+          if ignoreSelf && myAddresses.contains(sender) then
             logger.debug(s"Ignoring our own message from $sender")
           else
             val receivedData: Array[Byte] = new Array[Byte](packet.getLength)
@@ -109,7 +110,13 @@ class DiscoveryService @Inject()(
     )
 
   def start(): Unit =
-    socket = Some(new DatagramSocket(discoveryPort))
+    socket = Some {
+      val s = new DatagramSocket(null)
+      s.setReuseAddress(true)
+      s.bind(new InetSocketAddress(discoveryPort))
+      s
+    }
+
     receiverThread.start()
 
   def stop(): Unit =

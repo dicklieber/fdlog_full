@@ -33,7 +33,7 @@ class ReplTest extends FunSuite:
     
     // Setup some data in QsoStore if needed, but neededQsos can work with empty store
     
-    val nodeStatusReceiver = new NodeStatusReceiver(8888, true):
+    val nodeStatusReceiver = new NodeStatusReceiver(8888):
       override val queue = new LinkedBlockingQueue[Array[Byte]]()
       override def start(): Unit = () // don't actually start the socket
       override def stop(): Unit = ()
