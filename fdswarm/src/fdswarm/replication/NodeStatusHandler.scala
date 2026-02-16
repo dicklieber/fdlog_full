@@ -35,7 +35,10 @@ import java.net.InetAddress
 
 import fdswarm.util.HostAndPortProvider
 
-class NodeStatusHandler @Inject()(qsoStore: QsoStore, multicastTransport: MulticastTransport, hostAndPortProvider: HostAndPortProvider) extends LazyLogging:
+class NodeStatusHandler @Inject()(qsoStore: QsoStore,
+                                  multicastTransport: MulticastTransport,
+                                  hostAndPortProvider: HostAndPortProvider,
+                                  swarmStatus:SwarmStatus) extends LazyLogging:
 
   private var thread: Option[Thread] = None
 
@@ -46,6 +49,7 @@ class NodeStatusHandler @Inject()(qsoStore: QsoStore, multicastTransport: Multic
           val payload: Array[Byte] = multicastTransport.queue.take()
           val udpHeader: UDPHeaderData = UDPHeader.parse(payload)
           val statusMessage = StatusMessage(udpHeader.payload)
+          swarmStatus.put(statusMessage)
           if statusMessage.hostAndPort == hostAndPortProvider.http then
             logger.trace(s"Ignoring our own message from ${statusMessage.hostAndPort}")
           else

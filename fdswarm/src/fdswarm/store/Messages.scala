@@ -30,10 +30,13 @@ import upickle.default.*
  * @param count number of QSOs.
  * @param digest based on the [[Id]]s of the QSOs.
  */
-case class FdHourDigest(fdHour: FdHour, count: Int, digest: String) extends Ordered[FdHourDigest] derives ReadWriter:
+case class FdHourDigest(fdHour: FdHour, count: Int, digest: String ) extends Ordered[FdHourDigest] derives ReadWriter:
   override def compare(that: FdHourDigest): Int = this.fdHour.compare(that.fdHour)
 
 object FdHourDigest:
+  def empty(fdHour: FdHour): FdHourDigest =
+    apply(fdHour, Seq.empty)
+    
   def apply(fdHour: FdHour, qsos: Seq[Qso]): FdHourDigest =
     val sortedIds = qsos.map(_.uuid).sorted.mkString
     val digest = java.security.MessageDigest.getInstance("MD5")
