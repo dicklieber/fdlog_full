@@ -70,15 +70,15 @@ object Ids:
       case None =>
         nextRandom
 
-  private def nextRandom: Id =
+  def nextRandom: Id =
     val uuid = UUID.randomUUID
-      val bb = ByteBuffer.allocate(16)
-      bb.putLong(uuid.getMostSignificantBits)
-      bb.putLong(uuid.getLeastSignificantBits)
-      val bytes = bb.array()
-      Base64.getUrlEncoder
-        .withoutPadding()
-        .encodeToString(bytes)
+    val bb = ByteBuffer.allocate(16)
+    bb.putLong(uuid.getMostSignificantBits)
+    bb.putLong(uuid.getLeastSignificantBits)
+    val bytes = bb.array()
+    Base64.getUrlEncoder
+      .withoutPadding()
+      .encodeToString(bytes)
 
 
 

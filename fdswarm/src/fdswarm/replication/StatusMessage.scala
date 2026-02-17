@@ -26,7 +26,7 @@ import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 
 case class StatusMessage(hostAndPort: HostAndPort, fdDigests:Seq[FdHourDigest]) derives ReadWriter:
-  def toPacket:Array[Byte] =
+  def toPacket: Array[Byte] =
     val json = write(this)
     val baos = new ByteArrayOutputStream()
     val gzos = new GZIPOutputStream(baos)

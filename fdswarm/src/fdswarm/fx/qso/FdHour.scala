@@ -33,25 +33,20 @@ import scala.collection.concurrent.TrieMap
  */
 case class FdHour private(day: Int, hour: Int) extends Ordered[FdHour] derives ReadWriter:
   val toolTip: String = s"utc date: $day hour: $hour"
-  override val toString: String = {
+  override val toString: String =
     s"$day:$hour"
-  }
   val display: String = f"$day:$hour%02d"
 
 
   /**
    * Used for testing
    */
-  def plus(addedHours: Int): FdHour = {
-
+  def plus(addedHours: Int): FdHour =
     val maybeHours = hour + addedHours
-    if (maybeHours > 23) {
+    if (maybeHours > 23) then
       FdHour(day + 1, maybeHours - 24)
-    }
-    else {
+    else
       copy(hour = maybeHours)
-    }
-  }
 
   override def compare(that: FdHour): Int = 
 
@@ -70,22 +65,16 @@ object FdHour extends LazyLogging :
    */
   val allHours: FdHour = FdHour(0, 0)
 
-  def apply(day: Int, hour: Int): FdHour = {
-
+  def apply(day: Int, hour: Int): FdHour =
     val candidate = new FdHour(day, hour)
     done(candidate)
-  }
 
-  def apply(instant: Instant = Instant.now()): FdHour = {
-
+  def apply(instant: Instant = Instant.now()): FdHour =
     val dt: ZonedDateTime = ZonedDateTime.ofInstant(instant, ZoneId.of("UTC"))
     val day: Int = dt.getDayOfMonth
     val hour: Int = dt.getHour
     val candidate = new FdHour(day, hour)
     done(candidate)
-  }
 
-  private def done(candidate: FdHour): FdHour = {
-
+  private def done(candidate: FdHour): FdHour =
     knownHours.getOrElseUpdate(candidate, candidate)
-  }

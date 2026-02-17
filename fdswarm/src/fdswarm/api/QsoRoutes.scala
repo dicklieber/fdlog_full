@@ -43,4 +43,14 @@ class QsoRoutes @Inject()(qsoStore: QsoStore) extends Routes:
       headers = Seq("Content-Type" -> "application/json")
     )
 
+/*  @get("/hourQsos:fdHour")
+  def hourQsos(fdHour: FdHour): Response[String] =
+    val forHour = qsoStore.qsosForFdHour(fdHour)
+    val sJson = write(forHour, indent = 2)
+
+    Response(
+      data = sJson,
+      headers = Seq("Content-Type" -> "application/json")
+    )*/
+
   initialize()

@@ -76,9 +76,11 @@ class NodeStatusHandlerTest extends FunSuite:
     val registry = new SimpleMeterRegistry()
     class TestQsoStore extends QsoStore(new DirectoryProvider { override def apply(): os.Path = os.temp.dir() }, registry):
       var neededQsosCalled = false
+      var capturedIncoming: Seq[FdHourDigest] = Seq.empty
       override def neededQsos(incoming: Seq[FdHourDigest]): Seq[FdHour] = {
         neededQsosCalled = true
-        Seq.empty
+        capturedIncoming = incoming
+        if incoming.nonEmpty then Seq(incoming.head.fdHour) else Seq.empty
       }
     val qsoStore = new TestQsoStore
     
@@ -93,8 +95,10 @@ class NodeStatusHandlerTest extends FunSuite:
     
     val handler = new NodeStatusHandler(qsoStore, transport, hostAndPortProvider, new SwarmStatus)
     
-    // Create a status message from "someone else"
-    val otherStatus = StatusMessage(otherHostAndPort, Seq.empty)
+    // Create a status message from "someone else" with one FdHour
+    val fdHour = FdHour(15, 10)
+    val digest = FdHourDigest(fdHour, 5, "some-digest")
+    val otherStatus = StatusMessage(otherHostAndPort, Seq(digest))
     val packet = UDPHeader(Service.Status, otherStatus.toPacket)
     
     transport.queue.put(packet)
@@ -102,10 +106,11 @@ class NodeStatusHandlerTest extends FunSuite:
     handler.start()
     
     // Wait a bit for processing
-    Thread.sleep(200)
+    Thread.sleep(500)
     
     // Verify neededQsos WAS called
     assert(qsoStore.neededQsosCalled, "neededQsos SHOULD have been called for other node's message")
+    assertEquals(qsoStore.capturedIncoming, Seq(digest))
     
     handler.stop()
     transport.stop()

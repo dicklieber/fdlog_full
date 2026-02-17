@@ -31,14 +31,20 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.qso.FdHour
 import fdswarm.util.Ids.Id
 
-import java.net.InetAddress
-
+import java.net.{InetAddress, URI}
+import java.net.http.{HttpClient, HttpRequest, HttpResponse}
+import java.net.http.HttpRequest.BodyPublishers
+import java.net.http.HttpResponse.BodyHandlers
 import fdswarm.util.HostAndPortProvider
 
 class NodeStatusHandler @Inject()(qsoStore: QsoStore,
                                   multicastTransport: MulticastTransport,
                                   hostAndPortProvider: HostAndPortProvider,
                                   swarmStatus:SwarmStatus) extends LazyLogging:
+
+  private val httpClient = HttpClient.newBuilder()
+    .followRedirects(HttpClient.Redirect.NORMAL)
+    .build()
 
   private var thread: Option[Thread] = None
 
@@ -53,9 +59,31 @@ class NodeStatusHandler @Inject()(qsoStore: QsoStore,
           if statusMessage.hostAndPort == hostAndPortProvider.http then
             logger.trace(s"Ignoring our own message from ${statusMessage.hostAndPort}")
           else
-            val needed = qsoStore.neededQsos(statusMessage.fdDigests)
+            val needed: Seq[FdHour] = qsoStore.neededQsos(statusMessage.fdDigests)
             if needed.nonEmpty then
               logger.info(s"Needed FdHours from ${statusMessage.hostAndPort}: $needed")
+              needed.foreach(fdHour =>
+                val url = s"http://${statusMessage.hostAndPort}/hourIds"
+                val json = write(fdHour)
+                logger.info(s"Sending FdHour $fdHour request to $url via HTTP POST")
+                try
+                  val request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("Content-Type", "application/json")
+                    .POST(BodyPublishers.ofString(json))
+                    .build()
+
+                  httpClient.sendAsync(request, BodyHandlers.ofString())
+                    .thenAccept(response =>
+                      if response.statusCode() == 200 then
+                        logger.debug(s"Success response from $url: ${response.statusCode()}")
+                      else
+                        logger.warn(s"Response from $url: ${response.statusCode()} body: ${response.body()}")
+                    )
+                catch
+                  case e: Exception =>
+                    logger.error(s"Failed to send FdHour request to $url", e)
+              )
         catch
           case _: InterruptedException => Thread.currentThread().interrupt()
           case e: Exception =>

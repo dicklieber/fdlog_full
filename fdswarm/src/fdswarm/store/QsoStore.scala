@@ -35,19 +35,18 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
   val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()
   private val journalFile = directoryProvider() / "qsosJournal.json"
   private val map: TrieMap[Id, Qso] = new TrieMap
-  private var fdHourDigests: Map[FdHour, FdHourDigest] = Map.empty
-
   private val buildDigestsTimer = Timer.builder("fdlog.build.hour.digests")
     .description("Time taken to build FD hour digests")
     .register(registry)
-
   private val buildDigestsCounter = Counter.builder("fdlog.build.hour.digests.count")
     .description("Number of times FD hour digests were built")
     .register(registry)
+  private var fdHourDigests: Map[FdHour, FdHourDigest] = Map.empty
 
   def add(qso: Qso): Unit =
     add(Seq(qso))
-  def add(batch:Seq[Qso]):Unit=
+
+  def add(batch: Seq[Qso]): Unit =
     val lines = for
       qso <- batch
     yield
@@ -63,8 +62,15 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
       os.write.append(journalFile, lines.mkString, createFolders = true)
     buildFdHourDigests()
 
-  def get(uuid: Id): Option[Qso] = 
-    map.get(uuid)
+  private def buildFdHourDigests(): Unit =
+    buildDigestsCounter.increment()
+    buildDigestsTimer.record(new Runnable {
+      override def run(): Unit =
+        val hourToQsos: Map[FdHour, Seq[Qso]] = all.groupBy(_.fdHour)
+        fdHourDigests = hourToQsos.map { case (fdHour, qsos) =>
+          fdHour -> FdHourDigest(fdHour, qsos)
+        }
+    })
 
   if os.exists(journalFile) then
     os.read.lines(journalFile)
@@ -78,23 +84,8 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
       }
     buildFdHourDigests()
 
-  private def buildFdHourDigests(): Unit =
-    buildDigestsCounter.increment()
-    buildDigestsTimer.record(new Runnable {
-      override def run(): Unit = {
-        val hourToQsos: Map[FdHour, Seq[Qso]] = all.groupBy(_.fdHour)
-        fdHourDigests = hourToQsos.map { case (fdHour, qsos) =>
-          fdHour -> FdHourDigest(fdHour, qsos)
-        }
-      }
-    })
-
-  /**
-   * Thread-safe snapshot of all QSOs, sorted by stamp.
-   * Prefer this over reading `qsoCollection` from non-JavaFX threads (e.g., Cask routes).
-   */
-  def all: Seq[Qso] =
-    map.values.toSeq.sorted
+  def get(uuid: Id): Option[Qso] =
+    map.get(uuid)
 
   def potentialDups(startOfCallsign: String, bandmode: BandMode): Seq[Qso] =
     map.filter { case (id, qso) =>
@@ -138,3 +129,14 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
   def idsForHour(fdHour: FdHour): FdHourIds =
     val ids = all.filter(_.fdHour == fdHour).map(_.uuid)
     FdHourIds(fdHour, ids)
+
+  def qsosForFdHour(fdHour: FdHour): Seq[Qso] =
+    val qsos = all.filter(_.fdHour == fdHour)
+    qsos
+
+  /**
+   * Thread-safe snapshot of all QSOs, sorted by stamp.
+   * Prefer this over reading `qsoCollection` from non-JavaFX threads (e.g., Cask routes).
+   */
+  def all: Seq[Qso] =
+    map.values.toSeq.sorted
