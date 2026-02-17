@@ -25,6 +25,8 @@ import java.net.{InetAddress, InetSocketAddress}
 case class HostAndPort(host: String, port: Int) extends Ordered[HostAndPort]:
   override val toString: String =
     f"$host:$port%d"
+  lazy val short:String =
+    host.split('.').last
 
   def withPort(port: Int): HostAndPort = copy(port = port)
 

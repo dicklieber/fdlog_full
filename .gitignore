@@ -1,6 +1,6 @@
 /.bsp/
 /.idea/
-/out/
+/out*/
 /fdlog-snapshot.json
 /fdlog-node.json
 /fdlog-qso-journal.ndjson

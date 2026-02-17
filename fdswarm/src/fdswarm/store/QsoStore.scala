@@ -37,7 +37,7 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider) extends LazyLoggi
   val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()
   private val journalFile = directoryProvider() / "qsosJournal.json"
   private val map: TrieMap[Id, Qso] = new TrieMap
-  private var fdHourDigests: Map[FdHour, FdHourDigest] = Map.empty
+  var fdHourDigests: Map[FdHour, FdHourDigest] = Map.empty
 
   def add(qso: Qso): Unit =
     val uuid = qso.uuid

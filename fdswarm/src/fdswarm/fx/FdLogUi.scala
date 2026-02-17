@@ -25,9 +25,10 @@ import fdswarm.fx.bandmodes.BandsAndModesPane
 import fdswarm.fx.contest.ContestManager
 import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.station.StationEditor
-import fdswarm.fx.tools.{FdHourDialogService, HowManyDialogService}
-import fdswarm.replication.{NodeStatusSender, NodeStatusHandler}
+import fdswarm.fx.tools.{FdHourDialogService, FdHourDigestsPane, HowManyDialogService}
+import fdswarm.replication.{NodeStatusHandler, NodeStatusSender, SwarmStatusPane}
 import fdswarm.store.FdHourDigest
+import fdswarm.util.HostAndPortProvider
 import jakarta.inject.Inject
 import scalafx.application.Platform
 import scalafx.scene.{Node, Scene}
@@ -43,15 +44,20 @@ final class FdLogUi @Inject()(
                                contestManager: ContestManager,
                                howManyDialogService: HowManyDialogService,
                                fdHourDialogService: FdHourDialogService,
+                               fdHourDigestsPane: FdHourDigestsPane,
                                repl: NodeStatusHandler,
+                               swarmStatusPane: SwarmStatusPane,
                                nodeStatusService: NodeStatusSender,
-                               aboutMenuItem: AboutMenuItem
+                               aboutMenuItem: AboutMenuItem,
+                               hostAndPortProvider: HostAndPortProvider
                              ) extends LazyLogging:
 
   private val bandModeNode: Node =
     bandModeManagerPane
   private val qsoNode: Node =
     contestEntry.node
+  private val swarmStatusNode: Node =
+    swarmStatusPane.node
   private val centerPane = new StackPane:
     children = List(qsoNode)
   private val contestMenuItem: MenuItem =
@@ -113,7 +119,7 @@ final class FdLogUi @Inject()(
     stationMenuItem.disable = false
     contestMenuItem.disable = false
 
-    stage.title = "FDLog"
+    stage.title = s"FdSwarm@${hostAndPortProvider.http}"
     stage.scene = new Scene(root, 1100, 800):
       stylesheets = Seq(getClass.getResource("/styles/app.css").toExternalForm)
     stage.show()
@@ -129,7 +135,9 @@ final class FdLogUi @Inject()(
     new Menu("View"):
       items = Seq(
         new MenuItem("QSO Entry"):
-          onAction = _ => showPane(qsoNode)
+          onAction = _ => showPane(qsoNode),
+        new MenuItem("Swarm Status"):
+          onAction = _ => showPane(swarmStatusNode)
       )
 
   private def showPane(node: Node): Unit =
@@ -162,6 +170,12 @@ final class FdLogUi @Inject()(
           onAction = _ =>
             Option(ownerWindow) match
               case Some(w) => fdHourDialogService.show(w)
+              case None => ()
+        ,
+        new MenuItem("FdHours"):
+          onAction = _ =>
+            Option(ownerWindow) match
+              case Some(w) => fdHourDigestsPane.show(w)
               case None => ()
         
 /*

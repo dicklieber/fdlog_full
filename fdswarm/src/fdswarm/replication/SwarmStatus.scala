@@ -24,6 +24,7 @@ import fdswarm.store.FdHourDigest
 import fdswarm.util.HostAndPort
 import jakarta.inject.*
 import javafx.beans.value.ObservableObjectValue
+import scalafx.application.Platform
 import scalafx.beans.property.ObjectProperty
 import scalafx.collections.ObservableMap
 
@@ -32,7 +33,7 @@ import scala.collection.concurrent.TrieMap
 
 @Singleton
 class SwarmStatus @Inject()() extends LazyLogging:
-  private val nodeMap: ObservableMap[HostAndPort, NodeDetails] = ObservableMap[HostAndPort, NodeDetails]()
+  val nodeMap: ObservableMap[HostAndPort, NodeDetails] = ObservableMap[HostAndPort, NodeDetails]()
 
   def put(statusMessage:StatusMessage):Unit=
     val hostAndPort = statusMessage.hostAndPort
@@ -43,7 +44,9 @@ class SwarmStatus @Inject()() extends LazyLogging:
         case Some(nodeDetails) =>
           nodeDetails.put(fdHourDigest)
         case None =>
-          nodeMap.put(hostAndPort, NodeDetails(hostAndPort))
+          val nodeDetails = NodeDetails(hostAndPort)
+          nodeDetails.put(fdHourDigest)
+          nodeMap.put(hostAndPort, nodeDetails)
 
 
 case class LHData(fdHourDigest: FdHourDigest, lastSeen: Instant = Instant.EPOCH)
@@ -54,10 +57,14 @@ class NodeDetails(hostAndPort: HostAndPort):
   val map: TrieMap[FdHour, FdHourNodeCell] = new TrieMap[FdHour, FdHourNodeCell]
 
   def put(fdHourDigest: FdHourDigest): Unit =
-    map.get(fdHourDigest.fdHour) match
-      case Some(fdHourNodeCell) =>
-        fdHourNodeCell.lhData.value = LHData(fdHourDigest)
-
-      case None => // new FdHour
-        LHData(fdHourDigest)
+    val cell = map.getOrElseUpdate(fdHourDigest.fdHour, FdHourNodeCell(hostAndPort, fdHourDigest.fdHour))
+    val data = LHData(fdHourDigest, Instant.now())
+    try
+      Platform.runLater {
+        cell.lhData.value = data
+      }
+    catch
+      case _: IllegalStateException =>
+        // Fallback for tests or headless environments where Toolkit is not initialized
+        cell.lhData.value = data
 
