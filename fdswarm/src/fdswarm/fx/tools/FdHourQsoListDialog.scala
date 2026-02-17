@@ -60,7 +60,7 @@ class FdHourQsoListDialog(qsoStore: QsoStore, ownerWindow: Window):
         prefWidth = 150
       },
       new TableColumn[Qso, String]("Their Call") {
-        cellValueFactory = c => scalafx.beans.property.StringProperty(c.value.callSign.value)
+        cellValueFactory = c => scalafx.beans.property.StringProperty(c.value.callsign.value)
         prefWidth = 100
       },
       new TableColumn[Qso, String]("Band") {

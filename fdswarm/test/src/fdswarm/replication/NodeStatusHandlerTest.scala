@@ -22,6 +22,7 @@ import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
 import fdswarm.store.{FdHourDigest, QsoStore}
 import fdswarm.util.{HostAndPort, HostAndPortProvider}
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import munit.FunSuite
 
 import java.net.InetAddress
@@ -36,7 +37,8 @@ class NodeStatusHandlerTest extends FunSuite:
     // but we just need the queue
 
   test("NodeStatusHandler ignores its own status messages"):
-    class TestQsoStore extends QsoStore(new DirectoryProvider { override def apply(): os.Path = os.temp.dir() }):
+    val registry = new SimpleMeterRegistry()
+    class TestQsoStore extends QsoStore(new DirectoryProvider { override def apply(): os.Path = os.temp.dir() }, registry):
       var neededQsosCalled = false
       override def neededQsos(incoming: Seq[FdHourDigest]): Seq[FdHour] = {
         neededQsosCalled = true
@@ -71,7 +73,8 @@ class NodeStatusHandlerTest extends FunSuite:
     transport.stop()
 
   test("NodeStatusHandler processes status messages from other nodes"):
-    class TestQsoStore extends QsoStore(new DirectoryProvider { override def apply(): os.Path = os.temp.dir() }):
+    val registry = new SimpleMeterRegistry()
+    class TestQsoStore extends QsoStore(new DirectoryProvider { override def apply(): os.Path = os.temp.dir() }, registry):
       var neededQsosCalled = false
       override def neededQsos(incoming: Seq[FdHourDigest]): Seq[FdHour] = {
         neededQsosCalled = true

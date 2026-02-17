@@ -8,6 +8,12 @@ Configuration:
       PatternLayout:
         Pattern: "%logger{36} %highlight{%-5level}{FATAL=bg_red, ERROR=red, WARN=yellow, INFO=green, DEBUG=blue, info=cyan}  %msg%n"
 
+    File:
+      name: FileAppender
+      fileName: "${sys:fdlog.logFile}"
+      PatternLayout:
+        Pattern: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n"
+
 
   Loggers:
     Logger:
@@ -38,7 +44,6 @@ Configuration:
 
       - name: "fdswarm.replication.NodeStatusSender"
         level: info
-        level: info
         additivity: true
 
       - name: "fdswarm.fx.tools.FdHourDialogService"
@@ -49,3 +54,4 @@ Configuration:
       level: info
       AppenderRef:
         - ref: TestConsole
+        - ref: FileAppender

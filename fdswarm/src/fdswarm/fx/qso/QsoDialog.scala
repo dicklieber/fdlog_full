@@ -34,7 +34,7 @@ object QsoDialog:
   def show(qso: Qso): Unit =
     val dialog = new Dialog[Unit]() {
       title = "QSO Details"
-      headerText = s"Details for QSO with ${qso.callSign.value}"
+      headerText = s"Details for QSO with ${qso.callsign.value}"
     }
 
     val grid = new GridPane() {
@@ -48,7 +48,7 @@ object QsoDialog:
       grid.add(new Label(value), 1, row)
 
     addRow("Time:", timeFmt.format(qso.stamp), 0)
-    addRow("Callsign:", qso.callSign.value, 1)
+    addRow("Callsign:", qso.callsign.value, 1)
     addRow("Band:", qso.bandMode.band, 2)
     addRow("Mode:", qso.bandMode.mode, 3)
     addRow("Class:", qso.contestClass, 4)

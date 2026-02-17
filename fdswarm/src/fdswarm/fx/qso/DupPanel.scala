@@ -58,7 +58,7 @@ class DupPanel @Inject()(
             grid.children.clear()
             val displayedDups = dups.take(45)
             displayedDups.zipWithIndex.foreach { (qso, index) =>
-              val label = new Label(qso.callSign.toString) {
+              val label = new Label(qso.callsign.toString) {
                 styleClass += "dupCallsign"
                 tooltip = Tooltip(localFrom(qso.stamp))
               }

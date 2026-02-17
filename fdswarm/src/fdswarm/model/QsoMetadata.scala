@@ -39,3 +39,7 @@ case class QsoMetadata(station: Station,
                        node: String = "localhost;1",
                        contest: ContestType,
                        v: String = BuildInfo.version) derives ReadWriter
+
+object QsoMetadata:
+  val testQsoMetadata: QsoMetadata = QsoMetadata(station = Station(),
+    contest = ContestType.WFD)

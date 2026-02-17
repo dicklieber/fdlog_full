@@ -27,12 +27,41 @@ echo "Pre-compiling..."
 ./mill fdswarm.compile
 
 # Run each node
+pids=()
+pgids=()
 for (( i=0; i<howManyNodes; i++ ))
 do
     PORT=$((8080 + i))
     echo "Starting node $i on port $PORT..."
-    MILL_OUTPUT_DIR=out-$PORT PORT=$PORT ./mill --no-server fdswarm.run &
-    sleep 1
+    # Ensure logs directory exists
+    LOG_DIR="$HOME/fdswarm/$PORT"
+    mkdir -p "$LOG_DIR"
+    
+    # Run mill in background, redirecting its own output to a file in the log dir
+    # Start in a new process group so we can kill everything later
+    MILL_OUTPUT_DIR=out-$PORT PORT=$PORT ./mill --no-server fdswarm.run > "$LOG_DIR/mill-stdout.log" 2>&1 &
+    pids+=($!)
+    pgids+=($(ps -o pgid= -p $!))
+    sleep 2
 done
 
+echo "All $howManyNodes nodes started."
+# Use /dev/tty for read to ensure it works even if stdin is redirected
+read -p "Press any key to stop all nodes..." -n1 -s < /dev/tty
+echo ""
+
+# Terminate all nodes and their children
+for pgid in "${pgids[@]}"
+do
+    # Trim whitespace
+    pgid=$(echo $pgid | tr -d ' ')
+    if [ -n "$pgid" ]; then
+        echo "Stopping node process group with PGID $pgid..."
+        # Kill the entire process group
+        kill -TERM -"$pgid" 2>/dev/null
+    fi
+done
+
+# Wait for all background processes to finish
 wait
+echo "All nodes stopped."

@@ -22,37 +22,49 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
 import fdswarm.model.*
-import fdswarm.replication.StatusMessage
-import fdswarm.util.{HostAndPort, Ids}
 import fdswarm.util.Ids.Id
-import io.micrometer.core.instrument.{MeterRegistry, Timer}
+import io.micrometer.core.instrument.{Counter, MeterRegistry, Timer}
 import jakarta.inject.*
 import scalafx.collections.ObservableBuffer
 import upickle.default.*
 
 import scala.collection.concurrent.TrieMap
-import scala.util.Using
 
 @Singleton
 class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRegistry) extends LazyLogging:
   val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()
   private val journalFile = directoryProvider() / "qsosJournal.json"
   private val map: TrieMap[Id, Qso] = new TrieMap
-  var fdHourDigests: Map[FdHour, FdHourDigest] = Map.empty
+  private var fdHourDigests: Map[FdHour, FdHourDigest] = Map.empty
 
   private val buildDigestsTimer = Timer.builder("fdlog.build.hour.digests")
     .description("Time taken to build FD hour digests")
     .register(registry)
 
+  private val buildDigestsCounter = Counter.builder("fdlog.build.hour.digests.count")
+    .description("Number of times FD hour digests were built")
+    .register(registry)
+
   def add(qso: Qso): Unit =
-    val uuid = qso.uuid
-    val maybeQso = map.putIfAbsent(uuid, qso)
-    os.write.append(journalFile, write(qso) + "\n", createFolders = true)
-    qsoCollection.prepend(qso)
+    add(Seq(qso))
+  def add(batch:Seq[Qso]):Unit=
+    val lines = for
+      qso <- batch
+    yield
+      val uuid = qso.uuid
+      val maybeQso = map.putIfAbsent(uuid, qso)
+      qsoCollection.prepend(qso)
+      maybeQso.foreach(was =>
+        logger.error(s"Was already a qso for uuid: $uuid $qso")
+      )
+      write(qso) + "\n"
+
+    if lines.nonEmpty then
+      os.write.append(journalFile, lines.mkString, createFolders = true)
     buildFdHourDigests()
-    maybeQso.foreach(was =>
-      logger.error(s"Was already a qso for uuid: $uuid $qso")
-    )
+
+  def get(uuid: Id): Option[Qso] = 
+    map.get(uuid)
 
   if os.exists(journalFile) then
     os.read.lines(journalFile)
@@ -67,6 +79,7 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
     buildFdHourDigests()
 
   private def buildFdHourDigests(): Unit =
+    buildDigestsCounter.increment()
     buildDigestsTimer.record(new Runnable {
       override def run(): Unit = {
         val hourToQsos: Map[FdHour, Seq[Qso]] = all.groupBy(_.fdHour)
@@ -87,7 +100,7 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
     map.filter { case (id, qso) =>
         val bandModeMatch = qso.bandMode == bandmode
         logger.trace("qso.bandMode {} against {} mmatch: {}", qso.bandMode, bandmode, bandModeMatch)
-        val startMatch = qso.callSign.startsWith(startOfCallsign)
+        val startMatch = qso.callsign.startsWith(startOfCallsign)
         startMatch && bandModeMatch
       }
       .values
@@ -96,7 +109,7 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
   /**
    * Returns the QSOs that are needed for the given hour.
    *
-   * @param statusMessage as received from an FdSwarm node.
+   * @param incoming as received from an FdSwarm node.
    * @return all the [[FdHour]]s that aren't on the [[QsoStore]] or don't match.
    */
   def neededQsos(incoming: Seq[FdHourDigest]): Seq[FdHour] =

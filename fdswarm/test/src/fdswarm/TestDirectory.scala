@@ -18,7 +18,15 @@
 
 package fdswarm
 
+import com.typesafe.scalalogging.LazyLogging
 import fdswarm.io.DirectoryProvider
 
-object TestDirectory extends DirectoryProvider:
-  def apply(): os.Path = os.home / "testFdSwarm" 
+class TestDirectory extends DirectoryProvider with LazyLogging:
+  val tmpPath: os.Path = os.temp.dir(prefix = "testFdSwarm")
+  logger.info(s"Created TestDirectory at $tmpPath")
+
+  override def apply(): os.Path = tmpPath
+
+  def cleanup(): Unit =
+    logger.info(s"Cleaning up TestDirectory at $tmpPath")
+    os.remove.all(tmpPath)

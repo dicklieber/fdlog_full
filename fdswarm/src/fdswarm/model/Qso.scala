@@ -31,14 +31,14 @@ import java.time.Instant
 /**
  * This is what's in the store and journal.log.
  *
- * @param callSign    of the worked station.
+ * @param callsign    of the worked station.
  * @param contestClass    from the worked station.
  * @param bandMode    that was used.
  * @param stamp       when QSO occurred.
  * @param uuid        id unique QSO id in time & space.
  * @param qsoMetadata info about ur station.
  */
-case class Qso(callSign: Callsign,
+case class Qso(callsign: Callsign,
                contestClass: String,
                section:String,
                bandMode: BandMode,
@@ -46,7 +46,7 @@ case class Qso(callSign: Callsign,
                @serializeDefaults(true)
                stamp: Instant = Instant.now(),
                uuid: Id = Ids.generateId()) extends  LazyLogging derives ReadWriter:
-  lazy val display: String = s"$callSign on $bandMode in $fdHour"
+  lazy val display: String = s"$callsign on $bandMode in $fdHour"
   lazy val fdHour: FdHour =
     FdHour(stamp)
 
@@ -60,20 +60,11 @@ object Qso:
             bandMode: BandMode
            )(using qsoMetadata: QsoMetadata): Qso =
 
-    Qso(callSign = callSign,
+    Qso(callsign = callSign,
       contestClass = exchange.fdClass.toString,
       section = exchange.sectionCode,
       bandMode = bandMode,
       qsoMetadata = qsoMetadata)
-
-
-/**
- * This is what gets multi-casted to cluster.
- *
- * @param qso         the new QSO
- * @param nodeAddress where this came from.
- */
-case class DistributedQso(qso: Qso, nodeAddress: NodeAddress) extends  LazyLogging derives ReadWriter
 
 
 

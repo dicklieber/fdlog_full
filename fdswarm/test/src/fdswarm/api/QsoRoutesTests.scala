@@ -25,21 +25,25 @@ import upickle.default.*
 import fdswarm.fx.contest.ContestType
 import fdswarm.fx.qso.FdHour
 import fdswarm.store.{FdHourIds, QsoStore}
+import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 
 class QsoRoutesTests extends munit.FunSuite {
+
+  private val registry: MeterRegistry = new SimpleMeterRegistry()
 
   test("hourIds endpoint returns FdHourIds for a given hour") {
     val tmpDir = os.temp.dir()
     val directoryProvider = new DirectoryProvider {
       override def apply(): os.Path = tmpDir
     }
-    val qsoStore = new QsoStore(directoryProvider)
+    val qsoStore = new QsoStore(directoryProvider, registry)
     val routes = new QsoRoutes(qsoStore)
 
     val fdHour = FdHour(15, 10)
     val stamp = java.time.ZonedDateTime.of(2026, 2, 15, 10, 0, 0, 0, java.time.ZoneId.of("UTC")).toInstant
     val qso1 = Qso(
-      callSign = Callsign("W1AW"),
+      callsign = Callsign("W1AW"),
       contestClass = "1A",
       section = "CT",
       bandMode = BandMode("20m", "CW"),
@@ -65,12 +69,12 @@ class QsoRoutesTests extends munit.FunSuite {
       override def apply(): os.Path = tmpDir
     }
 
-    val qsoStore = new QsoStore(directoryProvider)
+    val qsoStore = new QsoStore(directoryProvider, registry)
     val routes = new QsoRoutes(qsoStore)
 
     // Add some sample QSOs
     val qso1 = Qso(
-      callSign = Callsign("W1AW"),
+      callsign = Callsign("W1AW"),
       contestClass = "1A",
       section = "CT",
       bandMode = BandMode("20m", "CW"),
@@ -93,6 +97,6 @@ class QsoRoutesTests extends munit.FunSuite {
     assert(responseData.startsWith("[") && responseData.endsWith("]"))
     val qsos = read[Seq[Qso]](responseData)
     assertEquals(qsos.size, 1)
-    assertEquals(qsos.head.callSign.value, "W1AW")
+    assertEquals(qsos.head.callsign.value, "W1AW")
   }
 }

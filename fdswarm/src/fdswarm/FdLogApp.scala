@@ -42,6 +42,9 @@ object FdLogApp extends JFXApp3 with LazyLogging:
 
     // IMPORTANT: FdLogUi is injected; ask Guice for it
     val nodeStatus = injector.instance[NodeStatus]
+    val directoryProvider = injector.instance[fdswarm.io.DirectoryProvider]
+    fdswarm.util.LoggingConfigurator.addFileAppender(directoryProvider)
+    
     val ui = injector.instance[FdLogUi]
     val apiService = injector.instance[ApiService]
 
