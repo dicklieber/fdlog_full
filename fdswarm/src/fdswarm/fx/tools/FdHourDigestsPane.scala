@@ -29,7 +29,8 @@ import scalafx.stage.Window
 
 @Singleton
 class FdHourDigestsPane @Inject()(qsoStore: QsoStore):
-  
+  private var qsoListDialog: Option[FdHourQsoListDialog] = None
+
   private val table = new TableView[FdHourDigest]():
     columns ++= List(
       new TableColumn[FdHourDigest, String] {
@@ -48,8 +49,15 @@ class FdHourDigestsPane @Inject()(qsoStore: QsoStore):
         prefWidth = 300
       }
     )
+    onMouseClicked = e =>
+      val sel = selectionModel().getSelectedItem
+      if sel != null then
+        qsoListDialog.foreach(_.showHour(sel.fdHour))
 
   def show(ownerWindow: Window): Unit =
+    if qsoListDialog.isEmpty then
+      qsoListDialog = Some(new FdHourQsoListDialog(qsoStore, ownerWindow))
+
     val digests = qsoStore.digests()
     table.items = ObservableBuffer.from(digests)
     
@@ -57,6 +65,7 @@ class FdHourDigestsPane @Inject()(qsoStore: QsoStore):
       initOwner(ownerWindow)
       title = "FD Hour Digests"
       headerText = "Current QsoState.fdHourDigests"
+      initModality(scalafx.stage.Modality.None)
     }
 
     val dialogPane = dialog.dialogPane.value
@@ -65,4 +74,4 @@ class FdHourDigestsPane @Inject()(qsoStore: QsoStore):
     }
     dialogPane.buttonTypes = Seq(ButtonType.OK)
     
-    dialog.showAndWait()
+    dialog.show()
