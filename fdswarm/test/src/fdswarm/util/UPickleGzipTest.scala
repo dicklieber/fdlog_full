@@ -74,3 +74,13 @@ class UPickleGzipTest extends FunSuite:
     assertEquals(new String(decompressed, StandardCharsets.UTF_8), longString)
     assert(compressed.length < original.length / 10) // Should be highly compressed
     assert(original.length > compressed.length * 2) // Expanded size should be > 2 * compressed size
+
+  test("encodeResponse returns a valid Cask Response"):
+    val original = TestData("Junie", 2)
+    val response = UPickleGzip.encodeResponse(original)
+    
+    assertEquals(response.statusCode, 200)
+    assertEquals(response.headers.find(_._1 == "Content-Type").map(_._2), Some("application/json"))
+    
+    val decoded = UPickleGzip.decode[TestData](response.data)
+    assertEquals(decoded, original)

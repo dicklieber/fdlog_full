@@ -21,11 +21,12 @@ package fdswarm.api
 import cask.*
 import com.google.inject.Inject
 import fdswarm.fx.qso.FdHour
+import fdswarm.fx.qso.FdHour.given
 import fdswarm.store.QsoStore
+import fdswarm.util.UPickleGzip
 import upickle.default.*
 
 class QsoRoutes @Inject()(qsoStore: QsoStore) extends Routes:
-
   @get("/qsos")
   def allQsos(): Response[String] =
     Response(
@@ -36,21 +37,26 @@ class QsoRoutes @Inject()(qsoStore: QsoStore) extends Routes:
       )
     )
 
-  @postJson("/hourIds")
-  def hourIds(fdHour: FdHour): Response[String] =
-    Response(
-      data = write(qsoStore.idsForHour(fdHour), indent = 2),
-      headers = Seq("Content-Type" -> "application/json")
-    )
 
-/*  @get("/hourQsos:fdHour")
-  def hourQsos(fdHour: FdHour): Response[String] =
+  @get("/hourQsos/:fdHour")
+  def hourQsos(fdHour: FdHour): Response[Array[Byte]] =
     val forHour = qsoStore.qsosForFdHour(fdHour)
-    val sJson = write(forHour, indent = 2)
-
-    Response(
-      data = sJson,
-      headers = Seq("Content-Type" -> "application/json")
-    )*/
+    UPickleGzip.encodeResponse(forHour)
 
   initialize()
+
+import cask.endpoints.QueryParamReader
+import cask.model.Request
+
+//  given QueryParamReader[FdHour] with
+//    def arity: Int = 1
+//
+//    def read(ctx: Request, label: String, v: Seq[String]): FdHour =
+//      v match
+//        case Seq(s) => FdHour(s)
+//        case Nil =>
+//          throw new IllegalArgumentException(s"Missing parameter '$label'")
+//        case xs =>
+//          throw new IllegalArgumentException(
+//            s"Expected 1 value for '$label', got ${xs.size}"
+//          )

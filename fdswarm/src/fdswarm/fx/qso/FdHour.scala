@@ -19,6 +19,9 @@
 
 package fdswarm.fx.qso
 
+import cask.endpoints.QueryParamReader
+import cask.model.Request
+import cask.router.ArgReader
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.PropertyCellName
 import upickle.default.*
@@ -32,9 +35,9 @@ import scala.collection.concurrent.TrieMap
  *
  */
 case class FdHour private(day: Int, hour: Int) extends Ordered[FdHour] derives ReadWriter:
-  val toolTip: String = s"utc date: $day hour: $hour"
   override val toString: String =
     s"$day:$hour"
+  val toolTip: String = s"utc date: $day hour: $hour"
   val display: String = f"$day:$hour%02d"
 
 
@@ -43,22 +46,22 @@ case class FdHour private(day: Int, hour: Int) extends Ordered[FdHour] derives R
    */
   def plus(addedHours: Int): FdHour =
     val maybeHours = hour + addedHours
-    if (maybeHours > 23) then
+    if maybeHours > 23 then
       FdHour(day + 1, maybeHours - 24)
     else
       copy(hour = maybeHours)
 
-  override def compare(that: FdHour): Int = 
+  override def compare(that: FdHour): Int =
 
     val ret = this.day.compareTo(that.day)
-    if ret == 0 then 
+    if ret == 0 then
       this.hour.compareTo(that.hour)
     else
       ret
 
   def name: String = display
 
-object FdHour extends LazyLogging :
+object FdHour extends LazyLogging:
   lazy val knownHours: TrieMap[FdHour, FdHour] = new TrieMap[FdHour, FdHour]()
   /**
    * Used to match any FdHour in [[FdHour.equals()]]
@@ -69,6 +72,9 @@ object FdHour extends LazyLogging :
     val candidate = new FdHour(day, hour)
     done(candidate)
 
+  private def done(candidate: FdHour): FdHour =
+    knownHours.getOrElseUpdate(candidate, candidate)
+
   def apply(instant: Instant = Instant.now()): FdHour =
     val dt: ZonedDateTime = ZonedDateTime.ofInstant(instant, ZoneId.of("UTC"))
     val day: Int = dt.getDayOfMonth
@@ -76,5 +82,23 @@ object FdHour extends LazyLogging :
     val candidate = new FdHour(day, hour)
     done(candidate)
 
-  private def done(candidate: FdHour): FdHour =
-    knownHours.getOrElseUpdate(candidate, candidate)
+  private val r = """(\d{1,2}):(\d{1,2})""".r
+  def apply(str:String):FdHour =
+    str match
+      case r(sDay, shour)=>
+        FdHour(sDay.toInt, shour.toInt)
+      case x => 
+        throw new IllegalArgumentException(s"Cannot parse $x as FdHour")
+
+  given QueryParamReader[FdHour] with
+    def arity: Int = 1
+
+    def read(ctx: Request, label: String, v: Seq[String]): FdHour =
+      v match
+        case Seq(s) => FdHour(s)
+        case Nil =>
+          throw new IllegalArgumentException(s"Missing parameter '$label'")
+        case xs =>
+          throw new IllegalArgumentException(
+            s"Expected 1 value for '$label', got ${xs.size}"
+          )

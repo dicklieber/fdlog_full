@@ -63,14 +63,12 @@ class NodeStatusHandler @Inject()(qsoStore: QsoStore,
             if needed.nonEmpty then
               logger.info(s"Needed FdHours from ${statusMessage.hostAndPort}: $needed")
               needed.foreach(fdHour =>
-                val url = s"http://${statusMessage.hostAndPort}/hourIds"
-                val json = write(fdHour)
-                logger.info(s"Sending FdHour $fdHour request to $url via HTTP POST")
+                val url = s"http://${statusMessage.hostAndPort}/hourQsos/$fdHour"
+                logger.info(s"Sending FdHour $fdHour request to $url via HTTP GET")
                 try
                   val request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
-                    .header("Content-Type", "application/json")
-                    .POST(BodyPublishers.ofString(json))
+                    .GET()
                     .build()
 
                   httpClient.sendAsync(request, BodyHandlers.ofString())

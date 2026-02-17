@@ -62,6 +62,36 @@ class QsoRoutesTests extends munit.FunSuite {
     assertEquals(fdHourIds.ids, Seq(qso1.uuid))
   }
 
+  test("hourQsos endpoint returns gzipped QSOs for a given hour") {
+    val tmpDir = os.temp.dir()
+    val directoryProvider = new DirectoryProvider {
+      override def apply(): os.Path = tmpDir
+    }
+    val qsoStore = new QsoStore(directoryProvider, registry)
+    val routes = new QsoRoutes(qsoStore)
+
+    val fdHour = FdHour(15, 10)
+    val stamp = java.time.ZonedDateTime.of(2026, 2, 15, 10, 0, 0, 0, java.time.ZoneId.of("UTC")).toInstant
+    val qso1 = Qso(
+      callsign = Callsign("W1AW"),
+      contestClass = "1A",
+      section = "CT",
+      bandMode = BandMode("20m", "CW"),
+      qsoMetadata = QsoMetadata(Station("S1", "Home", Callsign("WA9NNN")), "node1", fdswarm.fx.contest.ContestType.WFD),
+      stamp = stamp
+    )
+    qsoStore.add(qso1)
+
+    val response = routes.hourQsos(fdHour)
+
+    assertEquals(response.statusCode, 200)
+    assertEquals(response.headers.find(_._1 == "Content-Type").map(_._2), Some("application/json"))
+    
+    val decoded = fdswarm.util.UPickleGzip.decode[Seq[Qso]](response.data)
+    assertEquals(decoded.size, 1)
+    assertEquals(decoded.head.callsign, Callsign("W1AW"))
+  }
+
   test("qsos endpoint returns JSON list of QSOs") {
     // Setup a mock directory provider for QsoStore
     val tmpDir = os.temp.dir()
