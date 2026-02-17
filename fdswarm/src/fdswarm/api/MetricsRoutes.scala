@@ -19,25 +19,16 @@
 package fdswarm.api
 
 import cask.*
-import com.google.inject.{Inject, Singleton}
-import com.typesafe.scalalogging.LazyLogging
-import fdswarm.replication.NetworkConfig
+import com.google.inject.Inject
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 
-@Singleton
-class ApiService @Inject() (
-    networkConfig: NetworkConfig,
-    qsoRoutes: QsoRoutes,
-    metricsRoutes: MetricsRoutes
-) extends Main with LazyLogging:
-  override def port: Int = networkConfig.url.getPort
-  override def host: String = "0.0.0.0"
+class MetricsRoutes @Inject()(registry: PrometheusMeterRegistry) extends Routes:
 
-  val allRoutes = Seq(
-    SampleRoutes(),
-    qsoRoutes,
-    metricsRoutes
-  )
+  @get("/metrics")
+  def metrics(): Response[String] =
+    Response(
+      data = registry.scrape(),
+      headers = Seq("Content-Type" -> "text/plain; version=0.0.4")
+    )
 
-  def start(): Unit =
-    logger.info(s"Starting Cask API on http://$host:$port")
-    main(Array.empty)
+  initialize()

@@ -27,11 +27,9 @@ Configuration:
         level: info
         additivity: true
 
-      - name: "fdswarm.replication.DiscoveryService"
-        level: debug
-        additivity: true
+
       - name: "fdswarm.replication.NodeStatusService"
-        level: trace
+        level: info
         additivity: true
 
       - name: "fdswarm.store.QsoStore"
@@ -39,11 +37,12 @@ Configuration:
         additivity: true
 
       - name: "fdswarm.replication.NodeStatusSender"
-        level: trace
+        level: info
+        level: info
         additivity: true
 
       - name: "fdswarm.fx.tools.FdHourDialogService"
-        level: trace
+        level: info
         additivity: true
 
     Root:

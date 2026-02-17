@@ -63,6 +63,7 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo {
 
     mvn"org.scalafx:scalafx_3:23.0.1-R34",
 
+    mvn"io.micrometer:micrometer-registry-prometheus:1.14.4",
   )
 
 
