@@ -25,6 +25,7 @@ import cask.router.ArgReader
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.PropertyCellName
 import upickle.default.*
+import io.circe.Codec
 
 import java.time.{Instant, ZoneId, ZonedDateTime}
 import scala.collection.concurrent.TrieMap
@@ -34,7 +35,7 @@ import scala.collection.concurrent.TrieMap
  * Its just a LocalDateTime with only any hour.
  *
  */
-case class FdHour private(day: Int, hour: Int) extends Ordered[FdHour] derives ReadWriter:
+case class FdHour private(day: Int, hour: Int) extends Ordered[FdHour] derives ReadWriter, Codec.AsObject:
   override val toString: String =
     s"$day:$hour"
   val toolTip: String = s"utc date: $day hour: $hour"

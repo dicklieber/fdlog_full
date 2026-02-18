@@ -19,6 +19,7 @@
 package fdswarm.model
 
 import upickle.default.*
+import io.circe.{Decoder, Encoder}
 
 /**
  * A callsign. always uppercase.
@@ -47,3 +48,6 @@ object Callsign:
     _.value, // write Callsign -> String
     Callsign(_) // read String -> Callsign (will uppercase via apply)
   )
+
+  given Encoder[Callsign] = Encoder.encodeString.contramap(_.value)
+  given Decoder[Callsign] = Decoder.decodeString.map(Callsign(_))

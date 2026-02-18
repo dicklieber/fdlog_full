@@ -21,6 +21,7 @@ import fdswarm.fx.bands.HamBand
 import fdswarm.fx.caseForm.ChoiceField
 import fdswarm.model.BandMode.*
 import upickle.default.*
+import io.circe.Codec
 
 /**
  * Details about this station.
@@ -30,7 +31,7 @@ final case class Station(
                           rig:      String = "",
                           antenna:  String = "",
                           operator: Callsign = Callsign(""),
-                        ) derives ReadWriter
+                        ) derives ReadWriter, Codec.AsObject
 //
 //object Station:
 //

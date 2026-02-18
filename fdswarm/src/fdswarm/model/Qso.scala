@@ -25,6 +25,7 @@ import fdswarm.util.Ids
 import fdswarm.util.Ids.Id
 import fdswarm.util.JavaTimePickle.given_ReadWriter_Instant
 import upickle.ReadWriter
+import io.circe.Codec
 import upickle.implicits.serializeDefaults
 
 import java.time.Instant
@@ -45,7 +46,7 @@ case class Qso(callsign: Callsign,
                qsoMetadata: QsoMetadata,
                @serializeDefaults(true)
                stamp: Instant = Instant.now(),
-               uuid: Id = Ids.generateId()) extends  LazyLogging derives ReadWriter:
+               uuid: Id = Ids.generateId()) extends  LazyLogging derives ReadWriter, Codec.AsObject:
   lazy val display: String = s"$callsign on $bandMode in $fdHour"
   lazy val fdHour: FdHour =
     FdHour(stamp)

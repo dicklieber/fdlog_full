@@ -19,12 +19,13 @@
 package fdswarm.model
 
 import upickle.ReadWriter
+import io.circe.{Decoder, Encoder, Codec}
 import BandMode.*
 
 /**
  * Allows storng band and mode in a compact why in a [[Qso]]
  */
-case class BandMode private[fdswarm] (band: Band, mode: Mode) derives ReadWriter:
+case class BandMode private[fdswarm] (band: Band, mode: Mode) derives ReadWriter, Codec.AsObject:
   def cabMode: Band =
     mode match
       case "USB" => "PH"

@@ -22,6 +22,7 @@ package fdswarm.model
 import com.organization.BuildInfo
 import fdswarm.fx.contest.ContestType
 import upickle.default.*
+import io.circe.Codec
 import upickle.implicits.*
 
 /**
@@ -38,7 +39,7 @@ import upickle.implicits.*
 case class QsoMetadata(station: Station,
                        node: String = "localhost;1",
                        contest: ContestType,
-                       v: String = BuildInfo.version) derives ReadWriter
+                       v: String = BuildInfo.version) derives ReadWriter, Codec.AsObject
 
 object QsoMetadata:
   val testQsoMetadata: QsoMetadata = QsoMetadata(station = Station(),

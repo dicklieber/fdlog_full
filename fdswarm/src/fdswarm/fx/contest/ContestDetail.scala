@@ -20,11 +20,12 @@ package fdswarm.fx.contest
 
 import fdswarm.{ContestDateCalculator, ContestDates}
 import upickle.default.*
+import io.circe.Codec
 import fdswarm.util.JavaTimePickle.given_ReadWriter_ZonedDateTime
 
 import java.time.*
 
-enum ContestType(val compute: Int => ContestDates) derives ReadWriter:
+enum ContestType(val compute: Int => ContestDates) derives ReadWriter, Codec.AsObject:
   def dates(year: Int): ContestDates = compute(year)
 
   case WFD extends ContestType(ContestDateCalculator.lastFull)
