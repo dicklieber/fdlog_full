@@ -18,24 +18,15 @@
 
 package fdswarm.replication
 
-import fdswarm.model.Qso
-import fdswarm.store.{FdHourDigest, QsoStore}
-import jakarta.inject.Inject
-import upickle.default.*
-
-import java.io.ByteArrayOutputStream
-import java.util.Base64
-import java.util.zip.GZIPOutputStream
-import scala.collection.immutable
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.qso.FdHour
-import fdswarm.util.Ids.Id
-
-import java.net.{InetAddress, URI}
-import java.net.http.{HttpClient, HttpRequest, HttpResponse}
-import java.net.http.HttpRequest.BodyPublishers
-import java.net.http.HttpResponse.BodyHandlers
+import fdswarm.store.QsoStore
 import fdswarm.util.HostAndPortProvider
+import jakarta.inject.Inject
+
+import java.net.URI
+import java.net.http.HttpResponse.BodyHandlers
+import java.net.http.{HttpClient, HttpRequest}
 
 class NodeStatusHandler @Inject()(qsoStore: QsoStore,
                                   multicastTransport: MulticastTransport,
@@ -59,12 +50,13 @@ class NodeStatusHandler @Inject()(qsoStore: QsoStore,
           if statusMessage.hostAndPort == hostAndPortProvider.http then
             logger.trace(s"Ignoring our own message from ${statusMessage.hostAndPort}")
           else
-            val needed: Seq[FdHour] = qsoStore.neededQsos(statusMessage.fdDigests)
-            if needed.nonEmpty then
-              logger.info(s"Needed FdHours from ${statusMessage.hostAndPort}: $needed")
-              needed.foreach(fdHour =>
+            logger.trace("StatusHandle: StatusMessage from {} with {} digests.", statusMessage.hostAndPort, statusMessage.fdDigests.size)
+            val neededFdHours: Seq[FdHour] = qsoStore.neededQsos(statusMessage.fdDigests)
+            logger.trace("StatusHandle: Needed QSOs: {}",   neededFdHours.size)
+            if neededFdHours.nonEmpty then
+              neededFdHours.foreach(fdHour =>
                 val url = s"http://${statusMessage.hostAndPort}/hourQsos/$fdHour"
-                logger.info(s"Sending FdHour $fdHour request to $url via HTTP GET")
+                logger.info(s"StatusHandle: Sending: {}",url)
                 try
                   val request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
@@ -72,13 +64,15 @@ class NodeStatusHandler @Inject()(qsoStore: QsoStore,
                     .GET()
                     .build()
 
-                  httpClient.sendAsync(request, BodyHandlers.ofString())
-                    .thenAccept(response =>
-                      if response.statusCode() == 200 then
-                        logger.debug(s"Success response from $url: ${response.statusCode()}")
-                      else
-                        logger.warn(s"Response from $url: ${response.statusCode()} body: ${response.body()}")
-                    )
+                  val response =  httpClient.send(request, BodyHandlers.ofString())
+                  logger.trace(s"StatusHandle: Response from $url: ${response.statusCode()}")
+//                  response.  
+//                    .thenAccept(response =>
+//                      if response.statusCode() == 200 then
+//                        logger.debug(s"Success response from $url: ${response.statusCode()}")
+//                      else
+//                        logger.warn(s"Response from $url: ${response.statusCode()} body: ${response.body()}")
+//                    )
                 catch
                   case e: Exception =>
                     logger.error(s"Failed to send FdHour request to $url", e)

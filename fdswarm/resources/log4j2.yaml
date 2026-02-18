@@ -43,7 +43,7 @@ Configuration:
         additivity: true
 
       - name: "fdswarm.replication.NodeStatusSender"
-        level: info
+        level: trace
         additivity: true
 
       - name: "fdswarm.fx.tools.FdHourDialogService"
@@ -52,6 +52,10 @@ Configuration:
 
       - name: "fdswarm.api.QsoRoutes"
         level: debug
+        additivity: true
+
+      - name: "fdswarm.replication.NodeStatusHandler"
+        level: trace
         additivity: true
 
     Root:
