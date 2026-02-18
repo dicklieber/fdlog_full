@@ -50,6 +50,10 @@ Configuration:
         level: info
         additivity: true
 
+      - name: "fdswarm.api.QsoRoutes"
+        level: debug
+        additivity: true
+
     Root:
       level: info
       AppenderRef:

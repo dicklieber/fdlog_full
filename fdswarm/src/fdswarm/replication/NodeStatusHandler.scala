@@ -68,6 +68,7 @@ class NodeStatusHandler @Inject()(qsoStore: QsoStore,
                 try
                   val request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
+                    .header("Accept-Encoding", "gzip")
                     .GET()
                     .build()
 

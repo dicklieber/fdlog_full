@@ -20,13 +20,15 @@ package fdswarm.api
 
 import cask.*
 import com.google.inject.Inject
+import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.qso.FdHour
 import fdswarm.fx.qso.FdHour.given
 import fdswarm.store.QsoStore
 import fdswarm.util.UPickleGzip
 import upickle.default.*
 
-class QsoRoutes @Inject()(qsoStore: QsoStore) extends Routes:
+class QsoRoutes @Inject()(qsoStore: QsoStore) extends Routes with LazyLogging:
+  override def decorators = Seq(new cask.decorators.compress())
   @get("/qsos")
   def allQsos(): Response[String] =
     Response(
@@ -36,12 +38,19 @@ class QsoRoutes @Inject()(qsoStore: QsoStore) extends Routes:
         "Content-Disposition" -> "attachment; filename=qsos.json"
       )
     )
-
+  
 
   @get("/hourQsos/:fdHour")
-  def hourQsos(fdHour: FdHour): Response[Array[Byte]] =
+  def hourQsos(fdHour: FdHour): Response[String] =
     val forHour = qsoStore.qsosForFdHour(fdHour)
-    UPickleGzip.encodeResponse(forHour)
+    val json = write(forHour)
+    logger.debug(s"/hourQsos/:fdHour ${json.length} bytes of JSON")
+    Response(
+      data = json,
+      statusCode = 200,
+      headers = Seq("Content-Type" -> "application/json")
+    )
+
 
   initialize()
 
