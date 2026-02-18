@@ -61,6 +61,10 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo {
     mvn"net.codingwell:scala-guice_3:7.0.0",
     mvn"com.github.andyglow::typesafe-config-scala:2.0.0",
 
+    mvn"io.circe::circe-core:0.14.10",
+    mvn"io.circe::circe-generic:0.14.10",
+    mvn"io.circe::circe-parser:0.14.10",
+
     mvn"org.scalafx:scalafx_3:23.0.1-R34",
 
     mvn"io.micrometer:micrometer-registry-prometheus:1.14.4",
