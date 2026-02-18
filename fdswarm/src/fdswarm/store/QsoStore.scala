@@ -25,8 +25,9 @@ import fdswarm.model.*
 import fdswarm.util.Ids.Id
 import io.micrometer.core.instrument.{Counter, MeterRegistry, Timer}
 import jakarta.inject.*
+import io.circe.parser.decode
+import io.circe.syntax.*
 import scalafx.collections.ObservableBuffer
-import upickle.default.*
 
 import scala.collection.concurrent.TrieMap
 
@@ -56,7 +57,7 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
       maybeQso.foreach(was =>
         logger.error(s"Was already a qso for uuid: $uuid $qso")
       )
-      write(qso) + "\n"
+      qso.asJson.noSpaces + "\n"
 
     if lines.nonEmpty then
       os.write.append(journalFile, lines.mkString, createFolders = true)
@@ -78,9 +79,12 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
       .map(_.trim)
       .filter(_.nonEmpty)
       .foreach { line =>
-        val qso = read[Qso](line)
-        map.put(qso.uuid, qso)
-        qsoCollection.prepend(qso)
+        decode[Qso](line) match
+          case Right(qso) =>
+            map.put(qso.uuid, qso)
+            qsoCollection.prepend(qso)
+          case Left(error) =>
+            logger.error(s"Failed to decode Qso from line: $line", error)
       }
     buildFdHourDigests()
 

@@ -20,7 +20,7 @@ package fdswarm.store
 
 import fdswarm.TestDirectory
 import fdswarm.model.QsoMetadata.testQsoMetadata
-import fdswarm.model.{BandMode, Callsign, Qso, QsoMetadata, Station}
+import fdswarm.model.{BandMode, Callsign, Qso}
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import munit.FunSuite
 
@@ -57,3 +57,14 @@ class QsoStoreTest extends FunSuite:
     assertEquals(qsoStore.qsoCollection.size, 1)
     val backAgain = qsoStore.get(qso.uuid)
     assertEquals(backAgain.get, qso)
+
+  test("handle corrupt journal line"):
+    val registry = new SimpleMeterRegistry()
+    val journalFile = testDirectory() / "qsosJournal.json"
+    os.write(journalFile, "this is not json\n", createFolders = true)
+    
+    // This should not throw an exception because of the new error handling
+    val qsoStore = QsoStore(testDirectory, registry)
+    
+    assertEquals(qsoStore.qsoCollection.isEmpty, true)
+    assertEquals(qsoStore.digests().isEmpty, true)
