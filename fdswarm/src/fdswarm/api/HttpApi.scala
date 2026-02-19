@@ -51,7 +51,7 @@ final class HttpApi @Inject()(apiEndpoints: java.util.Set[ApiEndpoints],
                               hostAndPortProvider: HostAndPortProvider)
   extends LazyLogging:
 
-  private val accessLogger = LoggerFactory.getLogger("org.http4s.server.middleware.Logger")
+  private def accessLogger = LoggerFactory.getLogger("org.http4s.server.middleware.Logger")
   private val clfTimeFmt: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MMM/yyyy:HH:mm:ss Z", Locale.ENGLISH)
 
   /** Wraps an HttpApp and logs each request in Common Log Format to `access.log`. */
@@ -67,11 +67,14 @@ final class HttpApi @Inject()(apiEndpoints: java.util.Set[ApiEndpoints],
         val q = req.uri.query.renderString
         if q.nonEmpty then s"$p?$q" else p
 
-      val reqLine = s"${req.method.name} $path ${req.httpVersion}"
-      val status = resp.status.code
-      val bytes = resp.contentLength.getOrElse(0L)
+      if path.startsWith("/metrics") then
+        IO.unit
+      else
+        val reqLine = s"${req.method.name} $path ${req.httpVersion}"
+        val status = resp.status.code
+        val bytes = resp.contentLength.getOrElse(0L)
 
-      IO(accessLogger.info(s"""$host $ident $user [$ts] "$reqLine" $status $bytes"""))
+        IO(accessLogger.info(s"""$host $ident $user [$ts] "$reqLine" $status $bytes"""))
     }
   }
 

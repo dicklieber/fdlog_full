@@ -36,18 +36,22 @@ import scala.concurrent.duration.*
   *   - runs startup validation checks
   *   - delegates all UI construction to [[FdLogUi]]
   */
-object FdLogApp extends JFXApp3 with LazyLogging:
+object FdLogApp extends JFXApp3:
+  override def main(args: Array[String]): Unit =
+    val directoryProvider = new fdswarm.io.ProductionDirectory()
+    fdswarm.util.LoggingConfigurator.addFileAppender(directoryProvider)
+    System.setProperty("javafx.embed.singleThread", "true")
+    super.main(args)
+
+  private val log = org.slf4j.LoggerFactory.getLogger(getClass)
 
   private lazy val injector: Injector =
     Guice.createInjector(new ConfigModule())
 
   override def start(): Unit =
-
     val nodeStatus = injector.instance[NodeStatus]
-    val directoryProvider = injector.instance[fdswarm.io.DirectoryProvider]
-    fdswarm.util.LoggingConfigurator.addFileAppender(directoryProvider)
     
-    logger.debug("fdlog start")
+    log.debug("fdlog start")
     
     val ui = injector.instance[FdLogUi]
     // Start HTTP API service (http4s + tapir) in a background daemon thread
@@ -60,7 +64,7 @@ object FdLogApp extends JFXApp3 with LazyLogging:
     stage = s
 
   override def stopApp(): Unit =
-    logger.debug("stopApp")
+    log.debug("stopApp")
     val nodeStatus = injector.instance[NodeStatus]
     nodeStatus.stop()
   

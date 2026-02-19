@@ -45,3 +45,5 @@ object Callsign:
 
   given Encoder[Callsign] = Encoder.encodeString.contramap(_.value)
   given Decoder[Callsign] = Decoder.decodeString.map(Callsign(_))
+  import upickle.default.*
+  given ReadWriter[Callsign] = readwriter[String].bimap(_.value, Callsign(_))

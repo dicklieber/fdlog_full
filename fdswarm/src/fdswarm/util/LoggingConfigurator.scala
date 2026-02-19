@@ -19,14 +19,68 @@
 package fdswarm.util
 
 import fdswarm.io.DirectoryProvider
-import org.apache.logging.log4j.core.LoggerContext
+import org.apache.logging.log4j.Level
+import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory
+import org.apache.logging.log4j.core.config.Configurator
 
 object LoggingConfigurator:
   def addFileAppender(directoryProvider: DirectoryProvider): Unit =
     val logDir = directoryProvider()
     val logFile = logDir / "fdswarm.log"
     val accessLogFile = logDir / "access.log"
-    System.setProperty("fdlog.logFile", logFile.toString())
-    System.setProperty("fdlog.accessLogFile", accessLogFile.toString())
-    val context = LoggerContext.getContext(false)
-    context.reconfigure()
+
+    val builder = ConfigurationBuilderFactory.newConfigurationBuilder()
+    builder.setStatusLevel(Level.WARN)
+
+    // Console Appender
+    val console = builder.newAppender("TestConsole", "Console")
+    console.addAttribute("target", "SYSTEM_ERR")
+    console.add(builder.newLayout("PatternLayout")
+      .addAttribute("pattern", "%logger{36} %highlight{%-5level}{FATAL=bg_red, ERROR=red, WARN=yellow, INFO=green, info=blue, info=cyan}  %msg%n"))
+    builder.add(console)
+
+    // File Appender
+    val file = builder.newAppender("FileAppender", "File")
+    file.addAttribute("fileName", logFile.toString())
+    file.addAttribute("immediateFlush", true)
+    file.add(builder.newLayout("PatternLayout")
+      .addAttribute("pattern", "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n"))
+    builder.add(file)
+
+    // Access Log Appender
+    val accessFile = builder.newAppender("AccessLogAppender", "File")
+    accessFile.addAttribute("fileName", accessLogFile.toString())
+    accessFile.addAttribute("immediateFlush", true)
+    accessFile.add(builder.newLayout("PatternLayout")
+      .addAttribute("pattern", "%msg%n"))
+    builder.add(accessFile)
+
+    // Loggers
+    val loggers = Seq(
+      "fdlog.store.QsoStore",
+      "fdswarm.fx.qso.QsoEntryPanel",
+      "fdswarm.StationManager",
+      "fdswarm.fx.ConfigModule",
+      "fdswarm.replication.NodeStatusService",
+      "fdswarm.store.QsoStore",
+      "fdswarm.replication.NodeStatusSender",
+      "fdswarm.fx.tools.FdHourDialogService",
+      "fdswarm.api.QsoRoutes",
+      "fdswarm.replication.NodeStatusHandler"
+    )
+
+    loggers.foreach { name =>
+      builder.add(builder.newLogger(name, Level.INFO).addAttribute("additivity", true))
+    }
+
+    // Special logger for Access Log
+    builder.add(builder.newLogger("org.http4s.server.middleware.Logger", Level.INFO)
+      .addAttribute("additivity", false)
+      .add(builder.newAppenderRef("AccessLogAppender")))
+
+    // Root Logger
+    builder.add(builder.newRootLogger(Level.INFO)
+      .add(builder.newAppenderRef("TestConsole"))
+      .add(builder.newAppenderRef("FileAppender")))
+
+    Configurator.reconfigure(builder.build())
