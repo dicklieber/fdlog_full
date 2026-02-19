@@ -20,7 +20,7 @@ package fdswarm.api
 
 import cats.effect.IO
 import fdswarm.model.Qso
-import fdswarm.store.QsoStore
+import fdswarm.store.{FdHourIds, QsoStore}
 import io.circe.syntax.*
 import io.circe.Printer
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
@@ -28,12 +28,13 @@ import jakarta.inject.Inject
 import sttp.tapir.*
 import sttp.tapir.CodecFormat
 import sttp.tapir.server.ServerEndpoint
+import fdswarm.fx.qso.FdHour
 
 /** Tapir endpoints for QSOs. */
 final class QsoEndpoints @Inject()(qsoStore: QsoStore,
                                    registry: PrometheusMeterRegistry) extends ApiEndpoints:
 
-  override def endpoints: List[ServerEndpoint[Any, IO]] = List(allQsos)
+  override def endpoints: List[ServerEndpoint[Any, IO]] = List(allQsos, qsoIdsByHour)
 
   /**
     * GET /qsos – returns all QSOs as JSON and sets headers to download as an attachment.
@@ -52,4 +53,20 @@ final class QsoEndpoints @Inject()(qsoStore: QsoStore,
       .serverLogicSuccess[IO] { _ =>
         val json = printer.print(qsoStore.all.asJson)
         IO.pure((json, "application/json", "attachment; filename=qsos.json"))
+      }
+
+  /**
+    * GET /qsos/{fdHour}/ids – returns all UUIDs for the given FdHour.
+    */
+  val qsoIdsByHour: ServerEndpoint[Any, IO] =
+    endpoint
+      .get
+      .in("qsos" / path[String]("fdHour") / "ids")
+      .out(stringBody)
+      .out(header[String]("Content-Type"))
+      .serverLogicSuccess[IO] { fdHourStr =>
+        val fdHour = FdHour(fdHourStr)
+        val result = qsoStore.idsForHour(fdHour)
+        val json = printer.print(result.asJson)
+        IO.pure((json, "application/json"))
       }
