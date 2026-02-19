@@ -25,6 +25,8 @@ object LoggingConfigurator:
   def addFileAppender(directoryProvider: DirectoryProvider): Unit =
     val logDir = directoryProvider()
     val logFile = logDir / "fdswarm.log"
+    val accessLogFile = logDir / "access.log"
     System.setProperty("fdlog.logFile", logFile.toString())
+    System.setProperty("fdlog.accessLogFile", accessLogFile.toString())
     val context = LoggerContext.getContext(false)
     context.reconfigure()

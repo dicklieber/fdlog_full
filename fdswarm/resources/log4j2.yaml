@@ -9,10 +9,15 @@ Configuration:
         Pattern: "%logger{36} %highlight{%-5level}{FATAL=bg_red, ERROR=red, WARN=yellow, INFO=green, info=blue, info=cyan}  %msg%n"
 
     File:
-      name: FileAppender
-      fileName: "${sys:fdlog.logFile}"
-      PatternLayout:
-        Pattern: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n"
+      - name: FileAppender
+        fileName: "${sys:fdlog.logFile}"
+        PatternLayout:
+          Pattern: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n"
+
+      - name: AccessLogAppender
+        fileName: "${sys:fdlog.accessLogFile}"
+        PatternLayout:
+          Pattern: "%msg%n"
 
 
   Loggers:
@@ -57,6 +62,12 @@ Configuration:
       - name: "fdswarm.replication.NodeStatusHandler"
         level: info
         additivity: true
+
+      - name: "org.http4s.server.middleware.Logger"
+        level: info
+        additivity: false
+        AppenderRef:
+          - ref: AccessLogAppender
 
     Root:
       level: info
