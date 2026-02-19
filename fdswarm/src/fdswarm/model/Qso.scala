@@ -20,11 +20,8 @@ package fdswarm.model
 
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.qso.FdHour
-import fdswarm.replication.NodeAddress
 import fdswarm.util.Ids
 import fdswarm.util.Ids.Id
-import fdswarm.util.JavaTimePickle.given_ReadWriter_Instant
-import upickle.ReadWriter
 import io.circe.Codec
 import upickle.implicits.serializeDefaults
 

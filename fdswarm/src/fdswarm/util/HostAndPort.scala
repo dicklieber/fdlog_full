@@ -46,11 +46,6 @@ case class HostAndPort(host: String, port: Int) extends Ordered[HostAndPort]:
 object HostAndPort:
   private val regx = """^(localhost|[0-9.]+):(\d{1,5})$""".r
 
-  given ReadWriter[HostAndPort] = readwriter[String]
-    .bimap[HostAndPort](
-      hostAndPort => hostAndPort.toString,
-      HostAndPort.apply)
-
   given Encoder[HostAndPort] = Encoder.encodeString.contramap(_.toString)
   given Decoder[HostAndPort] = Decoder.decodeString.map(HostAndPort.apply)
 
