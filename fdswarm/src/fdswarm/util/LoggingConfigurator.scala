@@ -22,6 +22,8 @@ import fdswarm.io.DirectoryProvider
 import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory
 import org.apache.logging.log4j.core.config.Configurator
+import com.typesafe.config.ConfigFactory
+import scala.jdk.CollectionConverters.*
 
 object LoggingConfigurator:
   def addFileAppender(directoryProvider: DirectoryProvider): Unit =
@@ -56,20 +58,13 @@ object LoggingConfigurator:
     builder.add(accessFile)
 
     // Loggers
-    val loggers = Map(
-      "fdlog.store.QsoStore" -> Level.INFO,
-      "fdswarm.fx.qso.QsoEntryPanel" -> Level.INFO,
-      "fdswarm.StationManager" -> Level.INFO,
-      "fdswarm.fx.ConfigModule" -> Level.INFO,
-      "fdswarm.replication.NodeStatusService" -> Level.INFO,
-      "fdswarm.store.QsoStore" -> Level.INFO,
-      "fdswarm.replication.NodeStatusSender" -> Level.INFO,
-      "fdswarm.fx.tools.FdHourDialogService" -> Level.INFO,
-      "fdswarm.api.QsoRoutes" -> Level.INFO,
-      "fdswarm.replication.NodeStatusHandler" -> Level.INFO
-    )
-
-    loggers.foreach { (name, level) =>
+    val config = ConfigFactory.load("loggers.conf")
+    val loggersConfig = config.getConfig("loggers")
+    
+    loggersConfig.entrySet().asScala.foreach { entry =>
+      val name = entry.getKey
+      val levelStr = loggersConfig.getString(name)
+      val level = Level.toLevel(levelStr, Level.INFO)
       builder.add(builder.newLogger(name, level).addAttribute("additivity", true))
     }
 
