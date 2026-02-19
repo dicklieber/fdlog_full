@@ -85,6 +85,7 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo {
     mvn"com.softwaremill.sttp.tapir:tapir-core_3:1.13.8",
     mvn"com.softwaremill.sttp.tapir:tapir-http4s-server_3:1.13.8",
     mvn"com.softwaremill.sttp.tapir:tapir-json-circe_3:1.13.8",
+    mvn"com.softwaremill.sttp.tapir::tapir-swagger-ui-bundle:1.13.8",
     mvn"org.http4s:http4s-ember-server_3:0.23.33",
     mvn"org.http4s:http4s-dsl_3:0.23.33",
     mvn"org.typelevel:cats-effect_3:3.5.7",

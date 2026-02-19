@@ -27,14 +27,17 @@ import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.Router
 import org.http4s.server.middleware.Logger as Http4sLogger
 import org.http4s.HttpApp
+import org.http4s.syntax.all.*
+import cats.syntax.all.*
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import com.comcast.ip4s.{Host, Port}
+import sttp.tapir.swagger.bundle.SwaggerInterpreter
 
 import scala.jdk.CollectionConverters.*
 
 /**
  *
- * @param apiEndpoints as collected by [[AutoBind]] in [[ConfigModule]].
+ * @param apiEndpoints        as collected by [[AutoBind]] in [[ConfigModule]].
  * @param hostAndPortProvider our ports and hostnames.
  */
 @Singleton
@@ -53,7 +56,6 @@ final class HttpApi @Inject()(apiEndpoints: java.util.Set[ApiEndpoints],
         .withPort(port)
         .withHttpApp(httpApp)
         .build
-
     val t = new Thread(() =>
       // keep running until JVM exits
       try
@@ -68,7 +70,11 @@ final class HttpApi @Inject()(apiEndpoints: java.util.Set[ApiEndpoints],
 
   private def httpApp: HttpApp[IO] =
     val endpoints = apiEndpoints.asScala.flatMap(_.endpoints).toList
+    val swaggerEndpoints = SwaggerInterpreter().fromServerEndpoints[IO](endpoints, "Field Day Swarm API", "1.0.0")
+
     val routes = Http4sServerInterpreter[IO]().toRoutes(endpoints)
-    val app = Router("/" -> routes).orNotFound
+    val swaggerRoutes = Http4sServerInterpreter[IO]().toRoutes(swaggerEndpoints)
+
+    val app = Router("/" -> (routes <+> swaggerRoutes)).orNotFound
     // Log requests/responses at info level
     Http4sLogger.httpApp(logHeaders = true, logBody = false)(app)
