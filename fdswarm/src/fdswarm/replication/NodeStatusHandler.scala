@@ -56,7 +56,7 @@ class NodeStatusHandler @Inject()(qsoStore: QsoStore,
             if neededFdHours.nonEmpty then
               neededFdHours.foreach(fdHour =>
                 val url = s"http://${statusMessage.hostAndPort}/hourQsos/$fdHour"
-                logger.info(s"StatusHandle: Sending: {}",url)
+                logger.debug(s"StatusHandle: Sending: {}",url)
                 try
                   val request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
@@ -87,7 +87,7 @@ class NodeStatusHandler @Inject()(qsoStore: QsoStore,
     thread = Some(t)
 
   def stop(): Unit =
-    logger.info("Stopping Repl service")
+    logger.debug("Stopping Repl service")
     thread.foreach(_.interrupt())
     thread = None
 

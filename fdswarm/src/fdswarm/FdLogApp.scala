@@ -38,7 +38,7 @@ import scala.concurrent.duration.*
   */
 object FdLogApp extends JFXApp3 with LazyLogging:
 
-  logger.info("fdlog ctor")
+  logger.debug("fdlog ctor")
   
   private lazy val injector: Injector =
     Guice.createInjector(new ConfigModule())
@@ -80,7 +80,7 @@ object FdLogApp extends JFXApp3 with LazyLogging:
     stage = s
 
   override def stopApp(): Unit =
-    logger.info("stopApp")
+    logger.debug("stopApp")
     val nodeStatus = injector.instance[NodeStatus]
     nodeStatus.stop()
   

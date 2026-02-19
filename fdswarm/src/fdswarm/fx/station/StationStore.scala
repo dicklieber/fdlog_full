@@ -21,8 +21,10 @@ package fdswarm.fx.station
 import fdswarm.io.DirectoryProvider
 import fdswarm.model.Station
 import jakarta.inject.{Inject, Singleton}
+import _root_.io.circe.Printer
+import _root_.io.circe.parser.decode
+import _root_.io.circe.syntax.*
 import scalafx.beans.property.ObjectProperty
-import upickle.default.*
 
 @Singleton
 final class StationStore @Inject() (directoryProvider: DirectoryProvider) {
@@ -54,12 +56,13 @@ final class StationStore @Inject() (directoryProvider: DirectoryProvider) {
     else
       Station()
 
+  private val printer: Printer = Printer.spaces2.copy(dropNullValues = true)
+
   private def saveToDisk(s: Station): Unit = {
     os.makeDir.all(stationFile / os.up)
-    os.write.over(stationFile, write(s, indent = 2))
+    os.write.over(stationFile, printer.print(s.asJson))
   }
 
   private def parseStation(json: String): Either[String, Station] =
-    try Right(read[Station](json))
-    catch case e: Throwable => Left(Option(e.getMessage).getOrElse(e.toString))
+    decode[Station](json).left.map(_.getMessage)
 }

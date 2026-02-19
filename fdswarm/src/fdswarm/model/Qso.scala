@@ -46,7 +46,7 @@ case class Qso(callsign: Callsign,
                qsoMetadata: QsoMetadata,
                @serializeDefaults(true)
                stamp: Instant = Instant.now(),
-               uuid: Id = Ids.generateId()) extends  LazyLogging derives ReadWriter, Codec.AsObject:
+               uuid: Id = Ids.generateId()) extends  LazyLogging derives  Codec.AsObject:
   lazy val display: String = s"$callsign on $bandMode in $fdHour"
   lazy val fdHour: FdHour =
     FdHour(stamp)

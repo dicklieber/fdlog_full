@@ -18,7 +18,6 @@
 
 package fdswarm.model
 
-import upickle.default.*
 import io.circe.{Decoder, Encoder}
 
 /**
@@ -42,12 +41,7 @@ object Callsign:
   def apply(cs: String): Callsign =
     new Callsign(cs.toUpperCase)
 
-  // uPickle ReadWriter: represent Callsign as a JSON string
-  given ReadWriter[Callsign] =
-  readwriter[String].bimap[Callsign](
-    _.value, // write Callsign -> String
-    Callsign(_) // read String -> Callsign (will uppercase via apply)
-  )
+
 
   given Encoder[Callsign] = Encoder.encodeString.contramap(_.value)
   given Decoder[Callsign] = Decoder.decodeString.map(Callsign(_))

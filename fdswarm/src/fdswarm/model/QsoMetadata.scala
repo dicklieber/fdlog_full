@@ -21,9 +21,7 @@ package fdswarm.model
 
 import com.organization.BuildInfo
 import fdswarm.fx.contest.ContestType
-import upickle.default.*
 import io.circe.Codec
-import upickle.implicits.*
 
 /**
  * Stuff about a QSO. i.e. not entered as a part of a QSO itself
@@ -34,12 +32,10 @@ import upickle.implicits.*
  * @param v       FdSwarm Version that built this so we can detect mismatched versions.
  */
 
-@serializeDefaults(true)
-
 case class QsoMetadata(station: Station,
                        node: String = "localhost;1",
                        contest: ContestType,
-                       v: String = BuildInfo.version) derives ReadWriter, Codec.AsObject
+                       v: String = BuildInfo.version) derives Codec.AsObject
 
 object QsoMetadata:
   val testQsoMetadata: QsoMetadata = QsoMetadata(station = Station(),

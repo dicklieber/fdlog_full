@@ -31,7 +31,7 @@ final case class Station(
                           rig:      String = "",
                           antenna:  String = "",
                           operator: Callsign = Callsign(""),
-                        ) derives ReadWriter, Codec.AsObject
+                        ) derives  Codec.AsObject
 //
 //object Station:
 //

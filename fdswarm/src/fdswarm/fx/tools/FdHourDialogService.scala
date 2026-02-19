@@ -81,7 +81,7 @@ final class FdHourDialogService @Inject() (
     val apiHost = networkConfig.url.getHost
     val url = s"http://$apiHost:$apiPort/hourIds"
     val json = write(Seq(fdHour))
-    logger.info(s"Sending FdHour $fdHour to $url via HTTP POST")
+    logger.debug(s"Sending FdHour $fdHour to $url via HTTP POST")
     try
       val request = HttpRequest.newBuilder()
         .uri(URI.create(url))
@@ -91,7 +91,7 @@ final class FdHourDialogService @Inject() (
 
       val response = httpClient.send(request, BodyHandlers.ofString())
       
-      logger.info(s"Response from $url: ${response.statusCode()}")
+      logger.debug(s"Response from $url: ${response.statusCode()}")
       logger.debug(s"Response body: ${response.body()}")
     catch
       case e: Exception =>

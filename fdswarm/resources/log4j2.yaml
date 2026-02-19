@@ -6,7 +6,7 @@ Configuration:
       name: TestConsole
       target: SYSTEM_ERR
       PatternLayout:
-        Pattern: "%logger{36} %highlight{%-5level}{FATAL=bg_red, ERROR=red, WARN=yellow, INFO=green, DEBUG=blue, info=cyan}  %msg%n"
+        Pattern: "%logger{36} %highlight{%-5level}{FATAL=bg_red, ERROR=red, WARN=yellow, INFO=green, info=blue, info=cyan}  %msg%n"
 
     File:
       name: FileAppender
@@ -43,7 +43,7 @@ Configuration:
         additivity: true
 
       - name: "fdswarm.replication.NodeStatusSender"
-        level: trace
+        level: info
         additivity: true
 
       - name: "fdswarm.fx.tools.FdHourDialogService"
@@ -51,11 +51,11 @@ Configuration:
         additivity: true
 
       - name: "fdswarm.api.QsoRoutes"
-        level: debug
+        level: info
         additivity: true
 
       - name: "fdswarm.replication.NodeStatusHandler"
-        level: trace
+        level: info
         additivity: true
 
     Root:

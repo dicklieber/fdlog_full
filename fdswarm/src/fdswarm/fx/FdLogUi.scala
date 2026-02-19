@@ -108,11 +108,11 @@ final class FdLogUi @Inject()(
                 aboutMenuItem.showAboutDialog(ownerWindow)
               }
             )
-            logger.info("Successfully registered macOS About handler")
+            logger.debug("Successfully registered macOS About handler")
           else
-            logger.info("macOS About handler not supported by Desktop")
+            logger.debug("macOS About handler not supported by Desktop")
         else
-          logger.info("Desktop API not supported on this platform")
+          logger.debug("Desktop API not supported on this platform")
       catch
         case e: Exception => logger.warn("Could not set macOS about handler", e)
 

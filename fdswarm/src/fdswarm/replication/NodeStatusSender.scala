@@ -48,7 +48,7 @@ class NodeStatusSender @Inject()(
   var maybeThread:Option[Thread] = None
 
   def start(): Unit =
-    logger.info(s"Starting NodeStatusSender (every $broadcastPeriodSec)")
+    logger.debug(s"Starting NodeStatusSender (every $broadcastPeriodSec)")
 
     val t = new Thread(() =>
       while !Thread.currentThread().isInterrupted do
@@ -76,6 +76,6 @@ class NodeStatusSender @Inject()(
     maybeThread = Some(t)
 
   def stop(): Unit =
-    logger.info("Stopping NodeStatusSender")
+    logger.debug("Stopping NodeStatusSender")
     maybeThread.foreach(_.interrupt())
     maybeThread = None

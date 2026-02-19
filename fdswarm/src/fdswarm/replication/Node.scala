@@ -20,10 +20,9 @@ package fdswarm.replication
 
 import fdswarm.fx.contest.ContestConfig
 import fdswarm.model.Callsign
-import upickle.default.*
-import io.circe.Codec
-import fdswarm.util.JavaTimePickle.given
+import io.circe.{Codec, Encoder, Decoder}
 import java.net.URL
+import scala.util.Try
 
 /**
  * 
@@ -31,6 +30,9 @@ import java.net.URL
  * @param contestConfig details about contest.
  * @param ourStation who is participating in this contest.
  */
+given Encoder[URL] = Encoder.encodeString.contramap(_.toString)
+given Decoder[URL] = Decoder.decodeString.emap(str => Try(new URL(str)).toEither.left.map(_.getMessage))
+
 case class Node(url: URL,
                 contestConfig: ContestConfig,
-                ourStation: Callsign) derives ReadWriter, Codec.AsObject
+                ourStation: Callsign) derives Codec.AsObject

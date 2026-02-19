@@ -23,7 +23,7 @@ class MulticastTransport @Inject()(
   private var thread: Thread = uninitialized
 
   // Start receiver in constructor
-  logger.info(s"Starting MulticastTransport receiver on $groupAddr:$port")
+  logger.debug(s"Starting MulticastTransport receiver on $groupAddr:$port")
   try
     socket = new MulticastSocket(port)
     socket.setReuseAddress(true)
@@ -58,7 +58,7 @@ class MulticastTransport @Inject()(
     socket.send(packet)
 
   def stop(): Unit =
-    logger.info("Stopping MulticastTransport")
+    logger.debug("Stopping MulticastTransport")
     if thread != null then
       thread.interrupt()
       thread = null

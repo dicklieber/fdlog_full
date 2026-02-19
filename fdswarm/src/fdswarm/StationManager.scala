@@ -22,9 +22,11 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.io.DirectoryProvider
 import fdswarm.model.{Callsign, Station}
 import jakarta.inject.{Inject, Singleton}
+import _root_.io.circe.Printer
+import _root_.io.circe.parser.decode
+import _root_.io.circe.syntax.*
 import scalafx.beans.property.ObjectProperty
 import scalafx.event.subscriptions.Subscription
-import upickle.default.*
 
 @Singleton
 final class StationManager @Inject()(
@@ -51,14 +53,21 @@ final class StationManager @Inject()(
 
   // ---- persistence ----------------------------------------------------------
 
+  private val printer: Printer = Printer.spaces2.copy(dropNullValues = true)
+
   private def persist(): Unit =
-    val json = write(station, indent = 2)
+    val json = printer.print(station.asJson)
     os.write.over(file, json, createFolders = true)
 
   private def load(): Station =
     try {
+      if !os.exists(file) then return Station("", "", Callsign(""))
       val sJson = os.read(file)
-      read[Station](sJson)
+      decode[Station](sJson) match
+        case Right(st) => st
+        case Left(error) =>
+          logger.error(s"Failed to decode Station from $file: ${error.getMessage}")
+          Station("", "", Callsign(""))
     }
     catch
       case e: Throwable =>
@@ -67,7 +76,7 @@ final class StationManager @Inject()(
 
 /*
   def pane(): Pane =
-    logger.info(s"Creating station form for $station")
+    logger.debug(s"Creating station form for $station")
     val myCaseForm = MyCaseForm[Station](station)
     logger.trace("New station result will be handled by container")
     myCaseForm.pane()*/
