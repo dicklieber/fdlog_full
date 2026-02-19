@@ -31,7 +31,9 @@ import sttp.tapir.server.ServerEndpoint
 
 /** Tapir endpoints for QSOs. */
 final class QsoEndpoints @Inject()(qsoStore: QsoStore,
-                                   registry: PrometheusMeterRegistry):
+                                   registry: PrometheusMeterRegistry) extends ApiEndpoints:
+
+  override def endpoints: List[ServerEndpoint[Any, IO]] = List(allQsos)
 
   /**
     * GET /qsos – returns all QSOs as JSON and sets headers to download as an attachment.

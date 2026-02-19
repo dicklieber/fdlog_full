@@ -26,7 +26,8 @@ import sttp.tapir.CodecFormat
 import sttp.tapir.server.ServerEndpoint
 
 
-class MetricsEndpoints @Inject()(registry: PrometheusMeterRegistry) :
+class MetricsEndpoints @Inject()(registry: PrometheusMeterRegistry) extends ApiEndpoints:
+  override def endpoints: List[ServerEndpoint[Any, IO]] = List(metrics)
   val metrics: ServerEndpoint[Any, IO] =
     endpoint
       .get

@@ -30,20 +30,17 @@ import org.http4s.HttpApp
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import com.comcast.ip4s.{Host, Port}
 
-/** Simple HTTP API service backed by http4s + tapir. */
-@Singleton
-final class HttpApi @Inject()(qsoEndpoints: QsoEndpoints,
-                              hostAndPortProvider: HostAndPortProvider,
-                              metricsEndpoints: MetricsEndpoints)
-  extends LazyLogging:
+import scala.jdk.CollectionConverters.*
 
-  private def httpApp: HttpApp[IO] =
-    val routes = Http4sServerInterpreter[IO]().toRoutes(
-      List(qsoEndpoints.allQsos, metricsEndpoints.metrics) //todogther these somehow
-    )
-    val app = Router("/" -> routes).orNotFound
-    // Log requests/responses at info level
-    Http4sLogger.httpApp(logHeaders = true, logBody = false)(app)
+/**
+ *
+ * @param apiEndpoints as collected by [[AutoBind]] in [[ConfigModule]].
+ * @param hostAndPortProvider our ports and hostnames.
+ */
+@Singleton
+final class HttpApi @Inject()(apiEndpoints: java.util.Set[ApiEndpoints],
+                              hostAndPortProvider: HostAndPortProvider)
+  extends LazyLogging:
 
   /** Starts the HTTP server on a daemon thread. */
   def start(): Unit =
@@ -59,13 +56,19 @@ final class HttpApi @Inject()(qsoEndpoints: QsoEndpoints,
 
     val t = new Thread(() =>
       // keep running until JVM exits
-      try {
+      try
         serverResource.useForever.unsafeRunSync()
-      } catch {
+      catch
         case e: Throwable =>
           logger.error("HTTP API server failed", e)
-      }
     )
     t.setName("fdlog-http-api")
     t.setDaemon(true)
     t.start()
+
+  private def httpApp: HttpApp[IO] =
+    val endpoints = apiEndpoints.asScala.flatMap(_.endpoints).toList
+    val routes = Http4sServerInterpreter[IO]().toRoutes(endpoints)
+    val app = Router("/" -> routes).orNotFound
+    // Log requests/responses at info level
+    Http4sLogger.httpApp(logHeaders = true, logBody = false)(app)

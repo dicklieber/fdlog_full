@@ -19,16 +19,16 @@
 
 package fdswarm.fx
 
-import _root_.io.github.classgraph.{ClassGraph, ClassInfoList}
 import com.google.inject.AbstractModule
 import com.google.inject.name.Names
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.AutoBind
+import fdswarm.api.ApiEndpoints
 import fdswarm.io.{DirectoryProvider, ProductionDirectory}
-import fdswarm.replication.MulticastTransport
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
-import net.codingwell.scalaguice.{ScalaModule, ScalaMultibinder}
+import net.codingwell.scalaguice.ScalaModule
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
@@ -40,30 +40,22 @@ class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
   override def configure(): Unit =
 
     // scan only where your implementations live
-    val pkgs = Seq("sarasec")
+    val pkgs = Seq("fdswarm.api")
 
-    // unnamed set (inject with java.util.Set[Plugin])
-//    AutoBind.bindAllImplementationsOf[EndPointSource](
-//      binder = binder(),
-//      packagesOnly = pkgs,
-//      named = None, // or Some("plugins") for a named set
-//      asSingleton = true // optional
-//    )
+    // unnamed set (inject with java.util.Set[ApiEndpoints])
+    AutoBind.bindAllImplementationsOf[ApiEndpoints](
+      binder = binder(),
+      packagesOnly = pkgs,
+      named = None,
+      asSingleton = true
+    )
 
-//    bind[TickerApi].to[Ticker].asEagerSingleton()
-//    bind[FilesManager].toInstance(new FilesManager(None))
-      bind[DirectoryProvider].toInstance(new ProductionDirectory)
+    bind[DirectoryProvider].toInstance(new ProductionDirectory)
     bind[MeterRegistry].to[PrometheusMeterRegistry].asEagerSingleton()
     bind[PrometheusMeterRegistry].toInstance(new PrometheusMeterRegistry(io.micrometer.prometheusmetrics.PrometheusConfig.DEFAULT))
-    //primaryConfig is config/sarasec.conf, overrides the defaults in application.conf (resource)
     val primaryConfig = ConfigFactory.parseFile((os.pwd / "config" / "sarasec.conf").toIO)
     val defaultConfig: Config = ConfigFactory.load()
-    var config: Config = primaryConfig.withFallback(defaultConfig)
-
-//    // Override port with PORT env var if present
-//    sys.env.get("PORT").foreach { p =>
-//      config = ConfigFactory.parseString(s"fdswarm.port = $p").withFallback(config)
-//    }
+    val config: Config = primaryConfig.withFallback(defaultConfig)
 
     val entries = config.entrySet().asScala.toSeq
     for (entry <- entries) {
@@ -104,7 +96,7 @@ class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
 
     // Optionally bind the entire config too
     bind[Config].toInstance(config)
-   
+
 
 object ConfigModule:
   given Conversion[String, os.Path] = (in: String) => os.Path(in)
