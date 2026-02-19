@@ -35,7 +35,7 @@ import scala.collection.concurrent.TrieMap
  * Its just a LocalDateTime with only any hour.
  *
  */
-case class FdHour private(day: Int, hour: Int) extends Ordered[FdHour] derives ReadWriter, Codec.AsObject:
+case class FdHour private(day: Int, hour: Int) extends Ordered[FdHour]:
   override val toString: String =
     s"$day:$hour"
   val toolTip: String = s"utc date: $day hour: $hour"
@@ -88,18 +88,12 @@ object FdHour extends LazyLogging:
     str match
       case r(sDay, shour)=>
         FdHour(sDay.toInt, shour.toInt)
-      case x => 
+      case x =>
         throw new IllegalArgumentException(s"Cannot parse $x as FdHour")
-//
-//  given QueryParamReader[FdHour] with
-//    def arity: Int = 1
-//
-//    def read(ctx: Request, label: String, v: Seq[String]): FdHour =
-//      v match
-//        case Seq(s) => FdHour(s)
-//        case Nil =>
-//          throw new IllegalArgumentException(s"Missing parameter '$label'")
-//        case xs =>
-//          throw new IllegalArgumentException(
-//            s"Expected 1 value for '$label', got ${xs.size}"
-//          )
+
+  given Codec[FdHour] = Codec.from(
+    io.circe.Decoder.decodeString.map(FdHour.apply),
+    io.circe.Encoder.encodeString.contramap(_.toString)
+  )
+
+  given ReadWriter[FdHour] = readwriter[String].bimap(_.toString, FdHour.apply)

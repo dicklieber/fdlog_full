@@ -21,18 +21,18 @@ package fdswarm.fx.tools
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.qso.FdHour
 import fdswarm.store.QsoStore
-import fdswarm.util.HostAndPort
+import io.circe.syntax.*
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
 import scalafx.geometry.Insets
 import scalafx.scene.control.*
 import scalafx.scene.layout.FlowPane
 import scalafx.stage.Window
+
 import java.net.URI
-import java.net.http.{HttpClient, HttpRequest, HttpResponse}
 import java.net.http.HttpRequest.BodyPublishers
 import java.net.http.HttpResponse.BodyHandlers
-import upickle.default.*
+import java.net.http.{HttpClient, HttpRequest}
 
 @Singleton
 final class FdHourDialogService @Inject() (
@@ -80,7 +80,7 @@ final class FdHourDialogService @Inject() (
     val apiPort = networkConfig.url.getPort
     val apiHost = networkConfig.url.getHost
     val url = s"http://$apiHost:$apiPort/hourIds"
-    val json = write(Seq(fdHour))
+    val json = Seq(fdHour).asJson.noSpaces
     logger.debug(s"Sending FdHour $fdHour to $url via HTTP POST")
     try
       val request = HttpRequest.newBuilder()
