@@ -18,9 +18,25 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo {
   val log4jV = "2.24.2"
 
   def scalaVersion = "3.7.4"
-  def scalacOptions = Seq("-feature", "-deprecation")
 
-  def mainClass = Some("fdswarm.FdLogApp")
+  def scalacOptions = Seq("-feature", "-deprecation", "-Wconf:msg=Implicit parameters should be provided with a `using` clause:s")
+
+  def mainClass = Some("fdswarm.Main")
+
+  override def forkArgs = Task {
+    val cp = runClasspath()
+    val jfxJars = cp.filter(p => p.path.toString.contains("openjfx") && p.path.ext == "jar")
+    if (jfxJars.isEmpty) {
+      Seq.empty[String]
+    } else {
+      val modulePath = jfxJars.map(_.path.toIO.getAbsolutePath).mkString(java.io.File.pathSeparator)
+      val modules = Seq("javafx.controls", "javafx.graphics", "javafx.base", "javafx.media", "javafx.web")
+      Seq(
+        "--module-path", modulePath,
+        "--add-modules", modules.mkString(",")
+      )
+    }
+  }
 
   def buildInfoPackageName = "com.organization"
 
@@ -53,7 +69,7 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo {
     mvn"io.github.classgraph:classgraph:4.8.179",
     mvn"net.codingwell::scala-guice:7.0.0",
 
-//    mvn"com.lihaoyi::cask:0.11.3",
+    //    mvn"com.lihaoyi::cask:0.11.3",
     mvn"com.lihaoyi::upickle:4.4.2",
     mvn"com.lihaoyi::os-lib:0.11.6",
     mvn"com.lihaoyi::scalatags:0.13.1",
@@ -65,6 +81,12 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo {
     mvn"io.circe::circe-core:0.14.10",
     mvn"io.circe::circe-generic:0.14.10",
     mvn"io.circe::circe-parser:0.14.10",
+
+    mvn"com.softwaremill.sttp.tapir:tapir-core_3:1.13.8",
+    mvn"com.softwaremill.sttp.tapir:tapir-http4s-server_3:1.13.8",
+    mvn"org.http4s:http4s-ember-server_3:0.23.33",
+    mvn"org.http4s:http4s-dsl_3:0.23.33",
+    mvn"org.typelevel:cats-effect_3:3.5.7",
 
     mvn"org.scalafx:scalafx_3:23.0.1-R34",
 
