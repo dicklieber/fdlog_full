@@ -18,7 +18,8 @@
 
 package fdswarm.model
 import upickle.default.*
+import io.circe.Codec
 
-case class StationClass(letter:Char, description:String) derives ReadWriter
+case class StationClass(letter:Char, description:String) derives ReadWriter, Codec.AsObject
 
 

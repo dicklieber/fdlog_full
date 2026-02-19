@@ -20,6 +20,7 @@ package fdswarm.model
 
 import fdswarm.fx.bands.HamBand
 import upickle.default.*
+import io.circe.Codec
 import fdswarm.fx.caseForm.ChoiceField
 
 /** Persistable representation of Station.
@@ -34,7 +35,7 @@ final case class StationPersisted(
                                    rig:      String,
                                    antenna:  String,
                                    operator: Callsign
-                                 ) derives ReadWriter
+                                 ) derives ReadWriter, Codec.AsObject
 
 object StationPersisted:
 

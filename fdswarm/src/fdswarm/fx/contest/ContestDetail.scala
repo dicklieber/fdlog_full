@@ -21,7 +21,7 @@ package fdswarm.fx.contest
 import fdswarm.{ContestDateCalculator, ContestDates}
 import upickle.default.*
 import io.circe.Codec
-import fdswarm.util.JavaTimePickle.given_ReadWriter_ZonedDateTime
+import fdswarm.util.JavaTimePickle.given
 
 import java.time.*
 
@@ -39,8 +39,8 @@ enum ContestType(val compute: Int => ContestDates) derives ReadWriter, Codec.AsO
  */
 case class ContestConfig(contest:ContestType,
                          start:ZonedDateTime,
-                         end:ZonedDateTime) derives ReadWriter
+                         end:ZonedDateTime) derives ReadWriter, Codec.AsObject
 case class ContestDetail(contest:ContestType,
                          start:ZonedDateTime,
                          end:ZonedDateTime,
-                         classChars: String)
+                          classChars: String) derives ReadWriter, Codec.AsObject

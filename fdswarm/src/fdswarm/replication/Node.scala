@@ -20,8 +20,9 @@ package fdswarm.replication
 
 import fdswarm.fx.contest.ContestConfig
 import fdswarm.model.Callsign
-import fdswarm.util.JavaTimePickle.given
 import upickle.default.*
+import io.circe.Codec
+import fdswarm.util.JavaTimePickle.given
 import java.net.URL
 
 /**
@@ -32,4 +33,4 @@ import java.net.URL
  */
 case class Node(url: URL,
                 contestConfig: ContestConfig,
-                ourStation: Callsign) derives ReadWriter
+                ourStation: Callsign) derives ReadWriter, Codec.AsObject

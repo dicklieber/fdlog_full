@@ -19,6 +19,7 @@
 package fdswarm.util
 
 import upickle.default.*
+import io.circe.*
 
 import java.time.format.{DateTimeFormatter, DateTimeFormatterBuilder}
 import java.time.*
@@ -30,29 +31,39 @@ object JavaTimePickle:
     _.toExternalForm,
     s => URI.create(s).toURL
   )
+  given Encoder[URL] = Encoder.encodeString.contramap(_.toExternalForm)
+  given Decoder[URL] = Decoder.decodeString.map(s => URI.create(s).toURL)
 
   given localTimeRW: ReadWriter[LocalTime] = readwriter[String].bimap[LocalTime](
     time => time.format(DateTimeFormatter.ISO_LOCAL_TIME), // Serialize as String
     str => LocalTime.parse(str, DateTimeFormatter.ISO_LOCAL_TIME) // Deserialize back
   )
+  given Encoder[LocalTime] = Encoder.encodeString.contramap(_.format(DateTimeFormatter.ISO_LOCAL_TIME))
+  given Decoder[LocalTime] = Decoder.decodeString.map(LocalTime.parse(_, DateTimeFormatter.ISO_LOCAL_TIME))
 
   given ReadWriter[LocalDate] = readwriter[String]
     .bimap[LocalDate](
       _.format(DateTimeFormatter.ISO_LOCAL_DATE),
       LocalDate.parse
     )
+  given Encoder[LocalDate] = Encoder.encodeString.contramap(_.format(DateTimeFormatter.ISO_LOCAL_DATE))
+  given Decoder[LocalDate] = Decoder.decodeString.map(LocalDate.parse)
 
   given ReadWriter[LocalDateTime] = readwriter[String]
     .bimap[LocalDateTime](
       _.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
       LocalDateTime.parse
     )
+  given Encoder[LocalDateTime] = Encoder.encodeString.contramap(_.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
+  given Decoder[LocalDateTime] = Decoder.decodeString.map(LocalDateTime.parse)
 
   given ReadWriter[ZonedDateTime] = readwriter[String]
     .bimap[ZonedDateTime](
       _.format(DateTimeFormatter.ISO_ZONED_DATE_TIME),
       ZonedDateTime.parse
     )
+  given Encoder[ZonedDateTime] = Encoder.encodeString.contramap(_.format(DateTimeFormatter.ISO_ZONED_DATE_TIME))
+  given Decoder[ZonedDateTime] = Decoder.decodeString.map(ZonedDateTime.parse)
 
   private def formatter = new DateTimeFormatterBuilder()
     .appendInstant(2) // Limit fractional digits to 2 on write.
@@ -68,3 +79,5 @@ object JavaTimePickle:
       accessor
     }
   )
+  given Encoder[Instant] = Encoder.encodeString.contramap(formatter.format)
+  given Decoder[Instant] = Decoder.decodeString.map(Instant.parse)

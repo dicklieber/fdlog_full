@@ -21,7 +21,7 @@ package fdswarm.replication
 import fdswarm.store.FdHourDigest
 import fdswarm.util.HostAndPort
 import fdswarm.fx.qso.FdHour
-import upickle.default.*
+import io.circe.parser.decode
 import munit.FunSuite
 import java.io.ByteArrayInputStream
 import java.util.zip.GZIPInputStream
@@ -40,7 +40,7 @@ class StatusMessageTest extends FunSuite:
     val json = new String(gzis.readAllBytes(), "UTF-8")
     
     // Deserialize
-    val readSm = read[StatusMessage](json)
+    val readSm = decode[StatusMessage](json).toTry.get
     
     assertEquals(readSm, sm)
     assertEquals(readSm.hostAndPort, hp)

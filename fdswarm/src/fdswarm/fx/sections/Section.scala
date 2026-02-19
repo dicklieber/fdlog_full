@@ -22,10 +22,11 @@ import scalafx.beans.property.StringProperty
 import scalafx.geometry.Insets
 import scalafx.scene.control.{Label, OverrunStyle, Tooltip}
 import upickle.default.*
+import io.circe.Codec
 
-case class SectionGroup(name: String, sections: Seq[Section]) derives ReadWriter
+case class SectionGroup(name: String, sections: Seq[Section]) derives ReadWriter, Codec.AsObject
 
-case class Section(code: String, name: String) extends Label derives ReadWriter:
+case class Section(code: String, name: String) extends Label derives ReadWriter, Codec.AsObject:
   text = code
   tooltip = Tooltip(name)
   padding = Insets(2, 4, 2, 4)

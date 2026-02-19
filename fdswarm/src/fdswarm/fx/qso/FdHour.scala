@@ -19,9 +19,9 @@
 
 package fdswarm.fx.qso
 
-import cask.endpoints.QueryParamReader
-import cask.model.Request
-import cask.router.ArgReader
+//import cask.endpoints.QueryParamReader
+//import cask.model.Request
+//import cask.router.ArgReader
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.PropertyCellName
 import upickle.default.*
@@ -90,16 +90,16 @@ object FdHour extends LazyLogging:
         FdHour(sDay.toInt, shour.toInt)
       case x => 
         throw new IllegalArgumentException(s"Cannot parse $x as FdHour")
-
-  given QueryParamReader[FdHour] with
-    def arity: Int = 1
-
-    def read(ctx: Request, label: String, v: Seq[String]): FdHour =
-      v match
-        case Seq(s) => FdHour(s)
-        case Nil =>
-          throw new IllegalArgumentException(s"Missing parameter '$label'")
-        case xs =>
-          throw new IllegalArgumentException(
-            s"Expected 1 value for '$label', got ${xs.size}"
-          )
+//
+//  given QueryParamReader[FdHour] with
+//    def arity: Int = 1
+//
+//    def read(ctx: Request, label: String, v: Seq[String]): FdHour =
+//      v match
+//        case Seq(s) => FdHour(s)
+//        case Nil =>
+//          throw new IllegalArgumentException(s"Missing parameter '$label'")
+//        case xs =>
+//          throw new IllegalArgumentException(
+//            s"Expected 1 value for '$label', got ${xs.size}"
+//          )

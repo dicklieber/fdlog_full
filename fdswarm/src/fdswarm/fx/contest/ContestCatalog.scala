@@ -21,16 +21,17 @@ package fdswarm.fx.contest
 import com.typesafe.config.{Config, ConfigRenderOptions, ConfigValue}
 import jakarta.inject.{Inject, Singleton}
 import upickle.default.*
+import io.circe.Codec
 
 case class ContestClassChar(
                             ch: String,
                             description: String
-                          ) derives ReadWriter
+                          ) derives ReadWriter, Codec.AsObject
 
 case class Contest(
                     name: ContestType,
                     classChars: Seq[ContestClassChar]
-                  ) derives ReadWriter:
+                  ) derives ReadWriter, Codec.AsObject:
   def isValidClass(classChar: String): Boolean =
     classChars.exists(_.ch == classChar)
 

@@ -18,17 +18,16 @@
 
 package fdswarm.api
 
-import cask.*
 import com.google.inject.Inject
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 
-class MetricsRoutes @Inject()(registry: PrometheusMeterRegistry) extends Routes:
+//class MetricsRoutes @Inject()(registry: PrometheusMeterRegistry) extends Routes:
 
-  @get("/metrics")
-  def metrics(): Response[String] =
-    Response(
-      data = registry.scrape(),
-      headers = Seq("Content-Type" -> "text/plain; version=0.0.4")
-    )
-
-  initialize()
+//  @get("/metrics")
+//  def metrics(): Response[String] =
+//    Response(
+//      data = registry.scrape(),
+//      headers = Seq("Content-Type" -> "text/plain; version=0.0.4")
+//    )
+//
+//  initialize()
