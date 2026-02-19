@@ -56,21 +56,21 @@ object LoggingConfigurator:
     builder.add(accessFile)
 
     // Loggers
-    val loggers = Seq(
-      "fdlog.store.QsoStore",
-      "fdswarm.fx.qso.QsoEntryPanel",
-      "fdswarm.StationManager",
-      "fdswarm.fx.ConfigModule",
-      "fdswarm.replication.NodeStatusService",
-      "fdswarm.store.QsoStore",
-      "fdswarm.replication.NodeStatusSender",
-      "fdswarm.fx.tools.FdHourDialogService",
-      "fdswarm.api.QsoRoutes",
-      "fdswarm.replication.NodeStatusHandler"
+    val loggers = Map(
+      "fdlog.store.QsoStore" -> Level.INFO,
+      "fdswarm.fx.qso.QsoEntryPanel" -> Level.INFO,
+      "fdswarm.StationManager" -> Level.INFO,
+      "fdswarm.fx.ConfigModule" -> Level.INFO,
+      "fdswarm.replication.NodeStatusService" -> Level.INFO,
+      "fdswarm.store.QsoStore" -> Level.INFO,
+      "fdswarm.replication.NodeStatusSender" -> Level.INFO,
+      "fdswarm.fx.tools.FdHourDialogService" -> Level.INFO,
+      "fdswarm.api.QsoRoutes" -> Level.INFO,
+      "fdswarm.replication.NodeStatusHandler" -> Level.INFO
     )
 
-    loggers.foreach { name =>
-      builder.add(builder.newLogger(name, Level.INFO).addAttribute("additivity", true))
+    loggers.foreach { (name, level) =>
+      builder.add(builder.newLogger(name, level).addAttribute("additivity", true))
     }
 
     // Special logger for Access Log
