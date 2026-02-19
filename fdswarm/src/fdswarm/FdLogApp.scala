@@ -70,12 +70,9 @@ object FdLogApp extends JFXApp3 with LazyLogging:
     fdswarm.util.LoggingConfigurator.addFileAppender(directoryProvider)
     
     val ui = injector.instance[FdLogUi]
-  //    val apiService = injector.instance[ApiService]
-  //
-  //    // Start API service in a separate thread
-  //    val apiThread = new Thread(() => apiService.start())
-  //    apiThread.setDaemon(true)
-  //    apiThread.start()
+    // Start HTTP API service (http4s + tapir) in a background daemon thread
+    val apiService = injector.instance[fdswarm.api.HttpApi]
+    apiService.start()
 
     // Create the primary stage, let the UI configure it, then publish it
     val s = new JFXApp3.PrimaryStage

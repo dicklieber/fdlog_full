@@ -18,16 +18,21 @@
 
 package fdswarm.api
 
+import cats.effect.IO
 import com.google.inject.Inject
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import sttp.tapir.*
+import sttp.tapir.CodecFormat
+import sttp.tapir.server.ServerEndpoint
 
-//class MetricsRoutes @Inject()(registry: PrometheusMeterRegistry) extends Routes:
 
-//  @get("/metrics")
-//  def metrics(): Response[String] =
-//    Response(
-//      data = registry.scrape(),
-//      headers = Seq("Content-Type" -> "text/plain; version=0.0.4")
-//    )
-//
-//  initialize()
+class MetricsEndpoints @Inject()(registry: PrometheusMeterRegistry) :
+  val metrics: ServerEndpoint[Any, IO] =
+    endpoint
+      .get
+      .in("metrics")
+      .out(stringBody)
+      .serverLogicSuccess[IO] { _ =>
+        val metricsData = registry.scrape()
+        IO.pure(metricsData)
+      }
