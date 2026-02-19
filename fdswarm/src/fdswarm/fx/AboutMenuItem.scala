@@ -108,6 +108,17 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
     grid.add(new Label("Host:"), 0, 7)
     grid.add(new Label(hostAndPortProvider.http.toString), 1, 7)
 
+    val docsUrl = s"http://${hostAndPortProvider.http}/docs"
+    val docsLink = new Hyperlink(docsUrl):
+      onAction = _ =>
+        try
+          java.awt.Desktop.getDesktop.browse(new java.net.URI(docsUrl))
+        catch
+          case _: Throwable => ()
+
+    grid.add(new Label("API Docs:"), 0, 8)
+    grid.add(docsLink, 1, 8)
+
     val labels = grid.children.collect { case l: javafx.scene.control.Label => l }
     labels.foreach(_.getStyleClass.add("fixed-width"))
 

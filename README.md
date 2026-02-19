@@ -25,6 +25,9 @@ To generate an HTML coverage report:
 ```
 The report will be available at: `out/fdswarm/scoverage/htmlReport.dest/index.html`
 
+## Logging
+For information on how to configure and change log levels, see [docs/logging.md](docs/logging.md).
+
 Other coverage report formats:
 - **XML Report**: `./mill fdswarm.scoverage.xmlReport`
 - **Console Report**: `./mill fdswarm.scoverage.consoleReport`
