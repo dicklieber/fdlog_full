@@ -19,8 +19,8 @@
 package fdswarm.api
 
 import cats.effect.IO
-import fdswarm.model.Qso
-import fdswarm.store.{FdHourIds, QsoStore}
+import fdswarm.model.{Callsign, Qso}
+import fdswarm.store.{FdHourIds, FdHourQsos, FdHourRequest, QsoStore}
 import io.circe.syntax.*
 import io.circe.Printer
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
@@ -29,12 +29,16 @@ import sttp.tapir.*
 import sttp.tapir.CodecFormat
 import sttp.tapir.server.ServerEndpoint
 import fdswarm.fx.qso.FdHour
+import sttp.tapir.json.circe.*
+import sttp.tapir.generic.auto.*
+
+import java.time.Instant
 
 /** Tapir endpoints for QSOs. */
-final class QsoEndpoints @Inject()(qsoStore: QsoStore,
-                                   registry: PrometheusMeterRegistry) extends ApiEndpoints:
+final class ReplEndpoints @Inject()(qsoStore: QsoStore,
+                                    registry: PrometheusMeterRegistry) extends ApiEndpoints:
 
-  override def endpoints: List[ServerEndpoint[Any, IO]] = List(allQsos, qsoIdsByHour)
+  override def endpoints: List[ServerEndpoint[Any, IO]] = List(allQsos, qsoIdsByHour, qsosForIds)
 
   /**
     * GET /qsos – returns all QSOs as JSON and sets headers to download as an attachment.
@@ -61,12 +65,33 @@ final class QsoEndpoints @Inject()(qsoStore: QsoStore,
   val qsoIdsByHour: ServerEndpoint[Any, IO] =
     endpoint
       .get
-      .in("qsos" / path[String]("fdHour") / "ids")
+      .in("qsos" / path[String]("fdHour"))
       .out(stringBody)
       .out(header[String]("Content-Type"))
       .serverLogicSuccess[IO] { fdHourStr =>
         val fdHour = FdHour(fdHourStr)
-        val result = qsoStore.idsForHour(fdHour)
+        val result: FdHourIds = qsoStore.idsForHour(fdHour)
         val json = printer.print(result.asJson)
         IO.pure((json, "application/json"))
+      }
+
+  /**
+    * POST /qsosForIds – returns QSOs for the given IDs in an FdHourRequest.
+    */
+  val qsosForIds: ServerEndpoint[Any, IO] =
+    endpoint
+      .post
+      .in("qsosForIds")
+      .in(stringBody) 
+      .out(stringBody)
+      .out(header[String]("Content-Type"))
+      .serverLogicSuccess[IO] { requestJson =>
+        import io.circe.parser.decode
+        decode[FdHourRequest](requestJson) match {
+          case Right(request) =>
+            val result = qsoStore.qsosForIds(request)
+            IO.pure((printer.print(result.asJson), "application/json"))
+          case Left(error) =>
+            IO.raiseError(new Exception(s"Failed to decode FdHourRequest: ${error.getMessage}"))
+        }
       }

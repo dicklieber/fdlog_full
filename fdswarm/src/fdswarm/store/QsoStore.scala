@@ -138,6 +138,15 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
     val qsos = all.filter(_.fdHour == fdHour)
     qsos
 
+  def qsosForIds(request: FdHourRequest): FdHourQsos =
+    val qsos = if (request.specificQsos.isEmpty) {
+      qsosForFdHour(request.fdHour)
+    } else {
+      val ids = request.specificQsos.toSet
+      qsosForFdHour(request.fdHour).filter(qso => ids.contains(qso.uuid))
+    }
+    FdHourQsos(request.fdHour, qsos)
+
   /**
    * Thread-safe snapshot of all QSOs, sorted by stamp.
    * Prefer this over reading `qsoCollection` from non-JavaFX threads (e.g., Cask routes).

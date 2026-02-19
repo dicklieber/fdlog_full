@@ -31,7 +31,7 @@ import io.circe.Codec
  * @param count number of QSOs.
  * @param digest based on the [[Id]]s of the QSOs.
  */
-case class FdHourDigest(fdHour: FdHour, count: Int, digest: String ) extends Ordered[FdHourDigest] derives ReadWriter, Codec.AsObject:
+case class FdHourDigest(fdHour: FdHour, count: Int, digest: String ) extends Ordered[FdHourDigest] derives  Codec.AsObject:
   override def compare(that: FdHourDigest): Int = this.fdHour.compare(that.fdHour)
 
 object FdHourDigest:
@@ -50,10 +50,12 @@ object FdHourDigest:
  * @param fdHour for when.
  * @param specificQsos what we need. If [[Seq.empty]], all QSOs for the given hour are returned.
  */
-case class FdHourRequest(fdHour: FdHour, specificQsos: Seq[Id] = Seq.empty) derives ReadWriter, Codec.AsObject
+case class FdHourRequest(fdHour: FdHour, specificQsos: Seq[Id] = Seq.empty) derives  Codec.AsObject
 
 /**
  * @param fdHour for when
  * @param ids QSOs for the given hour, the the node has or that a node needs.
  */
-case class FdHourIds(fdHour: FdHour, ids:Seq[Id]) derives ReadWriter, Codec.AsObject
+case class FdHourIds(fdHour: FdHour, ids:Seq[Id]) derives  Codec.AsObject
+
+case class FdHourQsos(fdHour: FdHour, qsos:Seq[Qso]) derives  Codec.AsObject

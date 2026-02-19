@@ -68,3 +68,46 @@ class QsoStoreTest extends FunSuite:
     
     assertEquals(qsoStore.qsoCollection.isEmpty, true)
     assertEquals(qsoStore.digests().isEmpty, true)
+
+  test("qsosForIds should return all qsos for hour if specificQsos is empty"):
+    val registry = new SimpleMeterRegistry()
+    val qsoStore = QsoStore(testDirectory, registry)
+    val qso1 = Qso(callsign = Callsign("W9NNN"),
+      contestClass = "WFD",
+      bandMode = BandMode("20m", "CW"),
+      section = "IL",
+      qsoMetadata = testQsoMetadata
+    )
+    val qso2 = Qso(callsign = Callsign("K9OR"),
+      contestClass = "WFD",
+      bandMode = BandMode("40m", "SSB"),
+      section = "IL",
+      qsoMetadata = testQsoMetadata
+    )
+    qsoStore.add(Seq(qso1, qso2))
+
+    val request = FdHourRequest(qso1.fdHour, Seq.empty)
+    val result = qsoStore.qsosForIds(request)
+    assertEquals(result.fdHour, qso1.fdHour)
+    assertEquals(result.qsos.toSet, Set(qso1, qso2))
+
+  test("qsosForIds should return only requested qsos"):
+    val registry = new SimpleMeterRegistry()
+    val qsoStore = QsoStore(testDirectory, registry)
+    val qso1 = Qso(callsign = Callsign("W9NNN"),
+      contestClass = "WFD",
+      bandMode = BandMode("20m", "CW"),
+      section = "IL",
+      qsoMetadata = testQsoMetadata
+    )
+    val qso2 = Qso(callsign = Callsign("K9OR"),
+      contestClass = "WFD",
+      bandMode = BandMode("40m", "SSB"),
+      section = "IL",
+      qsoMetadata = testQsoMetadata
+    )
+    qsoStore.add(Seq(qso1, qso2))
+
+    val request = FdHourRequest(qso1.fdHour, Seq(qso1.uuid))
+    val result = qsoStore.qsosForIds(request)
+    assertEquals(result.qsos, Seq(qso1))
