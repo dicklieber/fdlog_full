@@ -62,8 +62,13 @@ object LoggingConfigurator:
     val loggersConfig = config.getConfig("loggers")
     
     loggersConfig.entrySet().asScala.foreach { entry =>
-      val name = entry.getKey
-      val levelStr = loggersConfig.getString(name)
+      val rawName = entry.getKey
+      // Remove surrounding quotes if they exist (Typesafe Config may include them for dotted keys)
+      val name = if (rawName.startsWith("\"") && rawName.endsWith("\"")) then
+                   rawName.substring(1, rawName.length - 1)
+                 else rawName
+      
+      val levelStr = loggersConfig.getString(rawName)
       val level = Level.toLevel(levelStr, Level.INFO)
       builder.add(builder.newLogger(name, level).addAttribute("additivity", true))
     }
