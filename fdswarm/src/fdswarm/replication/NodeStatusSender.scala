@@ -18,14 +18,9 @@
 
 package fdswarm.replication
 
-import com.google.inject.{Inject, Singleton}
-import com.google.inject.name.Named
+import com.google.inject.Singleton
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.store.QsoStore
-import fdswarm.util.{HostAndPort, HostAndPortProvider}
-
-import java.net.{DatagramPacket, DatagramSocket, InetAddress}
-import scala.compiletime.uninitialized
+import jakarta.inject.Inject
 
 
 /**
@@ -40,42 +35,11 @@ import scala.compiletime.uninitialized
  * one */
 @Singleton
 class NodeStatusSender @Inject()(
-                                  qsoStore: QsoStore,
-                                  multicastTransport: MulticastTransport,
-                                  hostAndPortProvider: HostAndPortProvider,
-                                  @Named("fdswarm.broadcastPeriodSec") broadcastPeriodSec: Int
+                                  statusBroadcastService: StatusBroadcastService
                                 ) extends LazyLogging:
-  var maybeThread:Option[Thread] = None
 
   def start(): Unit =
-    logger.debug(s"Starting NodeStatusSender (every $broadcastPeriodSec)")
-
-    val t = new Thread(() =>
-      while !Thread.currentThread().isInterrupted do
-        try
-          val statusMessage = StatusMessage(
-            hostAndPort = hostAndPortProvider.http,
-            fdDigests = qsoStore.digests())
-          logger.trace(s"Broadcasting: $statusMessage")
-          val gzipBytes = statusMessage.toPacket
-          val bytes = UDPHeader(Service.Status, gzipBytes)
-          multicastTransport.send(bytes)
-        catch
-          case _: InterruptedException => Thread.currentThread().interrupt()
-          case e: Exception =>
-            logger.error("Error broadcasting node status", e)
-
-        if !Thread.currentThread().isInterrupted then
-          try
-            Thread.sleep(broadcastPeriodSec * 1000L)
-          catch
-            case _: InterruptedException => Thread.currentThread().interrupt()
-      , "NodeStatus-Broadcaster")
-    t.setDaemon(true)
-    t.start()
-    maybeThread = Some(t)
+    statusBroadcastService.start()
 
   def stop(): Unit =
-    logger.debug("Stopping NodeStatusSender")
-    maybeThread.foreach(_.interrupt())
-    maybeThread = None
+    statusBroadcastService.stop()

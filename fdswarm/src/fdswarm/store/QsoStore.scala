@@ -35,7 +35,7 @@ import scala.collection.concurrent.TrieMap
 class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRegistry) extends LazyLogging:
   val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()
   private val journalFile = directoryProvider() / "qsosJournal.json"
-  private val map: TrieMap[Id, Qso] = new TrieMap
+  protected val map: TrieMap[Id, Qso] = new TrieMap
   private val buildDigestsTimer = Timer.builder("fdlog.build.hour.digests")
     .description("Time taken to build FD hour digests")
     .register(registry)

@@ -53,8 +53,8 @@ class NodeStatusHandlerTest extends FunSuite:
       override val http = myHostAndPort
     }
     
-    val remoteEndpointCaller = new RemoteEndpointCaller
-    val neededRequester = new StatusProcessor(replicationSupport, remoteEndpointCaller)
+    val remoteEndpointCaller = new CallEndpoint
+    val neededRequester = new StatusProcessor(replicationSupport, null, remoteEndpointCaller)
     val handler = new NodeStatusHandler(replicationSupport, neededRequester, transport, hostAndPortProvider, new SwarmStatus)
     
     // Create a status message from "myself"
@@ -77,10 +77,10 @@ class NodeStatusHandlerTest extends FunSuite:
   test("NodeStatusHandler processes status messages from other nodes"):
     val registry = new SimpleMeterRegistry()
     class TestReplicationSupport extends ReplicationSupport(new DirectoryProvider { override def apply(): os.Path = os.temp.dir() }, registry):
-      var determineNeededCalled = false
-      override def handleStatusMessage(status: StatusMessage): cats.effect.IO[Seq[fdswarm.store.FdHourIds]] = {
-        determineNeededCalled = true
-        super.handleStatusMessage(status)
+      var isFdHourNeededCalled = false
+      override def isFdHourNeeded(fdHourDigest: FdHourDigest): Option[FdHour] = {
+        isFdHourNeededCalled = true
+        super.isFdHourNeeded(fdHourDigest)
       }
     val replicationSupport = new TestReplicationSupport
     
@@ -93,8 +93,8 @@ class NodeStatusHandlerTest extends FunSuite:
       override val http = myHostAndPort
     }
     
-    val remoteEndpointCaller = new RemoteEndpointCaller
-    val neededRequester = new StatusProcessor(replicationSupport, remoteEndpointCaller)
+    val remoteEndpointCaller = new CallEndpoint
+    val neededRequester = new StatusProcessor(replicationSupport, null, remoteEndpointCaller)
     val handler = new NodeStatusHandler(replicationSupport, neededRequester, transport, hostAndPortProvider, new SwarmStatus)
     
     // Create a status message from "someone else" with one FdHour
@@ -110,8 +110,8 @@ class NodeStatusHandlerTest extends FunSuite:
     // Wait a bit for processing
     Thread.sleep(500)
     
-    // Verify determineNeeded WAS called (via NeededRequester)
-    assert(replicationSupport.determineNeededCalled, "determineNeeded SHOULD have been called for other node's message")
+    // Verify isFdHourNeeded WAS called (via StatusProcessor)
+    assert(replicationSupport.isFdHourNeededCalled, "isFdHourNeeded SHOULD have been called for other node's message")
     
     handler.stop()
     transport.stop()

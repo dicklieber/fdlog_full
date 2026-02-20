@@ -139,10 +139,7 @@ class QsoStoreTest extends FunSuite:
     // Actually FdHourDigest is per FdHour.
     val remoteDigest = FdHourDigest(qso1.fdHour, Seq(qso1, qso2))
 
-    val status = StatusMessage(HostAndPort("localhost", 1234), Seq(remoteDigest))
+    val needed = replicationSupport.isFdHourNeeded(remoteDigest)
 
-    val needed = replicationSupport.handleStatusMessage(status).unsafeRunSync()
-
-    assertEquals(needed.size, 1)
-    assertEquals(needed.head.fdHour, qso1.fdHour)
-    assertEquals(needed.head.ids, Seq(qso1.uuid))
+    assert(needed.isDefined)
+    assertEquals(needed.get, qso1.fdHour)

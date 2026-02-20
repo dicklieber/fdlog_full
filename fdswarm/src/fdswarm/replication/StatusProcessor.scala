@@ -23,7 +23,8 @@ import cats.syntax.all.*
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.api.ReplEndpoints
 import fdswarm.fx.qso.FdHour
-import fdswarm.store.{FdHourRequest, ReplicationSupport}
+import fdswarm.store.{FdHourIds, FdHourRequest, ReplicationSupport}
+import fdswarm.util.HostAndPort
 import jakarta.inject.{Inject, Singleton}
 
 /**
@@ -32,7 +33,8 @@ import jakarta.inject.{Inject, Singleton}
  */
 @Singleton
 class StatusProcessor @Inject()(qsoStore: ReplicationSupport,
-                                remoteEndpointCaller: RemoteEndpointCaller) extends LazyLogging:
+                                replEndpoints: ReplEndpoints,
+                                callEndpoint: CallEndpoint) extends LazyLogging:
 
 
   /**
@@ -43,18 +45,27 @@ class StatusProcessor @Inject()(qsoStore: ReplicationSupport,
    * @return IO completing after the HTTP call finishes
    */
   def processStatus(status: StatusMessage): IO[Unit] =
-    for
-      neededIds <- qsoStore.handleStatusMessage(status) // IO[Seq[FdHourIds]]
-      neededHours: Seq[FdHour] = neededIds.map(_.fdHour) // Seq[FdHour]
-      remoteFdHourIds <- neededHours.toList.traverse: fdHour =>
-        remoteEndpointCaller.callRemoteEndpoint(status.hostAndPort, ReplEndpoints.qsoIdsByHourPostDef, fdHour)
-      _ <- remoteFdHourIds.traverse: remoteIds =>
-        for
-          missing <- qsoStore.missingIds(remoteIds)
-          _ <- if missing.nonEmpty then
-            val request = FdHourRequest(remoteIds.fdHour, missing)
-            remoteEndpointCaller.callRemoteEndpoint(status.hostAndPort, ReplEndpoints.qsosForIdsDef, request).flatMap: response =>
-              qsoStore.addQsos(response.qsos)
-          else IO.unit
-        yield ()
-    yield ()
+    given HostAndPort = status.hostAndPort
+    logger.debug(s"Processing status from ${status.hostAndPort}")
+    status.fdDigests.traverse_ { fdHourDigest =>
+      qsoStore.isFdHourNeeded(fdHourDigest) match
+        case Some(fdHour) =>
+          for
+            // 1. Ask remote for all IDs in this hour
+            remoteIds <- callEndpoint(ReplEndpoints.qsoIdsByHourGetDef, fdHour)
+            
+            // 2. Check locally which ones we don't have
+            missingIds <- qsoStore.missingIds(FdHourIds(fdHour, remoteIds))
+            
+            // 3. If any are missing, fetch the actual QSOs
+            _ <- if (missingIds.nonEmpty) then
+              for
+                remoteQsos <- callEndpoint(ReplEndpoints.qsosForIdsDef, FdHourRequest(fdHour, missingIds))
+                _ <- qsoStore.addQsos(remoteQsos)
+              yield ()
+            else IO.unit
+            
+          yield ()
+        case None => IO.unit
+    }
+  

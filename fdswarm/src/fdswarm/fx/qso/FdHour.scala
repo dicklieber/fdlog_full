@@ -96,3 +96,5 @@ object FdHour extends LazyLogging:
   )
 
   given sttp.tapir.Schema[FdHour] = sttp.tapir.Schema.string
+  given sttp.tapir.Codec[String, FdHour, sttp.tapir.CodecFormat.TextPlain] =
+    sttp.tapir.Codec.string.map((s: String) => FdHour.apply(s))(_.toString)

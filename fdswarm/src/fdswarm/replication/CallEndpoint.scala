@@ -28,7 +28,7 @@ import org.http4s.ember.client.EmberClientBuilder
 import sttp.tapir.client.http4s.Http4sClientInterpreter
 
 @Singleton
-class RemoteEndpointCaller extends LazyLogging:
+class CallEndpoint extends LazyLogging:
 
   private val maxRetries = 3
   private val retryDelay = 2.seconds
@@ -39,7 +39,7 @@ class RemoteEndpointCaller extends LazyLogging:
    * it during test initialization when it's not needed, preventing NoClassDefFoundError
    * if the client dependency isn't on the test runtime classpath.
    */
-  def callRemoteEndpoint[I, E, O](hostAndPort: HostAndPort, endpoint: sttp.tapir.PublicEndpoint[I, E, O, Any], input: I): IO[O] =
+  def apply[I, E, O]( endpoint: sttp.tapir.PublicEndpoint[I, E, O, Any], input: I)(using hostAndPort: HostAndPort): IO[O] =
     val baseUri = Uri(
       scheme = Some(Uri.Scheme.http),
       authority = Some(Uri.Authority(

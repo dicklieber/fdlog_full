@@ -19,6 +19,7 @@
 package fdswarm.store
 
 import cats.effect.IO
+import cats.syntax.all.*
 import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
 import fdswarm.replication.StatusMessage
@@ -32,24 +33,20 @@ import jakarta.inject.{Inject, Singleton}
  */
 @Singleton
 class ReplicationSupport @Inject()(directoryProvider: DirectoryProvider, registry: MeterRegistry) extends QsoStore(directoryProvider, registry):
+  /**
+   * 
+   * @param statusMessage from a remote node
+   * @return FdHours that need to be replicated.
+   */
+  def isFdHourNeeded(fdHourDigest: FdHourDigest): Option[FdHour] =
+    val fdHour = fdHourDigest.fdHour
+    internalDigests.get(fdHour) match
+      case Some(haveDigest) => 
+        Option.when(haveDigest != fdHourDigest){fdHour}
+      case None => 
+        // If we don't have the FdourDIgest]], we need it.
+        Option(fdHour)
 
-  def handleStatusMessage(status: StatusMessage): IO[Seq[FdHourIds]] =
-    val incoming = status.fdDigests
-    val cpy: Map[FdHour, FdHourDigest] = internalDigests
-    val neededFdHours = incoming.flatMap { remoteFdHourDigest =>
-      val remoteFdHour = remoteFdHourDigest.fdHour
-      cpy.get(remoteFdHour) match
-        // we have one, is it the same?
-        case Some(localFdDigest) =>
-          Option.when(localFdDigest != remoteFdHourDigest) {
-            remoteFdHour
-          }
-        case None => // we don't have it yet, so we need it.
-          Some(remoteFdHour)
-    }
-
-    import cats.implicits.*
-    neededFdHours.traverse(idsForHour)
 
   def idsForHour(fdHour: FdHour): IO[FdHourIds] =
     IO {
@@ -57,10 +54,12 @@ class ReplicationSupport @Inject()(directoryProvider: DirectoryProvider, registr
       FdHourIds(fdHour, ids)
     }
 
+  def doWeHaveQso(uuid:Id): IO[Boolean] =
+    IO(map.contains(uuid))
+
   def missingIds(remote: FdHourIds): IO[Seq[Id]] =
-    idsForHour(remote.fdHour).map { local =>
-      val localIds = local.ids.toSet
-      remote.ids.filterNot(localIds.contains)
+    remote.ids.filterA { id =>
+      doWeHaveQso(id).map(!_)
     }
 
   def addQsos(qsos: Seq[fdswarm.model.Qso]): IO[Unit] =

@@ -21,6 +21,7 @@ package fdswarm.api
 import cats.effect.IO
 import fdswarm.model.{Callsign, Qso}
 import fdswarm.store.{FdHourIds, FdHourQsos, FdHourRequest, QsoStore, ReplicationSupport}
+import fdswarm.util.Ids.Id
 import io.circe.syntax.*
 import io.circe.Printer
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
@@ -38,33 +39,22 @@ import java.time.Instant
 final class ReplEndpoints @Inject()(replicationSupport: ReplicationSupport,
                                     registry: PrometheusMeterRegistry) extends ApiEndpoints:
 
-  override def endpoints: List[ServerEndpoint[Any, IO]] = List(allQsos, qsoIdsByHour, qsosForIds, qsoIdsByHourPost, neededFdHours)
-
   private val printer: Printer = Printer.spaces2.copy(dropNullValues = true)
 
-  val allQsos: ServerEndpoint[Any, IO] =
-    ReplEndpoints.allQsosDef
-      .serverLogicSuccess[IO] { _ =>
-        IO.pure((replicationSupport.all, "application/json", "attachment; filename=qsos.json"))
-      }
+  override def endpoints: List[ServerEndpoint[Any, IO]] = List( qsosForIds, qsoIdsForFdHour, neededFdHours)
 
-  val qsoIdsByHour: ServerEndpoint[Any, IO] =
-    ReplEndpoints.qsoIdsByHourDef
-      .serverLogicSuccess[IO] { fdHourStr =>
-        val fdHour = FdHour(fdHourStr)
-        replicationSupport.idsForHour(fdHour)
-      }
 
-  val qsoIdsByHourPost: ServerEndpoint[Any, IO] =
-    ReplEndpoints.qsoIdsByHourPostDef
+
+  val qsoIdsForFdHour: ServerEndpoint[Any, IO] =
+    ReplEndpoints.qsoIdsByHourGetDef
       .serverLogicSuccess[IO] { fdHour =>
-        replicationSupport.idsForHour(fdHour)
+        replicationSupport.idsForHour(fdHour).map(_.ids)
       }
 
   val qsosForIds: ServerEndpoint[Any, IO] =
     ReplEndpoints.qsosForIdsDef
       .serverLogicSuccess[IO] { request =>
-        replicationSupport.qsosForIds(request)
+        replicationSupport.qsosForIds(request).map(_.qsos)
       }
 
   val neededFdHours: ServerEndpoint[Any, IO] =
@@ -75,34 +65,33 @@ final class ReplEndpoints @Inject()(replicationSupport: ReplicationSupport,
         hours.traverse(replicationSupport.idsForHour).map(_.toList)
       }
 
+/**
+ * vals here ending in "Def" are tapir endpoints.
+ * The are used ServerEndpoint.serverLogicSuccess[IO] to provide the actual logic. above.
+ * and in client code
+ */
 object ReplEndpoints:
-  val allQsosDef =
+//  val allQsosDef =
+//    endpoint
+//      .get
+//      .in("qsos")
+//      .out(jsonBody[Seq[Qso]])
+//      .out(header[String]("Content-Type"))
+//      .out(header[String]("Content-Disposition"))
+
+  
+  val qsoIdsByHourGetDef =
     endpoint
       .get
-      .in("qsos")
-      .out(jsonBody[Seq[Qso]])
-      .out(header[String]("Content-Type"))
-      .out(header[String]("Content-Disposition"))
-
-  val qsoIdsByHourDef =
-    endpoint
-      .get
-      .in("qsos" / path[String]("fdHour"))
-      .out(jsonBody[FdHourIds])
-
-  val qsoIdsByHourPostDef =
-    endpoint
-      .post
-      .in("qsos" / "ids")
-      .in(jsonBody[FdHour])
-      .out(jsonBody[FdHourIds])
+      .in("qsos" / "ids" / path[FdHour])
+      .out(jsonBody[Seq[Id]])
 
   val qsosForIdsDef =
     endpoint
       .post
       .in("qsosForIds")
       .in(jsonBody[FdHourRequest])
-      .out(jsonBody[FdHourQsos])
+      .out(jsonBody[Seq[Qso]])
 
   val neededFdHoursDef =
     endpoint
