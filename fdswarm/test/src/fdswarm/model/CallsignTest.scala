@@ -19,15 +19,16 @@
 package fdswarm.model
 
 import munit.FunSuite
-import upickle.default.*
+import io.circe.parser.*
+import io.circe.syntax.*
 
 class CallsignTest extends FunSuite:
 
   test("JSON"):
     val callSign = Callsign("WA9NNN")
-    val sJson = write(callSign, indent = 2)
+    val sJson = callSign.asJson.noSpaces
     assertEquals(sJson, """"WA9NNN"""")
-    val backAgain: Callsign = read[Callsign](sJson)
+    val backAgain: Callsign = decode[Callsign](sJson).toTry.get
 
   test("Starts with"):
     assert(Callsign("WA9NNN").startsWith("WA9"))

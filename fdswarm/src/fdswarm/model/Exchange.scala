@@ -18,7 +18,6 @@
  */
 
 package fdswarm.model
-import upickle.default.*
 import io.circe.Codec
 
 import scala.util.matching.Regex
@@ -29,7 +28,7 @@ import scala.util.matching.Regex
  * @param transmitters how many.
  * @param stationClass
  */
-case class FdClass(transmitters: Int = 1, classLetter: Char = 'I') derives ReadWriter, Codec.AsObject:
+case class FdClass(transmitters: Int = 1, classLetter: Char = 'I') derives Codec.AsObject:
   override def toString: String = s"$transmitters${classLetter}"
 
 object FdClass:
@@ -38,7 +37,7 @@ object FdClass:
       transmitters = transmitters,
       classLetter = stationClass.letter)
 
-case class Exchange(fdClass: FdClass = FdClass(), sectionCode: String = "IL") derives ReadWriter, Codec.AsObject:
+case class Exchange(fdClass: FdClass = FdClass(), sectionCode: String = "IL") derives Codec.AsObject:
 
   /**
    *

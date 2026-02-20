@@ -27,8 +27,9 @@ import scalafx.beans.property.ObjectProperty
 import scalafx.scene.control.*
 import scalafx.scene.layout.*
 import scalafx.stage.Window
-import upickle.default.*
-import fdswarm.util.JavaTimePickle.given_ReadWriter_ZonedDateTime
+import io.circe.parser.*
+import io.circe.syntax.*
+import fdswarm.util.JavaTimeCirce.given
 import java.time.*
 
 @Singleton
@@ -136,7 +137,7 @@ final class ContestManager @Inject()(
 
   private def persist(): Unit =
     try {
-      val json = write(configProperty.value, indent = 2)
+      val json = configProperty.value.asJson.spaces2
       os.write.over(file, json, createFolders = true)
     } catch {
       case e: Throwable => logger.error(s"Failed to persist contest config to $file", e)
@@ -146,7 +147,7 @@ final class ContestManager @Inject()(
     try {
       if (os.exists(file)) {
         val json = os.read(file)
-        read[ContestConfig](json)
+        decode[ContestConfig](json).toTry.get
       } else {
         defaultConfig()
       }

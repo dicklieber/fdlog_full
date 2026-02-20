@@ -18,7 +18,6 @@
 
 package fdswarm.replication
 
-import upickle.default.ReadWriter
 import io.circe.Codec
 
 final case class NodeAddress(host: String, port: Int) derives  Codec.AsObject

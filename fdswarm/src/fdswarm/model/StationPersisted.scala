@@ -21,7 +21,6 @@ package fdswarm.model
 import fdswarm.fx.bands.HamBand
 import fdswarm.fx.caseForm.ChoiceField
 import io.circe.Codec
-import upickle.default.*
 
 /** Persistable representation of Station.
  *

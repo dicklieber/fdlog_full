@@ -21,7 +21,6 @@ package fdswarm.store
 import fdswarm.fx.qso.FdHour
 import fdswarm.model.Qso
 import fdswarm.util.Ids.Id
-import upickle.default.*
 import io.circe.Codec
 
 /**

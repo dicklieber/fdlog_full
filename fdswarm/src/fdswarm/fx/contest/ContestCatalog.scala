@@ -19,19 +19,19 @@
 package fdswarm.fx.contest
 
 import com.typesafe.config.{Config, ConfigRenderOptions, ConfigValue}
-import jakarta.inject.{Inject, Singleton}
-import upickle.default.*
 import io.circe.Codec
+import jakarta.inject.{Inject, Singleton}
+import io.circe.parser.decode
 
 case class ContestClassChar(
                             ch: String,
                             description: String
-                          ) derives ReadWriter, Codec.AsObject
+                          ) derives Codec.AsObject
 
 case class Contest(
                     name: ContestType,
                     classChars: Seq[ContestClassChar]
-                  ) derives ReadWriter, Codec.AsObject:
+                  ) derives Codec.AsObject:
   def isValidClass(classChar: String): Boolean =
     classChars.exists(_.ch == classChar)
 
@@ -46,4 +46,4 @@ final class ContestCatalog @Inject()(config: Config):
       .setOriginComments(false)
   private val configValue: ConfigValue = config.getValue(key)
   val contests: Seq[Contest] =
-    read[Seq[Contest]](configValue.render(renderOpts))
+    decode[Seq[Contest]](configValue.render(renderOpts)).toTry.get

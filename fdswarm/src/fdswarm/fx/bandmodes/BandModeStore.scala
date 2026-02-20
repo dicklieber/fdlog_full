@@ -21,7 +21,9 @@ package fdswarm.fx.bandmodes
 import jakarta.inject.{Inject, Singleton}
 import fdswarm.io.DirectoryProvider
 import scalafx.beans.property.ObjectProperty
-import upickle.default.*
+import io.circe.Codec
+import io.circe.parser.*
+import io.circe.syntax.*
 
 @Singleton
 final class BandModeStore @Inject() (dirProvider: DirectoryProvider) {
@@ -30,9 +32,7 @@ final class BandModeStore @Inject() (dirProvider: DirectoryProvider) {
                               bands:   Set[String],
                               modes:   Set[String],
                               enabled: Map[String, Set[String]]
-                            )
-  object BandModes:
-    given ReadWriter[BandModes] = macroRW
+                            ) derives Codec.AsObject
 
   private val dir: os.Path = {
     val p = dirProvider()
@@ -44,12 +44,12 @@ final class BandModeStore @Inject() (dirProvider: DirectoryProvider) {
 
   private def load(): BandModes =
     if os.exists(path) then
-      read[BandModes](os.read(path))
+      decode[BandModes](os.read(path)).getOrElse(BandModes(Set.empty, Set.empty, Map.empty))
     else
       BandModes(Set.empty, Set.empty, Map.empty)
 
   private def save(bm: BandModes): Unit = {
-    val json = write(bm, indent = 2)
+    val json = bm.asJson.spaces2
     val tmp  = path / os.up / s".${path.last}.tmp"
     os.write.over(tmp, json, createFolders = true)
     os.move.over(tmp, path)

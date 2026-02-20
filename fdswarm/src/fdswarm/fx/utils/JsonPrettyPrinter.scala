@@ -21,8 +21,8 @@ package fdswarm.fx.utils
 import scalafx.scene.layout.Pane
 import scalafx.scene.text.{Text, TextFlow}
 import scalafx.scene.paint.Color
-import upickle.default.*
-import ujson.Value
+import io.circe.*
+import io.circe.parser.*
 
 object JsonPrettyPrinter:
 
@@ -34,14 +34,14 @@ object JsonPrettyPrinter:
   def colorize(json: String): Pane =
     try
       val data = if json.trim.startsWith("{") || json.trim.startsWith("[") then
-        ujson.read(json)
+        parse(json).getOrElse(throw new Exception("Invalid JSON"))
       else
         // Might be NDJSON (multiple lines of JSON)
         val lines = json.split("\n").filter(_.trim.nonEmpty)
         if lines.length > 1 then
-          ujson.Arr(lines.map(line => ujson.read(line))*)
+          Json.arr(lines.map(line => parse(line).getOrElse(throw new Exception("Invalid JSON line")))*)
         else
-          ujson.read(json)
+          parse(json).getOrElse(throw new Exception("Invalid JSON"))
 
       val textFlow = new TextFlow():
         styleClass.add("json-pretty-print")
@@ -54,12 +54,30 @@ object JsonPrettyPrinter:
         flow.children.add(new Text(s"Invalid JSON: ${e.getMessage}") { fill = Color.Red; styleClass.add("fixed-width") })
         flow
 
-  private def renderValue(value: Value, indent: Int, flow: TextFlow): Unit =
-    value match
-      case ujson.Obj(items) =>
-        flow.children.add(new Text("{") { styleClass.add("fixed-width") })
-        if items.nonEmpty then
+  private def renderValue(value: Json, indent: Int, flow: TextFlow): Unit =
+    value.fold(
+      flow.children.add(new Text("null") { fill = Color.Gray; styleClass.add("fixed-width") }),
+      b => flow.children.add(new Text(b.toString) { fill = Color.Orange; styleClass.add("fixed-width") }),
+      n => flow.children.add(new Text(n.toString) { fill = Color.Blue; styleClass.add("fixed-width") }),
+      s => flow.children.add(new Text(s"\"$s\"") { fill = Color.Green; styleClass.add("fixed-width") }),
+      arr => {
+        flow.children.add(new Text("[") { styleClass.add("fixed-width") })
+        if arr.nonEmpty then
           flow.children.add(new Text("\n") { styleClass.add("fixed-width") })
+          arr.zipWithIndex.foreach { (v, i) =>
+            flow.children.add(new Text("  " * (indent + 1)) { styleClass.add("fixed-width") })
+            renderValue(v, indent + 1, flow)
+            if i < arr.size - 1 then flow.children.add(new Text(",") { styleClass.add("fixed-width") })
+            flow.children.add(new Text("\n") { styleClass.add("fixed-width") })
+          }
+          flow.children.add(new Text("  " * indent) { styleClass.add("fixed-width") })
+        flow.children.add(new Text("]") { styleClass.add("fixed-width") })
+      },
+      obj => {
+        flow.children.add(new Text("{") { styleClass.add("fixed-width") })
+        if obj.nonEmpty then
+          flow.children.add(new Text("\n") { styleClass.add("fixed-width") })
+          val items = obj.toList
           items.zipWithIndex.foreach { case ((k, v), i) =>
             flow.children.add(new Text("  " * (indent + 1)) { styleClass.add("fixed-width") })
             flow.children.add(new Text(s"\"$k\"") { fill = Color.Purple; styleClass.add("fixed-width") })
@@ -70,28 +88,5 @@ object JsonPrettyPrinter:
           }
           flow.children.add(new Text("  " * indent) { styleClass.add("fixed-width") })
         flow.children.add(new Text("}") { styleClass.add("fixed-width") })
-
-      case ujson.Arr(items) =>
-        flow.children.add(new Text("[") { styleClass.add("fixed-width") })
-        if items.nonEmpty then
-          flow.children.add(new Text("\n") { styleClass.add("fixed-width") })
-          items.zipWithIndex.foreach { (v, i) =>
-            flow.children.add(new Text("  " * (indent + 1)) { styleClass.add("fixed-width") })
-            renderValue(v, indent + 1, flow)
-            if i < items.size - 1 then flow.children.add(new Text(",") { styleClass.add("fixed-width") })
-            flow.children.add(new Text("\n") { styleClass.add("fixed-width") })
-          }
-          flow.children.add(new Text("  " * indent) { styleClass.add("fixed-width") })
-        flow.children.add(new Text("]") { styleClass.add("fixed-width") })
-
-      case ujson.Str(s) =>
-        flow.children.add(new Text(s"\"$s\"") { fill = Color.Green; styleClass.add("fixed-width") })
-
-      case ujson.Num(n) =>
-        flow.children.add(new Text(n.toString) { fill = Color.Blue; styleClass.add("fixed-width") })
-
-      case ujson.Bool(b) =>
-        flow.children.add(new Text(b.toString) { fill = Color.Orange; styleClass.add("fixed-width") })
-
-      case ujson.Null =>
-        flow.children.add(new Text("null") { fill = Color.Gray; styleClass.add("fixed-width") })
+      }
+    )

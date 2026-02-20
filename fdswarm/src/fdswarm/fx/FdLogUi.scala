@@ -35,7 +35,6 @@ import scalafx.scene.{Node, Scene}
 import scalafx.scene.control.*
 import scalafx.scene.layout.*
 import scalafx.stage.{Stage, Window}
-import upickle.default.*
 
 final class FdLogUi @Inject()(
                                contestEntry: ContestEntry,

@@ -24,7 +24,6 @@ package fdswarm.fx.qso
 //import cask.router.ArgReader
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.PropertyCellName
-import upickle.default.*
 import io.circe.Codec
 
 import java.time.{Instant, ZoneId, ZonedDateTime}
@@ -95,5 +94,3 @@ object FdHour extends LazyLogging:
     io.circe.Decoder.decodeString.map(FdHour.apply),
     io.circe.Encoder.encodeString.contramap(_.toString)
   )
-
-  given ReadWriter[FdHour] = readwriter[String].bimap(_.toString, FdHour.apply)

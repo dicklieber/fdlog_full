@@ -60,13 +60,3 @@ class FdHourTest extends FunSuite:
     assertEquals(Right(h1), h2)
   }
 
-  test("FdHour uPickle ReadWriter roundtrip") {
-    import upickle.default.*
-
-    val h1 = FdHour(15, 10)
-    val json = write(h1)
-    assertEquals(json, "\"15:10\"")
-
-    val h2 = read[FdHour](json)
-    assertEquals(h1, h2)
-  }

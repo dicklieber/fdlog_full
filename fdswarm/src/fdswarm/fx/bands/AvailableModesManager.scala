@@ -23,7 +23,8 @@ import fdswarm.model.BandMode.Mode
 import jakarta.inject.{Inject, Singleton}
 import scalafx.collections.ObservableBuffer
 import javafx.collections.ListChangeListener
-import upickle.default.*
+import io.circe.parser.*
+import io.circe.syntax.*
 
 @Singleton
 final class AvailableModesManager @Inject()(
@@ -50,12 +51,12 @@ final class AvailableModesManager @Inject()(
   // ---- persistence ------------------------------------------------------------
 
   private def persist(): Unit =
-    val json = write(modes.toSeq, indent = 2)
+    val json = modes.toSeq.asJson.spaces2
     os.write.over(path, json, createFolders = true)
 
   private def loadFromDisk(): Seq[Mode] =
     try
-      read[Seq[Mode]](os.read(path))
+      decode[Seq[Mode]](os.read(path)).toTry.get
     catch
       case _: Throwable =>
         Seq("PH")

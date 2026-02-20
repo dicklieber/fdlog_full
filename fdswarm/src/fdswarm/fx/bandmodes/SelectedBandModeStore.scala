@@ -23,7 +23,8 @@ import fdswarm.fx.bands.BandModeBuilder
 import fdswarm.model.BandMode
 import fdswarm.io.DirectoryProvider
 import scalafx.beans.property.ObjectProperty
-import upickle.default.*
+import io.circe.parser.*
+import io.circe.syntax.*
 
 @Singleton
 final class SelectedBandModeStore @Inject() (dirProvider: DirectoryProvider, bandModeBuilder: BandModeBuilder):
@@ -47,14 +48,14 @@ final class SelectedBandModeStore @Inject() (dirProvider: DirectoryProvider, ban
 
   private def load(): BandMode =
       try {
-        val bandMode = read[BandMode](os.read(path))
+        val bandMode = decode[BandMode](os.read(path)).toTry.get
         bandMode
       }
       catch case _: Throwable =>
         bandModeBuilder("20m", "PH")
 
   private def persist(value: BandMode): Unit =
-    val json = write(value, indent = 2)
+    val json = value.asJson.spaces2
     val tmp  = path / os.up / s".${path.last}.tmp"
     os.write.over(tmp, json, createFolders = true)
     os.move.over(tmp, path)

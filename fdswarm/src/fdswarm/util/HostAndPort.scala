@@ -18,7 +18,6 @@
 package fdswarm.util
 
 import jakarta.inject.*
-import upickle.default.{ReadWriter, readwriter}
 import io.circe.*
 
 import java.net.{InetAddress, InetSocketAddress}

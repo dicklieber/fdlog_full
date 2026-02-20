@@ -23,7 +23,6 @@ import munit.FunSuite
 import scala.util.Success
 import scala.util.Failure
 
-import upickle.default.*
 import java.io.ByteArrayOutputStream
 import java.util.zip.GZIPOutputStream
 

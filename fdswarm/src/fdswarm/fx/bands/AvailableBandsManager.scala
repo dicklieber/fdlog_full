@@ -20,7 +20,8 @@ package fdswarm.fx.bands
 
 import fdswarm.io.DirectoryProvider
 import jakarta.inject.{Inject, Singleton}
-import upickle.default.*
+import io.circe.parser.*
+import io.circe.syntax.*
 import fdswarm.model.BandMode.Band
 
 import scalafx.collections.ObservableBuffer
@@ -47,12 +48,12 @@ final class AvailableBandsManager @Inject()(
   // ---- persistence ------------------------------------------------------------
 
   private def persist(): Unit =
-    val json = write(bands.toSeq, indent = 2)
+    val json = bands.toSeq.asJson.spaces2
     os.write.over(path, json, createFolders = true)
 
   private def loadFromDisk(): Seq[Band] =
     try
-      read[Seq[Band]](os.read(path))
+      decode[Seq[Band]](os.read(path)).toTry.get
     catch
       case _: Throwable =>
         Seq("20m")

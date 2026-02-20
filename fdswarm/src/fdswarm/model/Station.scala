@@ -20,7 +20,6 @@ package fdswarm.model
 import fdswarm.fx.bands.HamBand
 import fdswarm.fx.caseForm.ChoiceField
 import fdswarm.model.BandMode.*
-import upickle.default.*
 import io.circe.Codec
 
 /**

@@ -23,7 +23,6 @@ import fdswarm.fx.qso.FdHour
 import fdswarm.util.Ids
 import fdswarm.util.Ids.Id
 import io.circe.Codec
-import upickle.implicits.serializeDefaults
 
 import java.time.Instant
 /**
@@ -41,7 +40,6 @@ case class Qso(callsign: Callsign,
                section:String,
                bandMode: BandMode,
                qsoMetadata: QsoMetadata,
-               @serializeDefaults(true)
                stamp: Instant = Instant.now(),
                uuid: Id = Ids.generateId()) extends  LazyLogging derives  Codec.AsObject:
   lazy val display: String = s"$callsign on $bandMode in $fdHour"

@@ -18,13 +18,12 @@
 
 package fdswarm.fx.bands
 
-import upickle.default.*
 import io.circe.Codec
 
-enum BandClass derives ReadWriter, Codec.AsObject:
+enum BandClass derives Codec.AsObject:
   case LF, VLF, MF, HF, VHF, UHF, SHF, EHF
 
-enum ItuRegion derives ReadWriter, Codec.AsObject:
+enum ItuRegion derives Codec.AsObject:
   case ALL, R1, R2, R3
 
 
@@ -43,4 +42,4 @@ final case class HamBand(
                           endFrequencyHz: Long,
                           bandClass: BandClass,
                           regions: Set[ItuRegion] = Set(ItuRegion.ALL)
-                        ) derives ReadWriter, Codec.AsObject
+                        ) derives Codec.AsObject
