@@ -21,6 +21,8 @@ package fdswarm.store
 import fdswarm.TestDirectory
 import fdswarm.model.QsoMetadata.testQsoMetadata
 import fdswarm.model.{BandMode, Callsign, Qso}
+import fdswarm.replication.StatusMessage
+import fdswarm.util.HostAndPort
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import munit.FunSuite
 
@@ -111,3 +113,34 @@ class QsoStoreTest extends FunSuite:
     val request = FdHourRequest(qso1.fdHour, Seq(qso1.uuid))
     val result = qsoStore.qsosForIds(request)
     assertEquals(result.qsos, Seq(qso1))
+
+  test("determineNeeded should return needed FdHourIds"):
+    import cats.effect.unsafe.implicits.global
+    val registry = new SimpleMeterRegistry()
+    val qsoStore = QsoStore(testDirectory, registry)
+    val qso1 = Qso(callsign = Callsign("W9NNN"),
+      contestClass = "WFD",
+      bandMode = BandMode("20m", "CW"),
+      section = "IL",
+      qsoMetadata = testQsoMetadata
+    )
+    qsoStore.add(qso1)
+
+    // Remote has an extra QSO in the same hour, so digest will differ
+    val qso2 = Qso(callsign = Callsign("K9OR"),
+      contestClass = "WFD",
+      bandMode = BandMode("40m", "SSB"),
+      section = "IL",
+      qsoMetadata = testQsoMetadata
+    )
+    // We want to simulate a remote having qso1 and qso2 in the same hour as qso1
+    // Actually FdHourDigest is per FdHour.
+    val remoteDigest = FdHourDigest(qso1.fdHour, Seq(qso1, qso2))
+
+    val status = StatusMessage(HostAndPort("localhost", 1234), Seq(remoteDigest))
+
+    val needed = qsoStore.determineNeeded(status).unsafeRunSync()
+
+    assertEquals(needed.size, 1)
+    assertEquals(needed.head.fdHour, qso1.fdHour)
+    assertEquals(needed.head.ids, Seq(qso1.uuid))

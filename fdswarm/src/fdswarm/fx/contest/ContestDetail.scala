@@ -24,11 +24,21 @@ import fdswarm.util.JavaTimeCirce.given
 
 import java.time.*
 
-enum ContestType(val compute: Int => ContestDates) derives Codec.AsObject:
+enum ContestType(val compute: Int => ContestDates):
   def dates(year: Int): ContestDates = compute(year)
 
   case WFD extends ContestType(ContestDateCalculator.lastFull)
   case ARRL extends ContestType(ContestDateCalculator.forthFullWeekend)
+
+object ContestType:
+  import io.circe.{Decoder, Encoder}
+  given Codec[ContestType] = Codec.from(
+    Decoder.decodeString.emap(s =>
+      try Right(ContestType.valueOf(s))
+      catch case _: IllegalArgumentException => Left(s"Invalid ContestType: $s")
+    ),
+    Encoder.encodeString.contramap(_.toString)
+  )
 
 /**
  * What a user can choose in a dialog.

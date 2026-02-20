@@ -32,7 +32,7 @@ import scalafx.collections.ObservableBuffer
 import scala.collection.concurrent.TrieMap
 
 @Singleton
-class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRegistry) extends LazyLogging:
+class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRegistry) extends LazyLogging with ReplicationSupport:
   val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()
   private val journalFile = directoryProvider() / "qsosJournal.json"
   private val map: TrieMap[Id, Qso] = new TrieMap
@@ -43,6 +43,7 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
     .description("Number of times FD hour digests were built")
     .register(registry)
   private var fdHourDigests: Map[FdHour, FdHourDigest] = Map.empty
+  private[store] def internalDigests: Map[FdHour, FdHourDigest] = fdHourDigests
 
   def add(qso: Qso): Unit =
     add(Seq(qso))
@@ -101,27 +102,6 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
       .values
       .toSeq
 
-  /**
-   * Returns the QSOs that are needed for the given hour.
-   *
-   * @param incoming as received from an FdSwarm node.
-   * @return all the [[FdHour]]s that aren't on the [[QsoStore]] or don't match.
-   */
-  def neededQsos(incoming: Seq[FdHourDigest]): Seq[FdHour] =
-    // this might be updated by another thread so we save a reference so it can't change under us.
-    val cpy: Map[FdHour, FdHourDigest] = fdHourDigests
-    incoming.flatMap { remoteFdHourDigest =>
-      val remoteFdHour = remoteFdHourDigest.fdHour
-      cpy.get(remoteFdHour) match
-        // we have one, is it the same?
-        case Some(localFdDigest) =>
-          Option.when(localFdDigest != remoteFdHourDigest) {
-            remoteFdHour
-          }
-        case None => // we don't have it yet, so we need it.
-          Some(remoteFdHour)
-
-    }
 
   /**
    * current digests for all FdHours.

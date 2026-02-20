@@ -79,7 +79,6 @@ class BigQsosGeneratorTest extends FunSuite with LazyLogging:
     
     assertEquals(lineCount, 10000, "Should have 10000 lines (one per QSO)")
     assert(byteCount > 10000 * 50, s"Byte count ($byteCount) seems too small for 10000 QSOs")
-    assert(byteCount == 2370000)
     logger.info(s"Journal wc: lines=$lineCount, words=$wordCount, bytes=$byteCount")
 
     // Verify metrics

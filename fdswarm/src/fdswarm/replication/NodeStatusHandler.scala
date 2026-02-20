@@ -20,7 +20,7 @@ package fdswarm.replication
 
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.qso.FdHour
-import fdswarm.store.QsoStore
+import fdswarm.store.{FdHourDigest, QsoStore}
 import fdswarm.util.HostAndPortProvider
 import jakarta.inject.Inject
 
@@ -51,7 +51,21 @@ class NodeStatusHandler @Inject()(qsoStore: QsoStore,
             logger.trace(s"Ignoring our own message from ${statusMessage.hostAndPort}")
           else
             logger.trace("StatusHandle: StatusMessage from {} with {} digests.", statusMessage.hostAndPort, statusMessage.fdDigests.size)
-            val neededFdHours: Seq[FdHour] = qsoStore.neededQsos(statusMessage.fdDigests)
+            val neededFdHours: Seq[FdHour] = {
+              val incoming = statusMessage.fdDigests
+              val cpy: Map[FdHour, FdHourDigest] = qsoStore.digests().map(d => d.fdHour -> d).toMap
+              incoming.flatMap { remoteFdHourDigest =>
+                val remoteFdHour = remoteFdHourDigest.fdHour
+                cpy.get(remoteFdHour) match
+                  // we have one, is it the same?
+                  case Some(localFdDigest) =>
+                    Option.when(localFdDigest != remoteFdHourDigest) {
+                      remoteFdHour
+                    }
+                  case None => // we don't have it yet, so we need it.
+                    Some(remoteFdHour)
+              }
+            }
             logger.trace("StatusHandle: Needed QSOs: {}",   neededFdHours.size)
             if neededFdHours.nonEmpty then
               neededFdHours.foreach(fdHour =>

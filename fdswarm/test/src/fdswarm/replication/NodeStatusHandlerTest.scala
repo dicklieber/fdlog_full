@@ -20,7 +20,7 @@ package fdswarm.replication
 
 import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
-import fdswarm.store.{FdHourDigest, QsoStore}
+import fdswarm.store.{FdHourDigest, FdHourIds, QsoStore}
 import fdswarm.util.{HostAndPort, HostAndPortProvider}
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import munit.FunSuite
@@ -39,10 +39,10 @@ class NodeStatusHandlerTest extends FunSuite:
   test("NodeStatusHandler ignores its own status messages"):
     val registry = new SimpleMeterRegistry()
     class TestQsoStore extends QsoStore(new DirectoryProvider { override def apply(): os.Path = os.temp.dir() }, registry):
-      var neededQsosCalled = false
-      override def neededQsos(incoming: Seq[FdHourDigest]): Seq[FdHour] = {
-        neededQsosCalled = true
-        Seq.empty
+      var digestsCalled = false
+      override def digests(): Seq[FdHourDigest] = {
+        digestsCalled = true
+        super.digests()
       }
     val qsoStore = new TestQsoStore
     
@@ -66,8 +66,8 @@ class NodeStatusHandlerTest extends FunSuite:
     // Wait a bit for processing
     Thread.sleep(200)
     
-    // Verify neededQsos was NEVER called because it was ignored
-    assert(!qsoStore.neededQsosCalled, "neededQsos should NOT have been called for our own message")
+    // Verify digests was NEVER called because it was ignored
+    assert(!qsoStore.digestsCalled, "digests should NOT have been called for our own message")
     
     handler.stop()
     transport.stop()
@@ -75,12 +75,11 @@ class NodeStatusHandlerTest extends FunSuite:
   test("NodeStatusHandler processes status messages from other nodes"):
     val registry = new SimpleMeterRegistry()
     class TestQsoStore extends QsoStore(new DirectoryProvider { override def apply(): os.Path = os.temp.dir() }, registry):
-      var neededQsosCalled = false
+      var digestsCalled = false
       var capturedIncoming: Seq[FdHourDigest] = Seq.empty
-      override def neededQsos(incoming: Seq[FdHourDigest]): Seq[FdHour] = {
-        neededQsosCalled = true
-        capturedIncoming = incoming
-        if incoming.nonEmpty then Seq(incoming.head.fdHour) else Seq.empty
+      override def digests(): Seq[FdHourDigest] = {
+        digestsCalled = true
+        super.digests()
       }
     val qsoStore = new TestQsoStore
     
@@ -108,9 +107,8 @@ class NodeStatusHandlerTest extends FunSuite:
     // Wait a bit for processing
     Thread.sleep(500)
     
-    // Verify neededQsos WAS called
-    assert(qsoStore.neededQsosCalled, "neededQsos SHOULD have been called for other node's message")
-    assertEquals(qsoStore.capturedIncoming, Seq(digest))
+    // Verify digests WAS called (as part of internal logic)
+    assert(qsoStore.digestsCalled, "digests SHOULD have been called for other node's message")
     
     handler.stop()
     transport.stop()

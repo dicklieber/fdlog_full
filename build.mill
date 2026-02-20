@@ -70,7 +70,7 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo {
     mvn"net.codingwell::scala-guice:7.0.0",
 
     //    mvn"com.lihaoyi::cask:0.11.3",
-    mvn"com.lihaoyi::up``ickle:4.4.2",
+    mvn"com.lihaoyi::upickle:4.4.2",
     mvn"com.lihaoyi::os-lib:0.11.6",
     mvn"com.lihaoyi::scalatags:0.13.1",
     mvn"org.apache.commons:commons-text:1.10.0",

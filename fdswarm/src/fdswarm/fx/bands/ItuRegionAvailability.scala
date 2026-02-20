@@ -18,13 +18,31 @@
 
 package fdswarm.fx.bands
 
-import io.circe.Codec
+import io.circe.{Codec, Decoder, Encoder}
 
-enum BandClass derives Codec.AsObject:
+enum BandClass:
   case LF, VLF, MF, HF, VHF, UHF, SHF, EHF
 
-enum ItuRegion derives Codec.AsObject:
+object BandClass:
+  given Codec[BandClass] = Codec.from(
+    Decoder.decodeString.emap(s =>
+      try Right(BandClass.valueOf(s))
+      catch case _: IllegalArgumentException => Left(s"Invalid BandClass: $s")
+    ),
+    Encoder.encodeString.contramap(_.toString)
+  )
+
+enum ItuRegion:
   case ALL, R1, R2, R3
+
+object ItuRegion:
+  given Codec[ItuRegion] = Codec.from(
+    Decoder.decodeString.emap(s =>
+      try Right(ItuRegion.valueOf(s))
+      catch case _: IllegalArgumentException => Left(s"Invalid ItuRegion: $s")
+    ),
+    Encoder.encodeString.contramap(_.toString)
+  )
 
 
 /**
@@ -42,4 +60,26 @@ final case class HamBand(
                           endFrequencyHz: Long,
                           bandClass: BandClass,
                           regions: Set[ItuRegion] = Set(ItuRegion.ALL)
-                        ) derives Codec.AsObject
+                        )
+
+object HamBand:
+  given Codec[HamBand] = Codec.from(
+    Decoder.instance { c =>
+      for {
+        name <- c.downField("bandName").as[String]
+        start <- c.downField("startFrequencyHz").as[Long]
+        end <- c.downField("endFrequencyHz").as[Long]
+        bc <- c.downField("bandClass").as[BandClass]
+        regions <- c.downField("regions").as[Option[Set[ItuRegion]]].map(_.getOrElse(Set(ItuRegion.ALL)))
+      } yield HamBand(name, start, end, bc, regions)
+    },
+    Encoder.instance { h =>
+      io.circe.Json.obj(
+        "bandName" -> Encoder[String].apply(h.bandName),
+        "startFrequencyHz" -> Encoder[Long].apply(h.startFrequencyHz),
+        "endFrequencyHz" -> Encoder[Long].apply(h.endFrequencyHz),
+        "bandClass" -> Encoder[BandClass].apply(h.bandClass),
+        "regions" -> Encoder[Set[ItuRegion]].apply(h.regions)
+      )
+    }
+  )
