@@ -32,7 +32,7 @@ import scalafx.collections.ObservableBuffer
 import scala.collection.concurrent.TrieMap
 
 @Singleton
-class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRegistry) extends LazyLogging with ReplicationSupport:
+class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRegistry) extends LazyLogging:
   val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()
   private val journalFile = directoryProvider() / "qsosJournal.json"
   private val map: TrieMap[Id, Qso] = new TrieMap
@@ -109,23 +109,6 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
    * @return
    */
   def digests(): Seq[FdHourDigest] = fdHourDigests.values.toSeq.sorted
-
-  def idsForHour(fdHour: FdHour): FdHourIds =
-    val ids = all.filter(_.fdHour == fdHour).map(_.uuid)
-    FdHourIds(fdHour, ids)
-
-  def qsosForFdHour(fdHour: FdHour): Seq[Qso] =
-    val qsos = all.filter(_.fdHour == fdHour)
-    qsos
-
-  def qsosForIds(request: FdHourRequest): FdHourQsos =
-    val qsos = if (request.specificQsos.isEmpty) {
-      qsosForFdHour(request.fdHour)
-    } else {
-      val ids = request.specificQsos.toSet
-      qsosForFdHour(request.fdHour).filter(qso => ids.contains(qso.uuid))
-    }
-    FdHourQsos(request.fdHour, qsos)
 
   /**
    * Thread-safe snapshot of all QSOs, sorted by stamp.

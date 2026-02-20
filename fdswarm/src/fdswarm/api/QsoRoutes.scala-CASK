@@ -23,18 +23,18 @@ import com.google.inject.Inject
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.qso.FdHour
 import fdswarm.fx.qso.FdHour.given
-import fdswarm.store.QsoStore
+import fdswarm.store.{QsoStore, ReplicationSupport}
 import io.circe.syntax.*
 import io.circe.parser.decode
 import io.circe.Printer
 
-class QsoRoutes @Inject()(qsoStore: QsoStore) extends Routes with LazyLogging:
+class QsoRoutes @Inject()(replicationSupport: ReplicationSupport) extends Routes with LazyLogging:
   override def decorators = Seq(new cask.decorators.compress())
   @get("/qsos")
   def allQsos(): Response[String] =
     val printer = Printer.spaces2.copy(dropNullValues = true)
     Response(
-      data = printer.print(qsoStore.all.asJson),
+      data = printer.print(replicationSupport.all.asJson),
       headers = Seq(
         "Content-Type" -> "application/json",
         "Content-Disposition" -> "attachment; filename=qsos.json"
@@ -44,7 +44,8 @@ class QsoRoutes @Inject()(qsoStore: QsoStore) extends Routes with LazyLogging:
 
   @get("/hourQsos/:fdHour")
   def hourQsos(fdHour: FdHour): Response[String] =
-    val forHour = qsoStore.qsosForFdHour(fdHour)
+    import cats.effect.unsafe.implicits.global
+    val forHour = replicationSupport.qsosForFdHour(fdHour).unsafeRunSync()
     val json = forHour.asJson.noSpaces
     logger.debug(s"/hourQsos/:fdHour ${json.length} bytes of JSON")
     Response(

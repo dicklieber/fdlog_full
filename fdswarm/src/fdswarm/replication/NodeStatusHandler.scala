@@ -20,7 +20,7 @@ package fdswarm.replication
 
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.qso.FdHour
-import fdswarm.store.{FdHourDigest, QsoStore}
+import fdswarm.store.{FdHourDigest, QsoStore, ReplicationSupport}
 import fdswarm.util.HostAndPortProvider
 import jakarta.inject.Inject
 
@@ -28,7 +28,8 @@ import java.net.URI
 import java.net.http.HttpResponse.BodyHandlers
 import java.net.http.{HttpClient, HttpRequest}
 
-class NodeStatusHandler @Inject()(qsoStore: QsoStore,
+class NodeStatusHandler @Inject()(replicationSupport:ReplicationSupport,
+                                  neededRequester: NeededRequester,
                                   multicastTransport: MulticastTransport,
                                   hostAndPortProvider: HostAndPortProvider,
                                   swarmStatus:SwarmStatus) extends LazyLogging:
@@ -40,6 +41,7 @@ class NodeStatusHandler @Inject()(qsoStore: QsoStore,
   private var thread: Option[Thread] = None
 
   def start(): Unit =
+    import cats.effect.unsafe.implicits.global
     val t = new Thread(() =>
       while !Thread.currentThread().isInterrupted do
         try
@@ -51,46 +53,7 @@ class NodeStatusHandler @Inject()(qsoStore: QsoStore,
             logger.trace(s"Ignoring our own message from ${statusMessage.hostAndPort}")
           else
             logger.trace("StatusHandle: StatusMessage from {} with {} digests.", statusMessage.hostAndPort, statusMessage.fdDigests.size)
-            val neededFdHours: Seq[FdHour] = {
-              val incoming = statusMessage.fdDigests
-              val cpy: Map[FdHour, FdHourDigest] = qsoStore.digests().map(d => d.fdHour -> d).toMap
-              incoming.flatMap { remoteFdHourDigest =>
-                val remoteFdHour = remoteFdHourDigest.fdHour
-                cpy.get(remoteFdHour) match
-                  // we have one, is it the same?
-                  case Some(localFdDigest) =>
-                    Option.when(localFdDigest != remoteFdHourDigest) {
-                      remoteFdHour
-                    }
-                  case None => // we don't have it yet, so we need it.
-                    Some(remoteFdHour)
-              }
-            }
-            logger.trace("StatusHandle: Needed QSOs: {}",   neededFdHours.size)
-            if neededFdHours.nonEmpty then
-              neededFdHours.foreach(fdHour =>
-                val url = s"http://${statusMessage.hostAndPort}/hourQsos/$fdHour"
-                logger.debug(s"StatusHandle: Sending: {}",url)
-                try
-                  val request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .header("Accept-Encoding", "gzip")
-                    .GET()
-                    .build()
-
-                  val response =  httpClient.send(request, BodyHandlers.ofString())
-                  logger.trace(s"StatusHandle: Response from $url: ${response.statusCode()}")
-//                  response.  
-//                    .thenAccept(response =>
-//                      if response.statusCode() == 200 then
-//                        logger.debug(s"Success response from $url: ${response.statusCode()}")
-//                      else
-//                        logger.warn(s"Response from $url: ${response.statusCode()} body: ${response.body()}")
-//                    )
-                catch
-                  case e: Exception =>
-                    logger.error(s"Failed to send FdHour request to $url", e)
-              )
+            neededRequester.processStatus(statusMessage).unsafeRunAndForget()
         catch
           case _: InterruptedException => Thread.currentThread().interrupt()
           case e: Exception =>

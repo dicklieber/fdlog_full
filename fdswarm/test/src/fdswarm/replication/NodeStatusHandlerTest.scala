@@ -20,7 +20,7 @@ package fdswarm.replication
 
 import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
-import fdswarm.store.{FdHourDigest, FdHourIds, QsoStore}
+import fdswarm.store.{FdHourDigest, FdHourIds, QsoStore, ReplicationSupport}
 import fdswarm.util.{HostAndPort, HostAndPortProvider}
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import munit.FunSuite
@@ -38,13 +38,13 @@ class NodeStatusHandlerTest extends FunSuite:
 
   test("NodeStatusHandler ignores its own status messages"):
     val registry = new SimpleMeterRegistry()
-    class TestQsoStore extends QsoStore(new DirectoryProvider { override def apply(): os.Path = os.temp.dir() }, registry):
+    class TestReplicationSupport extends ReplicationSupport(new DirectoryProvider { override def apply(): os.Path = os.temp.dir() }, registry):
       var digestsCalled = false
       override def digests(): Seq[FdHourDigest] = {
         digestsCalled = true
         super.digests()
       }
-    val qsoStore = new TestQsoStore
+    val replicationSupport = new TestReplicationSupport
     
     val transport = new MockMulticastTransport
     
@@ -53,7 +53,8 @@ class NodeStatusHandlerTest extends FunSuite:
       override val http = myHostAndPort
     }
     
-    val handler = new NodeStatusHandler(qsoStore, transport, hostAndPortProvider, new SwarmStatus)
+    val neededRequester = new NeededRequester(replicationSupport)
+    val handler = new NodeStatusHandler(replicationSupport, neededRequester, transport, hostAndPortProvider, new SwarmStatus)
     
     // Create a status message from "myself"
     val myStatus = StatusMessage(myHostAndPort, Seq.empty)
@@ -67,21 +68,20 @@ class NodeStatusHandlerTest extends FunSuite:
     Thread.sleep(200)
     
     // Verify digests was NEVER called because it was ignored
-    assert(!qsoStore.digestsCalled, "digests should NOT have been called for our own message")
+    assert(!replicationSupport.digestsCalled, "digests should NOT have been called for our own message")
     
     handler.stop()
     transport.stop()
 
   test("NodeStatusHandler processes status messages from other nodes"):
     val registry = new SimpleMeterRegistry()
-    class TestQsoStore extends QsoStore(new DirectoryProvider { override def apply(): os.Path = os.temp.dir() }, registry):
-      var digestsCalled = false
-      var capturedIncoming: Seq[FdHourDigest] = Seq.empty
-      override def digests(): Seq[FdHourDigest] = {
-        digestsCalled = true
-        super.digests()
+    class TestReplicationSupport extends ReplicationSupport(new DirectoryProvider { override def apply(): os.Path = os.temp.dir() }, registry):
+      var determineNeededCalled = false
+      override def determineNeeded(status: StatusMessage): cats.effect.IO[Seq[fdswarm.store.FdHourIds]] = {
+        determineNeededCalled = true
+        super.determineNeeded(status)
       }
-    val qsoStore = new TestQsoStore
+    val replicationSupport = new TestReplicationSupport
     
     val transport = new MockMulticastTransport
     
@@ -92,7 +92,8 @@ class NodeStatusHandlerTest extends FunSuite:
       override val http = myHostAndPort
     }
     
-    val handler = new NodeStatusHandler(qsoStore, transport, hostAndPortProvider, new SwarmStatus)
+    val neededRequester = new NeededRequester(replicationSupport)
+    val handler = new NodeStatusHandler(replicationSupport, neededRequester, transport, hostAndPortProvider, new SwarmStatus)
     
     // Create a status message from "someone else" with one FdHour
     val fdHour = FdHour(15, 10)
@@ -107,8 +108,8 @@ class NodeStatusHandlerTest extends FunSuite:
     // Wait a bit for processing
     Thread.sleep(500)
     
-    // Verify digests WAS called (as part of internal logic)
-    assert(qsoStore.digestsCalled, "digests SHOULD have been called for other node's message")
+    // Verify determineNeeded WAS called (via NeededRequester)
+    assert(replicationSupport.determineNeededCalled, "determineNeeded SHOULD have been called for other node's message")
     
     handler.stop()
     transport.stop()

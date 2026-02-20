@@ -72,8 +72,9 @@ class QsoStoreTest extends FunSuite:
     assertEquals(qsoStore.digests().isEmpty, true)
 
   test("qsosForIds should return all qsos for hour if specificQsos is empty"):
+    import cats.effect.unsafe.implicits.global
     val registry = new SimpleMeterRegistry()
-    val qsoStore = QsoStore(testDirectory, registry)
+    val replicationSupport = ReplicationSupport(testDirectory, registry)
     val qso1 = Qso(callsign = Callsign("W9NNN"),
       contestClass = "WFD",
       bandMode = BandMode("20m", "CW"),
@@ -86,16 +87,17 @@ class QsoStoreTest extends FunSuite:
       section = "IL",
       qsoMetadata = testQsoMetadata
     )
-    qsoStore.add(Seq(qso1, qso2))
+    replicationSupport.add(Seq(qso1, qso2))
 
     val request = FdHourRequest(qso1.fdHour, Seq.empty)
-    val result = qsoStore.qsosForIds(request)
+    val result = replicationSupport.qsosForIds(request).unsafeRunSync()
     assertEquals(result.fdHour, qso1.fdHour)
     assertEquals(result.qsos.toSet, Set(qso1, qso2))
 
   test("qsosForIds should return only requested qsos"):
+    import cats.effect.unsafe.implicits.global
     val registry = new SimpleMeterRegistry()
-    val qsoStore = QsoStore(testDirectory, registry)
+    val replicationSupport = ReplicationSupport(testDirectory, registry)
     val qso1 = Qso(callsign = Callsign("W9NNN"),
       contestClass = "WFD",
       bandMode = BandMode("20m", "CW"),
@@ -108,23 +110,23 @@ class QsoStoreTest extends FunSuite:
       section = "IL",
       qsoMetadata = testQsoMetadata
     )
-    qsoStore.add(Seq(qso1, qso2))
+    replicationSupport.add(Seq(qso1, qso2))
 
     val request = FdHourRequest(qso1.fdHour, Seq(qso1.uuid))
-    val result = qsoStore.qsosForIds(request)
+    val result = replicationSupport.qsosForIds(request).unsafeRunSync()
     assertEquals(result.qsos, Seq(qso1))
 
   test("determineNeeded should return needed FdHourIds"):
     import cats.effect.unsafe.implicits.global
     val registry = new SimpleMeterRegistry()
-    val qsoStore = QsoStore(testDirectory, registry)
+    val replicationSupport = ReplicationSupport(testDirectory, registry)
     val qso1 = Qso(callsign = Callsign("W9NNN"),
       contestClass = "WFD",
       bandMode = BandMode("20m", "CW"),
       section = "IL",
       qsoMetadata = testQsoMetadata
     )
-    qsoStore.add(qso1)
+    replicationSupport.add(qso1)
 
     // Remote has an extra QSO in the same hour, so digest will differ
     val qso2 = Qso(callsign = Callsign("K9OR"),
@@ -139,7 +141,7 @@ class QsoStoreTest extends FunSuite:
 
     val status = StatusMessage(HostAndPort("localhost", 1234), Seq(remoteDigest))
 
-    val needed = qsoStore.determineNeeded(status).unsafeRunSync()
+    val needed = replicationSupport.determineNeeded(status).unsafeRunSync()
 
     assertEquals(needed.size, 1)
     assertEquals(needed.head.fdHour, qso1.fdHour)

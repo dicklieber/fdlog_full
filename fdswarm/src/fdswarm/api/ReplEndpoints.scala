@@ -20,7 +20,7 @@ package fdswarm.api
 
 import cats.effect.IO
 import fdswarm.model.{Callsign, Qso}
-import fdswarm.store.{FdHourIds, FdHourQsos, FdHourRequest, QsoStore}
+import fdswarm.store.{FdHourIds, FdHourQsos, FdHourRequest, QsoStore, ReplicationSupport}
 import io.circe.syntax.*
 import io.circe.Printer
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
@@ -35,7 +35,7 @@ import sttp.tapir.generic.auto.*
 import java.time.Instant
 
 /** Tapir endpoints for QSOs. */
-final class ReplEndpoints @Inject()(qsoStore: QsoStore,
+final class ReplEndpoints @Inject()(replicationSupport: ReplicationSupport,
                                     registry: PrometheusMeterRegistry) extends ApiEndpoints:
 
   override def endpoints: List[ServerEndpoint[Any, IO]] = List(allQsos, qsoIdsByHour, qsosForIds)
@@ -55,7 +55,7 @@ final class ReplEndpoints @Inject()(qsoStore: QsoStore,
       .out(header[String]("Content-Type"))
       .out(header[String]("Content-Disposition"))
       .serverLogicSuccess[IO] { _ =>
-        val json = printer.print(qsoStore.all.asJson)
+        val json = printer.print(replicationSupport.all.asJson)
         IO.pure((json, "application/json", "attachment; filename=qsos.json"))
       }
 
@@ -70,9 +70,10 @@ final class ReplEndpoints @Inject()(qsoStore: QsoStore,
       .out(header[String]("Content-Type"))
       .serverLogicSuccess[IO] { fdHourStr =>
         val fdHour = FdHour(fdHourStr)
-        val result: FdHourIds = qsoStore.idsForHour(fdHour)
-        val json = printer.print(result.asJson)
-        IO.pure((json, "application/json"))
+        replicationSupport.idsForHour(fdHour).map { result =>
+          val json = printer.print(result.asJson)
+          (json, "application/json")
+        }
       }
 
   /**
@@ -89,8 +90,9 @@ final class ReplEndpoints @Inject()(qsoStore: QsoStore,
         import io.circe.parser.decode
         decode[FdHourRequest](requestJson) match {
           case Right(request) =>
-            val result = qsoStore.qsosForIds(request)
-            IO.pure((printer.print(result.asJson), "application/json"))
+            replicationSupport.qsosForIds(request).map { result =>
+              (printer.print(result.asJson), "application/json")
+            }
           case Left(error) =>
             IO.raiseError(new Exception(s"Failed to decode FdHourRequest: ${error.getMessage}"))
         }

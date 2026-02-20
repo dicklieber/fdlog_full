@@ -8,16 +8,20 @@ participant "ScalaFX UI" as UI
 participant "Core Service" as Core
 participant "UDP Listener" as Rx
 participant "UDP Broadcaster" as Tx
+participant "NeededRequester" as Req
 participant "Cask HTTP" as Http
 
 UI -> Core: startNode()
 Core -> Rx: start()
 Core -> Tx: start()
 
-Tx -> "UDP LAN" : broadcast Discovery
-"UDP LAN" -> Rx: Discovery from peer
-Rx -> Core: onDiscovery(peer)
-Core -> UI: runLater(updatePeerList)
+Tx -> "UDP LAN" : broadcast StatusMessage
+"UDP LAN" -> Rx: StatusMessage from peer
+Rx -> Core: onStatusMessage(peer)
+Core -> Req: processStatus(status)
+Req -> Core: determineNeeded(status)
+Req -> Http: POST /neededFdHours (Seq[FdHour])
+Http -> "Remote Node": HTTP POST
 
 Http -> Core: snapshot()
 Core --> Http: state JSON
