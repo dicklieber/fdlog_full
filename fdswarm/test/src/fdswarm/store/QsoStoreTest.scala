@@ -141,7 +141,7 @@ class QsoStoreTest extends FunSuite:
 
     val status = StatusMessage(HostAndPort("localhost", 1234), Seq(remoteDigest))
 
-    val needed = replicationSupport.determineNeeded(status).unsafeRunSync()
+    val needed = replicationSupport.handleStatusMessage(status).unsafeRunSync()
 
     assertEquals(needed.size, 1)
     assertEquals(needed.head.fdHour, qso1.fdHour)

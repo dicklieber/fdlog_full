@@ -94,3 +94,5 @@ object FdHour extends LazyLogging:
     io.circe.Decoder.decodeString.map(FdHour.apply),
     io.circe.Encoder.encodeString.contramap(_.toString)
   )
+
+  given sttp.tapir.Schema[FdHour] = sttp.tapir.Schema.string

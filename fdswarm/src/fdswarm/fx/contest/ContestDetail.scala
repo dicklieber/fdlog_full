@@ -24,7 +24,7 @@ import fdswarm.util.JavaTimeCirce.given
 
 import java.time.*
 
-enum ContestType(val compute: Int => ContestDates):
+enum ContestType(val compute: Int => ContestDates) derives sttp.tapir.Schema:
   def dates(year: Int): ContestDates = compute(year)
 
   case WFD extends ContestType(ContestDateCalculator.lastFull)

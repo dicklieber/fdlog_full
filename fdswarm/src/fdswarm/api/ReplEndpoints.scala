@@ -38,62 +38,75 @@ import java.time.Instant
 final class ReplEndpoints @Inject()(replicationSupport: ReplicationSupport,
                                     registry: PrometheusMeterRegistry) extends ApiEndpoints:
 
-  override def endpoints: List[ServerEndpoint[Any, IO]] = List(allQsos, qsoIdsByHour, qsosForIds)
+  override def endpoints: List[ServerEndpoint[Any, IO]] = List(allQsos, qsoIdsByHour, qsosForIds, qsoIdsByHourPost, neededFdHours)
 
-  /**
-    * GET /qsos – returns all QSOs as JSON and sets headers to download as an attachment.
-    * Equivalent to the cask route:
-    *   @get("/qsos"): Response[String](json, headers = ["Content-Type", "Content-Disposition"]) 
-    */
   private val printer: Printer = Printer.spaces2.copy(dropNullValues = true)
 
   val allQsos: ServerEndpoint[Any, IO] =
+    ReplEndpoints.allQsosDef
+      .serverLogicSuccess[IO] { _ =>
+        IO.pure((replicationSupport.all, "application/json", "attachment; filename=qsos.json"))
+      }
+
+  val qsoIdsByHour: ServerEndpoint[Any, IO] =
+    ReplEndpoints.qsoIdsByHourDef
+      .serverLogicSuccess[IO] { fdHourStr =>
+        val fdHour = FdHour(fdHourStr)
+        replicationSupport.idsForHour(fdHour)
+      }
+
+  val qsoIdsByHourPost: ServerEndpoint[Any, IO] =
+    ReplEndpoints.qsoIdsByHourPostDef
+      .serverLogicSuccess[IO] { fdHour =>
+        replicationSupport.idsForHour(fdHour)
+      }
+
+  val qsosForIds: ServerEndpoint[Any, IO] =
+    ReplEndpoints.qsosForIdsDef
+      .serverLogicSuccess[IO] { request =>
+        replicationSupport.qsosForIds(request)
+      }
+
+  val neededFdHours: ServerEndpoint[Any, IO] =
+    ReplEndpoints.neededFdHoursDef
+      .serverLogicSuccess[IO] { hours =>
+        // This endpoint should return the FdHourIds for each requested hour
+        import cats.implicits.*
+        hours.traverse(replicationSupport.idsForHour).map(_.toList)
+      }
+
+object ReplEndpoints:
+  val allQsosDef =
     endpoint
       .get
       .in("qsos")
-      .out(stringBody)
+      .out(jsonBody[Seq[Qso]])
       .out(header[String]("Content-Type"))
       .out(header[String]("Content-Disposition"))
-      .serverLogicSuccess[IO] { _ =>
-        val json = printer.print(replicationSupport.all.asJson)
-        IO.pure((json, "application/json", "attachment; filename=qsos.json"))
-      }
 
-  /**
-    * GET /qsos/{fdHour}/ids – returns all UUIDs for the given FdHour.
-    */
-  val qsoIdsByHour: ServerEndpoint[Any, IO] =
+  val qsoIdsByHourDef =
     endpoint
       .get
       .in("qsos" / path[String]("fdHour"))
-      .out(stringBody)
-      .out(header[String]("Content-Type"))
-      .serverLogicSuccess[IO] { fdHourStr =>
-        val fdHour = FdHour(fdHourStr)
-        replicationSupport.idsForHour(fdHour).map { result =>
-          val json = printer.print(result.asJson)
-          (json, "application/json")
-        }
-      }
+      .out(jsonBody[FdHourIds])
 
-  /**
-    * POST /qsosForIds – returns QSOs for the given IDs in an FdHourRequest.
-    */
-  val qsosForIds: ServerEndpoint[Any, IO] =
+  val qsoIdsByHourPostDef =
+    endpoint
+      .post
+      .in("qsos" / "ids")
+      .in(jsonBody[FdHour])
+      .out(jsonBody[FdHourIds])
+
+  val qsosForIdsDef =
     endpoint
       .post
       .in("qsosForIds")
-      .in(stringBody) 
-      .out(stringBody)
-      .out(header[String]("Content-Type"))
-      .serverLogicSuccess[IO] { requestJson =>
-        import io.circe.parser.decode
-        decode[FdHourRequest](requestJson) match {
-          case Right(request) =>
-            replicationSupport.qsosForIds(request).map { result =>
-              (printer.print(result.asJson), "application/json")
-            }
-          case Left(error) =>
-            IO.raiseError(new Exception(s"Failed to decode FdHourRequest: ${error.getMessage}"))
-        }
-      }
+      .in(jsonBody[FdHourRequest])
+      .out(jsonBody[FdHourQsos])
+
+  val neededFdHoursDef =
+    endpoint
+      .post
+      .in("neededFdHours")
+      .in(jsonBody[Seq[FdHour]])
+      .out(jsonBody[List[FdHourIds]])

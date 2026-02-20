@@ -29,7 +29,7 @@ import java.net.http.HttpResponse.BodyHandlers
 import java.net.http.{HttpClient, HttpRequest}
 
 class NodeStatusHandler @Inject()(replicationSupport:ReplicationSupport,
-                                  neededRequester: NeededRequester,
+                                  neededRequester: StatusProcessor,
                                   multicastTransport: MulticastTransport,
                                   hostAndPortProvider: HostAndPortProvider,
                                   swarmStatus:SwarmStatus) extends LazyLogging:

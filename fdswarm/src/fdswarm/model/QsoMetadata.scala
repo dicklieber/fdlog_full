@@ -35,7 +35,7 @@ import io.circe.Codec
 case class QsoMetadata(station: Station,
                        node: String = "localhost;1",
                        contest: ContestType,
-                       v: String = BuildInfo.version) derives Codec.AsObject
+                       v: String = BuildInfo.version) derives Codec.AsObject, sttp.tapir.Schema
 
 object QsoMetadata:
   val testQsoMetadata: QsoMetadata = QsoMetadata(station = Station(),

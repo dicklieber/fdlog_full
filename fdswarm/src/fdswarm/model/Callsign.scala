@@ -45,3 +45,4 @@ object Callsign:
 
   given Encoder[Callsign] = Encoder.encodeString.contramap(_.value)
   given Decoder[Callsign] = Decoder.decodeString.map(Callsign(_))
+  given sttp.tapir.Schema[Callsign] = sttp.tapir.Schema.string

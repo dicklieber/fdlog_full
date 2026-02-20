@@ -24,7 +24,7 @@ import BandMode.*
 /**
  * Allows storng band and mode in a compact why in a [[Qso]]
  */
-case class BandMode private[fdswarm] (band: Band, mode: Mode) derives Codec.AsObject:
+case class BandMode private[fdswarm] (band: Band, mode: Mode) derives Codec.AsObject, sttp.tapir.Schema:
   def cabMode: Band =
     mode match
       case "USB" => "PH"

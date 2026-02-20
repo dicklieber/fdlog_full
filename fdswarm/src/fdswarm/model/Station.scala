@@ -30,7 +30,7 @@ final case class Station(
                           rig:      String = "",
                           antenna:  String = "",
                           operator: Callsign = Callsign(""),
-                        ) derives  Codec.AsObject
+                        ) derives  Codec.AsObject, sttp.tapir.Schema
 //
 //object Station:
 //

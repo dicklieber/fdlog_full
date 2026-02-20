@@ -49,12 +49,12 @@ object FdHourDigest:
  * @param fdHour for when.
  * @param specificQsos what we need. If [[Seq.empty]], all QSOs for the given hour are returned.
  */
-case class FdHourRequest(fdHour: FdHour, specificQsos: Seq[Id] = Seq.empty) derives  Codec.AsObject
+case class FdHourRequest(fdHour: FdHour, specificQsos: Seq[Id] = Seq.empty) derives  Codec.AsObject, sttp.tapir.Schema
 
 /**
  * @param fdHour for when
  * @param ids QSOs for the given hour, the the node has or that a node needs.
  */
-case class FdHourIds(fdHour: FdHour, ids:Seq[Id]) derives  Codec.AsObject
+case class FdHourIds(fdHour: FdHour, ids:Seq[Id]) derives  Codec.AsObject, sttp.tapir.Schema
 
-case class FdHourQsos(fdHour: FdHour, qsos:Seq[Qso]) derives  Codec.AsObject
+case class FdHourQsos(fdHour: FdHour, qsos:Seq[Qso]) derives  Codec.AsObject, sttp.tapir.Schema

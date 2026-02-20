@@ -21,7 +21,7 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo {
 
   def scalacOptions = Seq("-feature", "-deprecation", "-Wconf:msg=Implicit parameters should be provided with a `using` clause:s")
 
-  def mainClass = Some("fdswarm.Main")
+  def mainClass = Some("fdswarm.FdLogApp")
 
   override def forkArgs = Task {
     val cp = runClasspath()
@@ -84,10 +84,13 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo {
 
     mvn"com.softwaremill.sttp.tapir:tapir-core_3:1.13.8",
     mvn"com.softwaremill.sttp.tapir:tapir-http4s-server_3:1.13.8",
+    mvn"com.softwaremill.sttp.tapir:tapir-http4s-client_3:1.13.8",
     mvn"com.softwaremill.sttp.tapir:tapir-json-circe_3:1.13.8",
     mvn"com.softwaremill.sttp.tapir::tapir-swagger-ui-bundle:1.13.8",
     mvn"org.http4s:http4s-ember-server_3:0.23.33",
+    mvn"org.http4s:http4s-ember-client_3:0.23.33",
     mvn"org.http4s:http4s-dsl_3:0.23.33",
+    mvn"org.http4s:http4s-circe_3:0.23.33",
     mvn"org.typelevel:cats-effect_3:3.5.7",
 
     mvn"org.scalafx:scalafx_3:23.0.1-R34",
@@ -101,9 +104,11 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo {
     override def mvnDeps = super.mvnDeps() ++ Seq(
       mvn"org.apache.logging.log4j:log4j-core:$log4jV",
       mvn"org.apache.logging.log4j:log4j-core-test:$log4jV",
+      mvn"com.softwaremill.sttp.tapir:tapir-http4s-client_3:1.13.8",
+      mvn"org.http4s:http4s-ember-client_3:0.23.33",
     )
 
-    def scalaVersion = "3.7.1"
+    def scalaVersion = "3.7.4"
 
     def munitVersion = "1.0.0"
   }

@@ -53,7 +53,8 @@ class NodeStatusHandlerTest extends FunSuite:
       override val http = myHostAndPort
     }
     
-    val neededRequester = new NeededRequester(replicationSupport)
+    val remoteEndpointCaller = new RemoteEndpointCaller
+    val neededRequester = new StatusProcessor(replicationSupport, remoteEndpointCaller)
     val handler = new NodeStatusHandler(replicationSupport, neededRequester, transport, hostAndPortProvider, new SwarmStatus)
     
     // Create a status message from "myself"
@@ -77,9 +78,9 @@ class NodeStatusHandlerTest extends FunSuite:
     val registry = new SimpleMeterRegistry()
     class TestReplicationSupport extends ReplicationSupport(new DirectoryProvider { override def apply(): os.Path = os.temp.dir() }, registry):
       var determineNeededCalled = false
-      override def determineNeeded(status: StatusMessage): cats.effect.IO[Seq[fdswarm.store.FdHourIds]] = {
+      override def handleStatusMessage(status: StatusMessage): cats.effect.IO[Seq[fdswarm.store.FdHourIds]] = {
         determineNeededCalled = true
-        super.determineNeeded(status)
+        super.handleStatusMessage(status)
       }
     val replicationSupport = new TestReplicationSupport
     
@@ -92,7 +93,8 @@ class NodeStatusHandlerTest extends FunSuite:
       override val http = myHostAndPort
     }
     
-    val neededRequester = new NeededRequester(replicationSupport)
+    val remoteEndpointCaller = new RemoteEndpointCaller
+    val neededRequester = new StatusProcessor(replicationSupport, remoteEndpointCaller)
     val handler = new NodeStatusHandler(replicationSupport, neededRequester, transport, hostAndPortProvider, new SwarmStatus)
     
     // Create a status message from "someone else" with one FdHour

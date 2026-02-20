@@ -22,6 +22,7 @@ import cats.effect.IO
 import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
 import fdswarm.replication.StatusMessage
+import fdswarm.util.Ids.Id
 import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.{Inject, Singleton}
 
@@ -32,7 +33,7 @@ import jakarta.inject.{Inject, Singleton}
 @Singleton
 class ReplicationSupport @Inject()(directoryProvider: DirectoryProvider, registry: MeterRegistry) extends QsoStore(directoryProvider, registry):
 
-  def determineNeeded(status: StatusMessage): IO[Seq[FdHourIds]] =
+  def handleStatusMessage(status: StatusMessage): IO[Seq[FdHourIds]] =
     val incoming = status.fdDigests
     val cpy: Map[FdHour, FdHourDigest] = internalDigests
     val neededFdHours = incoming.flatMap { remoteFdHourDigest =>
@@ -54,6 +55,17 @@ class ReplicationSupport @Inject()(directoryProvider: DirectoryProvider, registr
     IO {
       val ids = all.filter(_.fdHour == fdHour).map(_.uuid)
       FdHourIds(fdHour, ids)
+    }
+
+  def missingIds(remote: FdHourIds): IO[Seq[Id]] =
+    idsForHour(remote.fdHour).map { local =>
+      val localIds = local.ids.toSet
+      remote.ids.filterNot(localIds.contains)
+    }
+
+  def addQsos(qsos: Seq[fdswarm.model.Qso]): IO[Unit] =
+    IO {
+      add(qsos)
     }
 
   def qsosForFdHour(fdHour: FdHour): IO[Seq[fdswarm.model.Qso]] =
