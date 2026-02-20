@@ -46,8 +46,8 @@ class StatusProcessor @Inject()(qsoStore: ReplicationSupport,
     for
       neededIds <- qsoStore.handleStatusMessage(status) // IO[Seq[FdHourIds]]
       neededHours: Seq[FdHour] = neededIds.map(_.fdHour) // Seq[FdHour]
-      remoteFdHourIds <- neededHours.toList.traverse: hour =>
-        remoteEndpointCaller.callRemoteEndpoint(status.hostAndPort, ReplEndpoints.qsoIdsByHourPostDef, hour)
+      remoteFdHourIds <- neededHours.toList.traverse: fdHour =>
+        remoteEndpointCaller.callRemoteEndpoint(status.hostAndPort, ReplEndpoints.qsoIdsByHourPostDef, fdHour)
       _ <- remoteFdHourIds.traverse: remoteIds =>
         for
           missing <- qsoStore.missingIds(remoteIds)
