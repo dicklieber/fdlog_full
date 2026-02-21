@@ -26,6 +26,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.AutoBind
 import fdswarm.api.ApiEndpoints
 import fdswarm.io.{DirectoryProvider, ProductionDirectory}
+import fdswarm.store.{QsoStore, ReplicationSupport}
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import net.codingwell.scalaguice.ScalaModule
@@ -51,6 +52,7 @@ class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
     )
 
     bind[DirectoryProvider].toInstance(new ProductionDirectory)
+    bind[QsoStore].to[ReplicationSupport].asEagerSingleton()
     bind[MeterRegistry].to[PrometheusMeterRegistry].asEagerSingleton()
     bind[PrometheusMeterRegistry].toInstance(new PrometheusMeterRegistry(io.micrometer.prometheusmetrics.PrometheusConfig.DEFAULT))
     val primaryConfig = ConfigFactory.parseFile((os.pwd / "config" / "sarasec.conf").toIO)

@@ -49,12 +49,13 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
     add(Seq(qso))
 
   def add(batch: Seq[Qso]): Unit =
+    val thread = Thread.currentThread().getName
+    logger.debug(s"[THREAD:$thread] Adding ${batch.size} QSOs to store")
     val lines = for
       qso <- batch
     yield
       val uuid = qso.uuid
       val maybeQso = map.putIfAbsent(uuid, qso)
-      qsoCollection.prepend(qso)
       maybeQso.foreach(was =>
         logger.error(s"Was already a qso for uuid: $uuid $qso")
       )
@@ -62,9 +63,21 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
 
     if lines.nonEmpty then
       os.write.append(journalFile, lines.mkString, createFolders = true)
+      try
+        logger.debug(s"[THREAD:$thread] Scheduling prependAll of ${batch.size} on JavaFX thread")
+        scalafx.application.Platform.runLater {
+          logger.debug(s"[THREAD:${Thread.currentThread().getName}] Prepended ${batch.size} to qsoCollection")
+          qsoCollection.prependAll(batch)
+        }
+      catch
+        case _: IllegalStateException =>
+          // Toolkit not initialized (likely in tests)
+          logger.debug(s"[THREAD:${Thread.currentThread().getName}] Toolkit not initialized, direct prependAll")
+          qsoCollection.prependAll(batch)
     buildFdHourDigests()
 
   private def buildFdHourDigests(): Unit =
+    logger.debug("Rebuilding FDhour digests")
     buildDigestsCounter.increment()
     buildDigestsTimer.record(new Runnable {
       override def run(): Unit =

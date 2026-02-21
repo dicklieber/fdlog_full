@@ -46,7 +46,13 @@ class SwarmStatus @Inject()() extends LazyLogging:
         case None =>
           val nodeDetails = NodeDetails(hostAndPort)
           nodeDetails.put(fdHourDigest)
-          nodeMap.put(hostAndPort, nodeDetails)
+          try
+            Platform.runLater {
+              nodeMap.put(hostAndPort, nodeDetails)
+            }
+          catch
+            case _: IllegalStateException =>
+              nodeMap.put(hostAndPort, nodeDetails)
 
 
 case class LHData(fdHourDigest: FdHourDigest, lastSeen: Instant = Instant.EPOCH)

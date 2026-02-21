@@ -18,6 +18,7 @@
 
 package fdswarm.replication
 
+import scalafx.application.Platform
 import cats.effect.IO
 import cats.syntax.all.*
 import com.typesafe.scalalogging.LazyLogging
@@ -53,14 +54,18 @@ class StatusProcessor @Inject()(qsoStore: ReplicationSupport,
           for
             // 1. Ask remote for all IDs in this hour
             remoteIds <- callEndpoint(ReplEndpoints.qsoIdsByHourGetDef, fdHour)
+            _ <- IO(logger.debug(s"Remote has ${remoteIds.size} IDs for $fdHour"))
             
             // 2. Check locally which ones we don't have
             missingIds <- qsoStore.missingIds(FdHourIds(fdHour, remoteIds))
+            _ <- IO(logger.debug(s"Local is missing ${missingIds.size} IDs for $fdHour"))
             
             // 3. If any are missing, fetch the actual QSOs
             _ <- if (missingIds.nonEmpty) then
+              logger.debug("fdHour: {} Missing: ({}) {}", fdHour, missingIds.size, missingIds.mkString(","))
               for
                 remoteQsos <- callEndpoint(ReplEndpoints.qsosForIdsDef, FdHourRequest(fdHour, missingIds))
+                _ <- IO(logger.debug(s"Fetched ${remoteQsos.size} remote QSOs for $fdHour"))
                 _ <- qsoStore.addQsos(remoteQsos)
               yield ()
             else IO.unit
