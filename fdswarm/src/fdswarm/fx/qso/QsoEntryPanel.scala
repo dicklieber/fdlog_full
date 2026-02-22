@@ -134,8 +134,7 @@ class QsoEntryPanel @Inject()(
     qsoStore.add(qso)
 
     val json = qso.asJson.noSpaces
-    val bytes = UDPHeader(Service.QSO, json.getBytes("UTF-8"))
-    multicastTransport.send(bytes)
+    multicastTransport.send(Service.QSO, json.getBytes("UTF-8"))
 
     if !grid.styleClass.contains("qso-submit-highlight") then
       grid.styleClass += "qso-submit-highlight"

@@ -22,15 +22,19 @@ import com.organization.BuildInfo
 
 import scala.util.Try
 
-case class UDPHeaderData(service: Service, payload: Array[Byte])
+import fdswarm.util.Ids
+import fdswarm.util.Ids.Id
+
+case class UDPHeaderData(service: Service, instance: Id, payload: Array[Byte])
 
 /**
  * UDP Header format:
- * FDSWARM|SERVICE|VERSION|\n
+ * FDSWARM|SERVICE|VERSION|INSTANCE|\n
  * JSON_PAYLOAD
  */
 object UDPHeader:
-  private val headerRegx = s"""^FDSWARM\\|(${Service.values.map(_.toString).mkString("|")})\\|(\\d+)\\|$$""".r
+  val localInstanceId: Id = Ids.generateId()
+  private val headerRegx = s"""^FDSWARM\\|(${Service.values.map(_.toString).mkString("|")})\\|(\\d+)\\|([^|]+)\\|$$""".r
 
   /**
    * Creates a UDP packet from a Header.
@@ -40,7 +44,7 @@ object UDPHeader:
    * @return suitable for sending over UDP.
    */
   def apply(service: Service, payload: Array[Byte] = Array.emptyByteArray): Array[Byte] =
-    val header = s"FDSWARM|$service|${BuildInfo.dataVersion}|\n"
+    val header = s"FDSWARM|$service|${BuildInfo.dataVersion}|$localInstanceId|\n"
     val headerBytes: Array[Byte] = header.getBytes("UTF-8")
     val result: Array[Byte] = headerBytes ++ payload
     result
@@ -49,10 +53,10 @@ object UDPHeader:
    * Parses a UDP packet into a UDPHeaderData.
    *
    * @param packet received.
-   * @return
+   * @return Option[UDPHeaderData] None if the packet is from the local instance.
    */
   @throws[IllegalArgumentException]("if packet is invalid")
-  def parse(packet: Array[Byte]): UDPHeaderData =
+  def parse(packet: Array[Byte]): Option[UDPHeaderData] =
     Try {
       val newlineIndex = packet.indexOf('\n'.toByte)
       if (newlineIndex == -1) throw new IllegalArgumentException("Invalid packet: no newline found")
@@ -61,14 +65,15 @@ object UDPHeader:
       val payloadBytes = packet.drop(newlineIndex + 1)
 
       headerStr match
-        case headerRegx(sService, dataVersion) =>
+        case headerRegx(sService, dataVersion, instance) =>
           if dataVersion != BuildInfo.dataVersion then
             throw new IllegalArgumentException(s"Data version mismatch: expected ${BuildInfo.dataVersion}, got $dataVersion")
 
-          val service = Service.valueOf(sService)
-
-          val payload = payloadBytes
-          UDPHeaderData(service, payload)
+          Option.when(instance != localInstanceId) {
+            val service = Service.valueOf(sService)
+            val payload = payloadBytes
+            UDPHeaderData(service, instance, payload)
+          }
         case _ =>
           throw new IllegalArgumentException(s"Invalid header format: $headerStr")
     }.get

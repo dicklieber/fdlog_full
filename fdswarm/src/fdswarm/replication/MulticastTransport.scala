@@ -2,7 +2,7 @@ package fdswarm.replication
 
 import com.google.inject.name.Named
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.util.HostAndPortProvider
+import fdswarm.util.{HostAndPortProvider, Ids}
 import jakarta.inject.{Inject, Singleton}
 
 import java.net.{DatagramPacket, InetAddress, InetSocketAddress, MulticastSocket, NetworkInterface}
@@ -25,7 +25,6 @@ class MulticastTransport @Inject()(
   private var thread: Thread = uninitialized
 
   // Start receiver in constructor
-  logger.debug(s"Starting MulticastTransport receiver on $groupAddr:$port")
   try
     socket = new MulticastSocket(port)
     socket.setReuseAddress(true)
@@ -34,25 +33,22 @@ class MulticastTransport @Inject()(
 
     thread = new Thread(() =>
       val buffer = new Array[Byte](65535)
-      val localAddresses = NetworkInterface.getNetworkInterfaces.asScala
-        .flatMap(_.getInetAddresses.asScala)
-        .toSet
 
       while !Thread.currentThread().isInterrupted do
         try
           val packet = new DatagramPacket(buffer, buffer.length)
           socket.receive(packet)
 
-          if localAddresses.contains(packet.getAddress) then
-            logger.trace(s"Ignoring our own message from ${packet.getAddress}:${packet.getPort}")
-          else
-            val data = packet.getData.slice(packet.getOffset, packet.getOffset + packet.getLength)
-            try
-              val udpHeader = UDPHeader.parse(data)
-              queue.offer(udpHeader)
-            catch
-              case e: IllegalArgumentException =>
-                logger.error(s"Received invalid UDP packet: ${e.getMessage}")
+          val data = packet.getData.slice(packet.getOffset, packet.getOffset + packet.getLength)
+          try
+            UDPHeader.parse(data) match
+              case Some(udpHeader) =>
+                queue.offer(udpHeader)
+              case None =>
+                logger.trace(s"Ignoring our own message from ${packet.getAddress}:${packet.getPort}")
+          catch
+            case e: IllegalArgumentException =>
+              logger.error(s"Received invalid UDP packet: ${e.getMessage}")
         catch
           case _: InterruptedException => Thread.currentThread().interrupt()
           case e: Exception =>
@@ -68,7 +64,11 @@ class MulticastTransport @Inject()(
       stop()
 
   def send(data: Array[Byte]): Unit =
-    val packet = new DatagramPacket(data, data.length, group, port)
+    send(Service.QSO, data)
+
+  def send(service: Service, data: Array[Byte]): Unit =
+    val packetBytes = UDPHeader(service, data)
+    val packet = new DatagramPacket(packetBytes, packetBytes.length, group, port)
     socket.send(packet)
 
   def stop(): Unit =

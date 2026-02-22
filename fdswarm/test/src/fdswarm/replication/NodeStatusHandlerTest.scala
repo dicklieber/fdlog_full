@@ -33,16 +33,10 @@ class NodeStatusHandlerTest extends FunSuite:
 
   class MockMulticastTransport(hostAndPortProvider: HostAndPortProvider) extends MulticastTransport(8900, "239.192.0.88", hostAndPortProvider):
     override val queue = new LinkedBlockingQueue[UDPHeaderData]()
-    
-    // Simulates receiving a raw packet and performing filtering
-    def receiveRaw(packetBytes: Array[Byte], senderAddress: InetAddress = InetAddress.getByName("192.168.1.101")): Unit =
-      val localAddresses = NetworkInterface.getNetworkInterfaces.asScala
-        .flatMap(_.getInetAddresses.asScala)
-        .toSet
 
-      if !localAddresses.contains(senderAddress) then
-        val udpHeader = UDPHeader.parse(packetBytes)
-        queue.offer(udpHeader)
+    // Simulates receiving a raw packet and performing filtering
+    def receiveRaw(packetBytes: Array[Byte]): Unit =
+      UDPHeader.parse(packetBytes).foreach(queue.offer)
 
   test("MulticastTransport ignores its own status messages"):
     val myHostAndPort = HostAndPort("127.0.0.1", 8080)
@@ -51,12 +45,12 @@ class NodeStatusHandlerTest extends FunSuite:
     }
     val transport = new MockMulticastTransport(hostAndPortProvider)
     
-    // Create a status message
+    // Create a status message with our own instance ID
     val myStatus = StatusMessage(myHostAndPort, Seq.empty)
     val packetBytes = UDPHeader(Service.Status, myStatus.toPacket)
     
-    // Simulate receiving it from "ourselves" (127.0.0.1)
-    transport.receiveRaw(packetBytes, InetAddress.getByName("127.0.0.1"))
+    // Simulate receiving it
+    transport.receiveRaw(packetBytes)
     
     assert(transport.queue.isEmpty, "MulticastTransport should HAVE ignored our own message")
     transport.stop()
@@ -80,7 +74,7 @@ class NodeStatusHandlerTest extends FunSuite:
     )
     val packetBytes = UDPHeader(Service.QSO, qso.asJson.noSpaces.getBytes("UTF-8"))
 
-    transport.receiveRaw(packetBytes, InetAddress.getByName("127.0.0.1"))
+    transport.receiveRaw(packetBytes)
     
     assert(transport.queue.isEmpty, "MulticastTransport should HAVE ignored our own QSO")
     transport.stop()
@@ -112,8 +106,8 @@ class NodeStatusHandlerTest extends FunSuite:
     val fdHour = FdHour(15, 10)
     val digest = FdHourDigest(fdHour, 5, "some-digest")
     val otherStatus = StatusMessage(otherHostAndPort, Seq(digest))
-    val packetBytes = UDPHeader(Service.Status, otherStatus.toPacket)
-    val packet = UDPHeader.parse(packetBytes)
+    val packetBytes = (s"FDSWARM|Status|${com.organization.BuildInfo.dataVersion}|other-instance|\n").getBytes("UTF-8") ++ otherStatus.toPacket
+    val packet = UDPHeader.parse(packetBytes).get
     
     transport.queue.put(packet)
     
@@ -156,8 +150,8 @@ class NodeStatusHandlerTest extends FunSuite:
       section = "IL",
       qsoMetadata = testQsoMetadata
     )
-    val packetBytes = UDPHeader(Service.QSO, qso.asJson.noSpaces.getBytes("UTF-8"))
-    val packet = UDPHeader.parse(packetBytes)
+    val packetBytes = (s"FDSWARM|QSO|${com.organization.BuildInfo.dataVersion}|other-instance|\n").getBytes("UTF-8") ++ qso.asJson.noSpaces.getBytes("UTF-8")
+    val packet = UDPHeader.parse(packetBytes).get
 
     transport.queue.put(packet)
 

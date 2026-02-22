@@ -145,8 +145,7 @@ class StatusBroadcastService @Inject()(
       )
       logger.trace(s"Broadcasting status: $statusMessage")
       val gzipBytes = statusMessage.toPacket
-      val bytes = UDPHeader(Service.Status, gzipBytes)
-      multicastTransport.send(bytes)
+      multicastTransport.send(Service.Status, gzipBytes)
     catch
       case e: Exception =>
         logger.error("Error broadcasting node status", e)
