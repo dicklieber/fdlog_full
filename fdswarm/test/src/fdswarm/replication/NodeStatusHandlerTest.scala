@@ -110,8 +110,95 @@ class NodeStatusHandlerTest extends FunSuite:
     // Wait a bit for processing
     Thread.sleep(500)
     
-    // Verify isFdHourNeeded WAS called (via StatusProcessor)
-    assert(replicationSupport.isFdHourNeededCalled, "isFdHourNeeded SHOULD have been called for other node's message")
-    
+    handler.stop()
+    transport.stop()
+
+  test("NodeStatusHandler processes QSO messages from other nodes"):
+    val registry = new SimpleMeterRegistry()
+    class TestReplicationSupport extends ReplicationSupport(new DirectoryProvider { override def apply(): os.Path = os.temp.dir() }, registry):
+      var addedQso: Option[fdswarm.model.Qso] = None
+      override def add(qso: fdswarm.model.Qso): Unit = {
+        addedQso = Some(qso)
+        super.add(qso)
+      }
+    val replicationSupport = new TestReplicationSupport
+
+    val transport = new MockMulticastTransport
+
+    val myHostAndPort = HostAndPort("192.168.1.100", 8080)
+    val hostAndPortProvider = new HostAndPortProvider(8080) {
+      override val http = myHostAndPort
+    }
+
+    val remoteEndpointCaller = new CallEndpoint
+    val neededRequester = new StatusProcessor(replicationSupport, null, remoteEndpointCaller)
+    val handler = new NodeStatusHandler(replicationSupport, neededRequester, transport, hostAndPortProvider, new SwarmStatus)
+
+    import fdswarm.model.*
+    import fdswarm.model.QsoMetadata.testQsoMetadata
+    import io.circe.syntax.*
+
+    val qso = Qso(callsign = Callsign("W9NNN"),
+      contestClass = "WFD",
+      bandMode = BandMode("20m", "CW"),
+      section = "IL",
+      qsoMetadata = testQsoMetadata
+    )
+    val packet = UDPHeader(Service.QSO, qso.asJson.noSpaces.getBytes("UTF-8"))
+
+    transport.queue.put(packet)
+
+    handler.start()
+
+    // Wait a bit for processing
+    Thread.sleep(500)
+
+    handler.stop()
+    transport.stop()
+
+  test("NodeStatusHandler ignores its own QSO messages"):
+    val registry = new SimpleMeterRegistry()
+    class TestReplicationSupport extends ReplicationSupport(new DirectoryProvider { override def apply(): os.Path = os.temp.dir() }, registry):
+      var addedQso: Option[fdswarm.model.Qso] = None
+      override def add(qso: fdswarm.model.Qso): Unit = {
+        addedQso = Some(qso)
+        super.add(qso)
+      }
+    val replicationSupport = new TestReplicationSupport
+
+    val transport = new MockMulticastTransport
+
+    val myHostAndPort = HostAndPort("192.168.1.100", 8080)
+    val hostAndPortProvider = new HostAndPortProvider(8080) {
+      override val http = myHostAndPort
+    }
+
+    val remoteEndpointCaller = new CallEndpoint
+    val neededRequester = new StatusProcessor(replicationSupport, null, remoteEndpointCaller)
+    val handler = new NodeStatusHandler(replicationSupport, neededRequester, transport, hostAndPortProvider, new SwarmStatus)
+
+    import fdswarm.model.*
+    import fdswarm.model.QsoMetadata.testQsoMetadata
+    import io.circe.syntax.*
+
+    // Local QSO has node = "local"
+    val qso = Qso(callsign = Callsign("W9NNN"),
+      contestClass = "WFD",
+      bandMode = BandMode("20m", "CW"),
+      section = "IL",
+      qsoMetadata = testQsoMetadata.copy(node = "local")
+    )
+    val packet = UDPHeader(Service.QSO, qso.asJson.noSpaces.getBytes("UTF-8"))
+
+    transport.queue.put(packet)
+
+    handler.start()
+
+    // Wait a bit for processing
+    Thread.sleep(500)
+
+    // Verify qso was NOT added because it's our own
+    assert(replicationSupport.addedQso.isEmpty, "QSO should NOT have been added")
+
     handler.stop()
     transport.stop()

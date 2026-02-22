@@ -47,13 +47,30 @@ class NodeStatusHandler @Inject()(replicationSupport:ReplicationSupport,
         try
           val payload: Array[Byte] = multicastTransport.queue.take()
           val udpHeader: UDPHeaderData = UDPHeader.parse(payload)
-          val statusMessage = StatusMessage(udpHeader.payload)
-          swarmStatus.put(statusMessage)
-          if statusMessage.hostAndPort == hostAndPortProvider.http then
-            logger.trace(s"Ignoring our own message from ${statusMessage.hostAndPort}")
-          else
-            logger.trace("StatusHandle: StatusMessage from {} with {} digests.", statusMessage.hostAndPort, statusMessage.fdDigests.size)
-            neededRequester.processStatus(statusMessage).unsafeRunAndForget()
+          udpHeader.service match
+            case Service.Status =>
+              val statusMessage = StatusMessage(udpHeader.payload)
+              swarmStatus.put(statusMessage)
+              if statusMessage.hostAndPort == hostAndPortProvider.http then
+                logger.trace(s"Ignoring our own message from ${statusMessage.hostAndPort}")
+              else
+                logger.trace("StatusHandle: StatusMessage from {} with {} digests.", statusMessage.hostAndPort, statusMessage.fdDigests.size)
+                neededRequester.processStatus(statusMessage).unsafeRunAndForget()
+            case Service.QSO =>
+              import fdswarm.model.Qso
+              import io.circe.parser.decode
+              val json = new String(udpHeader.payload, "UTF-8")
+              decode[Qso](json) match
+                case Right(qso) =>
+                  if qso.qsoMetadata.node == "local" then
+                    logger.trace(s"Ignoring our own QSO: ${qso.callsign}")
+                  else
+                    logger.debug(s"Received QSO via multicast: ${qso.callsign}")
+                    replicationSupport.add(qso)
+                case Left(error) =>
+                  logger.error(s"Failed to decode QSO from multicast: $json", error)
+            case _ =>
+              logger.trace(s"Ignoring service: ${udpHeader.service}")
         catch
           case _: InterruptedException => Thread.currentThread().interrupt()
           case e: Exception =>

@@ -24,7 +24,9 @@ import fdswarm.fx.bandmodes.SelectedBandModeStore
 import fdswarm.fx.contest.{ContestManager, ContestType}
 import fdswarm.fx.{CallSignField, GridUtils, UpperCase}
 import fdswarm.model.*
+import fdswarm.replication.{MulticastTransport, Service, UDPHeader}
 import fdswarm.store.QsoStore
+import io.circe.syntax.*
 import jakarta.inject.{Inject, Singleton}
 import scalafx.application.Platform
 import scalafx.scene.Node
@@ -35,6 +37,7 @@ import scalafx.util.Duration
 @Singleton
 class QsoEntryPanel @Inject()(
                                qsoStore: QsoStore,
+                               multicastTransport: MulticastTransport,
                                selectedBandModeStore: SelectedBandModeStore,
                                stationManager: StationManager,
                                contestManager: ContestManager,
@@ -127,6 +130,10 @@ class QsoEntryPanel @Inject()(
     )
 
     qsoStore.add(qso)
+
+    val json = qso.asJson.noSpaces
+    val bytes = UDPHeader(Service.QSO, json.getBytes("UTF-8"))
+    multicastTransport.send(bytes)
 
     if !grid.styleClass.contains("qso-submit-highlight") then
       grid.styleClass += "qso-submit-highlight"
