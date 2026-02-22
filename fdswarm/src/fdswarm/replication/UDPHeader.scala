@@ -19,6 +19,7 @@
 package fdswarm.replication
 
 import com.organization.BuildInfo
+import org.slf4j.LoggerFactory
 
 import scala.util.Try
 
@@ -33,7 +34,11 @@ case class UDPHeaderData(service: Service, instance: Id, payload: Array[Byte])
  * JSON_PAYLOAD
  */
 object UDPHeader:
-  val localInstanceId: Id = Ids.generateInstanceId()
+  private val logger = LoggerFactory.getLogger(getClass)
+  val localInstanceId: Id =
+    val id = Ids.generateInstanceId()
+    logger.info(s"localInstanceId: $id")
+    id
   private val headerRegx = s"""^FDSWARM\\|(${Service.values.map(_.toString).mkString("|")})\\|(\\d+)\\|([^|]+)\\|$$""".r
 
   /**
