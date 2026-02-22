@@ -33,11 +33,6 @@ class UDPHeaderTest extends FunSuite:
     val expected = s"FDSWARM|Status|${BuildInfo.dataVersion}|\n".getBytes("UTF-8")
     assert(bytes.sameElements(expected))
 
-  test("UDPHeader generates correct Discovery header"):
-    val bytes = UDPHeader(Service.Discovery)
-    val expected = s"FDSWARM|Discovery|${BuildInfo.dataVersion}|\n".getBytes("UTF-8")
-    assert(bytes.sameElements(expected))
-
   test("UDPHeader generates correct header with payload"):
     val payload = "Hello World".getBytes("UTF-8")
     val bytes = UDPHeader(Service.Status, payload)
@@ -46,12 +41,6 @@ class UDPHeaderTest extends FunSuite:
     System.arraycopy(headerPart, 0, expected, 0, headerPart.length)
     System.arraycopy(payload, 0, expected, headerPart.length, payload.length)
     assert(bytes.sameElements(expected))
-
-  test("UDPHeader.parse correctly parses valid Discovery header with Unit"):
-    val header = s"FDSWARM|Discovery|${BuildInfo.dataVersion}|\n".getBytes("UTF-8")
-    val result = UDPHeader.parse(header)
-    assertEquals(result.service, Service.Discovery)
-    assert(result.payload.isEmpty)
 
   test("UDPHeader.parse correctly parses valid Status header with String payload"):
     val jsonPayload = "\"status-ok\""

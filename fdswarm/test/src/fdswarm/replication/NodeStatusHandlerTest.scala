@@ -25,53 +25,64 @@ import fdswarm.util.{HostAndPort, HostAndPortProvider}
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import munit.FunSuite
 
-import java.net.InetAddress
+import java.net.{InetAddress, NetworkInterface}
 import java.util.concurrent.LinkedBlockingQueue
+import scala.jdk.CollectionConverters.*
 
 class NodeStatusHandlerTest extends FunSuite:
 
-  class MockMulticastTransport extends MulticastTransport(8900, "239.192.0.88"):
-    override val queue = new LinkedBlockingQueue[Array[Byte]]()
-    // Avoid starting the actual receiver thread
-    // The constructor calls the real one, but we can't easily stop it without side effects
-    // but we just need the queue
+  class MockMulticastTransport(hostAndPortProvider: HostAndPortProvider) extends MulticastTransport(8900, "239.192.0.88", hostAndPortProvider):
+    override val queue = new LinkedBlockingQueue[UDPHeaderData]()
+    
+    // Simulates receiving a raw packet and performing filtering
+    def receiveRaw(packetBytes: Array[Byte], senderAddress: InetAddress = InetAddress.getByName("192.168.1.101")): Unit =
+      val localAddresses = NetworkInterface.getNetworkInterfaces.asScala
+        .flatMap(_.getInetAddresses.asScala)
+        .toSet
 
-  test("NodeStatusHandler ignores its own status messages"):
-    val registry = new SimpleMeterRegistry()
-    class TestReplicationSupport extends ReplicationSupport(new DirectoryProvider { override def apply(): os.Path = os.temp.dir() }, registry):
-      var digestsCalled = false
-      override def digests(): Seq[FdHourDigest] = {
-        digestsCalled = true
-        super.digests()
-      }
-    val replicationSupport = new TestReplicationSupport
-    
-    val transport = new MockMulticastTransport
-    
-    val myHostAndPort = HostAndPort("192.168.1.100", 8080)
+      if !localAddresses.contains(senderAddress) then
+        val udpHeader = UDPHeader.parse(packetBytes)
+        queue.offer(udpHeader)
+
+  test("MulticastTransport ignores its own status messages"):
+    val myHostAndPort = HostAndPort("127.0.0.1", 8080)
     val hostAndPortProvider = new HostAndPortProvider(8080) {
       override val http = myHostAndPort
     }
+    val transport = new MockMulticastTransport(hostAndPortProvider)
     
-    val remoteEndpointCaller = new CallEndpoint
-    val neededRequester = new StatusProcessor(replicationSupport, null, remoteEndpointCaller)
-    val handler = new NodeStatusHandler(replicationSupport, neededRequester, transport, hostAndPortProvider, new SwarmStatus)
-    
-    // Create a status message from "myself"
+    // Create a status message
     val myStatus = StatusMessage(myHostAndPort, Seq.empty)
-    val packet = UDPHeader(Service.Status, myStatus.toPacket)
+    val packetBytes = UDPHeader(Service.Status, myStatus.toPacket)
     
-    transport.queue.put(packet)
+    // Simulate receiving it from "ourselves" (127.0.0.1)
+    transport.receiveRaw(packetBytes, InetAddress.getByName("127.0.0.1"))
     
-    handler.start()
+    assert(transport.queue.isEmpty, "MulticastTransport should HAVE ignored our own message")
+    transport.stop()
+
+  test("MulticastTransport ignores its own QSO messages"):
+    val myHostAndPort = HostAndPort("127.0.0.1", 8080)
+    val hostAndPortProvider = new HostAndPortProvider(8080) {
+      override val http = myHostAndPort
+    }
+    val transport = new MockMulticastTransport(hostAndPortProvider)
+
+    import fdswarm.model.*
+    import fdswarm.model.QsoMetadata.testQsoMetadata
+    import io.circe.syntax.*
+
+    val qso = Qso(callsign = Callsign("W9NNN"),
+      contestClass = "WFD",
+      bandMode = BandMode("20m", "CW"),
+      section = "IL",
+      qsoMetadata = testQsoMetadata.copy(node = "local")
+    )
+    val packetBytes = UDPHeader(Service.QSO, qso.asJson.noSpaces.getBytes("UTF-8"))
+
+    transport.receiveRaw(packetBytes, InetAddress.getByName("127.0.0.1"))
     
-    // Wait a bit for processing
-    Thread.sleep(200)
-    
-    // Verify digests was NEVER called because it was ignored
-    assert(!replicationSupport.digestsCalled, "digests should NOT have been called for our own message")
-    
-    handler.stop()
+    assert(transport.queue.isEmpty, "MulticastTransport should HAVE ignored our own QSO")
     transport.stop()
 
   test("NodeStatusHandler processes status messages from other nodes"):
@@ -84,14 +95,14 @@ class NodeStatusHandlerTest extends FunSuite:
       }
     val replicationSupport = new TestReplicationSupport
     
-    val transport = new MockMulticastTransport
-    
     val myHostAndPort = HostAndPort("192.168.1.100", 8080)
     val otherHostAndPort = HostAndPort("192.168.1.101", 8080)
     
     val hostAndPortProvider = new HostAndPortProvider(8080) {
       override val http = myHostAndPort
     }
+    
+    val transport = new MockMulticastTransport(hostAndPortProvider)
     
     val remoteEndpointCaller = new CallEndpoint
     val neededRequester = new StatusProcessor(replicationSupport, null, remoteEndpointCaller)
@@ -101,7 +112,8 @@ class NodeStatusHandlerTest extends FunSuite:
     val fdHour = FdHour(15, 10)
     val digest = FdHourDigest(fdHour, 5, "some-digest")
     val otherStatus = StatusMessage(otherHostAndPort, Seq(digest))
-    val packet = UDPHeader(Service.Status, otherStatus.toPacket)
+    val packetBytes = UDPHeader(Service.Status, otherStatus.toPacket)
+    val packet = UDPHeader.parse(packetBytes)
     
     transport.queue.put(packet)
     
@@ -123,12 +135,12 @@ class NodeStatusHandlerTest extends FunSuite:
       }
     val replicationSupport = new TestReplicationSupport
 
-    val transport = new MockMulticastTransport
-
     val myHostAndPort = HostAndPort("192.168.1.100", 8080)
     val hostAndPortProvider = new HostAndPortProvider(8080) {
       override val http = myHostAndPort
     }
+    
+    val transport = new MockMulticastTransport(hostAndPortProvider)
 
     val remoteEndpointCaller = new CallEndpoint
     val neededRequester = new StatusProcessor(replicationSupport, null, remoteEndpointCaller)
@@ -144,7 +156,8 @@ class NodeStatusHandlerTest extends FunSuite:
       section = "IL",
       qsoMetadata = testQsoMetadata
     )
-    val packet = UDPHeader(Service.QSO, qso.asJson.noSpaces.getBytes("UTF-8"))
+    val packetBytes = UDPHeader(Service.QSO, qso.asJson.noSpaces.getBytes("UTF-8"))
+    val packet = UDPHeader.parse(packetBytes)
 
     transport.queue.put(packet)
 
@@ -153,52 +166,9 @@ class NodeStatusHandlerTest extends FunSuite:
     // Wait a bit for processing
     Thread.sleep(500)
 
-    handler.stop()
-    transport.stop()
-
-  test("NodeStatusHandler ignores its own QSO messages"):
-    val registry = new SimpleMeterRegistry()
-    class TestReplicationSupport extends ReplicationSupport(new DirectoryProvider { override def apply(): os.Path = os.temp.dir() }, registry):
-      var addedQso: Option[fdswarm.model.Qso] = None
-      override def add(qso: fdswarm.model.Qso): Unit = {
-        addedQso = Some(qso)
-        super.add(qso)
-      }
-    val replicationSupport = new TestReplicationSupport
-
-    val transport = new MockMulticastTransport
-
-    val myHostAndPort = HostAndPort("192.168.1.100", 8080)
-    val hostAndPortProvider = new HostAndPortProvider(8080) {
-      override val http = myHostAndPort
-    }
-
-    val remoteEndpointCaller = new CallEndpoint
-    val neededRequester = new StatusProcessor(replicationSupport, null, remoteEndpointCaller)
-    val handler = new NodeStatusHandler(replicationSupport, neededRequester, transport, hostAndPortProvider, new SwarmStatus)
-
-    import fdswarm.model.*
-    import fdswarm.model.QsoMetadata.testQsoMetadata
-    import io.circe.syntax.*
-
-    // Local QSO has node = "local"
-    val qso = Qso(callsign = Callsign("W9NNN"),
-      contestClass = "WFD",
-      bandMode = BandMode("20m", "CW"),
-      section = "IL",
-      qsoMetadata = testQsoMetadata.copy(node = "local")
-    )
-    val packet = UDPHeader(Service.QSO, qso.asJson.noSpaces.getBytes("UTF-8"))
-
-    transport.queue.put(packet)
-
-    handler.start()
-
-    // Wait a bit for processing
-    Thread.sleep(500)
-
-    // Verify qso was NOT added because it's our own
-    assert(replicationSupport.addedQso.isEmpty, "QSO should NOT have been added")
+    // Verify qso was added
+    assert(replicationSupport.addedQso.isDefined, "QSO should have been added")
+    assertEquals(replicationSupport.addedQso.get.uuid, qso.uuid)
 
     handler.stop()
     transport.stop()

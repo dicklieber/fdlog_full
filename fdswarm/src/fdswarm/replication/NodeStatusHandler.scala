@@ -18,21 +18,24 @@
 
 package fdswarm.replication
 
+import cats.effect.unsafe.implicits.global
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.qso.FdHour
+import fdswarm.model.Qso
 import fdswarm.store.{FdHourDigest, QsoStore, ReplicationSupport}
 import fdswarm.util.HostAndPortProvider
+import io.circe.parser.decode
 import jakarta.inject.Inject
 
 import java.net.URI
 import java.net.http.HttpResponse.BodyHandlers
 import java.net.http.{HttpClient, HttpRequest}
 
-class NodeStatusHandler @Inject()(replicationSupport:ReplicationSupport,
-                                  neededRequester: StatusProcessor,
+class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
+                                  statusProcessor: StatusProcessor,
                                   multicastTransport: MulticastTransport,
                                   hostAndPortProvider: HostAndPortProvider,
-                                  swarmStatus:SwarmStatus) extends LazyLogging:
+                                  swarmStatus: SwarmStatus) extends LazyLogging:
 
   private val httpClient = HttpClient.newBuilder()
     .followRedirects(HttpClient.Redirect.NORMAL)
@@ -41,41 +44,29 @@ class NodeStatusHandler @Inject()(replicationSupport:ReplicationSupport,
   private var thread: Option[Thread] = None
 
   def start(): Unit =
-    import cats.effect.unsafe.implicits.global
     val t = new Thread(() =>
       while !Thread.currentThread().isInterrupted do
         try
-          val payload: Array[Byte] = multicastTransport.queue.take()
-          val udpHeader: UDPHeaderData = UDPHeader.parse(payload)
+          val udpHeader: UDPHeaderData = multicastTransport.queue.take()
           udpHeader.service match
             case Service.Status =>
               val statusMessage = StatusMessage(udpHeader.payload)
               swarmStatus.put(statusMessage)
-              if statusMessage.hostAndPort == hostAndPortProvider.http then
-                logger.trace(s"Ignoring our own message from ${statusMessage.hostAndPort}")
-              else
-                logger.trace("StatusHandle: StatusMessage from {} with {} digests.", statusMessage.hostAndPort, statusMessage.fdDigests.size)
-                neededRequester.processStatus(statusMessage).unsafeRunAndForget()
+              logger.trace("StatusHandle: StatusMessage from {} with {} digests.", statusMessage.hostAndPort, statusMessage.fdDigests.size)
+              statusProcessor.processStatus(statusMessage).unsafeRunAndForget()
             case Service.QSO =>
-              import fdswarm.model.Qso
-              import io.circe.parser.decode
               val json = new String(udpHeader.payload, "UTF-8")
               decode[Qso](json) match
                 case Right(qso) =>
-                  if qso.qsoMetadata.node == "local" then
-                    logger.trace(s"Ignoring our own QSO: ${qso.callsign}")
-                  else
-                    logger.debug(s"Received QSO via multicast: ${qso.callsign}")
-                    replicationSupport.add(qso)
+                  logger.debug(s"Received QSO via multicast: ${qso.callsign}")
+                  replicationSupport.add(qso)
                 case Left(error) =>
                   logger.error(s"Failed to decode QSO from multicast: $json", error)
-            case _ =>
-              logger.trace(s"Ignoring service: ${udpHeader.service}")
         catch
           case _: InterruptedException => Thread.currentThread().interrupt()
           case e: Exception =>
             logger.error("Error in Repl processing loop", e)
-    , "Repl-Processor")
+      , "Repl-Processor")
     t.setDaemon(true)
     t.start()
     thread = Some(t)

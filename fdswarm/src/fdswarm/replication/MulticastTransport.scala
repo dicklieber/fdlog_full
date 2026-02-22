@@ -2,20 +2,22 @@ package fdswarm.replication
 
 import com.google.inject.name.Named
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.util.HostAndPortProvider
 import jakarta.inject.{Inject, Singleton}
 
 import java.net.{DatagramPacket, InetAddress, InetSocketAddress, MulticastSocket, NetworkInterface}
 import scala.compiletime.uninitialized
-
 import java.util.concurrent.LinkedBlockingQueue
+import scala.jdk.CollectionConverters.*
 
 @Singleton
 class MulticastTransport @Inject()(
                                     @Named("fdswarm.UDP.port") port: Int,
-                                    @Named("fdswarm.UDP.groupAddr") groupAddr: String
+                                    @Named("fdswarm.UDP.groupAddr") groupAddr: String,
+                                    hostAndPortProvider: HostAndPortProvider
                                   ) extends LazyLogging:
 
-  val queue = new LinkedBlockingQueue[Array[Byte]]()
+  val queue = new LinkedBlockingQueue[UDPHeaderData]()
 
   private val group = InetAddress.getByName(groupAddr)
   private val socketAddress = new InetSocketAddress(group, port)
@@ -32,13 +34,25 @@ class MulticastTransport @Inject()(
 
     thread = new Thread(() =>
       val buffer = new Array[Byte](65535)
+      val localAddresses = NetworkInterface.getNetworkInterfaces.asScala
+        .flatMap(_.getInetAddresses.asScala)
+        .toSet
+
       while !Thread.currentThread().isInterrupted do
         try
           val packet = new DatagramPacket(buffer, buffer.length)
           socket.receive(packet)
 
-          val data = packet.getData.slice(packet.getOffset, packet.getOffset + packet.getLength)
-          queue.offer(data)
+          if localAddresses.contains(packet.getAddress) then
+            logger.trace(s"Ignoring our own message from ${packet.getAddress}:${packet.getPort}")
+          else
+            val data = packet.getData.slice(packet.getOffset, packet.getOffset + packet.getLength)
+            try
+              val udpHeader = UDPHeader.parse(data)
+              queue.offer(udpHeader)
+            catch
+              case e: IllegalArgumentException =>
+                logger.error(s"Received invalid UDP packet: ${e.getMessage}")
         catch
           case _: InterruptedException => Thread.currentThread().interrupt()
           case e: Exception =>

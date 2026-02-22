@@ -74,5 +74,5 @@ object UDPHeader:
     }.get
 
 enum Service:
-  case Discovery, Discovered, Status, QSO
+  case Status, QSO
   

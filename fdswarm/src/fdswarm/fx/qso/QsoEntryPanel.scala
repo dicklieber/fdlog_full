@@ -23,6 +23,7 @@ import fdswarm.StationManager
 import fdswarm.fx.bandmodes.SelectedBandModeStore
 import fdswarm.fx.contest.{ContestManager, ContestType}
 import fdswarm.fx.{CallSignField, GridUtils, UpperCase}
+import fdswarm.util.HostAndPortProvider
 import fdswarm.model.*
 import fdswarm.replication.{MulticastTransport, Service, UDPHeader}
 import fdswarm.store.QsoStore
@@ -43,7 +44,8 @@ class QsoEntryPanel @Inject()(
                                contestManager: ContestManager,
                                callsignField: CallSignField,
                                contestClassField: ContestClassField,
-                               dupPanel:DupPanel
+                               dupPanel:DupPanel,
+                               hostAndPortProvider: HostAndPortProvider
                              ) extends LazyLogging:
 
   private val sectionField = UpperCase(new TextField())
