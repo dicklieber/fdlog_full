@@ -22,8 +22,6 @@ import fdswarm.io.DirectoryProvider
 import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory
 import org.apache.logging.log4j.core.config.Configurator
-import com.typesafe.config.ConfigFactory
-import scala.jdk.CollectionConverters.*
 
 object LoggingConfigurator:
   def addFileAppender(directoryProvider: DirectoryProvider): Unit =
@@ -58,20 +56,8 @@ object LoggingConfigurator:
     builder.add(accessFile)
 
     // Loggers
-    val config = ConfigFactory.load("loggers.conf")
-    val loggersConfig = config.getConfig("loggers")
-    
-    loggersConfig.entrySet().asScala.foreach { entry =>
-      val rawName = entry.getKey
-      // Remove surrounding quotes if they exist (Typesafe Config may include them for dotted keys)
-      val name = if (rawName.startsWith("\"") && rawName.endsWith("\"")) then
-                   rawName.substring(1, rawName.length - 1)
-                 else rawName
-      
-      val levelStr = loggersConfig.getString(rawName)
-      val level = Level.toLevel(levelStr, Level.INFO)
-      builder.add(builder.newLogger(name, level).addAttribute("additivity", true))
-    }
+    // Injected LoggingManager will handle individual logger levels.
+    // LoggingConfigurator just sets up the basic appenders.
 
     // Special logger for Access Log
     builder.add(builder.newLogger("org.http4s.server.middleware.Logger", Level.INFO)

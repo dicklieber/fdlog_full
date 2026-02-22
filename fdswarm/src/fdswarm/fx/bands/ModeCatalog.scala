@@ -21,7 +21,6 @@ package fdswarm.fx.bands
 import com.typesafe.config.{Config, ConfigRenderOptions}
 import fdswarm.model.BandMode.Mode
 import jakarta.inject.{Inject, Singleton}
-import upickle.default.*
 
 import java.util
 import scala.jdk.CollectionConverters.*

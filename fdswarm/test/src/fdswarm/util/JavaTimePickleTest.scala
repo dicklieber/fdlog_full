@@ -19,31 +19,32 @@
 package fdswarm.util
 
 import munit.FunSuite
-import upickle.default.*
+import io.circe.parser.*
+import io.circe.syntax.*
 import java.time.LocalDateTime
 import JavaTimePickle.given
 
 class JavaTimePickleTest extends FunSuite:
   test("LocalDateTime ReadWriter"):
     val ldt = LocalDateTime.of(2026, 2, 4, 7, 42, 0)
-    val json = write(ldt)
+    val json = ldt.asJson.noSpaces
     assertEquals(json, """"2026-02-04T07:42:00"""")
-    val back = read[LocalDateTime](json)
+    val back = decode[LocalDateTime](json).getOrElse(fail("decode failed"))
     assertEquals(back, ldt)
 
   test("ZonedDateTime ReadWriter"):
     import java.time.ZonedDateTime
     import java.time.ZoneOffset
     val zdt = ZonedDateTime.of(2026, 2, 4, 7, 42, 0, 0, ZoneOffset.UTC)
-    val json = write(zdt)
+    val json = zdt.asJson.noSpaces
     assertEquals(json, """"2026-02-04T07:42:00Z"""")
-    val back = read[ZonedDateTime](json)
+    val back = decode[ZonedDateTime](json).getOrElse(fail("decode failed"))
     assertEquals(back, zdt)
 
   test("URL ReadWriter"):
     import java.net.URL
     val url = URL("http://127.0.0.1:8080")
-    val json = write(url)
+    val json = url.asJson.noSpaces
     assertEquals(json, """"http://127.0.0.1:8080"""")
-    val back = read[URL](json)
+    val back = decode[URL](json).getOrElse(fail("decode failed"))
     assertEquals(back, url)

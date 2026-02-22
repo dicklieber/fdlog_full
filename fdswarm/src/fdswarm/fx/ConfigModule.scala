@@ -42,6 +42,7 @@ class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
 
     // scan only where your implementations live
     val pkgs = Seq("fdswarm.api")
+    val allPkgs = Seq("fdswarm")
 
     // unnamed set (inject with java.util.Set[ApiEndpoints])
     AutoBind.bindAllImplementationsOf[ApiEndpoints](
@@ -50,6 +51,9 @@ class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
       named = None,
       asSingleton = true
     )
+
+    val discoveredLoggers = AutoBind.discoverImplementationsOf[LazyLogging](allPkgs)
+    bind[Seq[String]].annotatedWith(Names.named("discoveredLoggerNames")).toInstance(discoveredLoggers)
 
     bind[DirectoryProvider].toInstance(new ProductionDirectory)
     bind[QsoStore].to[ReplicationSupport].asEagerSingleton()

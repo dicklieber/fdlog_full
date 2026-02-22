@@ -49,6 +49,9 @@ object FdLogApp extends JFXApp3:
     Guice.createInjector(new ConfigModule())
 
   override def start(): Unit =
+    val loggingManager = injector.instance[fdswarm.util.LoggingManager]
+    loggingManager.applyInitialConfig()
+    
     val nodeStatus = injector.instance[NodeStatus]
     
     log.debug("fdlog start")

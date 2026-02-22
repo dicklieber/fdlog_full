@@ -70,7 +70,9 @@
     -fx-border-radius: 5;
     -fx-padding: 5;
 }
+.discardButton{
 
+}
 .json-pretty-print {
     -fx-font-family: "monospace";
 }

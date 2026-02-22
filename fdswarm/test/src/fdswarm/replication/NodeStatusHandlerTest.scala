@@ -99,8 +99,8 @@ class NodeStatusHandlerTest extends FunSuite:
     val transport = new MockMulticastTransport(hostAndPortProvider)
     
     val remoteEndpointCaller = new CallEndpoint
-    val neededRequester = new StatusProcessor(replicationSupport, null, remoteEndpointCaller)
-    val handler = new NodeStatusHandler(replicationSupport, neededRequester, transport, hostAndPortProvider, new SwarmStatus)
+    val neededRequester = new StatusProcessor(replicationSupport, null, remoteEndpointCaller, registry)
+    val handler = new NodeStatusHandler(replicationSupport, neededRequester, transport, hostAndPortProvider, new SwarmStatus, registry)
     
     // Create a status message from "someone else" with one FdHour
     val fdHour = FdHour(15, 10)
@@ -118,6 +118,43 @@ class NodeStatusHandlerTest extends FunSuite:
     
     handler.stop()
     transport.stop()
+
+    assertEquals(registry.counter("fdswarm_received_status_total").count(), 1.0)
+    assert(registry.timer("fdswarm_process_status_duration").count() >= 1, "Timer should have recorded at least one execution")
+
+  test("NodeStatusHandler DOES NOT record timing if no FdHour is needed"):
+    val registry = new SimpleMeterRegistry()
+    class TestReplicationSupport extends ReplicationSupport(new DirectoryProvider { override def apply(): os.Path = os.temp.dir() }, registry):
+      override def isFdHourNeeded(fdHourDigest: FdHourDigest): Option[FdHour] = None
+
+    val replicationSupport = new TestReplicationSupport
+
+    val myHostAndPort = HostAndPort("192.168.1.100", 8080)
+    val otherHostAndPort = HostAndPort("192.168.1.101", 8080)
+    val hostAndPortProvider = new HostAndPortProvider(8080) {
+      override val http = myHostAndPort
+    }
+
+    val transport = new MockMulticastTransport(hostAndPortProvider)
+    val remoteEndpointCaller = new CallEndpoint
+    val neededRequester = new StatusProcessor(replicationSupport, null, remoteEndpointCaller, registry)
+    val handler = new NodeStatusHandler(replicationSupport, neededRequester, transport, hostAndPortProvider, new SwarmStatus, registry)
+
+    // Create a status message from "someone else" with one FdHour
+    val fdHour = FdHour(15, 10)
+    val digest = FdHourDigest(fdHour, 5, "some-digest")
+    val otherStatus = StatusMessage(otherHostAndPort, Seq(digest))
+    val packetBytes = (s"FDSWARM|Status|${com.organization.BuildInfo.dataVersion}|other-instance|\n").getBytes("UTF-8") ++ otherStatus.toPacket
+    val packet = UDPHeader.parse(packetBytes).get
+
+    transport.queue.put(packet)
+    handler.start()
+    Thread.sleep(500)
+    handler.stop()
+    transport.stop()
+
+    assertEquals(registry.counter("fdswarm_received_status_total").count(), 1.0)
+    assertEquals(registry.timer("fdswarm_process_status_duration").count(), 0L, "Timer should NOT have recorded any execution")
 
   test("NodeStatusHandler processes QSO messages from other nodes"):
     val registry = new SimpleMeterRegistry()
@@ -137,8 +174,8 @@ class NodeStatusHandlerTest extends FunSuite:
     val transport = new MockMulticastTransport(hostAndPortProvider)
 
     val remoteEndpointCaller = new CallEndpoint
-    val neededRequester = new StatusProcessor(replicationSupport, null, remoteEndpointCaller)
-    val handler = new NodeStatusHandler(replicationSupport, neededRequester, transport, hostAndPortProvider, new SwarmStatus)
+    val neededRequester = new StatusProcessor(replicationSupport, null, remoteEndpointCaller, registry)
+    val handler = new NodeStatusHandler(replicationSupport, neededRequester, transport, hostAndPortProvider, new SwarmStatus, registry)
 
     import fdswarm.model.*
     import fdswarm.model.QsoMetadata.testQsoMetadata
@@ -166,3 +203,5 @@ class NodeStatusHandlerTest extends FunSuite:
 
     handler.stop()
     transport.stop()
+
+    assertEquals(registry.counter("fdswarm_received_qso_total").count(), 1.0)

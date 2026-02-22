@@ -28,6 +28,25 @@ import scala.reflect.ClassTag
 
 object AutoBind {
 
+  def discoverImplementationsOf[T: ClassTag](packagesOnly: Seq[String]): Seq[String] = {
+    val traitClass = summon[ClassTag[T]].runtimeClass
+    val scan = new ClassGraph()
+      .enableClassInfo()
+      .ignoreClassVisibility()
+      .acceptPackages(packagesOnly*)
+      .scan()
+
+    try {
+      val implInfos =
+        (scan.getClassesImplementing(traitClass.getName).asScala ++
+          scan.getSubclasses(traitClass.getName).asScala).distinctBy(_.getName)
+
+      implInfos.filter(isConcrete).map(_.getName).toSeq
+    } finally {
+      scan.close()
+    }
+  }
+
   def bindAllImplementationsOf[T: ClassTag](
                                              binder: Binder,
                                              packagesOnly: Seq[String],
@@ -46,8 +65,8 @@ object AutoBind {
 
     try {
       val implInfos =
-        scan.getClassesImplementing(traitClass.getName).asScala ++
-          scan.getSubclasses(traitClass.getName).asScala
+        (scan.getClassesImplementing(traitClass.getName).asScala ++
+          scan.getSubclasses(traitClass.getName).asScala).distinctBy(_.getName)
 
       val concrete = implInfos.filter(isConcrete)
 
@@ -59,8 +78,33 @@ object AutoBind {
 
       concrete.foreach { ci =>
         val impl: Class[? <: T] = Class.forName(ci.getName).asInstanceOf[Class[? <: T]]
-        val b = mb.addBinding().to(impl)
-        if (asSingleton) b.asEagerSingleton()
+        
+        // Detect Scala objects
+        val isScalaObject = ci.getName.endsWith("$")
+        
+        if (isScalaObject) {
+          try {
+            val moduleField = impl.getField("MODULE$")
+            val instance = moduleField.get(null).asInstanceOf[T]
+            mb.addBinding().toInstance(instance)
+          } catch {
+            case e: Exception =>
+              // Skip if it's not actually a singleton object we can access
+          }
+        } else {
+          // For classes, check if they are likely injectable by Guice
+          val hasInject = impl.getDeclaredConstructors.exists(_.isAnnotationPresent(classOf[com.google.inject.Inject])) ||
+            impl.getDeclaredConstructors.exists(_.isAnnotationPresent(classOf[jakarta.inject.Inject]))
+          val hasNoArg = impl.getDeclaredConstructors.exists(_.getParameterCount == 0)
+
+          if (hasInject || hasNoArg) {
+            val b = mb.addBinding().to(impl)
+            if (asSingleton) b.asEagerSingleton()
+          } else {
+            // Log skipped class for visibility
+            // System.err.println(s"Skipping non-injectable class: ${ci.getName}")
+          }
+        }
       }
     } finally {
       scan.close()
