@@ -29,6 +29,7 @@ import jakarta.inject.Inject
 import scalafx.Includes.*
 import fdswarm.fx.utils.JsonPrettyPrinter
 import fdswarm.util.HostAndPortProvider
+import fdswarm.replication.UDPHeader
 import scalafx.scene.input.Clipboard
 import scalafx.scene.input.ClipboardContent
 
@@ -119,6 +120,9 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
     grid.add(new Label("API Docs:"), 0, 8)
     grid.add(docsLink, 1, 8)
 
+    grid.add(new Label("UDP Instance ID:"), 0, 9)
+    grid.add(new Label(UDPHeader.localInstanceId.toString), 1, 9)
+
     val labels = grid.children.collect { case l: javafx.scene.control.Label => l }
     labels.foreach(_.getStyleClass.add("fixed-width"))
 
@@ -132,6 +136,7 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
         sb.append(s"Data Version: $dataVersion\n")
         sb.append(s"Data Directory: $dataPath\n")
         sb.append(s"Host: ${hostAndPortProvider.http}\n")
+        sb.append(s"UDP Instance ID: ${UDPHeader.localInstanceId}\n")
         val content = new ClipboardContent()
         content.putString(sb.toString())
         Clipboard.systemClipboard.setContent(content)

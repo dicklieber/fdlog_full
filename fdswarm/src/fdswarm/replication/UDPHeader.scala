@@ -33,7 +33,7 @@ case class UDPHeaderData(service: Service, instance: Id, payload: Array[Byte])
  * JSON_PAYLOAD
  */
 object UDPHeader:
-  val localInstanceId: Id = Ids.generateId()
+  val localInstanceId: Id = Ids.generateInstanceId()
   private val headerRegx = s"""^FDSWARM\\|(${Service.values.map(_.toString).mkString("|")})\\|(\\d+)\\|([^|]+)\\|$$""".r
 
   /**
