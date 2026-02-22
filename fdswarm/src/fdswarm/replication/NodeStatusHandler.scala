@@ -20,17 +20,14 @@ package fdswarm.replication
 
 import cats.effect.unsafe.implicits.global
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.qso.FdHour
 import fdswarm.model.Qso
-import fdswarm.store.{FdHourDigest, QsoStore, ReplicationSupport}
+import fdswarm.store.ReplicationSupport
 import fdswarm.util.HostAndPortProvider
 import io.circe.parser.decode
 import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.Inject
 
-import java.net.URI
-import java.net.http.HttpResponse.BodyHandlers
-import java.net.http.{HttpClient, HttpRequest}
+import java.net.http.HttpClient
 
 class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
                                   statusProcessor: StatusProcessor,

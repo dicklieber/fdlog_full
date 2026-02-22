@@ -18,7 +18,6 @@
 
 package fdswarm.replication
 
-import scalafx.application.Platform
 import cats.effect.IO
 import cats.syntax.all.*
 import com.typesafe.scalalogging.LazyLogging
