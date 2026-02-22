@@ -26,7 +26,10 @@ import fdswarm.api.ReplEndpoints
 import fdswarm.fx.qso.FdHour
 import fdswarm.store.{FdHourIds, FdHourRequest, ReplicationSupport}
 import fdswarm.util.HostAndPort
+import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.{Inject, Singleton}
+
+import java.util.concurrent.TimeUnit
 
 /**
  * This is the logic that synchronizes the local QSO store with a remote node.
@@ -35,8 +38,10 @@ import jakarta.inject.{Inject, Singleton}
 @Singleton
 class StatusProcessor @Inject()(qsoStore: ReplicationSupport,
                                 replEndpoints: ReplEndpoints,
-                                callEndpoint: CallEndpoint) extends LazyLogging:
+                                callEndpoint: CallEndpoint,
+                                meterRegistry: MeterRegistry) extends LazyLogging:
 
+  private val timer = meterRegistry.timer("fdswarm_process_status_duration")
 
   /**
    * Process an incoming status message: determine what FdHours are needed
@@ -46,31 +51,43 @@ class StatusProcessor @Inject()(qsoStore: ReplicationSupport,
    * @return IO completing after the HTTP call finishes
    */
   def processStatus(status: StatusMessage): IO[Unit] =
+    val needed = status.fdDigests.flatMap(qsoStore.isFdHourNeeded)
+    if 
+    (needed.nonEmpty
+    ) then
+      IO.realTime.flatMap { start =>
+        processStatusInternal(status, needed).guarantee {
+          IO.realTime.flatMap { end =>
+            IO(timer.record((end - start).toNanos, TimeUnit.NANOSECONDS))
+          }
+        }
+      }
+    else
+      IO.unit
+
+  private def processStatusInternal(status: StatusMessage, needed: Seq[FdHour]): IO[Unit] =
     given HostAndPort = status.hostAndPort
     logger.debug(s"Processing status from ${status.hostAndPort}")
-    status.fdDigests.traverse_ { fdHourDigest =>
-      qsoStore.isFdHourNeeded(fdHourDigest) match
-        case Some(fdHour) =>
+    needed.traverse_ { fdHour =>
+      for
+        // 1. Ask remote for all IDs in this hour
+        remoteIds <- callEndpoint(ReplEndpoints.qsoIdsByHourGetDef, fdHour)
+        _ <- IO(logger.debug(s"Remote has ${remoteIds.size} IDs for $fdHour"))
+
+        // 2. Check locally which ones we don't have
+        missingIds <- qsoStore.missingIds(FdHourIds(fdHour, remoteIds))
+        _ <- IO(logger.debug(s"Local is missing ${missingIds.size} IDs for $fdHour"))
+
+        // 3. If any are missing, fetch the actual QSOs
+        _ <- if missingIds.nonEmpty then
+          logger.debug("fdHour: {} Missing: ({}) {}", fdHour, missingIds.size, missingIds.mkString(","))
           for
-            // 1. Ask remote for all IDs in this hour
-            remoteIds <- callEndpoint(ReplEndpoints.qsoIdsByHourGetDef, fdHour)
-            _ <- IO(logger.debug(s"Remote has ${remoteIds.size} IDs for $fdHour"))
-            
-            // 2. Check locally which ones we don't have
-            missingIds <- qsoStore.missingIds(FdHourIds(fdHour, remoteIds))
-            _ <- IO(logger.debug(s"Local is missing ${missingIds.size} IDs for $fdHour"))
-            
-            // 3. If any are missing, fetch the actual QSOs
-            _ <- if (missingIds.nonEmpty) then
-              logger.debug("fdHour: {} Missing: ({}) {}", fdHour, missingIds.size, missingIds.mkString(","))
-              for
-                remoteQsos <- callEndpoint(ReplEndpoints.qsosForIdsDef, FdHourRequest(fdHour, missingIds))
-                _ <- IO(logger.debug(s"Fetched ${remoteQsos.size} remote QSOs for $fdHour"))
-                _ <- qsoStore.addQsos(remoteQsos)
-              yield ()
-            else IO.unit
-            
+            remoteQsos <- callEndpoint(ReplEndpoints.qsosForIdsDef, FdHourRequest(fdHour, missingIds))
+            _ <- IO(logger.debug(s"Fetched ${remoteQsos.size} remote QSOs for $fdHour"))
+            _ <- qsoStore.addQsos(remoteQsos)
           yield ()
-        case None => IO.unit
+        else IO.unit
+
+      yield ()
     }
   

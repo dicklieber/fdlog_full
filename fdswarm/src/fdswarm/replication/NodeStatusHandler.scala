@@ -25,6 +25,7 @@ import fdswarm.model.Qso
 import fdswarm.store.{FdHourDigest, QsoStore, ReplicationSupport}
 import fdswarm.util.HostAndPortProvider
 import io.circe.parser.decode
+import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.Inject
 
 import java.net.URI
@@ -35,7 +36,11 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
                                   statusProcessor: StatusProcessor,
                                   multicastTransport: MulticastTransport,
                                   hostAndPortProvider: HostAndPortProvider,
-                                  swarmStatus: SwarmStatus) extends LazyLogging:
+                                  swarmStatus: SwarmStatus,
+                                  meterRegistry: MeterRegistry) extends LazyLogging:
+
+  private val statusCounter = meterRegistry.counter("fdswarm_received_status_total")
+  private val qsoCounter = meterRegistry.counter("fdswarm_received_qso_total")
 
   private val httpClient = HttpClient.newBuilder()
     .followRedirects(HttpClient.Redirect.NORMAL)
@@ -50,11 +55,13 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
           val udpHeader: UDPHeaderData = multicastTransport.queue.take()
           udpHeader.service match
             case Service.Status =>
+              statusCounter.increment()
               val statusMessage = StatusMessage(udpHeader.payload)
               swarmStatus.put(statusMessage)
               logger.trace("StatusHandle: StatusMessage from {} with {} digests.", statusMessage.hostAndPort, statusMessage.fdDigests.size)
-              statusProcessor.processStatus(statusMessage).unsafeRunAndForget()
+              statusProcessor.processStatus(statusMessage).unsafeRunSync()
             case Service.QSO =>
+              qsoCounter.increment()
               val json = new String(udpHeader.payload, "UTF-8")
               decode[Qso](json) match
                 case Right(qso) =>
