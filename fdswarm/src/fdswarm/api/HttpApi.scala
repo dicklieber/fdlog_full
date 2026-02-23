@@ -25,7 +25,7 @@ import fdswarm.util.HostAndPortProvider
 import jakarta.inject.{Inject, Singleton}
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.Router
-import org.http4s.server.middleware.Logger as Http4sLogger
+import org.http4s.server.middleware.{Logger as Http4sLogger, Metrics as ServerMetrics}
 import org.http4s.headers.{Referer, `User-Agent`}
 import org.http4s.{Request, Response}
 import java.time.format.DateTimeFormatter
@@ -35,6 +35,8 @@ import org.slf4j.LoggerFactory
 import org.http4s.HttpApp
 import org.http4s.syntax.all.*
 import cats.syntax.all.*
+import _root_.meters4s.Reporter
+import _root_.meters4s.http4s.Meters4s
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import com.comcast.ip4s.{Host, Port}
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
@@ -48,7 +50,8 @@ import scala.jdk.CollectionConverters.*
  */
 @Singleton
 final class HttpApi @Inject()(apiEndpoints: java.util.Set[ApiEndpoints],
-                              hostAndPortProvider: HostAndPortProvider)
+                              hostAndPortProvider: HostAndPortProvider,
+                              reporter: Reporter[IO])
   extends LazyLogging:
 
   private def accessLogger = LoggerFactory.getLogger("org.http4s.server.middleware.Logger")
@@ -108,6 +111,9 @@ final class HttpApi @Inject()(apiEndpoints: java.util.Set[ApiEndpoints],
     val routes = Http4sServerInterpreter[IO]().toRoutes(endpoints)
     val swaggerRoutes = Http4sServerInterpreter[IO]().toRoutes(swaggerEndpoints)
 
-    val app = Router("/" -> (routes <+> swaggerRoutes)).orNotFound
+    val metricsOps = Meters4s[IO](reporter)
+    val instrumentedRoutes = ServerMetrics[IO](metricsOps)(routes <+> swaggerRoutes)
+
+    val app = Router("/" -> instrumentedRoutes).orNotFound: HttpApp[IO]
     // Log each request in Common Log Format (CLF) to the dedicated access logger
     commonLogFormat(app)

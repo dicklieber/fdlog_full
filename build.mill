@@ -96,6 +96,8 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo {
     mvn"org.scala-lang.modules::scala-xml:2.3.0",
 
     mvn"io.micrometer:micrometer-registry-prometheus:1.14.4",
+    // Use io.github.keirlawson:meters4s-http4s_3:2.0.1
+    mvn"io.github.keirlawson:meters4s-http4s_3:2.0.1",
   )
 
 

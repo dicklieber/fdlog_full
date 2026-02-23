@@ -23,13 +23,17 @@ import com.google.inject.AbstractModule
 import com.google.inject.name.Names
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.LazyLogging
+import cats.effect.IO
+import cats.effect.unsafe.implicits.global
 import fdswarm.AutoBind
 import fdswarm.api.ApiEndpoints
 import fdswarm.io.{DirectoryProvider, ProductionDirectory}
 import fdswarm.store.{QsoStore, ReplicationSupport}
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import _root_.meters4s.Reporter
 import net.codingwell.scalaguice.ScalaModule
+import com.google.inject.TypeLiteral
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
@@ -58,7 +62,10 @@ class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
     bind[DirectoryProvider].toInstance(new ProductionDirectory)
     bind[QsoStore].to[ReplicationSupport].asEagerSingleton()
     bind[MeterRegistry].to[PrometheusMeterRegistry].asEagerSingleton()
-    bind[PrometheusMeterRegistry].toInstance(new PrometheusMeterRegistry(io.micrometer.prometheusmetrics.PrometheusConfig.DEFAULT))
+    val prometheusRegistry = new PrometheusMeterRegistry(io.micrometer.prometheusmetrics.PrometheusConfig.DEFAULT)
+    bind[PrometheusMeterRegistry].toInstance(prometheusRegistry)
+    val reporter = Reporter.fromRegistry[IO](prometheusRegistry).unsafeRunSync()
+    bind(new TypeLiteral[Reporter[IO]](){}).toInstance(reporter)
     val primaryConfig = ConfigFactory.parseFile((os.pwd / "config" / "sarasec.conf").toIO)
     val defaultConfig: Config = ConfigFactory.load()
     val config: Config = primaryConfig.withFallback(defaultConfig)
