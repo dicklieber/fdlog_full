@@ -59,6 +59,14 @@ object PublicApiEndpoints {
     .in(jsonBody[Qso])
     .out(jsonBody[ApiResponse[String]])
     .description("Adds a new QSO")
+
+  val potentialDupsDef = baseEndpoint.get
+    .in("qsos" / "dups")
+    .in(query[String]("callsign"))
+    .in(query[String]("band"))
+    .in(query[String]("mode"))
+    .out(jsonBody[ApiResponse[Seq[Qso]]])
+    .description("Gets potential duplicates for a callsign, band, and mode")
 }
 
 /** Implementation of the public API endpoints. */
@@ -77,7 +85,10 @@ class PublicApiRoutes @Inject()(
     PublicApiEndpoints.postQsoDef.serverLogicSuccess(qso => IO {
       qsoStore.add(qso)
       withHeader("QSO added successfully")
-    })
+    }),
+    PublicApiEndpoints.potentialDupsDef.serverLogicSuccess { (callsign, band, mode) =>
+      IO.pure(withHeader(qsoStore.potentialDups(callsign, fdswarm.model.BandMode(band, mode))))
+    }
   )
 
   private def withHeader[T](data: T): ApiResponse[T] = {

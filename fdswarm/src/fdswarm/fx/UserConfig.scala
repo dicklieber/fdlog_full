@@ -30,7 +30,8 @@ final class UserConfig @Inject()(directoryProvider: DirectoryProvider) {
 
   private val propertyList: List[Property[?, ?]] = List(
     new BooleanProperty(this, "developerMode", false),
-    new IntegerProperty(this, "qsoListLines", 10)
+    new IntegerProperty(this, "qsoListLines", 10),
+    new IntegerProperty(this, "lastQsoCount", 25)
   )
 
   private val properties: Map[String, Property[?, ?]] =
