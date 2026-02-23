@@ -53,6 +53,12 @@ object PublicApiEndpoints {
     .in("bandmodes")
     .out(jsonBody[ApiResponse[BandModes]])
     .description("Gets BandModes")
+
+  val postQsoDef = baseEndpoint.post
+    .in("qso")
+    .in(jsonBody[Qso])
+    .out(jsonBody[ApiResponse[String]])
+    .description("Adds a new QSO")
 }
 
 /** Implementation of the public API endpoints. */
@@ -67,7 +73,11 @@ class PublicApiRoutes @Inject()(
   override def endpoints: List[ServerEndpoint[Any, IO]] = List(
     PublicApiEndpoints.lastQsosDef.serverLogicSuccess(n => IO.pure(withHeader(qsoStore.all.takeRight(n)))),
     PublicApiEndpoints.allSectionsDef.serverLogicSuccess(_ => IO.pure(withHeader(sectionsProvider.allSections))),
-    PublicApiEndpoints.bandModesDef.serverLogicSuccess(_ => IO.pure(withHeader(bandModeStore.currentBandMode)))
+    PublicApiEndpoints.bandModesDef.serverLogicSuccess(_ => IO.pure(withHeader(bandModeStore.currentBandMode))),
+    PublicApiEndpoints.postQsoDef.serverLogicSuccess(qso => IO {
+      qsoStore.add(qso)
+      withHeader("QSO added successfully")
+    })
   )
 
   private def withHeader[T](data: T): ApiResponse[T] = {
