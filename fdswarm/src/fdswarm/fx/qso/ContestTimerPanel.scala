@@ -40,8 +40,16 @@ class ContestTimerPanel @Inject()(
     styleClass += "contest-timer"
   }
 
+  private var useFixedTime: Boolean = false
+  private var fixedTime: ZonedDateTime = ZonedDateTime.now()
+
+  def setFixedTime(useFixed: Boolean, time: ZonedDateTime): Unit =
+    useFixedTime = useFixed
+    fixedTime = time
+    updateContestTimer()
+
   private def updateContestTimer(): Unit =
-    val now = ZonedDateTime.now()
+    val now = if useFixedTime then fixedTime else ZonedDateTime.now()
     val config = contestManager.config
     val (msg, style) =
       if now.isBefore(config.start) then

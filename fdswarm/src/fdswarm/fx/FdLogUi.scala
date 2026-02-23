@@ -25,7 +25,7 @@ import fdswarm.fx.bandmodes.BandsAndModesPane
 import fdswarm.fx.contest.ContestManager
 import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.station.StationEditor
-import fdswarm.fx.tools.{FdHourDialogService, FdHourDigestsPane, HowManyDialogService, LoggingDialog, StatusBroadcastDialog}
+import fdswarm.fx.tools.{ContestTimeDialog, FdHourDialogService, FdHourDigestsPane, HowManyDialogService, LoggingDialog, StatusBroadcastDialog}
 import fdswarm.replication.{NodeStatusHandler, NodeStatusSender, SwarmStatusPane}
 import fdswarm.store.FdHourDigest
 import fdswarm.util.HostAndPortProvider
@@ -45,6 +45,7 @@ final class FdLogUi @Inject()(
                                fdHourDialogService: FdHourDialogService,
                                statusBroadcastDialog: StatusBroadcastDialog,
                                loggingDialog: LoggingDialog,
+                               contestTimeDialog: ContestTimeDialog,
                                fdHourDigestsPane: FdHourDigestsPane,
                                repl: NodeStatusHandler,
                                swarmStatusPane: SwarmStatusPane,
@@ -189,6 +190,12 @@ final class FdLogUi @Inject()(
           onAction = _ =>
             Option(ownerWindow) match
               case Some(w) => loggingDialog.show(w)
+              case None => ()
+        ,
+        new MenuItem("Contest Time"):
+          onAction = _ =>
+            Option(ownerWindow) match
+              case Some(w) => contestTimeDialog.show(w)
               case None => ()
         
 /*
