@@ -24,11 +24,11 @@ import fdswarm.util.JavaTimeCirce.given
 
 import java.time.*
 
-enum ContestType(val compute: Int => ContestDates) derives sttp.tapir.Schema:
+enum ContestType(val name: String, val compute: Int => ContestDates) derives sttp.tapir.Schema:
   def dates(year: Int): ContestDates = compute(year)
 
-  case WFD extends ContestType(ContestDateCalculator.lastFull)
-  case ARRL extends ContestType(ContestDateCalculator.forthFullWeekend)
+  case WFD extends ContestType("Winter Field Day", ContestDateCalculator.lastFull)
+  case ARRL extends ContestType("ARRL Field Day", ContestDateCalculator.forthFullWeekend)
 
 object ContestType:
   import io.circe.{Decoder, Encoder}

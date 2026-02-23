@@ -47,7 +47,12 @@ class CirceSupportTest extends FunSuite:
     val decoded = decode[ContestConfig](json).toOption.get
     // ZonedDateTime might lose some precision or change format slightly, but should be equivalent
     assertEquals(decoded.contest, config.contest)
+    assertEquals(decoded.contest.name, "Winter Field Day")
     assert(decoded.start.isEqual(config.start))
+
+  test("ContestType name field"):
+    assertEquals(ContestType.WFD.name, "Winter Field Day")
+    assertEquals(ContestType.ARRL.name, "ARRL Field Day")
 
   test("Exchange round trip"):
     val exchange = Exchange(FdClass(2, 'A'), "IL")

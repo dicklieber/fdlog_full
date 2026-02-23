@@ -66,11 +66,11 @@ class ContestTimerPanel @Inject()(
 
     val (msg, style) = mode match
       case TimeMode.Before =>
-        (s"Contest starts in ${DurationFormat(JDuration.between(now, config.start))}", "contest-before")
+        (s"${config.contest.name} ${config.start.getYear} starts in ${DurationFormat(JDuration.between(now, config.start))}", "contest-before")
       case TimeMode.After =>
-        (s"Contest ended ${DurationFormat(JDuration.between(config.end, now))} ago.", "contest-after")
+        (s"${config.contest.name} ${config.start.getYear} ended ${DurationFormat(JDuration.between(config.end, now))} ago.", "contest-after")
       case TimeMode.During =>
-        (s"Contest ends in ${DurationFormat(JDuration.between(now, config.end))}", "contest-during")
+        (s"${config.contest.name} ${config.start.getYear} ends in ${DurationFormat(JDuration.between(now, config.end))}", "contest-during")
 
     contestTimerLabel.text = msg
     contestTimerLabel.styleClass.removeAll("contest-before", "contest-during", "contest-after")
@@ -84,4 +84,6 @@ class ContestTimerPanel @Inject()(
   timerTimeline.play()
   updateContestTimer()
 
-  def node: Node = GridUtils.fieldSet("Contest", contestTimerLabel)
+  def node: Node =
+    val config = contestManager.config
+    GridUtils.fieldSet(s"${config.contest.name} ${config.start.getYear}", contestTimerLabel)
