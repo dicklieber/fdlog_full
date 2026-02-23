@@ -46,11 +46,11 @@ class QsoEntryPanel @Inject()(
                                contestManager: ContestManager,
                                callsignField: CallSignField,
                                contestClassField: ContestClassField,
+                               sectionField: fdswarm.fx.sections.SectionField,
                                dupPanel:DupPanel,
                                hostAndPortProvider: HostAndPortProvider,
                              ) extends LazyLogging:
 
-  private val sectionField = UpperCase(new TextField())
   private val clearButton = new Button("\u21BA"):
     styleClass += "clear-button"
     tooltip = Tooltip("Clear fields")
@@ -103,6 +103,11 @@ class QsoEntryPanel @Inject()(
       sectionField.end()
     }
 
+  sectionField.onDoneFunction = _ =>
+    Platform.runLater {
+      submit()
+    }
+
 
   // ---- controls ----------------------------------------------------------
   private def qsoMetadata =
@@ -116,7 +121,7 @@ class QsoEntryPanel @Inject()(
 
   def sectionFieldProperty: scalafx.beans.property.StringProperty = sectionField.text
 
-  private def submit(): Unit =
+  def submit(): Unit =
     logger.debug(
       s"Submitting QSO: call=${callsignField.text.value}, " +
         s"class=${contestClassField.text.value}, " +

@@ -32,8 +32,11 @@ case class Section(code: String, name: String) extends Label derives Codec.AsObj
   minWidth = 0
   textOverrun = OverrunStyle.Clip
 
-  def onSelect(sectionField: StringProperty): Unit =
-    onMouseClicked = _ => sectionField.value = code
+  def onSelect(sectionField: StringProperty, onSelected: () => Unit): Unit =
+    onMouseClicked = _ => {
+      sectionField.value = code
+      onSelected()
+    }
     onMouseEntered = _ => style = "-fx-background-color: lightgray; -fx-cursor: hand;"
     onMouseExited = _ => style = "-fx-background-color: transparent; -fx-cursor: default;"
 

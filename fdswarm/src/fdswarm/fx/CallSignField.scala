@@ -63,6 +63,9 @@ class CallSignField @Inject()(qsoStore: QsoStore, selectedBsndModeStore: Selecte
     }
   })
 
+  override def isTransitionKey(key: KeyCode): Boolean =
+    super.isTransitionKey(key) || key.isLetterKey
+
   def isValid(str: String): Boolean =
     CallSignField.isValid(str)
 

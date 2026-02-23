@@ -67,9 +67,11 @@ class SectionsProviderTest extends FunSuite:
   test("Section selection updates StringProperty") {
     val section = Section("IL", "Illinois")
     val prop = scalafx.beans.property.StringProperty("")
-    section.onSelect(prop)
+    var called = false
+    section.onSelect(prop, () => called = true)
     
     // Simulate click
     section.onMouseClicked.value.handle(null)
     assertEquals(prop.value, "IL")
+    assert(called)
   }
