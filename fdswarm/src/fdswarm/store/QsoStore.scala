@@ -31,6 +31,8 @@ import scalafx.collections.ObservableBuffer
 
 import scala.collection.concurrent.TrieMap
 
+case class DuplicateQso(qso: Qso) extends Exception(qso.rejectedMsg)
+
 @Singleton
 class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRegistry) extends LazyLogging:
   val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()
@@ -46,11 +48,21 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
   private[store] def internalDigests: Map[FdHour, FdHourDigest] = fdHourDigests
 
   def add(qso: Qso): Unit =
-    add(Seq(qso))
+    val isDuplicateInStore = map.values.exists(existing =>
+      existing.callsign == qso.callsign && existing.bandMode == qso.bandMode
+    )
+    if (isDuplicateInStore) {
+      throw DuplicateQso(qso)
+    }
+    doAdd(Seq(qso))
 
   def add(batch: Seq[Qso]): Unit =
+    doAdd(batch)
+
+  private def doAdd(batch: Seq[Qso]): Unit =
     val thread = Thread.currentThread().getName
     logger.debug(s"[THREAD:$thread] Adding ${batch.size} QSOs to store")
+
     val lines = for
       qso <- batch
     yield

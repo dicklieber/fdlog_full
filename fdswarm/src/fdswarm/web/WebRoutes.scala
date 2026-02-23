@@ -159,6 +159,7 @@ class WebRoutes @Inject()(
       requireSession(req).flatMap {
         case Left(r) => IO.pure(r)
         case Right((id, ws)) =>
+          val errorMsg = req.params.get("error")
           val limit = ws.qsoLines
           val qsos = qsoStore.all.reverse.take(limit)
           val bands = availableBandsManager.bands.toSeq
@@ -176,7 +177,7 @@ class WebRoutes @Inject()(
             (s"${config.contest.name} ${config.start.getYear} ends in ${DurationFormat(JDuration.between(now, config.end))}", "contest-during")
 
           val html = IndexPage(
-            qsos, bands, modes, selected, groups, msg, style
+            qsos, bands, modes, selected, groups, msg, style, errorMsg
           )
           Ok(html).map(_.withContentType(`Content-Type`(MediaType.text.html)))
       }
@@ -221,10 +222,16 @@ class WebRoutes @Inject()(
                 bandMode = ws.bandMode,
                 qsoMetadata = metadata
               )
-              qsoStore.add(qso)
-              webSessionStore.incrementQsoCount(id)
-              multicastTransport.send(Service.QSO, qso.asJson.noSpaces.getBytes("UTF-8"))
-              SeeOther(Location(Uri.unsafeFromString("/web")))
+              try {
+                qsoStore.add(qso)
+                webSessionStore.incrementQsoCount(id)
+                multicastTransport.send(Service.QSO, qso.asJson.noSpaces.getBytes("UTF-8"))
+                SeeOther(Location(Uri.unsafeFromString("/web")))
+              } catch {
+                case fdswarm.store.DuplicateQso(dup) =>
+                  val msg = dup.rejectedMsg
+                  SeeOther(Location(Uri.unsafeFromString(s"/web?error=${java.net.URLEncoder.encode(msg, "UTF-8")}")))
+              }
             else
               BadRequest("Missing fields")
           }

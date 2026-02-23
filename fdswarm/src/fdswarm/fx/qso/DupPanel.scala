@@ -35,12 +35,27 @@ class DupPanel @Inject()(
                           selectedBandModeStore: SelectedBandModeStore
                         ) extends LazyLogging:
 
-  def pane(text: StringProperty): Pane =
-    val grid = new GridPane {
-      hgap = 10
-      vgap = 5
+  private val grid = new GridPane {
+    hgap = 10
+    vgap = 5
+  }
+  private var root: Pane = _
+
+  def showDuplicateError(qso: fdswarm.model.Qso): Unit =
+    Platform.runLater {
+      grid.children.clear()
+      
+      val label = new Label(qso.rejectedMsg) {
+        styleClass += "dup-error-label"
+        style = "-fx-text-fill: red; -fx-font-weight: bold;"
+      }
+      grid.add(label, 0, 0, 9, 1)
+      root.visible = true
+      root.managed = true
     }
-    val root = GridUtils.fieldSet("Possible Dups", grid)
+
+  def pane(text: StringProperty): Pane =
+    root = GridUtils.fieldSet("Possible Dups", grid)
     root.visible = false
     root.managed = false
 

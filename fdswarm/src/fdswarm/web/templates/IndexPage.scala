@@ -31,7 +31,8 @@ object IndexPage {
              selectedBandMode: BandMode,
              sectionGroups: Seq[SectionGroup],
              contestTimerMsg: String,
-             contestTimerStyle: String
+             contestTimerStyle: String,
+             errorMsg: Option[String] = None
            ): String =
     Layout("Field Day Swarm Web Client")(
       div(cls := "row mb-2")(
@@ -53,11 +54,13 @@ object IndexPage {
           h6("QSO Entry"),
           QsoEntryForm(selectedBandMode),
           // New row for Dup Detection (hidden by default)
-          div(cls := "row mt-1", id := "dupsRow", style := "display: none;")(
+          div(cls := "row mt-1", id := "dupsRow", style := (if errorMsg.isDefined then "display: block;" else "display: none;"))(
             div(cls := "col-12")(
               div(cls := "card")(
                 div(cls := "card-header bg-warning text-dark")("Possible Dups"),
-                div(cls := "card-body", id := "dupsContainer")()
+                div(cls := "card-body", id := "dupsContainer")(
+                  errorMsg.map(DupsPanel.error).getOrElse(modifier())
+                )
               )
             )
           )

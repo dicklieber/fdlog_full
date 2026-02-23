@@ -25,6 +25,9 @@ import scalatags.Text.all.*
 case class DupEntry(callsign: String, timestamp: String)
 
 object DupsPanel {
+  def error(msg: String): Modifier =
+    div(cls := "dup-error-msg p-1 mb-0", style := "font-size: 0.8rem")(msg)
+
   def apply(dups: Seq[DupEntry], totalCount: Int): Modifier =
     if dups.isEmpty then div()
     else

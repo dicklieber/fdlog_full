@@ -131,25 +131,30 @@ class QsoEntryPanel @Inject()(
       qsoMetadata
     )
 
-    qsoStore.add(qso)
+    try {
+      qsoStore.add(qso)
+      val json = qso.asJson.noSpaces
+      multicastTransport.send(Service.QSO, json.getBytes("UTF-8"))
 
-    val json = qso.asJson.noSpaces
-    multicastTransport.send(Service.QSO, json.getBytes("UTF-8"))
+      if !grid.styleClass.contains("qso-submit-highlight") then
+        grid.styleClass += "qso-submit-highlight"
 
-    if !grid.styleClass.contains("qso-submit-highlight") then
-      grid.styleClass += "qso-submit-highlight"
+      import scalafx.animation.{KeyFrame, Timeline}
+      import scalafx.Includes.*
 
-    import scalafx.animation.{KeyFrame, Timeline}
-    import scalafx.Includes.*
-
-    val timeline = new Timeline:
-      keyFrames = Seq(
-        KeyFrame(Duration(1000), onFinished = _ =>
-          grid.styleClass -= "qso-submit-highlight"
-          callsignField.text = ""
-          contestClassField.text = ""
-          sectionField.text = ""
-          callsignField.requestFocus()
+      val timeline = new Timeline:
+        keyFrames = Seq(
+          KeyFrame(Duration(1000), onFinished = _ =>
+            grid.styleClass -= "qso-submit-highlight"
+            callsignField.text = ""
+            contestClassField.text = ""
+            sectionField.text = ""
+            callsignField.requestFocus()
+          )
         )
-      )
-    timeline.play()
+      timeline.play()
+    } catch {
+      case fdswarm.store.DuplicateQso(dup) =>
+        logger.warn(dup.rejectedMsg)
+        dupPanel.showDuplicateError(dup)
+    }

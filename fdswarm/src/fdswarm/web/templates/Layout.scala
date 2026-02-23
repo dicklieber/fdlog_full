@@ -48,6 +48,7 @@ object Layout {
             .table-sm :not(caption) > * > * { padding: 0.1rem 0.25rem; }
             .dup-callsign { color: red; margin-right: 0.5rem; font-weight: bold; cursor: help; }
             .dup-callsign-more { color: #666; font-style: italic; font-size: 0.75rem; margin-top: 0.25rem; width: 100%; }
+            .dup-error-msg { color: #dc3545; font-weight: bold; }
           """.stripMargin
         )
       ),

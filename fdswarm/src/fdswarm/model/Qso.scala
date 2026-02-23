@@ -43,6 +43,7 @@ case class Qso(callsign: Callsign,
                stamp: Instant = Instant.now(),
                uuid: Id = Ids.generateId()) extends  LazyLogging derives  Codec.AsObject, sttp.tapir.Schema:
   lazy val display: String = s"$callsign on $bandMode in $fdHour"
+  lazy val rejectedMsg: String = s"Rejected duplicate Qso: $callsign $bandMode"
   lazy val fdHour: FdHour =
     FdHour(stamp)
 
