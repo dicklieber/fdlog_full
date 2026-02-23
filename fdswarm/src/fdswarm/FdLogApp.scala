@@ -29,7 +29,8 @@ import net.codingwell.scalaguice.InjectorExtensions.*
 import scalafx.application.JFXApp3
 import scalafx.scene.control.{Button, Label}
 
-import scala.concurrent.duration.*
+import java.time.Instant
+import java.time.Duration
 
 /** Minimal app bootstrap:
   *   - builds the Guice injector
@@ -37,6 +38,7 @@ import scala.concurrent.duration.*
   *   - delegates all UI construction to [[FdLogUi]]
   */
 object FdLogApp extends JFXApp3:
+  private val startTime = Instant.now()
   override def main(args: Array[String]): Unit =
     val directoryProvider = new fdswarm.io.ProductionDirectory()
     fdswarm.util.LoggingConfigurator.addFileAppender(directoryProvider)
@@ -44,6 +46,8 @@ object FdLogApp extends JFXApp3:
     super.main(args)
 
   private val log = org.slf4j.LoggerFactory.getLogger(getClass)
+
+  lazy val startupDuration: Duration = Duration.between(startTime, Instant.now())
 
   private lazy val injector: Injector =
     Guice.createInjector(new ConfigModule())

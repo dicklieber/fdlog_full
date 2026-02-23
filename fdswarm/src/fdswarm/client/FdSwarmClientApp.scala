@@ -19,16 +19,21 @@
 package fdswarm.client
 
 import com.google.inject.Guice
+import java.time.Instant
+import java.time.Duration
+import fdswarm.util.DurationFormat
 import fdswarm.fx.qso.ContestEntry
-import javafx.application.Platform
+import scalafx.application.Platform
 import net.codingwell.scalaguice.InjectorExtensions.*
 import scalafx.application.JFXApp3
 import scalafx.scene.Scene
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.UserConfig
+import io.micrometer.core.instrument.MeterRegistry
 
 object FdSwarmClientApp extends JFXApp3 with LazyLogging:
-
+  private val startTime = Instant.now()
+  lazy val startupDuration: Duration = Duration.between(startTime, Instant.now())
   override def start(): Unit =
     val injector = Guice.createInjector(new ClientModule())
     
@@ -47,6 +52,16 @@ object FdSwarmClientApp extends JFXApp3 with LazyLogging:
       scene = new Scene {
         root = contestEntry.node.asInstanceOf[scalafx.scene.Parent]
       }
+    }
+
+    Platform.runLater {
+      val duration = startupDuration
+      val mr = injector.instance[MeterRegistry]
+      val durationMillis = duration.toMillis.toDouble
+      val durationNanos = duration.toNanos
+      logger.info(s"UI responsive in ${DurationFormat(duration)}")
+      fdswarm.util.MetricsHelpers.recordTimerNanos(mr, "fdswarm_client_startup_time_seconds", durationNanos)
+      fdswarm.util.MetricsHelpers.recordSummary(mr, "fdswarm_client_startup_time_ms", durationMillis)
     }
 
     logger.info("FdSwarmClientApp started")

@@ -19,6 +19,7 @@
 package fdswarm.fx
 
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.FdLogApp
 import fdswarm.FdLogApp.injector
 import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.bandmodes.BandsAndModesPane
@@ -28,8 +29,10 @@ import fdswarm.fx.station.StationEditor
 import fdswarm.fx.tools.{ContestTimeDialog, FdHourDialogService, FdHourDigestsPane, HowManyDialogService, LoggingDialog, StatusBroadcastDialog}
 import fdswarm.replication.{NodeStatusHandler, NodeStatusSender, SwarmStatusPane}
 import fdswarm.store.FdHourDigest
-import fdswarm.util.HostAndPortProvider
+import fdswarm.util.{DurationFormat, HostAndPortProvider}
+import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.Inject
+import java.util.concurrent.TimeUnit
 import scalafx.Includes.*
 import scalafx.beans.property.{BooleanProperty, StringProperty}
 import scalafx.application.Platform
@@ -37,6 +40,8 @@ import scalafx.scene.{Node, Scene}
 import scalafx.scene.control.*
 import scalafx.scene.layout.*
 import scalafx.stage.{Stage, Window}
+
+import java.time.Duration
 
 final class FdLogUi @Inject()(
                                contestEntry: ContestEntry,
@@ -55,7 +60,8 @@ final class FdLogUi @Inject()(
                                aboutMenuItem: AboutMenuItem,
                                hostAndPortProvider: HostAndPortProvider,
                                userConfig: UserConfig,
-                               userConfigEditor: UserConfigEditor
+                               userConfigEditor: UserConfigEditor,
+                               meterRegistry: MeterRegistry
                              ) extends LazyLogging:
 
   private val bandModeNode: Node =
@@ -182,6 +188,13 @@ final class FdLogUi @Inject()(
     stage.scene = new Scene(root, 1100, 800):
       stylesheets = Seq(getClass.getResource("/styles/app.css").toExternalForm)
     stage.show()
+
+    Platform.runLater {
+      val duration = FdLogApp.startupDuration
+      val durationNanos = duration.toNanos
+      logger.info(s"UI responsive in ${DurationFormat(duration)}")
+      fdswarm.util.MetricsHelpers.recordTimerNanos(meterRegistry, "fdswarm_startup_time_seconds", durationNanos)
+    }
 
   private def fileMenu: Menu =
     new Menu("File"):
