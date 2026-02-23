@@ -61,7 +61,8 @@ final class FdLogUi @Inject()(
                                hostAndPortProvider: HostAndPortProvider,
                                userConfig: UserConfig,
                                userConfigEditor: UserConfigEditor,
-                               meterRegistry: MeterRegistry
+                               meterRegistry: MeterRegistry,
+                               webSessionsAdmin: fdswarm.fx.admin.WebSessionsAdmin
                              ) extends LazyLogging:
 
   private val bandModeNode: Node =
@@ -141,12 +142,23 @@ final class FdLogUi @Inject()(
           case Some(w) => userConfigEditor.show(w)
           case None => ()
 
+  private val adminMenu: Menu =
+    new Menu("Admin"):
+      items = Seq(
+        new MenuItem("Web Sessions"):
+          onAction = _ =>
+            Option(ownerWindow) match
+              case Some(w) => webSessionsAdmin.show(w)
+              case None => ()
+      )
+
   private val menuBar = new MenuBar:
     useSystemMenuBar = isMac
     menus = Seq(
       fileMenu,
       viewMenu,
       configMenu,
+      adminMenu,
       devMenu,
       helpMenu,
     )

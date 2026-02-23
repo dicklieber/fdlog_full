@@ -29,6 +29,7 @@ import fdswarm.util.DurationFormat
 import java.time.{Duration => JDuration}
 
 object WebTemplates:
+  private val cookieName = "fdweb_session"
 
   private val timeFmt =
     DateTimeFormatter.ofPattern("MMM dd, h:mm a z")
@@ -66,6 +67,7 @@ object WebTemplates:
           content
         ),
         script(src := "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"),
+        script(src := "/web.js"),
         script(
           """
             function setSection(code) {
@@ -75,6 +77,111 @@ object WebTemplates:
         )
       )
     ).render
+
+  def sessionChooserPage(sessions: Seq[(String, String)], message: String = ""): String =
+    layout("Choose or Create Web Session")(
+      div(cls := "row mb-2")(
+        div(cls := "col-12")(
+          h6("Web Sessions"),
+          if message.nonEmpty then div(cls := "alert alert-info py-1 my-1")(message) else div(),
+          form(method := "POST", action := "/session/select")(
+            div(cls := "mb-2")(
+              label(cls := "form-label me-2")("Existing Sessions:"),
+              select(name := "sessionId", cls := "form-select form-select-sm d-inline w-auto me-2")(
+                option(value := "")("-- select --"),
+                sessions.map { case (id, label) => option(value := id)(label) }
+              ),
+              button(tpe := "submit", cls := "btn btn-primary btn-sm ms-1")("Use Session")
+            )
+          ),
+          hr(),
+          h6("Create New Session"),
+          form(method := "POST", action := "/session/create")(
+            div(cls := "row g-2 align-items-end")(
+              div(cls := "col-md-3")(
+                label(cls := "form-label")("Rig"),
+                input(tpe := "text", name := "rig", cls := "form-control")
+              ),
+              div(cls := "col-md-3")(
+                label(cls := "form-label")("Antenna"),
+                input(tpe := "text", name := "antenna", cls := "form-control")
+              ),
+              div(cls := "col-md-3")(
+                label(cls := "form-label")("Operator"),
+                input(tpe := "text", name := "operator", cls := "form-control", oninput := "toUpperCase(this)")
+              ),
+              div(cls := "col-md-3")(
+                label(cls := "form-label")("QSO lines"),
+                input(tpe := "number", min := 1, max := 200, name := "qsoLines", value := 10, cls := "form-control")
+              ),
+            ),
+            div(cls := "row mt-2")(
+              div(cls := "col-12")(
+                button(tpe := "submit", cls := "btn btn-success btn-sm")("Create Session")
+              )
+            )
+          )
+        )
+      )
+    )
+
+  def sessionEditPage(sessionId: String,
+                      rig: String,
+                      antenna: String,
+                      operator: String,
+                      qsoLines: Int,
+                      stats: Option[(Int, String)]): String =
+    layout(s"Edit Web Session $sessionId")(
+      div(cls := "row mb-2")(
+        div(cls := "col-12 d-flex justify-content-between align-items-center")(
+          h6(s"Editing Session: $sessionId"),
+          a(href := "/web", cls := "btn btn-outline-success btn-sm")("Go to QSO Entry")
+        )
+      ),
+      div(cls := "row mb-1")(
+        div(cls := "col-12")(
+          stats.map { case (n, last) =>
+            div(cls := "small text-muted")(
+              span(cls := "me-3")(s"QSOs entered: $n"),
+              span(cls := "me-3")(s"Last touched: $last")
+            )
+          }.getOrElse(div())
+        )
+      ),
+      div(cls := "row mb-1")(
+        div(cls := "col-12")(
+          h6("Station Settings"),
+          form(method := "POST", action := "/web/session/save")(
+            input(tpe := "hidden", name := "sessionId", value := sessionId),
+            table(cls := "table table-borderless table-sm w-auto")(
+              tbody(
+                tr(
+                  td(label(cls := "form-label")("Operator")),
+                  td(input(tpe := "text", name := "operator", value := operator, cls := "form-control", oninput := "toUpperCase(this)"))
+                ),
+                tr(
+                  td(label(cls := "form-label")("Rig")),
+                  td(input(tpe := "text", name := "rig", value := rig, cls := "form-control"))
+                ),
+                tr(
+                  td(label(cls := "form-label")("Antenna")),
+                  td(input(tpe := "text", name := "antenna", value := antenna, cls := "form-control"))
+                ),
+                tr(
+                  td(label(cls := "form-label")("QSO lines")),
+                  td(input(tpe := "number", min := 1, max := 200, name := "qsoLines", value := qsoLines, cls := "form-control"))
+                )
+              )
+            ),
+            div(cls := "row mt-2")(
+              div(cls := "col-12")(
+                button(tpe := "submit", cls := "btn btn-primary btn-sm")("Save Session")
+              )
+            )
+          )
+        )
+      )
+    )
 
   def indexPage(
                  qsos: Seq[Qso],
@@ -86,6 +193,12 @@ object WebTemplates:
                  contestTimerStyle: String
                ): String =
     layout("Field Day Swarm Web Client")(
+      div(cls := "row mb-2")(
+        div(cls := "col-12 d-flex justify-content-between align-items-center")(
+          h6("Field Day Swarm Web Client"),
+          a(href := "/web/session/edit", cls := "btn btn-outline-primary btn-sm")("Edit Session")
+        )
+      ),
       // Row 0: QSOs table (full width)
       div(cls := "row mb-1")(
         div(cls := "col-12")(
@@ -149,15 +262,15 @@ object WebTemplates:
       div(cls := "row g-2 align-items-end")(
         div(cls := "col-md-3")(
           label(cls := "form-label")("Their Callsign"),
-          input(tpe := "text", name := "callsign", cls := "form-control", autofocus := true, required := true)
+          input(tpe := "text", name := "callsign", cls := "form-control", autofocus := true, required := true, oninput := "toUpperCase(this)")
         ),
         div(cls := "col-md-2")(
           label(cls := "form-label")("Class"),
-          input(tpe := "text", name := "contestClass", cls := "form-control", required := true)
+          input(tpe := "text", name := "contestClass", cls := "form-control", required := true, oninput := "toUpperCase(this)")
         ),
         div(cls := "col-md-3")(
           label(cls := "form-label")("Section"),
-          input(tpe := "text", name := "section", id := "sectionInput", cls := "form-control", required := true)
+          input(tpe := "text", name := "section", id := "sectionInput", cls := "form-control", required := true, oninput := "toUpperCase(this)")
         ),
         div(cls := "col-md-4")(
           button(tpe := "submit", cls := "btn btn-primary btn-sm")("Submit QSO"),
