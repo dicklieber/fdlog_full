@@ -129,3 +129,16 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
    */
   def all: Seq[Qso] =
     map.values.toSeq.sorted
+
+  def removeAll(): Unit =
+    logger.error("Removed all Qsos")
+    map.clear()
+    fdHourDigests = Map.empty
+    if os.exists(journalFile) then os.remove(journalFile)
+    try
+      scalafx.application.Platform.runLater {
+        qsoCollection.clear()
+      }
+    catch
+      case _: IllegalStateException =>
+        logger.warn("Toolkit not initialized, direct clear")

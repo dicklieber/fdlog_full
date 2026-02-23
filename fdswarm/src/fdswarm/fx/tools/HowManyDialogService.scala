@@ -18,18 +18,21 @@
 
 package fdswarm.fx.tools
 
+import fdswarm.fx.utils.IconButton
 import fdswarm.store.BigQsosGenerator
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
 import scalafx.beans.binding.Bindings
 import scalafx.geometry.Insets
 import scalafx.scene.control.*
-import scalafx.scene.layout.GridPane
+import scalafx.scene.layout.{GridPane, HBox, Priority}
+import scalafx.scene.paint.Color
 import scalafx.stage.Window
 
 @Singleton
 final class HowManyDialogService @Inject() (
-                                             bigQsosGenerator: BigQsosGenerator
+                                             bigQsosGenerator: BigQsosGenerator,
+                                             qsoStore: fdswarm.store.QsoStore
                                            ) {
 
   def showAndGenerate(
@@ -51,6 +54,20 @@ final class HowManyDialogService @Inject() (
     val prefixField = new TextField {
       text = defaultPrefix
       promptText = "e.g. WA9"
+    }
+
+    val removeAllButton = IconButton("trash3-fill", 24, "Remove all Qsos loggers", Color.Red)
+    removeAllButton.onAction = _ => {
+      val confirm = new Alert(Alert.AlertType.Confirmation) {
+        initOwner(ownerWindow)
+        title = "Confirm Deletion"
+        headerText = "Delete all QSOs?"
+        contentText = "This will permanently delete all QSOs and the journal file."
+      }
+      val result = confirm.showAndWait()
+      if (result.contains(ButtonType.OK)) {
+        qsoStore.removeAll()
+      }
     }
 
     // Return ButtonType, not a value (no null-result headaches)
@@ -76,6 +93,8 @@ final class HowManyDialogService @Inject() (
 
       add(new Label("Callsign prefix:"), 0, 2)
       add(prefixField, 1, 2)
+
+      add(removeAllButton, 0, 3)
     }
 
     def validHowMany(s: String): Boolean =

@@ -22,7 +22,6 @@ import cats.effect.IO
 import cats.syntax.all.*
 import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
-import fdswarm.replication.StatusMessage
 import fdswarm.util.Ids.Id
 import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.{Inject, Singleton}
@@ -35,7 +34,7 @@ import jakarta.inject.{Inject, Singleton}
 class ReplicationSupport @Inject()(directoryProvider: DirectoryProvider, registry: MeterRegistry) extends QsoStore(directoryProvider, registry):
   /**
    * 
-   * @param statusMessage from a remote node
+   * @param fdHourDigest from a remote node
    * @return FdHours that need to be replicated.
    */
   def isFdHourNeeded(fdHourDigest: FdHourDigest): Option[FdHour] =
@@ -54,7 +53,7 @@ class ReplicationSupport @Inject()(directoryProvider: DirectoryProvider, registr
       FdHourIds(fdHour, ids)
     }
 
-  def doWeHaveQso(uuid:Id): IO[Boolean] =
+  private def doWeHaveQso(uuid:Id): IO[Boolean] =
     IO(map.contains(uuid))
 
   def missingIds(remote: FdHourIds): IO[Seq[Id]] =
@@ -74,11 +73,10 @@ class ReplicationSupport @Inject()(directoryProvider: DirectoryProvider, registr
 
   def qsosForIds(request: FdHourRequest): IO[FdHourQsos] =
     qsosForFdHour(request.fdHour).map { qsos =>
-      val filteredQsos = if (request.specificQsos.isEmpty) {
+      val filteredQsos = if (request.specificQsos.isEmpty) 
         qsos
-      } else {
+      else 
         val ids = request.specificQsos.toSet
         qsos.filter(qso => ids.contains(qso.uuid))
-      }
       FdHourQsos(request.fdHour, filteredQsos)
     }

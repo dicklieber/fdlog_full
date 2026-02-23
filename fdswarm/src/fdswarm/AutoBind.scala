@@ -75,7 +75,6 @@ object AutoBind {
           case Some(n) => Multibinder.newSetBinder(binder, typeLiteral, Names.named(n))
           case None    => Multibinder.newSetBinder(binder, typeLiteral)
         }
-
       concrete.foreach { ci =>
         val impl: Class[? <: T] = Class.forName(ci.getName).asInstanceOf[Class[? <: T]]
         

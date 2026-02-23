@@ -143,3 +143,25 @@ class QsoStoreTest extends FunSuite:
 
     assert(needed.isDefined)
     assertEquals(needed.get, qso1.fdHour)
+
+  test("removeAll should clear all state and delete journal file"):
+    val registry = new SimpleMeterRegistry()
+    val qsoStore = QsoStore(testDirectory, registry)
+    val qso = Qso(callsign = Callsign("W9NNN"),
+      contestClass = "WFD",
+      bandMode = BandMode("20m", "CW"),
+      section = "IL",
+      qsoMetadata = testQsoMetadata
+    )
+    qsoStore.add(qso)
+    assertEquals(qsoStore.qsoCollection.size, 1)
+    assertEquals(qsoStore.digests().size, 1)
+    val journalFile = testDirectory() / "qsosJournal.json"
+    assert(os.exists(journalFile))
+
+    qsoStore.removeAll()
+
+    assertEquals(qsoStore.qsoCollection.size, 0)
+    assertEquals(qsoStore.digests().size, 0)
+    assertEquals(qsoStore.all.size, 0)
+    assert(!os.exists(journalFile))
