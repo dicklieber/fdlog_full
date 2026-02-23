@@ -19,6 +19,7 @@ package fdswarm.util
 
 import jakarta.inject.*
 import io.circe.*
+import sttp.tapir.Schema
 
 import java.net.{InetAddress, InetSocketAddress}
 
@@ -47,6 +48,7 @@ object HostAndPort:
 
   given Encoder[HostAndPort] = Encoder.encodeString.contramap(_.toString)
   given Decoder[HostAndPort] = Decoder.decodeString.map(HostAndPort.apply)
+  given Schema[HostAndPort] = Schema.string
 
   def apply(s: String): HostAndPort =
     s match

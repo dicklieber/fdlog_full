@@ -27,12 +27,7 @@ import io.circe.syntax.*
 
 @Singleton
 final class BandModeStore @Inject() (dirProvider: DirectoryProvider) {
-
-  final case class BandModes(
-                              bands:   Set[String],
-                              modes:   Set[String],
-                              enabled: Map[String, Set[String]]
-                            ) derives Codec.AsObject
+  import BandModeStore.BandModes
 
   private val dir: os.Path = {
     val p = dirProvider()
@@ -92,4 +87,13 @@ final class BandModeStore @Inject() (dirProvider: DirectoryProvider) {
 
   def modesForBand(band: String): Set[String] =
     state.value.enabled.collect { case (m, bs) if bs.contains(band) => m }.toSet
+}
+
+object BandModeStore {
+  import sttp.tapir.Schema
+  final case class BandModes(
+                              bands:   Set[String],
+                              modes:   Set[String],
+                              enabled: Map[String, Set[String]]
+                            ) derives Codec.AsObject, Schema
 }

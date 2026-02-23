@@ -23,9 +23,9 @@ import scalafx.geometry.Insets
 import scalafx.scene.control.{Label, OverrunStyle, Tooltip}
 import io.circe.Codec
 
-case class SectionGroup(name: String, sections: Seq[Section]) derives Codec.AsObject
+case class SectionGroup(name: String, sections: Seq[Section]) derives Codec.AsObject, sttp.tapir.Schema
 
-case class Section(code: String, name: String) extends Label derives Codec.AsObject:
+case class Section(code: String, name: String) extends Label derives Codec.AsObject, sttp.tapir.Schema:
   text = code
   tooltip = Tooltip(name)
   padding = Insets(2, 4, 2, 4)
