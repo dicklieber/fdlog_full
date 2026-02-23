@@ -30,6 +30,7 @@ import fdswarm.replication.{NodeStatusHandler, NodeStatusSender, SwarmStatusPane
 import fdswarm.store.FdHourDigest
 import fdswarm.util.HostAndPortProvider
 import jakarta.inject.Inject
+import scalafx.Includes.*
 import scalafx.application.Platform
 import scalafx.scene.{Node, Scene}
 import scalafx.scene.control.*
@@ -77,6 +78,52 @@ final class FdLogUi @Inject()(
         Option(ownerWindow) match
           case Some(w) => stationEditor.show(w)
           case None => ()
+
+  private val devMenu: Menu =
+    new Menu("Dev"):
+      visible = false
+      items = Seq(
+        new MenuItem("Generate QSOs"):
+          onAction = _ =>
+            Option(ownerWindow) match
+              case Some(w) => howManyDialogService.showAndGenerate(w)
+              case None => ()
+        ,
+        new MenuItem("Send FdHour"):
+          onAction = _ =>
+            Option(ownerWindow) match
+              case Some(w) => fdHourDialogService.show(w)
+              case None => ()
+        ,
+        new MenuItem("FdHours"):
+          onAction = _ =>
+            Option(ownerWindow) match
+              case Some(w) => fdHourDigestsPane.show(w)
+              case None => ()
+        ,
+        new MenuItem("Status Broadcast Settings"):
+          onAction = _ =>
+            Option(ownerWindow) match
+              case Some(w) => statusBroadcastDialog.show(w)
+              case None => ()
+        ,
+        new MenuItem("Logging"):
+          onAction = _ =>
+            Option(ownerWindow) match
+              case Some(w) => loggingDialog.show(w)
+              case None => ()
+        ,
+        new MenuItem("Contest Time"):
+          onAction = _ =>
+            Option(ownerWindow) match
+              case Some(w) => contestTimeDialog.show(w)
+              case None => ()
+      )
+
+  private val developerModeMenuItem = new CheckMenuItem("Developer Mode"):
+    selected = false
+
+  devMenu.visible <== developerModeMenuItem.selected
 
   private val menuBar = new MenuBar:
     useSystemMenuBar = isMac
@@ -152,72 +199,14 @@ final class FdLogUi @Inject()(
           onAction = _ => showPane(bandModeNode)
         ,
         stationMenuItem,
-        contestMenuItem
+        contestMenuItem,
+        new SeparatorMenuItem(),
+        developerModeMenuItem
       )
 
   private def helpMenu: Menu =
     new Menu("Help"):
       items = Seq(aboutMenuItem)
-
-  private def devMenu: Menu =
-    new Menu("Dev"):
-      items = Seq(
-        new MenuItem("Generate QSOs"):
-          onAction = _ =>
-            Option(ownerWindow) match
-              case Some(w) => howManyDialogService.showAndGenerate(w)
-              case None => ()
-        ,
-        new MenuItem("Send FdHour"):
-          onAction = _ =>
-            Option(ownerWindow) match
-              case Some(w) => fdHourDialogService.show(w)
-              case None => ()
-        ,
-        new MenuItem("FdHours"):
-          onAction = _ =>
-            Option(ownerWindow) match
-              case Some(w) => fdHourDigestsPane.show(w)
-              case None => ()
-        ,
-        new MenuItem("Status Broadcast Settings"):
-          onAction = _ =>
-            Option(ownerWindow) match
-              case Some(w) => statusBroadcastDialog.show(w)
-              case None => ()
-        ,
-        new MenuItem("Logging"):
-          onAction = _ =>
-            Option(ownerWindow) match
-              case Some(w) => loggingDialog.show(w)
-              case None => ()
-        ,
-        new MenuItem("Contest Time"):
-          onAction = _ =>
-            Option(ownerWindow) match
-              case Some(w) => contestTimeDialog.show(w)
-              case None => ()
-        
-/*
-        new MenuItem("FdHour"):
-          onAction = _ =>
-            val base64 = repl.byFdHourJsonGzipBase64
-            val decoded = java.util.Base64.getDecoder.decode(base64)
-            val bais = new java.io.ByteArrayInputStream(decoded)
-            val gzis = new java.util.zip.GZIPInputStream(bais)
-            val json = new String(gzis.readAllBytes(), "UTF-8")
-            println(s"Decoded JSON: $json")
-            val s: Seq[FdHourDigest] = read(json)
-            println(s"Decoded FdHourDigests: $s")
-*/
-        ,
-/*
-        new MenuItem("Broadcast FdHour"):
-          onAction = _ =>
-            val base64 = repl.byFdHourJsonGzipBase64
-        //            broadcastSender.broadcast(base64)
-*/
-      )
 
 object FdLogUi:
   lazy val isMac: Boolean =
