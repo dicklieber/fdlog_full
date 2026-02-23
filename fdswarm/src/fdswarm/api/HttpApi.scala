@@ -32,7 +32,7 @@ import java.time.format.DateTimeFormatter
 import java.time.ZonedDateTime
 import java.util.Locale
 import org.slf4j.LoggerFactory
-import org.http4s.HttpApp
+import org.http4s.{HttpApp, HttpRoutes}
 import org.http4s.syntax.all.*
 import cats.syntax.all.*
 import _root_.meters4s.Reporter
@@ -106,13 +106,14 @@ final class HttpApi @Inject()(apiEndpoints: java.util.Set[ApiEndpoints],
 
   private def httpApp: HttpApp[IO] =
     val endpoints = apiEndpoints.asScala.flatMap(_.endpoints).toList
+    val webRoutes = apiEndpoints.asScala.collect { case w: fdswarm.web.WebRoutes => w.routes }.foldLeft(HttpRoutes.empty[IO])(_ <+> _)
     val swaggerEndpoints = SwaggerInterpreter().fromServerEndpoints[IO](endpoints, "Field Day Swarm API", "1.0.0")
 
     val routes = Http4sServerInterpreter[IO]().toRoutes(endpoints)
     val swaggerRoutes = Http4sServerInterpreter[IO]().toRoutes(swaggerEndpoints)
 
     val metricsOps = Meters4s[IO](reporter)
-    val instrumentedRoutes = ServerMetrics[IO](metricsOps)(routes <+> swaggerRoutes)
+    val instrumentedRoutes = ServerMetrics[IO](metricsOps)(routes <+> swaggerRoutes <+> webRoutes)
 
     val app = Router("/" -> instrumentedRoutes).orNotFound: HttpApp[IO]
     // Log each request in Common Log Format (CLF) to the dedicated access logger

@@ -45,7 +45,7 @@ class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
   override def configure(): Unit =
 
     // scan only where your implementations live
-    val pkgs = Seq("fdswarm.api", "fdswarm.grafana")
+    val pkgs = Seq("fdswarm.api", "fdswarm.grafana", "fdswarm.web")
     val allPkgs = Seq("fdswarm")
 
     // unnamed set (inject with java.util.Set[ApiEndpoints])
