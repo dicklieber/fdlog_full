@@ -42,7 +42,7 @@ class ContestEntry @Inject()(qsoEntryPanel: QsoEntryPanel,
       padding = Insets(10)
       hgap = 10
       vgap = 10
-      add(qsoTablePane.node, 0, 0, 2, 1)
+      add(child = qsoTablePane.node, columnIndex = 0, rowIndex = 0, colspan = 2, rowspan = 1)
       add(qsoEntryPanel.node, 0, 1, 1, 1)
       add(sectionPanel.node, 1, 1, 1, 2)
       add(contestTimerPanel.node, 0, 2, 1, 1)

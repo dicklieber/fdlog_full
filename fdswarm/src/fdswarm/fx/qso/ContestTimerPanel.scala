@@ -24,6 +24,7 @@ import fdswarm.fx.contest.ContestManager
 import fdswarm.util.DurationFormat
 import jakarta.inject.{Inject, Named, Singleton}
 import scalafx.animation.{KeyFrame, Timeline}
+import scalafx.beans.property.ObjectProperty
 import scalafx.scene.Node
 import scalafx.scene.control.Label
 import scalafx.util.Duration
@@ -40,6 +41,11 @@ class ContestTimerPanel @Inject()(
     styleClass += "contest-timer"
   }
 
+  enum TimeMode:
+    case Before, During, After
+
+  val timeModeProperty = ObjectProperty[TimeMode](this, "timeMode", TimeMode.Before)
+
   private var useFixedTime: Boolean = false
   private var fixedTime: ZonedDateTime = ZonedDateTime.now()
 
@@ -51,12 +57,20 @@ class ContestTimerPanel @Inject()(
   private def updateContestTimer(): Unit =
     val now = if useFixedTime then fixedTime else ZonedDateTime.now()
     val config = contestManager.config
-    val (msg, style) =
-      if now.isBefore(config.start) then
+
+    val mode =
+      if now.isBefore(config.start) then TimeMode.Before
+      else if now.isAfter(config.end) then TimeMode.After
+      else TimeMode.During
+
+    timeModeProperty.value = mode
+
+    val (msg, style) = mode match
+      case TimeMode.Before =>
         (s"Contest starts in ${DurationFormat(JDuration.between(now, config.start))}", "contest-before")
-      else if now.isAfter(config.end) then
+      case TimeMode.After =>
         (s"Contest ended ${DurationFormat(JDuration.between(config.end, now))} ago.", "contest-after")
-      else
+      case TimeMode.During =>
         (s"Contest ends in ${DurationFormat(JDuration.between(now, config.end))}", "contest-during")
 
     contestTimerLabel.text = msg
