@@ -76,3 +76,18 @@
 .json-pretty-print {
     -fx-font-family: "monospace";
 }
+
+.contest-before {
+    -fx-text-fill: blue;
+    -fx-font-weight: bold;
+}
+
+.contest-during {
+    -fx-text-fill: green;
+    -fx-font-weight: bold;
+}
+
+.contest-after {
+    -fx-text-fill: red;
+    -fx-font-weight: bold;
+}

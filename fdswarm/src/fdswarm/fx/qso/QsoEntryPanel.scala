@@ -21,10 +21,10 @@ package fdswarm.fx.qso
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.StationManager
 import fdswarm.fx.bandmodes.SelectedBandModeStore
-import fdswarm.fx.contest.{ContestManager, ContestType}
+import fdswarm.fx.contest.ContestManager
 import fdswarm.fx.{CallSignField, GridUtils, UpperCase}
-import fdswarm.util.HostAndPortProvider
 import fdswarm.model.*
+import fdswarm.util.*
 import fdswarm.replication.{MulticastTransport, Service, UDPHeader}
 import fdswarm.store.QsoStore
 import io.circe.syntax.*
@@ -34,6 +34,8 @@ import scalafx.scene.Node
 import scalafx.scene.control.*
 import scalafx.scene.layout.{GridPane, VBox}
 import scalafx.util.Duration
+import java.time.ZonedDateTime
+import scalafx.Includes.*
 
 @Singleton
 class QsoEntryPanel @Inject()(
@@ -45,7 +47,7 @@ class QsoEntryPanel @Inject()(
                                callsignField: CallSignField,
                                contestClassField: ContestClassField,
                                dupPanel:DupPanel,
-                               hostAndPortProvider: HostAndPortProvider
+                               hostAndPortProvider: HostAndPortProvider,
                              ) extends LazyLogging:
 
   private val sectionField = UpperCase(new TextField())
@@ -73,12 +75,13 @@ class QsoEntryPanel @Inject()(
 
     add(clearButton, 3, 1)
   }
-
+  
   private val mainLayout = new VBox {
     spacing = 10
     children = Seq(
       grid,
       dupPanel.pane(callsignField.text)
+      
     )
   }
 

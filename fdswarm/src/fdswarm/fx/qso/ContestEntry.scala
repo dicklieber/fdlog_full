@@ -33,7 +33,8 @@ import GridUtils.*
 class ContestEntry @Inject()(qsoEntryPanel: QsoEntryPanel,
                              qsoTablePane: QsoTablePane,
                              bandModeMatrixPane: BandModeMatrixPane,
-                             sectionPanel: SectionPanel
+                             sectionPanel: SectionPanel,
+                             contestTimerPanel: ContestTimerPanel
                             ) extends LazyLogging:
 
   def node: Node =
@@ -43,8 +44,9 @@ class ContestEntry @Inject()(qsoEntryPanel: QsoEntryPanel,
       vgap = 10
       add(qsoTablePane.node, 0, 0, 2, 1)
       add(qsoEntryPanel.node, 0, 1, 1, 1)
-      add(sectionPanel.node, 1, 1, 1, 1)
-      add(bandModeMatrixPane.node, 0, 2, 2, 1)
+      add(sectionPanel.node, 1, 1, 1, 2)
+      add(contestTimerPanel.node, 0, 2, 1, 1)
+      add(bandModeMatrixPane.node, 0, 3, 2, 1)
     }
 //    new VBox {
 //      children = Seq(
