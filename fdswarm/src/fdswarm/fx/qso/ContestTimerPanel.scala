@@ -37,9 +37,8 @@ class ContestTimerPanel @Inject()(
                                    @Named("fdswarm.contestTimerUpdateSec") contestTimerUpdateSec: Int
                                  ) extends LazyLogging:
 
-  private val contestTimerLabel = new Label {
+  private val contestTimerLabel = new Label:
     styleClass += "contest-timer"
-  }
 
   enum TimeMode:
     case Before, During, After
@@ -77,12 +76,11 @@ class ContestTimerPanel @Inject()(
     contestTimerLabel.styleClass.removeAll("contest-before", "contest-during", "contest-after")
     contestTimerLabel.styleClass.add(style)
 
-  private val timerTimeline = new Timeline {
+  private val timerTimeline = new Timeline:
     keyFrames = Seq(
       KeyFrame(Duration(contestTimerUpdateSec * 1000), onFinished = _ => updateContestTimer())
     )
     cycleCount = Timeline.Indefinite
-  }
   timerTimeline.play()
   updateContestTimer()
 

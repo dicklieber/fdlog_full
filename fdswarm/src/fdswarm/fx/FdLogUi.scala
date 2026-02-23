@@ -31,6 +31,7 @@ import fdswarm.store.FdHourDigest
 import fdswarm.util.HostAndPortProvider
 import jakarta.inject.Inject
 import scalafx.Includes.*
+import scalafx.beans.property.{BooleanProperty, StringProperty}
 import scalafx.application.Platform
 import scalafx.scene.{Node, Scene}
 import scalafx.scene.control.*
@@ -52,7 +53,9 @@ final class FdLogUi @Inject()(
                                swarmStatusPane: SwarmStatusPane,
                                nodeStatusService: NodeStatusSender,
                                aboutMenuItem: AboutMenuItem,
-                               hostAndPortProvider: HostAndPortProvider
+                               hostAndPortProvider: HostAndPortProvider,
+                               userConfig: UserConfig,
+                               userConfigEditor: UserConfigEditor
                              ) extends LazyLogging:
 
   private val bandModeNode: Node =
@@ -120,10 +123,17 @@ final class FdLogUi @Inject()(
               case None => ()
       )
 
-  private val developerModeMenuItem = new CheckMenuItem("Developer Mode"):
-    selected = false
+  private val developerModeMenuItem = new CheckMenuItem("Developer Mode")
+  developerModeMenuItem.selected <==> userConfig.getProperty[BooleanProperty]("developerMode")
 
   devMenu.visible <== developerModeMenuItem.selected
+
+  private val userConfigMenuItem: MenuItem =
+    new MenuItem("User Config"):
+      onAction = _ =>
+        Option(ownerWindow) match
+          case Some(w) => userConfigEditor.show(w)
+          case None => ()
 
   private val menuBar = new MenuBar:
     useSystemMenuBar = isMac
@@ -201,6 +211,7 @@ final class FdLogUi @Inject()(
         stationMenuItem,
         contestMenuItem,
         new SeparatorMenuItem(),
+        userConfigMenuItem,
         developerModeMenuItem
       )
 

@@ -56,7 +56,7 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
               val statusMessage = StatusMessage(udpHeader.payload)
               swarmStatus.put(statusMessage)
               logger.trace("StatusHandle: StatusMessage from {} with {} digests.", statusMessage.hostAndPort, statusMessage.fdDigests.size)
-              statusProcessor.processStatus(statusMessage).unsafeRunSync()
+              statusProcessor.processStatus(statusMessage).unsafeRunAndForget()
             case Service.QSO =>
               qsoCounter.increment()
               val json = new String(udpHeader.payload, "UTF-8")

@@ -98,7 +98,9 @@ class NodeStatusHandlerTest extends FunSuite:
     
     val transport = new MockMulticastTransport(hostAndPortProvider)
     
-    val remoteEndpointCaller = new CallEndpoint
+    import cats.effect.unsafe.implicits.global
+    val reporter = _root_.meters4s.Reporter.fromRegistry[cats.effect.IO](registry).unsafeRunSync()
+    val remoteEndpointCaller = new CallEndpoint(reporter)
     val neededRequester = new StatusProcessor(replicationSupport, null, remoteEndpointCaller, registry)
     val handler = new NodeStatusHandler(replicationSupport, neededRequester, transport, hostAndPortProvider, new SwarmStatus, registry)
     
@@ -136,7 +138,9 @@ class NodeStatusHandlerTest extends FunSuite:
     }
 
     val transport = new MockMulticastTransport(hostAndPortProvider)
-    val remoteEndpointCaller = new CallEndpoint
+    import cats.effect.unsafe.implicits.global
+    val reporter = _root_.meters4s.Reporter.fromRegistry[cats.effect.IO](registry).unsafeRunSync()
+    val remoteEndpointCaller = new CallEndpoint(reporter)
     val neededRequester = new StatusProcessor(replicationSupport, null, remoteEndpointCaller, registry)
     val handler = new NodeStatusHandler(replicationSupport, neededRequester, transport, hostAndPortProvider, new SwarmStatus, registry)
 
@@ -173,7 +177,9 @@ class NodeStatusHandlerTest extends FunSuite:
     
     val transport = new MockMulticastTransport(hostAndPortProvider)
 
-    val remoteEndpointCaller = new CallEndpoint
+    import cats.effect.unsafe.implicits.global
+    val reporter = _root_.meters4s.Reporter.fromRegistry[cats.effect.IO](registry).unsafeRunSync()
+    val remoteEndpointCaller = new CallEndpoint(reporter)
     val neededRequester = new StatusProcessor(replicationSupport, null, remoteEndpointCaller, registry)
     val handler = new NodeStatusHandler(replicationSupport, neededRequester, transport, hostAndPortProvider, new SwarmStatus, registry)
 

@@ -74,38 +74,34 @@ final class ContestManager @Inject()(
 
     // Setup listener for contest type change to prompt for year
     val contestCombo = myCaseForm.control[ComboBox[ContestType]]("contest")
-    contestCombo.onAction = _ => {
+    contestCombo.onAction = _ =>
       val newType = contestCombo.value.value
       promptForYear(ownerWindow).foreach { year =>
         val newDates = newType.dates(year)
         updateZonedDateTimeControl(myCaseForm, "start", newDates.startUtc)
         updateZonedDateTimeControl(myCaseForm, "end", newDates.endUtc)
       }
-    }
 
     val recalculateButton = new Button("Recalculate Dates"):
-      onAction = (e: javafx.event.ActionEvent) => {
+      onAction = (e: javafx.event.ActionEvent) =>
         val currentType = contestCombo.value.value
         promptForYear(ownerWindow).foreach { year =>
           val newDates = currentType.dates(year)
           updateZonedDateTimeControl(myCaseForm, "start", newDates.startUtc)
           updateZonedDateTimeControl(myCaseForm, "end", newDates.endUtc)
         }
-      }
 
     val dialogContent = new VBox(10, pane, recalculateButton)
 
-    val d = new Dialog[ContestConfig]() {
+    val d = new Dialog[ContestConfig]():
       initOwner(ownerWindow)
       title = "Contest Detail"
       headerText = "Edit Contest Configuration"
       dialogPane().content = dialogContent
       dialogPane().buttonTypes = Seq(ButtonType.OK, ButtonType.Cancel)
-      resultConverter = {
+      resultConverter =
         case ButtonType.OK => myCaseForm.result
         case _ => null
-      }
-    }
 
     val result = d.showAndWait()
     result match
@@ -113,12 +109,12 @@ final class ContestManager @Inject()(
       case _ => ()
 
   private def promptForYear(ownerWindow: Window): Option[Int] =
-    val d = new TextInputDialog(LocalDate.now().getYear.toString) {
+    val d = new TextInputDialog(LocalDate.now().getYear.toString):
       initOwner(ownerWindow)
       title = "Select Year"
       headerText = "Enter the year for the contest"
       contentText = "Year:"
-    }
+
     d.showAndWait().flatMap(_.toIntOption)
 
   private def updateZonedDateTimeControl(form: MyCaseForm[ContestConfig], fieldName: String, zdt: ZonedDateTime): Unit =
@@ -136,26 +132,23 @@ final class ContestManager @Inject()(
   // ---- persistence ----------------------------------------------------------
 
   private def persist(): Unit =
-    try {
+    try
       val json = configProperty.value.asJson.spaces2
       os.write.over(file, json, createFolders = true)
-    } catch {
+    catch
       case e: Throwable => logger.error(s"Failed to persist contest config to $file", e)
-    }
 
   private def load(): ContestConfig =
-    try {
-      if (os.exists(file)) {
+    try
+      if os.exists(file) then
         val json = os.read(file)
         decode[ContestConfig](json).toTry.get
-      } else {
+      else
         defaultConfig()
-      }
-    } catch {
+    catch
       case e: Throwable =>
         logger.warn(s"Failed to load contest config from $file: ${e.getMessage}. Using default.")
         defaultConfig()
-    }
 
   private def defaultConfig(): ContestConfig =
     val now = ZonedDateTime.now(ZoneOffset.UTC)

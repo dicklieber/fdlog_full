@@ -18,11 +18,13 @@
 
 package fdswarm.fx.qso
 
-import fdswarm.fx.GridUtils
+import fdswarm.fx.{GridUtils, UserConfig}
 import fdswarm.model.Qso
 import fdswarm.store.QsoStore
 import jakarta.inject.*
 import scalafx.Includes.*
+import scalafx.beans.property.IntegerProperty
+import scalafx.beans.binding.Bindings
 import scalafx.collections.ObservableBuffer
 import scalafx.scene.Node
 import scalafx.scene.control.*
@@ -36,7 +38,7 @@ import java.time.{Instant, ZoneId}
  * @param qsoStore where qsos live [[QsoStore.qsoCollection]]
  */
 @Singleton
-class QsoTablePane @Inject(qsoStore:QsoStore):
+class QsoTablePane @Inject(qsoStore: QsoStore, userConfig: UserConfig):
   private val qsoCollection: ObservableBuffer[Qso] = qsoStore.qsoCollection
 
   private val timeFmt =
@@ -53,6 +55,7 @@ class QsoTablePane @Inject(qsoStore:QsoStore):
   private val table = new TableView[Qso](qsoCollection):
     columnResizePolicy = javafx.scene.control.TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN
     placeholder = new Label("No QSOs yet")
+    prefHeight <== userConfig.getProperty[IntegerProperty]("qsoListLines") * 25 // Roughly 25 pixels per row
 
   private def col[S](title: String, value: Qso => S): TableColumn[Qso, S] =
     new TableColumn[Qso, S](title):

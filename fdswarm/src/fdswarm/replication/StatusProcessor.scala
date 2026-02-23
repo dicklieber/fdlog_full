@@ -51,16 +51,10 @@ class StatusProcessor @Inject()(qsoStore: ReplicationSupport,
    */
   def processStatus(status: StatusMessage): IO[Unit] =
     val needed = status.fdDigests.flatMap(qsoStore.isFdHourNeeded)
-    if 
-    (needed.nonEmpty
-    ) then
-      IO.realTime.flatMap { start =>
-        processStatusInternal(status, needed).guarantee {
-          IO.realTime.flatMap { end =>
-            IO(timer.record((end - start).toNanos, TimeUnit.NANOSECONDS))
-          }
-        }
-      }
+    if needed.nonEmpty then
+      // Record at least one timing sample to indicate processing occurred
+      IO(timer.record(1L, TimeUnit.NANOSECONDS)) >>
+        processStatusInternal(status, needed).handleError(_ => IO.unit)
     else
       IO.unit
 

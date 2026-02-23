@@ -51,18 +51,17 @@ class QsoEntryPanel @Inject()(
                              ) extends LazyLogging:
 
   private val sectionField = UpperCase(new TextField())
-  private val clearButton = new Button("\u21BA") {
+  private val clearButton = new Button("\u21BA"):
     styleClass += "clear-button"
     tooltip = Tooltip("Clear fields")
-    onAction.set(new javafx.event.EventHandler[javafx.event.ActionEvent] {
+    onAction.set(new javafx.event.EventHandler[javafx.event.ActionEvent]:
       override def handle(event: javafx.event.ActionEvent): Unit =
         callsignField.text = ""
         contestClassField.text = ""
         sectionField.text = ""
         callsignField.requestFocus()
-    })
-  }
-  private val grid = new GridPane {
+    )
+  private val grid = new GridPane:
     hgap = 5
     add(new Label("Their Callsign:"), 0, 0)
     add(callsignField, 0, 1)
@@ -74,16 +73,14 @@ class QsoEntryPanel @Inject()(
     add(sectionField, 2, 1)
 
     add(clearButton, 3, 1)
-  }
   
-  private val mainLayout = new VBox {
+  private val mainLayout = new VBox:
     spacing = 10
     children = Seq(
       grid,
       dupPanel.pane(callsignField.text)
-      
+
     )
-  }
 
   val node: Node =
     GridUtils.fieldSet("QSO", mainLayout)
@@ -145,15 +142,14 @@ class QsoEntryPanel @Inject()(
     import scalafx.animation.{KeyFrame, Timeline}
     import scalafx.Includes.*
 
-    val timeline = new Timeline {
+    val timeline = new Timeline:
       keyFrames = Seq(
-        KeyFrame(Duration(1000), onFinished = _ => {
+        KeyFrame(Duration(1000), onFinished = _ =>
           grid.styleClass -= "qso-submit-highlight"
           callsignField.text = ""
           contestClassField.text = ""
           sectionField.text = ""
           callsignField.requestFocus()
-        })
+        )
       )
-    }
     timeline.play()

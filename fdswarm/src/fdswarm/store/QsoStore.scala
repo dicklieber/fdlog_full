@@ -142,3 +142,4 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
     catch
       case _: IllegalStateException =>
         logger.warn("Toolkit not initialized, direct clear")
+        qsoCollection.clear()
