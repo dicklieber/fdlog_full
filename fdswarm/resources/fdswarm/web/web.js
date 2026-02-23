@@ -19,3 +19,28 @@
 function toUpperCase(input) {
     input.value = input.value.toUpperCase();
 }
+
+function fetchDups(input) {
+    const qsoPart = input.value;
+    const dupsRow = document.getElementById('dupsRow');
+    const dupsContainer = document.getElementById('dupsContainer');
+    
+    if (qsoPart.length < 2) {
+        dupsRow.style.display = 'none';
+        dupsContainer.innerHTML = '';
+        return;
+    }
+
+    fetch(`/web/dups?qsoPart=${encodeURIComponent(qsoPart)}`)
+        .then(response => response.text())
+        .then(html => {
+            if (html.trim() === '<div></div>' || html.trim() === '') {
+                dupsRow.style.display = 'none';
+                dupsContainer.innerHTML = '';
+            } else {
+                dupsRow.style.display = 'block';
+                dupsContainer.innerHTML = html;
+            }
+        })
+        .catch(error => console.error('Error fetching dups:', error));
+}

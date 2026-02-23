@@ -29,6 +29,7 @@ import fdswarm.fx.sections.SectionsProvider
 import fdswarm.model.{Callsign, Qso, QsoMetadata}
 import fdswarm.replication.{MulticastTransport, Service}
 import fdswarm.store.QsoStore
+import fdswarm.web.templates.*
 import io.circe.syntax.*
 import jakarta.inject.{Inject, Singleton}
 import org.http4s.*
@@ -86,17 +87,17 @@ class WebRoutes @Inject()(
         webSessionStore.getSession(id) match
           case Some(ws) => IO.pure(Right((id, ws)))
           case None =>
-            val chooser = WebTemplates.sessionChooserPage(webSessionStore.allSessions.map(s => s.sessionId -> s.station.operator.value),
+            val chooser = SessionChooserPage(webSessionStore.allSessions.map(s => s.sessionId -> s.station.operator.value),
               message = "Session not found. Please select or create one.")
             Ok(chooser).map(_.withContentType(`Content-Type`(MediaType.text.html))).map(Left(_))
       case None =>
-        val chooser = WebTemplates.sessionChooserPage(webSessionStore.allSessions.map(s => s.sessionId -> s.station.operator.value))
+        val chooser = SessionChooserPage(webSessionStore.allSessions.map(s => s.sessionId -> s.station.operator.value))
         Ok(chooser).map(_.withContentType(`Content-Type`(MediaType.text.html))).map(Left(_))
 
   private def rootRoutes: HttpRoutes[IO] = HttpRoutes.of[IO] {
     case req @ GET -> Root =>
       // Always show chooser on root as per requirement
-      val chooser = WebTemplates.sessionChooserPage(webSessionStore.allSessions.map(s => s.sessionId -> s.station.operator.value))
+      val chooser = SessionChooserPage(webSessionStore.allSessions.map(s => s.sessionId -> s.station.operator.value))
       Ok(chooser).map(_.withContentType(`Content-Type`(MediaType.text.html)))
 
     case req @ POST -> Root / "session" / "create" =>
@@ -133,7 +134,7 @@ class WebRoutes @Inject()(
         case Left(r) => IO.pure(r)
         case Right((id, ws)) =>
           val stats = webSessionStore.getStats(id).map(s => (s.qsosEntered, s.lastTouched.toString))
-          val page = WebTemplates.sessionEditPage(id, ws.station.rig, ws.station.antenna, ws.station.operator.value, ws.qsoLines, stats)
+          val page = SessionEditPage(id, ws.station.rig, ws.station.antenna, ws.station.operator.value, ws.qsoLines, stats)
           Ok(page).map(_.withContentType(`Content-Type`(MediaType.text.html)))
       }
 
@@ -174,10 +175,28 @@ class WebRoutes @Inject()(
           else
             (s"${config.contest.name} ${config.start.getYear} ends in ${DurationFormat(JDuration.between(now, config.end))}", "contest-during")
 
-          val html = WebTemplates.indexPage(
+          val html = IndexPage(
             qsos, bands, modes, selected, groups, msg, style
           )
           Ok(html).map(_.withContentType(`Content-Type`(MediaType.text.html)))
+      }
+
+    case req @ GET -> Root / "dups" =>
+      requireSession(req).flatMap {
+        case Left(r) => IO.pure(r)
+        case Right((id, ws)) =>
+          val qsoPart = req.params.getOrElse("qsoPart", "").toUpperCase
+          if (qsoPart.length >= 2) {
+            val allDups = qsoStore.potentialDups(qsoPart, ws.bandMode)
+            val totalCount = allDups.size
+            val displayedDups = allDups.take(45).map { q =>
+              DupEntry(q.callsign.value, fdswarm.util.TimeHelpers.localFrom(q.stamp))
+            }
+            val html = DupsPanel(displayedDups, totalCount).toString()
+            Ok(html).map(_.withContentType(`Content-Type`(MediaType.text.html)))
+          } else {
+            Ok("<div></div>").map(_.withContentType(`Content-Type`(MediaType.text.html)))
+          }
       }
 
     case req @ POST -> Root / "qso" =>
