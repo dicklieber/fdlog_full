@@ -20,6 +20,7 @@ package fdswarm.web
 
 import cats.effect.IO
 import fdswarm.StationManager
+import fdswarm.fx.UserConfig
 import fdswarm.fx.bandmodes.SelectedBandModeStore
 import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager, BandModeBuilder}
 import fdswarm.fx.contest.ContestManager
@@ -50,6 +51,7 @@ class WebRoutes @Inject()(
                            sectionsProvider: SectionsProvider,
                            contestManager: ContestManager,
                            stationManager: StationManager,
+                           userConfig: UserConfig,
                            multicastTransport: MulticastTransport,
                            bandModeBuilder: BandModeBuilder
                          ) extends ApiEndpoints with LazyLogging:
@@ -60,7 +62,8 @@ class WebRoutes @Inject()(
 
   private def httpRoutes: HttpRoutes[IO] = HttpRoutes.of[IO] {
     case GET -> Root =>
-      val qsos = qsoStore.all.reverse // Latest first
+      val limit = userConfig.get[Int]("qsoListLines")
+      val qsos = qsoStore.all.reverse.take(limit) // Latest N
       val bands = availableBandsManager.bands.toSeq
       val modes = availableModesManager.modes.toSeq
       val selected = selectedBandModeStore.selected.value
@@ -75,10 +78,8 @@ class WebRoutes @Inject()(
       else
         (s"${config.contest.name} ${config.start.getYear} ends in ${DurationFormat(JDuration.between(now, config.end))}", "contest-during")
 
-      val stationInfo = s"Rig: ${stationManager.station.rig}, Ant: ${stationManager.station.antenna}, Op: ${stationManager.station.operator.value}"
-
       val html = WebTemplates.indexPage(
-        qsos, bands, modes, selected, groups, msg, style, stationInfo
+        qsos, bands, modes, selected, groups, msg, style
       )
       Ok(html).map(_.withContentType(`Content-Type`(MediaType.text.html)))
 

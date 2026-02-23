@@ -41,20 +41,28 @@ object WebTemplates:
         link(rel := "stylesheet", href := "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"),
         styleTag(
           """
-            .section-group { margin-bottom: 1rem; padding: 0.5rem; background-color: #f4f4f4; border: 1px solid #ccc; border-radius: 5px; }
-            .section-badge { margin-right: 0.2rem; cursor: pointer; }
-            .band-mode-matrix table { width: auto; }
-            .band-mode-matrix td, .band-mode-matrix th { padding: 0.2rem; text-align: center; }
+            body { font-size: 0.85rem; }
+            h2, h3, h4, h5, h6 { font-size: 1rem; font-weight: bold; margin-bottom: 0.25rem; }
+            .section-group { margin-bottom: 0.25rem; padding: 0.25rem; background-color: #f4f4f4; border: 1px solid #ccc; border-radius: 3px; }
+            .section-badge { margin-right: 0.1rem; cursor: pointer; padding: 0.1rem 0.3rem; font-size: 0.75rem; }
+            .band-mode-matrix table { width: auto; margin-bottom: 0; }
+            .band-mode-matrix td, .band-mode-matrix th { padding: 0.1rem; text-align: center; font-size: 0.75rem; }
             .selected-band-mode { font-weight: bold; background-color: #0d6efd; color: white; }
-            .contest-timer { font-size: 1.2rem; font-weight: bold; padding: 0.5rem; border-radius: 5px; }
+            .contest-timer { font-size: 0.9rem; font-weight: bold; padding: 0.25rem; border-radius: 3px; }
             .contest-before { background-color: #ffc107; }
             .contest-during { background-color: #198754; color: white; }
             .contest-after { background-color: #6c757d; color: white; }
+            .card-header { padding: 0.25rem 0.5rem; font-size: 0.85rem; font-weight: bold; }
+            .card-body { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
+            .form-label { margin-bottom: 0.1rem; font-size: 0.8rem; }
+            .form-control { padding: 0.2rem 0.4rem; font-size: 0.8rem; }
+            .btn-sm { padding: 0.1rem 0.3rem; font-size: 0.75rem; }
+            .table-sm :not(caption) > * > * { padding: 0.1rem 0.25rem; }
           """.stripMargin
         )
       ),
       body(
-        div(cls := "container-fluid mt-3")(
+        div(cls := "container-fluid mt-1")(
           content
         ),
         script(src := "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"),
@@ -75,26 +83,39 @@ object WebTemplates:
                  selectedBandMode: BandMode,
                  sectionGroups: Seq[SectionGroup],
                  contestTimerMsg: String,
-                 contestTimerStyle: String,
-                 stationInfo: String
+                 contestTimerStyle: String
                ): String =
     layout("Field Day Swarm Web Client")(
-      div(cls := "row")(
-        div(cls := "col-md-8")(
-          h2("QSOs"),
+      // Row 0: QSOs table (full width)
+      div(cls := "row mb-1")(
+        div(cls := "col-12")(
+          h6("QSOs"),
           qsoTable(qsos)
+        )
+      ),
+      // Row 1: Left = QSO Entry; Right = Sections (spans alongside)
+      div(cls := "row mb-1")(
+        div(cls := "col-md-8 mb-1 mb-md-0")(
+          h6("QSO Entry"),
+          qsoEntryForm(selectedBandMode)
         ),
         div(cls := "col-md-4")(
-          div(cls := s"contest-timer $contestTimerStyle mb-3")(contestTimerMsg),
-          div(cls := "card mb-3")(
-            div(cls := "card-header")("Station Info"),
-            div(cls := "card-body")(stationInfo)
-          ),
-          h3("QSO Entry"),
-          qsoEntryForm(selectedBandMode),
-          h3("Sections"),
-          sectionsPanel(sectionGroups),
-          h3("Band & Mode"),
+          h6("Sections"),
+          sectionsPanel(sectionGroups)
+        )
+      ),
+      // Row 2: Contest timer under QSO Entry (left column in ScalaFX grid)
+      div(cls := "row mb-1")(
+        div(cls := "col-md-8 mb-1 mb-md-0")(
+          div(cls := s"contest-timer $contestTimerStyle mb-1")(contestTimerMsg)
+        ),
+        // Keep right column empty here so Sections remain visually paired to the left
+        div(cls := "col-md-4 d-none d-md-block")()
+      ),
+      // Row 3: Band & Mode matrix (full width)
+      div(cls := "row")(
+        div(cls := "col-12")(
+          h6("Band & Mode"),
           bandModeMatrix(bands, modes, selectedBandMode)
         )
       )
@@ -125,20 +146,24 @@ object WebTemplates:
 
   def qsoEntryForm(selectedBandMode: BandMode): Modifier =
     form(method := "POST", action := "/web/qso")(
-      div(cls := "mb-3")(
-        label(cls := "form-label")("Their Callsign"),
-        input(tpe := "text", name := "callsign", cls := "form-control", autofocus := true, required := true)
-      ),
-      div(cls := "mb-3")(
-        label(cls := "form-label")("Received Class"),
-        input(tpe := "text", name := "contestClass", cls := "form-control", required := true)
-      ),
-      div(cls := "mb-3")(
-        label(cls := "form-label")("Received Section"),
-        input(tpe := "text", name := "section", id := "sectionInput", cls := "form-control", required := true)
-      ),
-      button(tpe := "submit", cls := "btn btn-primary")("Submit QSO"),
-      span(cls := "ms-2")(s"Current: ${selectedBandMode.band} ${selectedBandMode.mode}")
+      div(cls := "row g-2 align-items-end")(
+        div(cls := "col-md-3")(
+          label(cls := "form-label")("Their Callsign"),
+          input(tpe := "text", name := "callsign", cls := "form-control", autofocus := true, required := true)
+        ),
+        div(cls := "col-md-2")(
+          label(cls := "form-label")("Class"),
+          input(tpe := "text", name := "contestClass", cls := "form-control", required := true)
+        ),
+        div(cls := "col-md-3")(
+          label(cls := "form-label")("Section"),
+          input(tpe := "text", name := "section", id := "sectionInput", cls := "form-control", required := true)
+        ),
+        div(cls := "col-md-4")(
+          button(tpe := "submit", cls := "btn btn-primary btn-sm")("Submit QSO"),
+          span(cls := "ms-2", style := "font-size: 0.75rem")(s"Current: ${selectedBandMode.band} ${selectedBandMode.mode}")
+        )
+      )
     )
 
   def sectionsPanel(groups: Seq[SectionGroup]): Modifier =
