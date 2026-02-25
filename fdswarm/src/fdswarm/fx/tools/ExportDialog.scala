@@ -19,6 +19,8 @@
 package fdswarm.fx.tools
 
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.fx.contest.ContestManager
+import fdswarm.fx.station.StationStore
 import fdswarm.io.DirectoryProvider
 import fdswarm.store.QsoStore
 import fdswarm.util.FilenameStamp
@@ -33,11 +35,14 @@ import scalafx.stage.{DirectoryChooser, Window}
 final class ExportDialog @Inject()(
                                     qsoStore: QsoStore,
                                     directoryProvider: DirectoryProvider,
-                                    filenameStamp: FilenameStamp
+                                    filenameStamp: FilenameStamp,
+                                    contestManager: ContestManager,
+                                    stationStore: StationStore
                                   ) extends LazyLogging:
 
   private enum ExportFormat(val extension: String, val description: String):
     case ADIF extends ExportFormat("adi", "ADIF Files (*.adi)")
+    case CABRILLO extends ExportFormat("cbr", "Cabrillo Files (*.cbr)")
     case JSON extends ExportFormat("json", "JSON Files (*.json)")
     case ZIP  extends ExportFormat("zip", "Zip Files (*.zip)")
 
@@ -130,6 +135,12 @@ final class ExportDialog @Inject()(
         val qsos = qsoStore.all
         val adif = fdswarm.io.AdifExporter.exportQsos(qsos)
         os.write.over(path, adif)
+      case ExportFormat.CABRILLO =>
+        val qsos = qsoStore.all
+        val station = stationStore.station.value
+        val contest = contestManager.config.contest
+        val cabrillo = fdswarm.io.CabrilloExporter.exportQsos(qsos, station, contest)
+        os.write.over(path, cabrillo)
       case ExportFormat.JSON =>
         val qsos = qsoStore.all
         val json = fdswarm.io.JsonExporter.exportQsos(qsos)
