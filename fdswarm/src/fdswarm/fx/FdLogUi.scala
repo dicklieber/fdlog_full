@@ -62,7 +62,9 @@ final class FdLogUi @Inject()(
                                userConfig: UserConfig,
                                userConfigEditor: UserConfigEditor,
                                meterRegistry: MeterRegistry,
-                               webSessionsAdmin: fdswarm.fx.admin.WebSessionsAdmin
+                               webSessionsAdmin: fdswarm.fx.admin.WebSessionsAdmin,
+                               qsoStore: fdswarm.store.QsoStore,
+                               directoryProvider: fdswarm.io.DirectoryProvider
                              ) extends LazyLogging:
 
   private val qsoNode: Node =
@@ -206,6 +208,34 @@ final class FdLogUi @Inject()(
   private def fileMenu: Menu =
     new Menu("File"):
       items = Seq(
+        new MenuItem("Export"):
+          onAction = _ =>
+            val fileChooser = new scalafx.stage.FileChooser {
+              title = "Export"
+              extensionFilters.addAll(
+                new scalafx.stage.FileChooser.ExtensionFilter("ADIF Files", Seq("*.adi", "*.adif")),
+                new scalafx.stage.FileChooser.ExtensionFilter("JSON Files", Seq("*.json")),
+                new scalafx.stage.FileChooser.ExtensionFilter("Zip Files", Seq("*.zip"))
+              )
+              initialFileName = "fdswarm_export.adi"
+            }
+            val file = fileChooser.showSaveDialog(ownerWindow)
+            if file != null then
+              val path = os.Path(file.getAbsolutePath)
+              path.ext match
+                case "adi" | "adif" =>
+                  val qsos = qsoStore.all
+                  val adif = fdswarm.io.AdifExporter.exportQsos(qsos)
+                  os.write.over(path, adif)
+                case "json" =>
+                  val qsos = qsoStore.all
+                  val json = fdswarm.io.JsonExporter.exportQsos(qsos)
+                  os.write.over(path, json)
+                case "zip" =>
+                  fdswarm.io.ZipExporter.zipDirectory(directoryProvider(), path)
+                case _ =>
+                  logger.warn(s"Unsupported export extension: ${path.ext}")
+        ,
         new MenuItem("Exit"):
           onAction = _ => Platform.exit()
       )
