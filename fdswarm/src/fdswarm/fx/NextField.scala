@@ -85,7 +85,7 @@ trait NextField extends TextInputControl with WithDisposition with LazyLogging :
     // If the field is valid, and the character being typed is one of our transition characters,
     // we should consume it because we handled the transition in KEY_PRESSED.
     val char = event.getCharacter
-    if (char != null && char.length > 0) {
+    if (char != null && char.nonEmpty) {
       val isFieldValid = isValid(text.value)
 
       // We need to know if this character would correspond to a transition key.
