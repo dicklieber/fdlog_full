@@ -61,7 +61,7 @@ class SectionPanel @Inject()(sectionsProvider: SectionsProvider, qsoEntryPanel: 
         canSubmit
       )
     )
-    val groupGrid = GridUtils.toGrid(sectionGroup.sections, 10)
+    val groupGrid = GridUtils.toGrid(sectionGroup.sections, 11)
     groupGrid.maxWidth = Double.MaxValue
     HBox.setHgrow(groupGrid, Priority.Always)
 
