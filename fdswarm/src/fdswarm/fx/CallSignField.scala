@@ -29,7 +29,8 @@ import jakarta.inject.Inject
   */
 class CallSignField @Inject() (
     qsoStore: QsoStore,
-    selectedBsndModeStore: SelectedBandModeStore
+    selectedBsndModeStore: SelectedBandModeStore,
+    override val userConfig: UserConfig
 ) extends TextField
     with NextField:
   styleClass += "qsoCallSign"

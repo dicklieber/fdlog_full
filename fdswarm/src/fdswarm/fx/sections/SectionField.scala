@@ -18,12 +18,12 @@
 
 package fdswarm.fx.sections
 
-import fdswarm.fx.NextField
+import fdswarm.fx.{NextField, UserConfig}
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
 import scalafx.scene.control.{TextField, TextFormatter}
 
-class SectionField @Inject()(sectionsProvider: SectionsProvider) extends TextField with NextField:
+class SectionField @Inject()(sectionsProvider: SectionsProvider, override val userConfig: UserConfig) extends TextField with NextField:
 
   text.onChange { (_, _, nv) =>
     validProperty.value = isValid(nv)

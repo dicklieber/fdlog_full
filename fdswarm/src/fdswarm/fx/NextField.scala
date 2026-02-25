@@ -47,69 +47,81 @@ import scalafx.Includes.*
 /**
  * Most of the common logic for any qso input field.
  */
-trait NextField extends TextInputControl with WithDisposition with LazyLogging :
+trait NextField extends TextInputControl with WithDisposition with LazyLogging:
   forceCaps(this)
   styleClass += "qsoField"
   sad()
 
+  def userConfig: UserConfig
+
   def isValid(str: String): Boolean
 
-  /**
-   * Keys that will trigger transition to the next field if the current field is valid.
-   */
+  /** Keys that will trigger transition to the next field if the current field is valid.
+    */
   def isTransitionKey(key: KeyCode): Boolean =
     key.isDigitKey || key == KeyCode.Space || key == KeyCode.Enter || key == KeyCode.Tab
 
   var onDoneFunction: String => Unit =
     (_) => {}
 
-  delegate.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, (event: javafx.scene.input.KeyEvent) => {
-    val key: KeyCode = event.getCode
-    val isFieldValid = isValid(text.value)
-    if (isFieldValid && isTransitionKey(key)) {
-      event.consume()
-      val str: String = if (key.isDigitKey || key.isLetterKey) NextField.toChar(key).toString else ""
-      onDoneFunction(str)
-    } else if (key == javafx.scene.input.KeyCode.ENTER || key == javafx.scene.input.KeyCode.TAB) {
-      event.consume()
-      onDoneFunction("")
-    }
-  })
-
-  delegate.addEventFilter(javafx.scene.input.KeyEvent.KEY_TYPED, (event: javafx.scene.input.KeyEvent) => {
-    // We only want to consume KEY_TYPED if it's one of the transition keys
-    // which was already handled in KEY_PRESSED filter.
-    // However, KEY_TYPED doesn't have a KeyCode, only the character.
-    // In JavaFX, for most keys, KEY_PRESSED is followed by KEY_TYPED.
-
-    // If the field is valid, and the character being typed is one of our transition characters,
-    // we should consume it because we handled the transition in KEY_PRESSED.
-    val char = event.getCharacter
-    if (char != null && char.nonEmpty) {
+  delegate.addEventFilter(
+    javafx.scene.input.KeyEvent.KEY_PRESSED,
+    (event: javafx.scene.input.KeyEvent) => {
+      val key: KeyCode = event.getCode
       val isFieldValid = isValid(text.value)
+      val useNextField = userConfig.get[Boolean]("useNextField")
 
-      // We need to know if this character would correspond to a transition key.
-      // Since we don't have KeyCode here, we have to approximate it.
-      val isTransitionChar = char == " " || char == "\r" || char == "\n" || char == "\t" || char.head.isDigit || char.head.isLetter
+      if (isFieldValid && isTransitionKey(key) && useNextField) {
+        event.consume()
+        val str: String =
+          if (key.isDigitKey || key.isLetterKey) NextField.toChar(key).toString else ""
+        onDoneFunction(str)
+      } else if (key == javafx.scene.input.KeyCode.ENTER || key == javafx.scene.input.KeyCode.TAB) {
+        event.consume()
+        onDoneFunction("")
+      }
+    }
+  )
 
-      if (isFieldValid && isTransitionChar) {
-        // We only consume if the character is ACTUALLY a transition key for this field.
-        // We can't easily map back from char to KeyCode reliably for all keys,
-        // but for letters and digits, we can check if they are considered transition keys.
-        val isActualTransition = if (char.head.isLetter) {
-          isTransitionKey(javafx.scene.input.KeyCode.A) // Proxy for any letter key
-        } else if (char.head.isDigit) {
-          isTransitionKey(javafx.scene.input.KeyCode.DIGIT0) // Proxy for any digit key
-        } else {
-          char == " " || char == "\r" || char == "\n" || char == "\t"
-        }
+  delegate.addEventFilter(
+    javafx.scene.input.KeyEvent.KEY_TYPED,
+    (event: javafx.scene.input.KeyEvent) => {
+      // We only want to consume KEY_TYPED if it's one of the transition keys
+      // which was already handled in KEY_PRESSED filter.
+      // However, KEY_TYPED doesn't have a KeyCode, only the character.
+      // In JavaFX, for most keys, KEY_PRESSED is followed by KEY_TYPED.
 
-        if (isActualTransition) {
-          event.consume()
+      // If the field is valid, and the character being typed is one of our transition characters,
+      // we should consume it because we handled the transition in KEY_PRESSED.
+      val char = event.getCharacter
+      val useNextField = userConfig.get[Boolean]("useNextField")
+      if (useNextField && char != null && char.nonEmpty) {
+        val isFieldValid = isValid(text.value)
+
+        // We need to know if this character would correspond to a transition key.
+        // Since we don't have KeyCode here, we have to approximate it.
+        val isTransitionChar =
+          char == " " || char == "\r" || char == "\n" || char == "\t" || char.head.isDigit || char.head.isLetter
+
+        if (isFieldValid && isTransitionChar) {
+          // We only consume if the character is ACTUALLY a transition key for this field.
+          // We can't easily map back from char to KeyCode reliably for all keys,
+          // but for letters and digits, we can check if they are considered transition keys.
+          val isActualTransition = if (char.head.isLetter) {
+            isTransitionKey(javafx.scene.input.KeyCode.A) // Proxy for any letter key
+          } else if (char.head.isDigit) {
+            isTransitionKey(javafx.scene.input.KeyCode.DIGIT0) // Proxy for any digit key
+          } else {
+            char == " " || char == "\r" || char == "\n" || char == "\t"
+          }
+
+          if (isActualTransition) {
+            event.consume()
+          }
         }
       }
     }
-  })
+  )
 
   onKeyReleased = { event =>
     // Don't consume onKeyReleased as it might interfere with normal processing
