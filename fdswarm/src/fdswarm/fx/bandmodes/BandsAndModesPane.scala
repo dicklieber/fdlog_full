@@ -51,6 +51,7 @@ final class BandsAndModesPane @Inject()(
 
   add(modeCheckBoxPane.node, 0, 1)
   add(bandCheckBoxPane.node, 1, 0)
+  matrixPane.showConfigButton.value = false
   add(matrixPane.node, 1,1)
 
   def show(ownerWindow: Window): Unit =

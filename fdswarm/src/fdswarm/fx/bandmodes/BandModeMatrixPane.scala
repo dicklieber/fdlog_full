@@ -18,14 +18,17 @@
 
 package fdswarm.fx.bandmodes
 import scalafx.application.Platform
+import scalafx.beans.property.BooleanProperty
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.GridUtils
 import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager, BandModeBuilder, HamBand}
+import fdswarm.fx.utils.IconButton
 import fdswarm.model.BandMode
 import fdswarm.model.BandMode.{Band, Mode}
-import jakarta.inject.{Inject, Singleton}
-import scalafx.geometry.Insets
+import jakarta.inject.{Inject, Provider, Singleton}
+import scalafx.Includes.*
+import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.Node
 import scalafx.scene.control.*
 import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority}
@@ -45,8 +48,10 @@ import scala.jdk.CollectionConverters.*
 final class BandModeMatrixPane @Inject()(availableBandsStore: AvailableBandsManager,
                                          availableModesManager: AvailableModesManager,
                                          selectedStore: SelectedBandModeStore,
-                                         bandModeBuilder: BandModeBuilder) extends  LazyLogging:
+                                         bandModeBuilder: BandModeBuilder,
+                                         bandsAndModesPaneProvider: Provider[BandsAndModesPane]) extends  LazyLogging:
 
+  val showConfigButton = BooleanProperty(true)
   private val tg = new ToggleGroup()
 
   private val container = new scalafx.scene.layout.StackPane()
@@ -113,7 +118,19 @@ final class BandModeMatrixPane @Inject()(availableBandsStore: AvailableBandsMana
         val button = new ModeBandButton(band,mode, selectedStore.selected.value, bandModeBuilder, tg, selectedStore)
         logger.trace(s"Adding button $button (bandMode: ${button.bandMode}) to grid and ToggleGroup $tg")
         grid.add(button, col + 1, row)
-    container.children = Seq(GridUtils.fieldSet("Band & Mode", grid))
+    val configButton = IconButton("sliders2-vertical", 24, "Change available bands and modes")
+    configButton.visible <== showConfigButton
+    configButton.onAction = _ => {
+      Option(node.getScene).map(_.getWindow).foreach { window =>
+        bandsAndModesPaneProvider.get().show(window)
+      }
+    }
+    container.children = Seq(
+      GridUtils.fieldSet("Band & Mode", grid),
+      configButton
+    )
+    scalafx.scene.layout.StackPane.setAlignment(configButton, Pos.BottomRight)
+    scalafx.scene.layout.StackPane.setMargin(configButton, Insets(0, 5, 5, 0))
 
   val node:Node =
     container
