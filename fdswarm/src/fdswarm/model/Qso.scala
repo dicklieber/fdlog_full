@@ -46,6 +46,12 @@ case class Qso(callsign: Callsign,
   lazy val rejectedMsg: String = s"Rejected duplicate Qso: $callsign $bandMode"
   lazy val fdHour: FdHour =
     FdHour(stamp)
+  /**
+   * Defines a criterion used to identify duplicate QSOs. 
+   * Combines the `callsign` of the worked station and the `bandMode`
+   * to create a unique key for comparison.
+   */
+  val dupCriterion:String = s"$callsign-$bandMode"
 
 
 object Qso:

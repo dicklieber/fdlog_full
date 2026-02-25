@@ -22,6 +22,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
 import fdswarm.model.*
+import fdswarm.replication.{MulticastTransport, Service}
 import fdswarm.util.Ids.Id
 import io.micrometer.core.instrument.{Counter, MeterRegistry, Timer}
 import jakarta.inject.*
@@ -31,13 +32,12 @@ import scalafx.collections.ObservableBuffer
 
 import scala.collection.concurrent.TrieMap
 
-case class DuplicateQso(qso: Qso) extends Exception(qso.rejectedMsg)
 
 @Singleton
-class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRegistry) extends LazyLogging:
+class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRegistry, multicastTransport: MulticastTransport) extends LazyLogging:
   val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()
-  private val journalFile = directoryProvider() / "qsosJournal.json"
   protected val map: TrieMap[Id, Qso] = new TrieMap
+  private val journalFile = directoryProvider() / "qsosJournal.json"
   private val buildDigestsTimer = Timer.builder("fdlog.build.hour.digests")
     .description("Time taken to build FD hour digests")
     .register(registry)
@@ -45,19 +45,85 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
     .description("Number of times FD hour digests were built")
     .register(registry)
   private var fdHourDigests: Map[FdHour, FdHourDigest] = Map.empty
-  private[store] def internalDigests: Map[FdHour, FdHourDigest] = fdHourDigests
 
-  def add(qso: Qso): Unit =
+  def add(qso: Qso): StyledMessage =
     val isDuplicateInStore = map.values.exists(existing =>
-      existing.callsign == qso.callsign && existing.bandMode == qso.bandMode
+      existing.dupCriterion == qso.dupCriterion
     )
-    if (isDuplicateInStore) {
-      throw DuplicateQso(qso)
-    }
-    doAdd(Seq(qso))
+    if isDuplicateInStore then
+      StyledMessage(qso.rejectedMsg, "duplicate-qso")
+    else
+      val jsonString = qso.asJson.noSpaces
+      os.write.append(journalFile, jsonString + "\n", createFolders = true)
+
+      addToMap(qso)
+      qsoCollection.prepend(qso)
+      buildFdHourDigests()
+      val bytes: Array[Byte] = jsonString.getBytes("UTF-8")
+      multicastTransport.send(Service.QSO, bytes)
+      StyledMessage(s"Added ${qso.dupCriterion} to store", "addQsoOk")
+
+  private def addToMap(qso: Qso): Unit =
+    val uuid = qso.uuid
+    val maybeQso = map.putIfAbsent(uuid, qso)
+    maybeQso.foreach(was =>
+      logger.error(s"Was already a qso for uuid: $uuid $qso")
+    )
 
   def add(batch: Seq[Qso]): Unit =
     doAdd(batch)
+
+
+  def get(uuid: Id): Option[Qso] =
+    map.get(uuid)
+
+  def potentialDups(startOfCallsign: String, bandmode: BandMode): DupInfo =
+    val allPotentialDups: Seq[Qso] = map.filter { case (id, qso) =>
+        val bandModeMatch = qso.bandMode == bandmode
+        logger.trace("qso.bandMode {} against {} mmatch: {}", qso.bandMode, bandmode, bandModeMatch)
+        val startMatch = qso.callsign.startsWith(startOfCallsign)
+        startMatch && bandModeMatch
+      }
+      .values
+      .toSeq
+    val frustNDups = allPotentialDups.take(45).map(_.callsign)
+    DupInfo(frustNDups, allPotentialDups.size)
+
+  /**
+   * current digests for all FdHours.
+   *
+   * @return
+   */
+  def digests(): Seq[FdHourDigest] = fdHourDigests.values.toSeq.sorted
+
+  if os.exists(journalFile) then
+    os.read.lines(journalFile)
+      .iterator
+      .map(_.trim)
+      .filter(_.nonEmpty)
+      .foreach { line =>
+        decode[Qso](line) match
+          case Right(qso) =>
+            map.put(qso.uuid, qso)
+            qsoCollection.prepend(qso)
+          case Left(error) =>
+            logger.error(s"Failed to decode Qso from line: $line", error)
+      }
+    buildFdHourDigests()
+
+  def removeAll(): Unit =
+    logger.error("Removed all Qsos")
+    map.clear()
+    fdHourDigests = Map.empty
+    if os.exists(journalFile) then os.remove(journalFile)
+    try
+      scalafx.application.Platform.runLater {
+        qsoCollection.clear()
+      }
+    catch
+      case _: IllegalStateException =>
+        logger.warn("Toolkit not initialized, direct clear")
+        qsoCollection.clear()
 
   private def doAdd(batch: Seq[Qso]): Unit =
     val thread = Thread.currentThread().getName
@@ -99,42 +165,6 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
         }
     })
 
-  if os.exists(journalFile) then
-    os.read.lines(journalFile)
-      .iterator
-      .map(_.trim)
-      .filter(_.nonEmpty)
-      .foreach { line =>
-        decode[Qso](line) match
-          case Right(qso) =>
-            map.put(qso.uuid, qso)
-            qsoCollection.prepend(qso)
-          case Left(error) =>
-            logger.error(s"Failed to decode Qso from line: $line", error)
-      }
-    buildFdHourDigests()
-
-  def get(uuid: Id): Option[Qso] =
-    map.get(uuid)
-
-  def potentialDups(startOfCallsign: String, bandmode: BandMode): Seq[Qso] =
-    map.filter { case (id, qso) =>
-        val bandModeMatch = qso.bandMode == bandmode
-        logger.trace("qso.bandMode {} against {} mmatch: {}", qso.bandMode, bandmode, bandModeMatch)
-        val startMatch = qso.callsign.startsWith(startOfCallsign)
-        startMatch && bandModeMatch
-      }
-      .values
-      .toSeq
-
-
-  /**
-   * current digests for all FdHours.
-   *
-   * @return
-   */
-  def digests(): Seq[FdHourDigest] = fdHourDigests.values.toSeq.sorted
-
   /**
    * Thread-safe snapshot of all QSOs, sorted by stamp.
    * Prefer this over reading `qsoCollection` from non-JavaFX threads (e.g., Cask routes).
@@ -142,16 +172,4 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
   def all: Seq[Qso] =
     map.values.toSeq.sorted
 
-  def removeAll(): Unit =
-    logger.error("Removed all Qsos")
-    map.clear()
-    fdHourDigests = Map.empty
-    if os.exists(journalFile) then os.remove(journalFile)
-    try
-      scalafx.application.Platform.runLater {
-        qsoCollection.clear()
-      }
-    catch
-      case _: IllegalStateException =>
-        logger.warn("Toolkit not initialized, direct clear")
-        qsoCollection.clear()
+  private[store] def internalDigests: Map[FdHour, FdHourDigest] = fdHourDigests

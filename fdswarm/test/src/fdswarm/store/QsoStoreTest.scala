@@ -21,8 +21,8 @@ package fdswarm.store
 import fdswarm.TestDirectory
 import fdswarm.model.QsoMetadata.testQsoMetadata
 import fdswarm.model.{BandMode, Callsign, Qso}
-import fdswarm.replication.StatusMessage
-import fdswarm.util.HostAndPort
+import fdswarm.replication.{MulticastTransport, Service, StatusMessage}
+import fdswarm.util.{HostAndPort, HostAndPortProvider}
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import munit.FunSuite
 
@@ -30,6 +30,14 @@ import scala.compiletime.uninitialized
 
 class QsoStoreTest extends FunSuite:
   private var testDirectory: TestDirectory = uninitialized
+
+  class MockMulticastTransport extends MulticastTransport(8900, "239.192.0.88", new HostAndPortProvider(8080)):
+    var sentData: Seq[(Service, Array[Byte])] = Seq.empty
+    override def send(service: Service, data: Array[Byte]): Unit =
+      sentData = sentData :+ (service, data)
+    override def stop(): Unit = ()
+
+  private val mockTransport = new MockMulticastTransport()
 
   override def beforeEach(context: BeforeEach): Unit =
     testDirectory = new TestDirectory()
@@ -39,14 +47,14 @@ class QsoStoreTest extends FunSuite:
 
   test("FdHour initially empty"):
     val registry = new SimpleMeterRegistry()
-    val qsoStore = QsoStore(testDirectory, registry)
+    val qsoStore = QsoStore(testDirectory, registry, mockTransport)
 
     assertEquals(qsoStore.digests().isEmpty, true)
     assertEquals(qsoStore.qsoCollection.isEmpty, true)
 
   test("add 1st QSO"):
     val registry = new SimpleMeterRegistry()
-    val qsoStore = QsoStore(testDirectory, registry)
+    val qsoStore = QsoStore(testDirectory, registry, mockTransport)
 
     val qso = Qso(callsign = Callsign("W9NNN"),
       contestClass = "WFD",
@@ -66,7 +74,7 @@ class QsoStoreTest extends FunSuite:
     os.write(journalFile, "this is not json\n", createFolders = true)
     
     // This should not throw an exception because of the new error handling
-    val qsoStore = QsoStore(testDirectory, registry)
+    val qsoStore = QsoStore(testDirectory, registry, mockTransport)
     
     assertEquals(qsoStore.qsoCollection.isEmpty, true)
     assertEquals(qsoStore.digests().isEmpty, true)
@@ -74,7 +82,7 @@ class QsoStoreTest extends FunSuite:
   test("qsosForIds should return all qsos for hour if specificQsos is empty"):
     import cats.effect.unsafe.implicits.global
     val registry = new SimpleMeterRegistry()
-    val replicationSupport = ReplicationSupport(testDirectory, registry)
+    val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport)
     val qso1 = Qso(callsign = Callsign("W9NNN"),
       contestClass = "WFD",
       bandMode = BandMode("20m", "CW"),
@@ -97,7 +105,7 @@ class QsoStoreTest extends FunSuite:
   test("qsosForIds should return only requested qsos"):
     import cats.effect.unsafe.implicits.global
     val registry = new SimpleMeterRegistry()
-    val replicationSupport = ReplicationSupport(testDirectory, registry)
+    val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport)
     val qso1 = Qso(callsign = Callsign("W9NNN"),
       contestClass = "WFD",
       bandMode = BandMode("20m", "CW"),
@@ -119,7 +127,7 @@ class QsoStoreTest extends FunSuite:
   test("determineNeeded should return needed FdHourIds"):
     import cats.effect.unsafe.implicits.global
     val registry = new SimpleMeterRegistry()
-    val replicationSupport = ReplicationSupport(testDirectory, registry)
+    val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport)
     val qso1 = Qso(callsign = Callsign("W9NNN"),
       contestClass = "WFD",
       bandMode = BandMode("20m", "CW"),
@@ -146,7 +154,7 @@ class QsoStoreTest extends FunSuite:
 
   test("removeAll should clear all state and delete journal file"):
     val registry = new SimpleMeterRegistry()
-    val qsoStore = QsoStore(testDirectory, registry)
+    val qsoStore = QsoStore(testDirectory, registry, mockTransport)
     val qso = Qso(callsign = Callsign("W9NNN"),
       contestClass = "WFD",
       bandMode = BandMode("20m", "CW"),

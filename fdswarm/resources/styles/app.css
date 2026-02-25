@@ -48,6 +48,10 @@
     -fx-text-fill: red;
     -fx-font-style: italic;
 }
+.dipCallsign{
+    -fx-text-fill: red;
+    -fx-font-weight: bold;
+}
 
 .callSignOk{
     -fx-text-fill: green;
@@ -89,5 +93,11 @@
 
 .contest-after {
     -fx-text-fill: red;
+    -fx-font-weight: bold;
+}
+
+
+.duplicate-qso{
+    -fx-text-fill: red; 
     -fx-font-weight: bold;
 }

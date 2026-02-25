@@ -16,14 +16,13 @@
  *
  */
 
-package fdswarm.client
+package fdswarm.store
 
-import fdswarm.io.DirectoryProvider
-import jakarta.inject.Singleton
+import io.circe.Codec
 
-@Singleton
-class ClientDirectoryProvider extends DirectoryProvider:
-  override def apply(): os.Path =
-    val base = os.home / "fdswarm-client"
-    os.makeDir.all(base)
-    base
+/**
+ * 
+ * @param text to be displayed.
+ * @param css css class to be applied to the text.
+ */
+case class StyledMessage(text: String, css: String) derives  Codec.AsObject, sttp.tapir.Schema

@@ -188,12 +188,11 @@ class WebRoutes @Inject()(
         case Right((id, ws)) =>
           val qsoPart = req.params.getOrElse("qsoPart", "").toUpperCase
           if (qsoPart.length >= 2) {
-            val allDups = qsoStore.potentialDups(qsoPart, ws.bandMode)
-            val totalCount = allDups.size
-            val displayedDups = allDups.take(45).map { q =>
-              DupEntry(q.callsign.value, fdswarm.util.TimeHelpers.localFrom(q.stamp))
+            val dupInfo = qsoStore.potentialDups(qsoPart, ws.bandMode)
+            val displayedDups = dupInfo.firstNDups.map { callsign =>
+              DupEntry(callsign.value, "")
             }
-            val html = DupsPanel(displayedDups, totalCount).toString()
+            val html = DupsPanel(displayedDups, dupInfo.totalDups).toString()
             Ok(html).map(_.withContentType(`Content-Type`(MediaType.text.html)))
           } else {
             Ok("<div></div>").map(_.withContentType(`Content-Type`(MediaType.text.html)))
@@ -222,16 +221,13 @@ class WebRoutes @Inject()(
                 bandMode = ws.bandMode,
                 qsoMetadata = metadata
               )
-              try {
-                qsoStore.add(qso)
+              val styledMessage = qsoStore.add(qso)
+              if styledMessage.css == "duplicate-qso" then
+                val msg = styledMessage.text
+                SeeOther(Location(Uri.unsafeFromString(s"/web?error=${java.net.URLEncoder.encode(msg, "UTF-8")}")))
+              else
                 webSessionStore.incrementQsoCount(id)
-                multicastTransport.send(Service.QSO, qso.asJson.noSpaces.getBytes("UTF-8"))
                 SeeOther(Location(Uri.unsafeFromString("/web")))
-              } catch {
-                case fdswarm.store.DuplicateQso(dup) =>
-                  val msg = dup.rejectedMsg
-                  SeeOther(Location(Uri.unsafeFromString(s"/web?error=${java.net.URLEncoder.encode(msg, "UTF-8")}")))
-              }
             else
               BadRequest("Missing fields")
           }

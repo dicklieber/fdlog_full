@@ -22,7 +22,8 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.TestDirectory
 import fdswarm.fx.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
 import fdswarm.model.BandMode
-import fdswarm.util.MetricsDebug
+import fdswarm.replication.MulticastTransport
+import fdswarm.util.{HostAndPortProvider, MetricsDebug}
 import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import munit.FunSuite
@@ -35,6 +36,12 @@ import scala.compiletime.uninitialized
  */
 class BigQsosGeneratorTest extends FunSuite with LazyLogging:
   private var testDirectory: TestDirectory = uninitialized
+
+  class MockMulticastTransport extends MulticastTransport(8900, "239.192.0.88", new HostAndPortProvider(8080)):
+    override def send(service: fdswarm.replication.Service, data: Array[Byte]): Unit = ()
+    override def stop(): Unit = ()
+
+  private val mockTransport = new MockMulticastTransport()
 
   override def beforeEach(context: BeforeEach): Unit =
     testDirectory = new TestDirectory()
@@ -55,7 +62,7 @@ class BigQsosGeneratorTest extends FunSuite with LazyLogging:
 
   test("generate 100 QSOs using BigQsosGenerator with permissive BandModeBuilder"):
     val registry = new SimpleMeterRegistry()
-    val qsoStore = QsoStore(testDirectory, registry)
+    val qsoStore = QsoStore(testDirectory, registry, mockTransport)
 
     val bandModeBuilder = new AllowAllBandModeBuilder
     val generator = new BigQsosGenerator(qsoStore, bandModeBuilder)

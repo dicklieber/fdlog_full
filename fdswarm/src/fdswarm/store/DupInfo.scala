@@ -16,20 +16,10 @@
  *
  */
 
-package fdswarm.fx.sections
+package fdswarm.store
 
-import fdswarm.fx.NextField
-import jakarta.inject.{Inject, Singleton}
-import scalafx.scene.control.TextField
+import fdswarm.model.Callsign
 
-class SectionField @Inject()(sectionsProvider: SectionsProvider) extends TextField with NextField:
-  
-  text.onChange { (_, _, nv) =>
-    validProperty.value = isValid(nv)
-  }
-
-  override def isValid(str: String): Boolean =
-    if str == null then false
-    else
-      val upper = str.trim.toUpperCase
-      sectionsProvider.allSections.exists(_.code.toUpperCase == upper)
+case class DupInfo(firstNDups:Seq[Callsign], totalDups:Int) derives io.circe.Codec.AsObject, sttp.tapir.Schema:
+  def hasPotentialDups: Boolean = totalDups > 0
+  def isEmpty: Boolean = totalDups == 0

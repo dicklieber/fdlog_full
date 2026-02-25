@@ -23,6 +23,7 @@ import cats.syntax.all.*
 import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
 import fdswarm.util.Ids.Id
+import fdswarm.replication.MulticastTransport
 import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.{Inject, Singleton}
 
@@ -31,7 +32,7 @@ import jakarta.inject.{Inject, Singleton}
  * Having them here keeps [[QsoStore]] clean.
  */
 @Singleton
-class ReplicationSupport @Inject()(directoryProvider: DirectoryProvider, registry: MeterRegistry) extends QsoStore(directoryProvider, registry):
+class ReplicationSupport @Inject()(directoryProvider: DirectoryProvider, registry: MeterRegistry, multicastTransport: MulticastTransport) extends QsoStore(directoryProvider, registry, multicastTransport):
   /**
    * 
    * @param fdHourDigest from a remote node

@@ -24,7 +24,6 @@ import jakarta.inject.*
 import scalafx.scene.control.{TextField, TextFormatter}
 
 
-@Singleton
 class ContestClassField @Inject()(contestManager: ContestManager) extends TextField with NextField:
   logger.trace("ctor")
 

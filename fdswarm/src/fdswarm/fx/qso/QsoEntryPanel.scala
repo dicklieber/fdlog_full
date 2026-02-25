@@ -26,7 +26,7 @@ import fdswarm.fx.{CallSignField, GridUtils, UpperCase}
 import fdswarm.model.*
 import fdswarm.util.*
 import fdswarm.replication.{MulticastTransport, Service, UDPHeader}
-import fdswarm.store.QsoStore
+import fdswarm.store.{QsoStore, StyledMessage}
 import io.circe.syntax.*
 import jakarta.inject.{Inject, Singleton}
 import scalafx.application.Platform
@@ -34,6 +34,7 @@ import scalafx.scene.Node
 import scalafx.scene.control.*
 import scalafx.scene.layout.{GridPane, VBox}
 import scalafx.util.Duration
+
 import java.time.ZonedDateTime
 import scalafx.Includes.*
 
@@ -47,7 +48,7 @@ class QsoEntryPanel @Inject()(
                                callsignField: CallSignField,
                                contestClassField: ContestClassField,
                                sectionField: fdswarm.fx.sections.SectionField,
-                               dupPanel:DupPanel,
+                               dupPanel: DupPanel,
                                hostAndPortProvider: HostAndPortProvider,
                              ) extends LazyLogging:
 
@@ -61,6 +62,7 @@ class QsoEntryPanel @Inject()(
         sectionField.text = ""
         callsignField.requestFocus()
     )
+
   private val grid = new GridPane:
     hgap = 5
     add(new Label("Their Callsign:"), 0, 0)
@@ -73,17 +75,17 @@ class QsoEntryPanel @Inject()(
     add(sectionField, 2, 1)
 
     add(clearButton, 3, 1)
-  
   private val mainLayout = new VBox:
     spacing = 10
     children = Seq(
       grid,
-      dupPanel.pane(callsignField.text)
-
+      dupPanel.pane()
     )
 
-  val node: Node =
+  lazy val node: Node =
     GridUtils.fieldSet("QSO", mainLayout)
+
+  def sectionFieldProperty: scalafx.beans.property.StringProperty = sectionField.text
 
   callsignField.onDoneFunction = chForNext =>
     logger.debug("Callsign done: {} current: {}", chForNext, contestClassField.text.value)
@@ -108,26 +110,7 @@ class QsoEntryPanel @Inject()(
       submit()
     }
 
-
-  // ---- controls ----------------------------------------------------------
-  private def qsoMetadata =
-    QsoMetadata(
-      station = stationManager.station,
-      node = "local",
-      contest = contestManager.config.contest
-    )
-  sectionField.onAction = _ =>
-    submit()
-
-  def sectionFieldProperty: scalafx.beans.property.StringProperty = sectionField.text
-
   def submit(): Unit =
-    logger.debug(
-      s"Submitting QSO: call=${callsignField.text.value}, " +
-        s"class=${contestClassField.text.value}, " +
-        s"section=${sectionField.text.value}"
-    )
-
     val qso = Qso(
       Callsign(callsignField.text.value),
       contestClassField.text.value,
@@ -136,30 +119,26 @@ class QsoEntryPanel @Inject()(
       qsoMetadata
     )
 
-    try {
-      qsoStore.add(qso)
-      val json = qso.asJson.noSpaces
-      multicastTransport.send(Service.QSO, json.getBytes("UTF-8"))
+    val styledMessage: StyledMessage = qsoStore.add(qso)
+    if styledMessage.css == "duplicate-qso" then
+      dupPanel.show(styledMessage)
+    else
+      clearControls
 
-      if !grid.styleClass.contains("qso-submit-highlight") then
-        grid.styleClass += "qso-submit-highlight"
+  sectionField.onAction = _ =>
+    submit()
 
-      import scalafx.animation.{KeyFrame, Timeline}
-      import scalafx.Includes.*
+  private def qsoMetadata =
+    QsoMetadata(
+      station = stationManager.station,
+      node = "local",
+      contest = contestManager.config.contest
+    )
 
-      val timeline = new Timeline:
-        keyFrames = Seq(
-          KeyFrame(Duration(1000), onFinished = _ =>
-            grid.styleClass -= "qso-submit-highlight"
-            callsignField.text = ""
-            contestClassField.text = ""
-            sectionField.text = ""
-            callsignField.requestFocus()
-          )
-        )
-      timeline.play()
-    } catch {
-      case fdswarm.store.DuplicateQso(dup) =>
-        logger.warn(dup.rejectedMsg)
-        dupPanel.showDuplicateError(dup)
-    }
+  private def clearControls: Unit =
+    callsignField.text = ""
+    contestClassField.text = ""
+    sectionField.text = ""
+    dupPanel.clear
+// ---- controls ----------------------------------------------------------
+    

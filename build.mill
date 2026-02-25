@@ -116,12 +116,3 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo {
   }
 
 }
-
-object fdswarmClient extends ScalaModule {
-  def scalaVersion = fdswarm.scalaVersion
-  def moduleDeps = Seq(fdswarm)
-
-  def mainClass = Some("fdswarm.client.FdSwarmClientApp")
-
-  override def forkArgs = fdswarm.forkArgs
-}
