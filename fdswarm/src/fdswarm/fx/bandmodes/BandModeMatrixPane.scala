@@ -17,7 +17,7 @@
  */
 
 package fdswarm.fx.bandmodes
-
+import scalafx.application.Platform
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.GridUtils
@@ -30,6 +30,8 @@ import scalafx.scene.Node
 import scalafx.scene.control.*
 import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority}
 
+import scala.jdk.CollectionConverters.*
+
 /**
  * Mode × Band matrix.
  *
@@ -38,7 +40,6 @@ import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority}
  * - Exactly one cell selected (persisted via SelectedBandModeStore)
  * - Selection rendered as an outlined rounded rectangle
  * - Clicking any band in a row selects that (band, mode)
- * - Cells are disabled when the BandModeStore's enabled-matrix says that pair is illegal
  * - If there is no persisted BandMode, the top-left cell is selected (or the first enabled one if available)
  */
 final class BandModeMatrixPane @Inject()(availableBandsStore: AvailableBandsManager,
@@ -51,14 +52,48 @@ final class BandModeMatrixPane @Inject()(availableBandsStore: AvailableBandsMana
   private val container = new scalafx.scene.layout.StackPane()
   buildGrid()
 
+  selectedStore.selected.onChange { (_, _, newValue) =>
+    Platform.runLater {
+      logger.debug(s"Selected BandMode changed to: $newValue. Updating UI toggles.")
+      val toggle = tg.getToggles.iterator().asScala.find { t =>
+        Option(t.getUserData).collect { case bm: BandMode => bm }.exists { bm =>
+          val matchResult = bm.band.equalsIgnoreCase(newValue.band) && bm.mode.equalsIgnoreCase(newValue.mode)
+          logger.trace(s"Checking toggle '${bm.band}'/'${bm.mode}' against '${newValue.band}'/'${newValue.mode}': $matchResult")
+          matchResult
+        }
+      }
+
+      toggle match {
+        case Some(t: javafx.scene.control.ToggleButton) =>
+          logger.debug(s"Selecting button for $newValue")
+          t.setSelected(true)
+        case Some(t) =>
+          logger.debug(s"Selecting generic toggle for $newValue")
+          tg.selectToggle(t)
+        case None =>
+          val allToggles = tg.getToggles.asScala.map { t =>
+            Option(t.getUserData).collect { case bm: BandMode => bm } match {
+              case Some(bm) => s"${bm.band}/${bm.mode}[${t.hashCode()}]"
+              case None => s"UnknownToggle[${t.hashCode()}]"
+            }
+          }.mkString(", ")
+          logger.warn(s"Could not find toggle for BandMode: $newValue. My hash: ${this.hashCode()}, TG hash: ${tg.hashCode()}, Toggles present [${tg.getToggles.size()}]: $allToggles")
+      }
+    }
+  }
+
   availableBandsStore.bands.onChange {
+    logger.debug("Available bands changed, rebuilding grid")
     buildGrid()
   }
   availableModesManager.modes.onChange {
+    logger.debug("Available modes changed, rebuilding grid")
     buildGrid()
   }
 
   def buildGrid():Unit=
+    logger.debug(s"Building grid for BandModeMatrixPane (tg: $tg)")
+    tg.getToggles.clear()
     val grid = new GridPane():
       hgap = 2
       vgap = 2
@@ -75,26 +110,34 @@ final class BandModeMatrixPane @Inject()(availableBandsStore: AvailableBandsMana
     do
       grid.add(new Label(mode), 0, row)
       for (band, col) <- availableBandsStore.bands.zipWithIndex do
-        logger.trace(s"Adding band $band and mode $mode cell to grid.")
-        grid.add(ModeBandButton(band,mode, selectedStore.selected.value),col+1,row)
+        val button = new ModeBandButton(band,mode, selectedStore.selected.value, bandModeBuilder, tg, selectedStore)
+        logger.trace(s"Adding button $button (bandMode: ${button.bandMode}) to grid and ToggleGroup $tg")
+        grid.add(button, col + 1, row)
     container.children = Seq(GridUtils.fieldSet("Band & Mode", grid))
 
   val node:Node =
     container
 
-
-  case class ModeBandButton(band:Band, mode:Mode, selectedHamBand:BandMode) extends ToggleButton():
-    val bandMode: BandMode = bandModeBuilder(band, mode)
-    text = band
-    padding = Insets(2, 4, 2, 4)
-    minWidth = 0
-    graphic = null
-    graphicTextGap = 0
-    toggleGroup = tg
-    styleClass += "custom-radio" // Apply custom CSS class
-    selected.onChange { (_, _, isSelected) =>
-      if isSelected then
-        selectedStore.save(bandMode)
-    }
-    if selectedHamBand == bandMode then
-      selected.value = true
+class ModeBandButton(band:Band,
+                     mode:Mode,
+                     selectedHamBand:BandMode,
+                     bandModeBuilder: BandModeBuilder,
+                     tg: ToggleGroup,
+                     selectedStore: SelectedBandModeStore
+                    ) extends ToggleButton() with LazyLogging:
+  val bandMode: BandMode = bandModeBuilder(band, mode)
+  text = band
+  padding = Insets(2, 4, 2, 4)
+  minWidth = 0
+  graphic = null
+  graphicTextGap = 0
+  toggleGroup = tg
+  userData = bandMode
+  styleClass += "custom-radio" // Apply custom CSS class
+  selected.onChange { (_, _, isSelected) =>
+    if isSelected then
+      logger.debug(s"Button $bandMode [${this.hashCode()}] selected (tg: ${tg.hashCode()}). Saving to store.")
+      selectedStore.save(bandMode)
+  }
+  if bandMode.band.equalsIgnoreCase(selectedHamBand.band) && bandMode.mode.equalsIgnoreCase(selectedHamBand.mode) then
+    selected.value = true

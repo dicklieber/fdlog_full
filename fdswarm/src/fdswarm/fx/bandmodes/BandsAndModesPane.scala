@@ -27,8 +27,7 @@ import scalafx.beans.property.BooleanProperty
 import scalafx.geometry.Insets
 import scalafx.scene.control.*
 import scalafx.scene.layout.*
-
-import scala.jdk.CollectionConverters.*
+import scalafx.stage.Window
 
 /** 3-pane editor:
  * 1) band checkboxes (from AvailableBandsStore.availableBands.bandNames)
@@ -53,6 +52,16 @@ final class BandsAndModesPane @Inject()(
   add(modeCheckBoxPane.node, 0, 1)
   add(bandCheckBoxPane.node, 1, 0)
   add(matrixPane.node, 1,1)
+
+  def show(ownerWindow: Window): Unit =
+    val dialog = new Dialog[Unit] {
+      initOwner(ownerWindow)
+      title = "Band / Mode Manager"
+      headerText = "Manage Bands and Modes"
+    }
+    dialog.dialogPane().content = this
+    dialog.dialogPane().buttonTypes = Seq(ButtonType.Close)
+    dialog.showAndWait()
 
 /*
   private val modeSelected: Map[String, BooleanProperty] =

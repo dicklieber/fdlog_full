@@ -65,12 +65,8 @@ final class FdLogUi @Inject()(
                                webSessionsAdmin: fdswarm.fx.admin.WebSessionsAdmin
                              ) extends LazyLogging:
 
-  private val bandModeNode: Node =
-    bandModeManagerPane
   private val qsoNode: Node =
     contestEntry.node
-  private val swarmStatusNode: Node =
-    swarmStatusPane.node
   private val centerPane = new StackPane:
     children = List(qsoNode)
   private val contestMenuItem: MenuItem =
@@ -156,7 +152,6 @@ final class FdLogUi @Inject()(
     useSystemMenuBar = isMac
     menus = Seq(
       fileMenu,
-      viewMenu,
       configMenu,
       adminMenu,
       devMenu,
@@ -215,23 +210,14 @@ final class FdLogUi @Inject()(
           onAction = _ => Platform.exit()
       )
 
-  private def viewMenu: Menu =
-    new Menu("View"):
-      items = Seq(
-        new MenuItem("QSO Entry"):
-          onAction = _ => showPane(qsoNode),
-        new MenuItem("Swarm Status"):
-          onAction = _ => showPane(swarmStatusNode)
-      )
-
-  private def showPane(node: Node): Unit =
-    centerPane.children.setAll(node)
-
   private def configMenu: Menu =
     new Menu("Config"):
       items = Seq(
         new MenuItem("Band / Mode Manager"):
-          onAction = _ => showPane(bandModeNode)
+          onAction = _ =>
+            Option(ownerWindow) match
+              case Some(w) => bandModeManagerPane.show(w)
+              case None => ()
         ,
         stationMenuItem,
         contestMenuItem,
