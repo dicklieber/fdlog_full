@@ -121,3 +121,12 @@
 .dup-callsign {
     -fx-text-fill: red;
 }
+
+.sections-panel-disabled {
+    -fx-opacity: 0.6;
+}
+
+.section-disabled {
+    -fx-text-fill: gray;
+    -fx-cursor: default;
+}

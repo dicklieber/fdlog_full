@@ -22,6 +22,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.GridUtils
 import fdswarm.fx.qso.QsoEntryPanel
 import jakarta.inject.Inject
+import scalafx.beans.binding.Bindings
 import scalafx.geometry.Insets
 import scalafx.scene.Node
 import scalafx.scene.control.Label
@@ -32,6 +33,19 @@ class SectionPanel @Inject()(sectionsProvider: SectionsProvider, qsoEntryPanel: 
     spacing = 10
     padding = Insets(5)
 
+  private val canSubmit = Bindings.createBooleanBinding(
+    () => qsoEntryPanel.callsignValidProperty.value && qsoEntryPanel.contestClassValidProperty.value,
+    qsoEntryPanel.callsignValidProperty,
+    qsoEntryPanel.contestClassValidProperty
+  )
+
+  canSubmit.onChange { (_, _, nv) =>
+    if nv then mainVBox.styleClass.remove("sections-panel-disabled")
+    else if !mainVBox.styleClass.contains("sections-panel-disabled") then
+      mainVBox.styleClass.add("sections-panel-disabled")
+  }
+  if !canSubmit.value then mainVBox.styleClass.add("sections-panel-disabled")
+
   for
     case (sectionGroup, row) <- sectionsProvider.sectionGroups.zipWithIndex
   do
@@ -40,7 +54,13 @@ class SectionPanel @Inject()(sectionsProvider: SectionsProvider, qsoEntryPanel: 
       padding = Insets(0, 10, 0, 0)
       style = "-fx-font-weight: bold;"
 
-    sectionGroup.sections.foreach(_.onSelect(qsoEntryPanel.sectionFieldProperty, () => qsoEntryPanel.submit()))
+    sectionGroup.sections.foreach(
+      _.onSelect(
+        qsoEntryPanel.sectionFieldProperty,
+        () => qsoEntryPanel.submit(),
+        canSubmit
+      )
+    )
     val groupGrid = GridUtils.toGrid(sectionGroup.sections, 10)
     groupGrid.maxWidth = Double.MaxValue
     HBox.setHgrow(groupGrid, Priority.Always)

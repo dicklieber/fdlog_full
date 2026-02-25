@@ -18,7 +18,8 @@
 
 package fdswarm.fx.sections
 
-import scalafx.beans.property.StringProperty
+import scalafx.beans.binding.BooleanBinding
+import scalafx.beans.property.{BooleanProperty, StringProperty}
 import scalafx.geometry.Insets
 import scalafx.scene.control.{Label, OverrunStyle, Tooltip}
 import io.circe.Codec
@@ -32,13 +33,29 @@ case class Section(code: String, name: String) extends Label derives Codec.AsObj
   minWidth = 0
   textOverrun = OverrunStyle.Clip
 
-  def onSelect(sectionField: StringProperty, onSelected: () => Unit): Unit =
+  def onSelect(
+      sectionField: StringProperty,
+      onSelected: () => Unit,
+      canSubmit: BooleanBinding
+  ): Unit =
     onMouseClicked = _ => {
-      sectionField.value = code
-      onSelected()
+      if canSubmit.value then
+        sectionField.value = code
+        onSelected()
     }
-    onMouseEntered = _ => style = "-fx-background-color: lightgray; -fx-cursor: hand;"
+    onMouseEntered = _ => {
+      if (canSubmit.value) {
+        style = "-fx-background-color: lightgray; -fx-cursor: hand;"
+      }
+    }
     onMouseExited = _ => style = "-fx-background-color: transparent; -fx-cursor: default;"
+
+    canSubmit.onChange { (_, _, nv) =>
+      if nv then styleClass.remove("section-disabled")
+      else if !styleClass.contains("section-disabled") then styleClass.add("section-disabled")
+    }
+    // Initial state
+    if !canSubmit.value && !styleClass.contains("section-disabled") then styleClass.add("section-disabled")
 
     sectionField.onChange { (_, _, newValue) =>
       val input = if newValue == null then "" else newValue.trim.toUpperCase

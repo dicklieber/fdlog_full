@@ -80,8 +80,17 @@ class QsoEntryPanel @Inject()(
       dupPanel.pane()
     )
 
+  def callsignValidProperty: scalafx.beans.property.BooleanProperty =
+    callsignField.validProperty
+
+  def contestClassValidProperty: scalafx.beans.property.BooleanProperty =
+    contestClassField.validProperty
+
   def sectionFieldProperty: scalafx.beans.property.StringProperty =
     sectionField.text
+
+  def sectionFieldFocusedProperty: scalafx.beans.property.ReadOnlyBooleanProperty =
+    sectionField.focused
 
   callsignField.text.onChange { (_, _, newValue) =>
     if newValue.length < 3 then dupPanel.clear

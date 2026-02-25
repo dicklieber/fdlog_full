@@ -22,6 +22,7 @@ import com.typesafe.config.ConfigFactory
 import fdswarm.JavaFxTestKit
 import munit.FunSuite
 import scalafx.Includes.*
+import scalafx.beans.binding.Bindings
 
 class SectionsProviderTest extends FunSuite:
 
@@ -64,13 +65,40 @@ class SectionsProviderTest extends FunSuite:
     assertEquals(section.tooltip.value.text.value, "Illinois")
   }
 
-  test("Section selection updates StringProperty") {
+  test("Section selection updates StringProperty and respects canSubmit binding") {
     val section = Section("IL", "Illinois")
     val prop = scalafx.beans.property.StringProperty("")
     var called = false
-    section.onSelect(prop, () => called = true)
-    
-    // Simulate click
+
+    // Test with canSubmit = true
+    val canSubmitTrue = Bindings.createBooleanBinding(() => true)
+    section.onSelect(prop, () => called = true, canSubmitTrue)
+    section.onMouseClicked.value.handle(null)
+    assertEquals(prop.value, "IL")
+    assert(called)
+
+    // Test with canSubmit = false
+    prop.value = ""
+    called = false
+    val canSubmitFalse = Bindings.createBooleanBinding(() => false)
+    section.onSelect(prop, () => called = true, canSubmitFalse)
+    section.onMouseClicked.value.handle(null)
+    assertEquals(prop.value, "") // Value should NOT change when disabled
+    assert(!called) // And onSelected should NOT be called
+
+    // Test toggling canSubmit from false to true
+    prop.value = ""
+    called = false
+    val backing = scalafx.beans.property.BooleanProperty(false)
+    val canSubmitToggle = Bindings.createBooleanBinding(() => backing.value, backing)
+    section.onSelect(prop, () => called = true, canSubmitToggle)
+    // Initially false: click should not call onSelected
+    section.onMouseClicked.value.handle(null)
+    assertEquals(prop.value, "")
+    assert(!called)
+    // Now enable and click again
+    prop.value = ""
+    backing.value = true
     section.onMouseClicked.value.handle(null)
     assertEquals(prop.value, "IL")
     assert(called)
