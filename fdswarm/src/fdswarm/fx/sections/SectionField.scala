@@ -20,10 +20,11 @@ package fdswarm.fx.sections
 
 import fdswarm.fx.NextField
 import jakarta.inject.{Inject, Singleton}
+import scalafx.Includes.*
 import scalafx.scene.control.TextField
 
 class SectionField @Inject()(sectionsProvider: SectionsProvider) extends TextField with NextField:
-  
+
   text.onChange { (_, _, nv) =>
     validProperty.value = isValid(nv)
   }

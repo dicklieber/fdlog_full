@@ -36,6 +36,18 @@ final class Callsign private(val value: String) extends AnyRef:
       case _ => false
 
 object Callsign:
+  /**
+   * regex that matches a valid callsign.
+   *
+   * Standard format: [A-Z0-9]{1,3}[0-9][A-Z0-9]{1,4}
+   * Optional suffix: /[A-Z0-9]{1,4}
+   * Total length restricted by lookahead: (?=.{3,12}$)
+   */
+  private val regex: scala.util.matching.Regex = """^(?=.{3,12}$)[A-Z0-9]{1,3}[0-9][A-Z0-9]{1,4}(?:/[A-Z0-9]{1,4})?$""".r
+
+  def isValid(str: String): Boolean =
+    regex.findFirstIn(str).isDefined
+
   given Conversion[String, Callsign] = Callsign.apply
 
   def apply(cs: String): Callsign =

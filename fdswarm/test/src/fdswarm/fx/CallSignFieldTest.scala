@@ -18,41 +18,42 @@
 
 package fdswarm.fx
 
+import fdswarm.model.Callsign
 import munit.FunSuite
 
 class CallSignFieldTest extends FunSuite:
 
-  test("CallSignField.isValid validates standard callsigns") {
-    assert(CallSignField.isValid("K1ABC"))
-    assert(CallSignField.isValid("WA9NNN"))
-    assert(CallSignField.isValid("G4XYZ"))
-    assert(CallSignField.isValid("7J1RL"))
-    assert(CallSignField.isValid("N0ABC"))
+  test("Callsign.isValid validates standard callsigns") {
+    assert(Callsign.isValid("K1ABC"))
+    assert(Callsign.isValid("WA9NNN"))
+    assert(Callsign.isValid("G4XYZ"))
+    assert(Callsign.isValid("7J1RL"))
+    assert(Callsign.isValid("N0ABC"))
   }
 
 
-  test("CallSignField.isValid rejects invalid callsigns") {
-    assert(!CallSignField.isValid("")) // Empty
-    assert(!CallSignField.isValid("K")) // Too short (regex requires digit as 2nd, 3rd or 4th char)
-    assert(!CallSignField.isValid("K1ABCDEFG HIJKL")) // Contains space
-    assert(!CallSignField.isValid("ABCDEFG")) // No digit
-    assert(!CallSignField.isValid("K1ABC/")) // Trailing slash
-    assert(!CallSignField.isValid("/K1ABC")) // Leading slash
-    assert(!CallSignField.isValid("VE3/K1ABC")) // Suffix too long (>4)
+  test("Callsign.isValid rejects invalid callsigns") {
+    assert(!Callsign.isValid("")) // Empty
+    assert(!Callsign.isValid("K")) // Too short (regex requires digit as 2nd, 3rd or 4th char)
+    assert(!Callsign.isValid("K1ABCDEFG HIJKL")) // Contains space
+    assert(!Callsign.isValid("ABCDEFG")) // No digit
+    assert(!Callsign.isValid("K1ABC/")) // Trailing slash
+    assert(!Callsign.isValid("/K1ABC")) // Leading slash
+    assert(!Callsign.isValid("VE3/K1ABC")) // Suffix too long (>4)
   }
 
-  test("CallSignField.isValid respects regex-defined length limits") {
+  test("Callsign.isValid respects regex-defined length limits") {
     // [A-Z0-9]{1,3}[0-9][A-Z0-9]{1,4} -> max 8 chars
-//    assert(CallSignField.isValid("ABC0ABCD")) // 8 chars - max for main part
-    assert(!CallSignField.isValid("ABC0ABCDE")) // 9 chars - too long for main part
+    //    assert(Callsign.isValid("ABC0ABCD")) // 8 chars - max for main part
+    assert(!Callsign.isValid("ABC0ABCDE")) // 9 chars - too long for main part
 
     // With suffix: (?=.{3,12}$) restricts total length to 12
-    assert(CallSignField.isValid("ABC0ABCD/P")) // 10 chars
+    assert(Callsign.isValid("ABC0ABCD/P")) // 10 chars
     // ABC0ABCD/123 is 8+1+3 = 12.
-    assert(CallSignField.isValid("ABC0ABCD/123")) // 12 chars - max for lookahead
+    assert(Callsign.isValid("ABC0ABCD/123")) // 12 chars - max for lookahead
     // ABC0ABCD/1234 is 8+1+4 = 13.
-    assert(!CallSignField.isValid("ABC0ABCD/1234")) // 13 chars - too long for lookahead
+    assert(!Callsign.isValid("ABC0ABCD/1234")) // 13 chars - too long for lookahead
 
-    assert(CallSignField.isValid("K1A")) // 3 chars - min for lookahead
+    assert(Callsign.isValid("K1A")) // 3 chars - min for lookahead
   }
     

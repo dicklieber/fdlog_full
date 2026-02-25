@@ -68,7 +68,7 @@ trait NextField extends TextInputControl with WithDisposition with LazyLogging :
     val isFieldValid = isValid(text.value)
     if (isFieldValid && isTransitionKey(key)) {
       event.consume()
-      val str: String = NextField.toChar(key).toString
+      val str: String = if (key.isDigitKey) NextField.toChar(key).toString else ""
       onDoneFunction(str)
     } else if (key == javafx.scene.input.KeyCode.ENTER || key == javafx.scene.input.KeyCode.TAB) {
       event.consume()

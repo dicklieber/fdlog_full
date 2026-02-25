@@ -41,3 +41,32 @@ class CallsignTest extends FunSuite:
     assertEquals(Callsign("WA9NNN"), Callsign("WA9NNN"))
     assertNotEquals(Callsign("WA9NNN"), Callsign("N9VTB"))
     assert(!Callsign("WA9NNN").equals(42))
+
+  test("isValid validates standard callsigns") {
+    assert(Callsign.isValid("K1ABC"))
+    assert(Callsign.isValid("WA9NNN"))
+    assert(Callsign.isValid("G4XYZ"))
+    assert(Callsign.isValid("7J1RL"))
+    assert(Callsign.isValid("N0ABC"))
+  }
+
+  test("isValid rejects invalid callsigns") {
+    assert(!Callsign.isValid("")) // Empty
+    assert(!Callsign.isValid("K")) // Too short
+    assert(!Callsign.isValid("K1ABCDEFG HIJKL")) // Contains space
+    assert(!Callsign.isValid("ABCDEFG")) // No digit
+    assert(!Callsign.isValid("K1ABC/")) // Trailing slash
+    assert(!Callsign.isValid("/K1ABC")) // Leading slash
+    assert(!Callsign.isValid("VE3/K1ABC")) // Suffix too long (>4)
+  }
+
+  test("isValid respects regex-defined length limits") {
+    assert(!Callsign.isValid("ABC0ABCDE")) // 9 chars - too long for main part
+
+    // With suffix: (?=.{3,12}$) restricts total length to 12
+    assert(Callsign.isValid("ABC0ABCD/P")) // 10 chars
+    assert(Callsign.isValid("ABC0ABCD/123")) // 12 chars - max
+    assert(!Callsign.isValid("ABC0ABCD/1234")) // 13 chars - too long
+
+    assert(Callsign.isValid("K1A")) // 3 chars - min
+  }

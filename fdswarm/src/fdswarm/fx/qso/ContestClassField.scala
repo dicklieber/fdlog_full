@@ -19,13 +19,28 @@
 package fdswarm.fx.qso
 
 import fdswarm.fx.NextField
-import fdswarm.fx.contest.ContestManager
+import fdswarm.fx.contest.{ContestCatalog, ContestManager}
 import jakarta.inject.*
+import scalafx.Includes.*
 import scalafx.scene.control.{TextField, TextFormatter}
 
-
-class ContestClassField @Inject()(contestManager: ContestManager) extends TextField with NextField:
+class ContestClassField @Inject()(contestManager: ContestManager, contestCatalog: ContestCatalog, dupPanel: DupPanel) extends TextField with NextField:
   logger.trace("ctor")
+
+  private def showHelp(): Unit =
+    val currentContest = contestManager.config.contest
+    val contest = contestCatalog.contests.find(_.name == currentContest)
+    contest.foreach { c =>
+      val items = c.classChars.map(cc => (cc.ch, cc.description))
+      dupPanel.show(s"$currentContest Classes", items)
+    }
+
+  focused.onChange { (_, _, nv) =>
+    val currentText = text.value
+    val classChars = contestManager.currentDetailProperty.value.classChars
+    val typingPattern = "^([0-9]{1,2}[" + classChars.toUpperCase + "]|[0-9]{0,2})$"
+    if nv && !currentText.matches(typingPattern) then showHelp()
+  }
 
   textFormatter = new TextFormatter[String]((change: TextFormatter.Change) => {
     if (change.isContentChange) {
@@ -38,12 +53,20 @@ class ContestClassField @Inject()(contestManager: ContestManager) extends TextFi
     if (newText.matches(typingPattern)) {
       change
     } else {
+      // Only show help if the rejected character makes it clearly invalid,
+      // and not just a prefix that could be valid.
+      // For ContestClassField, typingPattern already allows 0-2 digits.
+      // If it doesn't match, it means it's definitely wrong for the pattern.
+      showHelp()
       null
     }
   })
 
   text.onChange { (_, _, nv) =>
     validProperty.value = isValid(nv)
+    val classChars = contestManager.currentDetailProperty.value.classChars
+    val typingPattern = "^([0-9]{1,2}[" + classChars.toUpperCase + "]|[0-9]{0,2})$"
+    if nv.matches(typingPattern) then dupPanel.clear
   }
 
   override def isTransitionKey(key: scalafx.scene.input.KeyCode): Boolean =

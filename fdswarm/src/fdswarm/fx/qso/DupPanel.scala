@@ -83,6 +83,35 @@ class DupPanel @Inject()(
       }
     }
 
+  /**
+   * Displays a help section with a title and corresponding items.
+   *
+   * @param title The title of the help section to be displayed.
+   * @param items A sequence of pairs where each pair contains a code (String) 
+   *              and its corresponding description (String) to be displayed 
+   *              in the help section.
+   * @return Unit This method does not return a value. It updates the UI to 
+   *         show the help section.
+   */
+  def show(title: String, items: Seq[(String, String)]): Unit =
+    Platform.runLater {
+      titleLabel.text = title
+      grid.children.clear()
+      items.zipWithIndex.foreach { case ((code, desc), index) =>
+        val codeLabel = new Label(code) {
+          styleClass += "help-code"
+          style = "-fx-font-weight: bold;"
+        }
+        val descLabel = new Label(desc) {
+          styleClass += "help-desc"
+        }
+        grid.add(codeLabel, 0, index)
+        grid.add(descLabel, 1, index)
+      }
+      root.visible = true
+      root.managed = true
+    }
+
   def clear: Unit =
     Platform.runLater {
       root.visible = false
