@@ -41,19 +41,46 @@ class DupPanel @Inject()(
     vgap = 5
   }
   private var root: Pane = _
+  private var titleLabel: Label = _
 
   def show(styledMessage: StyledMessage): Unit =
     Platform.runLater {
+      titleLabel.text = "Saving Qso"
       grid.children.clear()
 
       val label = new Label(styledMessage.text) {
         styleClass += styledMessage.css
-//        if styledMessage.css == "duplicate-qso" then
-//          style = "-fx-text-fill: red; -fx-font-weight: bold;"
       }
       grid.add(label, 0, 0, 9, 1)
       root.visible = true
       root.managed = true
+    }
+
+  def show(dupInfo: DupInfo): Unit =
+    Platform.runLater {
+      titleLabel.text = "Potential Duplicates"
+      grid.children.clear()
+      if (dupInfo.totalDups > 0) {
+        dupInfo.firstNDups.zipWithIndex.foreach { (callsign, index) =>
+          val callLabel = new Label(callsign.value) {
+            styleClass += "dup-callsign"
+          }
+          grid.add(callLabel, index % 7, index / 7)
+        }
+        val moreCount = dupInfo.totalDups - dupInfo.firstNDups.size
+        if (moreCount > 0) {
+          val moreLabel = new Label(s"$moreCount more potential duplicates.") {
+            styleClass += "dupCallsignMore"
+          }
+          val row = ((dupInfo.firstNDups.size - 1) / 7) + 1
+          grid.add(moreLabel, 0, row, 7, 1)
+        }
+        root.visible = true
+        root.managed = true
+      } else {
+        root.visible = false
+        root.managed = false
+      }
     }
 
   def clear: Unit =
@@ -64,7 +91,9 @@ class DupPanel @Inject()(
     }
 
   def pane(): Pane =
-    root = GridUtils.fieldSet("Duplicates", grid)
+    val stackPane = GridUtils.fieldSet("XYZZY", grid)
+    titleLabel = new Label(stackPane.children(1).asInstanceOf[javafx.scene.control.Label])
+    root = stackPane
     root.visible = false
     root.managed = false
     root

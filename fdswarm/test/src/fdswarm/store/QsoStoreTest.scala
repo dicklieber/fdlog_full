@@ -173,3 +173,22 @@ class QsoStoreTest extends FunSuite:
     assertEquals(qsoStore.digests().size, 0)
     assertEquals(qsoStore.all.size, 0)
     assert(!os.exists(journalFile))
+
+  test("potentialDups should limit results and return total count"):
+    val registry = new SimpleMeterRegistry()
+    val qsoStore = QsoStore(testDirectory, registry, mockTransport)
+    val bandMode = BandMode("20m", "CW")
+    
+    val qsos = (1 to 100).map { i =>
+      Qso(callsign = Callsign(s"W9NN$i"),
+        contestClass = "WFD",
+        bandMode = bandMode,
+        section = "IL",
+        qsoMetadata = testQsoMetadata
+      )
+    }
+    qsoStore.add(qsos)
+    
+    val dupInfo = qsoStore.potentialDups("W9NN", bandMode)
+    assertEquals(dupInfo.totalDups, 100)
+    assertEquals(dupInfo.firstNDups.size, 70)

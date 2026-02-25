@@ -86,7 +86,7 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
       }
       .values
       .toSeq
-    val frustNDups = allPotentialDups.take(45).map(_.callsign)
+    val frustNDups = allPotentialDups.take(70).map(_.callsign)
     DupInfo(frustNDups, allPotentialDups.size)
 
   /**

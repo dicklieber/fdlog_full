@@ -1,17 +1,17 @@
 /*
  * Copyright (c) 2026. Dick Lieber, WA9NNN
  *
- * This program is free software: you can redistribute it and/or modify 
- * it under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, or    
- * (at your option) any later version.                                  
- *                                                                      
- * This program is distributed in the hope that it will be useful,      
- * but WITHOUT ANY WARRANTY; without even the implied warranty of       
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the        
- * GNU General Public License for more details.                         
- *                                                                      
- * You should have received a copy of the GNU General Public License    
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
@@ -22,21 +22,16 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.StationManager
 import fdswarm.fx.bandmodes.SelectedBandModeStore
 import fdswarm.fx.contest.ContestManager
-import fdswarm.fx.{CallSignField, GridUtils, UpperCase}
+import fdswarm.fx.{CallSignField, GridUtils}
 import fdswarm.model.*
-import fdswarm.util.*
-import fdswarm.replication.{MulticastTransport, Service, UDPHeader}
+import fdswarm.replication.MulticastTransport
 import fdswarm.store.{QsoStore, StyledMessage}
-import io.circe.syntax.*
+import fdswarm.util.*
 import jakarta.inject.{Inject, Singleton}
 import scalafx.application.Platform
 import scalafx.scene.Node
 import scalafx.scene.control.*
 import scalafx.scene.layout.{GridPane, VBox}
-import scalafx.util.Duration
-
-import java.time.ZonedDateTime
-import scalafx.Includes.*
 
 @Singleton
 class QsoEntryPanel @Inject()(
@@ -49,20 +44,23 @@ class QsoEntryPanel @Inject()(
                                contestClassField: ContestClassField,
                                sectionField: fdswarm.fx.sections.SectionField,
                                dupPanel: DupPanel,
-                               hostAndPortProvider: HostAndPortProvider,
+                               hostAndPortProvider: HostAndPortProvider
                              ) extends LazyLogging:
 
+  lazy val node: Node =
+    GridUtils.fieldSet("QSO", mainLayout)
   private val clearButton = new Button("\u21BA"):
     styleClass += "clear-button"
     tooltip = Tooltip("Clear fields")
-    onAction.set(new javafx.event.EventHandler[javafx.event.ActionEvent]:
-      override def handle(event: javafx.event.ActionEvent): Unit =
-        callsignField.text = ""
-        contestClassField.text = ""
-        sectionField.text = ""
-        callsignField.requestFocus()
+    onAction.set(
+      new javafx.event.EventHandler[javafx.event.ActionEvent]:
+        override def handle(event: javafx.event.ActionEvent): Unit =
+          callsignField.text = ""
+          contestClassField.text = ""
+          sectionField.text = ""
+          callsignField.requestFocus()
+        end handle
     )
-
   private val grid = new GridPane:
     hgap = 5
     add(new Label("Their Callsign:"), 0, 0)
@@ -82,13 +80,18 @@ class QsoEntryPanel @Inject()(
       dupPanel.pane()
     )
 
-  lazy val node: Node =
-    GridUtils.fieldSet("QSO", mainLayout)
+  def sectionFieldProperty: scalafx.beans.property.StringProperty =
+    sectionField.text
 
-  def sectionFieldProperty: scalafx.beans.property.StringProperty = sectionField.text
+  callsignField.text.onChange { (_, _, newValue) =>
+    if newValue.length < 3 then dupPanel.clear
+    else
+      val dupInfo =
+        qsoStore.potentialDups(newValue, selectedBandModeStore.selected.value)
+      dupPanel.show(dupInfo)
+  }
 
   callsignField.onDoneFunction = chForNext =>
-    logger.debug("Callsign done: {} current: {}", chForNext, contestClassField.text.value)
     Platform.runLater {
       contestClassField.text = if chForNext.trim.isEmpty then "" else chForNext
       logger.debug("new class field: {}", contestClassField.text.value)
@@ -120,13 +123,10 @@ class QsoEntryPanel @Inject()(
     )
 
     val styledMessage: StyledMessage = qsoStore.add(qso)
-    if styledMessage.css == "duplicate-qso" then
-      dupPanel.show(styledMessage)
-    else
-      clearControls
+    clearControls
+    dupPanel.show(styledMessage)
 
-  sectionField.onAction = _ =>
-    submit()
+  sectionField.onAction = _ => submit()
 
   private def qsoMetadata =
     QsoMetadata(
@@ -139,6 +139,4 @@ class QsoEntryPanel @Inject()(
     callsignField.text = ""
     contestClassField.text = ""
     sectionField.text = ""
-    dupPanel.clear
-// ---- controls ----------------------------------------------------------
-    
+    callsignField.requestFocus()

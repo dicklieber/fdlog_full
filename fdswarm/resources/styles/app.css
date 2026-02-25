@@ -98,6 +98,17 @@
 
 
 .duplicate-qso{
-    -fx-text-fill: red; 
+    -fx-text-fill: red;
     -fx-font-weight: bold;
+}
+.addQsoOk{
+    -fx-text-fill: green;
+    -fx-font-weight: bold;
+}
+.dup-label {
+    -fx-text-fill: red;
+    -fx-font-weight: bold;
+}
+.dup-callsign {
+    -fx-text-fill: red;
 }
