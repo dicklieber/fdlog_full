@@ -97,6 +97,15 @@
 }
 
 
+.happy {
+    -fx-text-fill: green;
+    -fx-font-weight: bold;
+}
+
+.sad {
+    -fx-text-fill: red;
+}
+
 .duplicate-qso{
     -fx-text-fill: red;
     -fx-font-weight: bold;

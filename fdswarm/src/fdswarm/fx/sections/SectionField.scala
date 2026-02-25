@@ -21,13 +21,27 @@ package fdswarm.fx.sections
 import fdswarm.fx.NextField
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
-import scalafx.scene.control.TextField
+import scalafx.scene.control.{TextField, TextFormatter}
 
 class SectionField @Inject()(sectionsProvider: SectionsProvider) extends TextField with NextField:
 
   text.onChange { (_, _, nv) =>
     validProperty.value = isValid(nv)
   }
+
+  textFormatter = new TextFormatter[String]((change: TextFormatter.Change) => {
+    if (change.isContentChange) {
+      change.setText(change.getText.toUpperCase)
+    }
+    val newText = change.controlNewText
+    if (newText.isEmpty) change
+    else {
+      val upper = newText.trim.toUpperCase
+      val isValidPartial = sectionsProvider.allSections.exists(_.code.toUpperCase.startsWith(upper))
+      if (isValidPartial) change
+      else null
+    }
+  })
 
   override def isValid(str: String): Boolean =
     if str == null then false

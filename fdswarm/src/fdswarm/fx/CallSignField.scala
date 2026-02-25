@@ -35,9 +35,7 @@ class CallSignField @Inject() (
   styleClass += "qsoCallSign"
 
   text.onChange((_, _, newText) =>
-    if isValid(newText) then
-      if !styleClass.contains("callSignOk") then styleClass += "callSignOk"
-    else styleClass -= "callSignOk"
+    validProperty.value = isValid(newText)
   )
 
   textFormatter = new TextFormatter[String]((change: TextFormatter.Change) =>
