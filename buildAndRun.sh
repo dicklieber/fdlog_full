@@ -43,7 +43,7 @@ do
     # Run java -jar in background
     # Start in a new process group so we can kill everything later
     # We pass PORT as an environment variable as the app seems to expect it
-    PORT=$PORT java -jar fdswarm.jar > "$LOG_DIR/stdout.log" 2>&1 &
+    PORT=$PORT java -Xdock:name=FdSwarm -Dapple.awt.application.name=FdSwarm -Dcom.apple.mrj.application.apple.menu.about.name=FdSwarm -Dapple.laf.useScreenMenuBar=true -jar fdswarm.jar > "$LOG_DIR/stdout.log" 2>&1 &
     pids+=($!)
     pgids+=($(ps -o pgid= -p $!))
     sleep 2

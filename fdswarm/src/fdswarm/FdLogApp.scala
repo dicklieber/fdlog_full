@@ -40,6 +40,13 @@ import java.time.Duration
 object FdLogApp extends JFXApp3:
   private val startTime = Instant.now()
   override def main(args: Array[String]): Unit =
+    System.setProperty("apple.laf.useScreenMenuBar", "true")
+    if (System.getProperty("os.name").toLowerCase.contains("mac")) {
+      System.setProperty("apple.awt.application.name", "FdSwarm")
+      System.setProperty("com.apple.mrj.application.apple.menu.about.name", "FdSwarm")
+      // Some versions of Java/JavaFX also look for this
+      System.setProperty("apple.awt.application.appearance", "system")
+    }
     val directoryProvider = new fdswarm.io.ProductionDirectory()
     fdswarm.util.LoggingConfigurator.addFileAppender(directoryProvider)
     System.setProperty("javafx.embed.singleThread", "true")

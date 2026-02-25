@@ -168,6 +168,7 @@ final class FdLogUi @Inject()(
   private var ownerWindow: Window = null.asInstanceOf[Window]
 
   def start(stage: Stage): Unit =
+    stage.title = "FdSwarm"
     nodeStatusService.start()
 
 
@@ -176,6 +177,9 @@ final class FdLogUi @Inject()(
 
     if isMac then
       try
+        // Set the application name for AWT (often needed for macOS integration)
+        System.setProperty("apple.awt.application.name", "FdSwarm")
+        
         if java.awt.Desktop.isDesktopSupported then
           val desktop = java.awt.Desktop.getDesktop
           if desktop.isSupported(java.awt.Desktop.Action.APP_ABOUT) then
@@ -187,10 +191,19 @@ final class FdLogUi @Inject()(
             logger.debug("Successfully registered macOS About handler")
           else
             logger.debug("macOS About handler not supported by Desktop")
+
+          if desktop.isSupported(java.awt.Desktop.Action.APP_QUIT_HANDLER) then
+            desktop.setQuitHandler((_, response) =>
+              Platform.runLater {
+                Platform.exit()
+                response.performQuit()
+              }
+            )
+            logger.debug("Successfully registered macOS Quit handler")
         else
           logger.debug("Desktop API not supported on this platform")
       catch
-        case e: Exception => logger.warn("Could not set macOS about handler", e)
+        case e: Exception => logger.warn("Could not set macOS handlers", e)
 
     stationMenuItem.disable = false
     contestMenuItem.disable = false
@@ -209,16 +222,15 @@ final class FdLogUi @Inject()(
 
   private def fileMenu: Menu =
     new Menu("File"):
-      items = Seq(
-        new MenuItem("Export"):
-          onAction = _ =>
-            Option(ownerWindow) match
-              case Some(w) => exportDialog.show(w)
-              case None => ()
-        ,
-        new MenuItem("Exit"):
-          onAction = _ => Platform.exit()
-      )
+      val exportItem = new MenuItem("Export"):
+        onAction = _ =>
+          Option(ownerWindow) match
+            case Some(w) => exportDialog.show(w)
+            case None => ()
+      val exitItem = new MenuItem("Exit"):
+        onAction = _ => Platform.exit()
+
+      items = if isMac then Seq(exportItem) else Seq(exportItem, exitItem)
 
   private def configMenu: Menu =
     new Menu("Config"):

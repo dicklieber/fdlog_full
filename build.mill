@@ -23,15 +23,36 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo {
 
   def mainClass = Some("fdswarm.FdLogApp")
 
+  override def manifest = Task {
+    super.manifest().add(
+      "Implementation-Title" -> "FdSwarm",
+      "Implementation-Version" -> version,
+      "Bundle-Name" -> "FdSwarm",
+      "Bundle-SymbolicName" -> "fdswarm",
+      "Bundle-Version" -> version
+    )
+  }
+
   override def forkArgs = Task {
     val cp = runClasspath()
     val jfxJars = cp.filter(p => p.path.toString.contains("openjfx") && p.path.ext == "jar")
-    if (jfxJars.isEmpty) {
+    val baseArgs = if (System.getProperty("os.name").toLowerCase.contains("mac")) {
+      Seq(
+        "-Xdock:name=FdSwarm",
+        "-Dapple.awt.application.name=FdSwarm",
+        "-Dcom.apple.mrj.application.apple.menu.about.name=FdSwarm",
+        "-Dapple.laf.useScreenMenuBar=true"
+      )
+    } else {
       Seq.empty[String]
+    }
+    
+    if (jfxJars.isEmpty) {
+      baseArgs
     } else {
       val modulePath = jfxJars.map(_.path.toIO.getAbsolutePath).mkString(java.io.File.pathSeparator)
       val modules = Seq("javafx.controls", "javafx.graphics", "javafx.base", "javafx.media", "javafx.web")
-      Seq(
+      baseArgs ++ Seq(
         "--module-path", modulePath,
         "--add-modules", modules.mkString(",")
       )
