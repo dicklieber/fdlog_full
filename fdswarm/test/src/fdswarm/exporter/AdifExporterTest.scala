@@ -16,12 +16,13 @@
  *
  */
 
-package fdswarm.io
+package fdswarm.exporter
 
 import munit.FunSuite
 import fdswarm.model.*
 import fdswarm.fx.contest.ContestType
 import java.time.Instant
+import fdswarm.exporter.AdifExporter
 
 class AdifExporterTest extends FunSuite:
 

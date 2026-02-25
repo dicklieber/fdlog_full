@@ -62,11 +62,9 @@ final class FdLogUi @Inject()(
                                userConfig: UserConfig,
                                userConfigEditor: UserConfigEditor,
                                meterRegistry: MeterRegistry,
-                               webSessionsAdmin: fdswarm.fx.admin.WebSessionsAdmin,
                                qsoStore: fdswarm.store.QsoStore,
-                               directoryProvider: fdswarm.io.DirectoryProvider,
-                               filenameStamp: fdswarm.util.FilenameStamp,
-                               exportDialog: fdswarm.fx.tools.ExportDialog
+                               exportDialog: fdswarm.fx.tools.ExportDialog,
+                               webSessionsAdmin: fdswarm.fx.admin.WebSessionsAdmin
                              ) extends LazyLogging:
 
   private val qsoNode: Node =

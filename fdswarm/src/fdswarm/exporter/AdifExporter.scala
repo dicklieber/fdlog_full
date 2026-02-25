@@ -16,12 +16,14 @@
  *
  */
 
-package fdswarm.io
+package fdswarm.exporter
 
 import fdswarm.model.Qso
+import fdswarm.model.QsoMetadata
+import fdswarm.model.Station
+import fdswarm.fx.contest.ContestType
 import java.time.format.DateTimeFormatter
 import java.time.ZoneOffset
-import java.time.Instant
 
 object AdifExporter:
 
@@ -69,4 +71,3 @@ object AdifExporter:
   private def appendField(sb: StringBuilder, name: String, value: String): Unit =
     if value.nonEmpty then
       sb.append(s"<$name:${value.length}>$value ")
-

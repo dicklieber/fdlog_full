@@ -19,10 +19,7 @@
 package fdswarm.fx.tools
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.contest.ContestManager
-import fdswarm.fx.station.StationStore
-import fdswarm.io.DirectoryProvider
-import fdswarm.store.QsoStore
+import fdswarm.exporter.ExportService
 import fdswarm.util.FilenameStamp
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
@@ -33,20 +30,11 @@ import scalafx.stage.{DirectoryChooser, Window}
 
 @Singleton
 final class ExportDialog @Inject()(
-                                    qsoStore: QsoStore,
-                                    directoryProvider: DirectoryProvider,
-                                    filenameStamp: FilenameStamp,
-                                    contestManager: ContestManager,
-                                    stationStore: StationStore
+                                    exportService: ExportService,
+                                    filenameStamp: FilenameStamp
                                   ) extends LazyLogging:
 
-  private enum ExportFormat(val extension: String, val description: String):
-    case ADIF extends ExportFormat("adi", "ADIF Files (*.adi)")
-    case CABRILLO extends ExportFormat("cbr", "Cabrillo Files (*.cbr)")
-    case JSON extends ExportFormat("json", "JSON Files (*.json)")
-    case ZIP  extends ExportFormat("zip", "Zip Files (*.zip)")
-
-    override def toString: String = description
+  import exportService.ExportFormat
 
   def show(ownerWindow: Window): Unit =
     val initialFilename = filenameStamp.build()
@@ -112,7 +100,7 @@ final class ExportDialog @Inject()(
       val fullPath = dir / s"$baseName.${format.extension}"
       
       try
-        executeExport(fullPath, format)
+        exportService.executeExport(fullPath, format)
         val alert = new Alert(Alert.AlertType.Information):
           initOwner(ownerWindow)
           title = "Export Success"
@@ -129,21 +117,3 @@ final class ExportDialog @Inject()(
             contentText = e.getMessage
           alert.showAndWait()
 
-  private def executeExport(path: os.Path, format: ExportFormat): Unit =
-    format match
-      case ExportFormat.ADIF =>
-        val qsos = qsoStore.all
-        val adif = fdswarm.io.AdifExporter.exportQsos(qsos)
-        os.write.over(path, adif)
-      case ExportFormat.CABRILLO =>
-        val qsos = qsoStore.all
-        val station = stationStore.station.value
-        val contest = contestManager.config.contest
-        val cabrillo = fdswarm.io.CabrilloExporter.exportQsos(qsos, station, contest)
-        os.write.over(path, cabrillo)
-      case ExportFormat.JSON =>
-        val qsos = qsoStore.all
-        val json = fdswarm.io.JsonExporter.exportQsos(qsos)
-        os.write.over(path, json)
-      case ExportFormat.ZIP =>
-        fdswarm.io.ZipExporter.zipDirectory(directoryProvider(), path)

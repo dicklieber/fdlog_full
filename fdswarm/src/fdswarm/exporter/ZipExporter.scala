@@ -16,7 +16,7 @@
  *
  */
 
-package fdswarm.io
+package fdswarm.exporter
 
 import java.io.{BufferedInputStream, FileInputStream, FileOutputStream}
 import java.util.zip.{ZipEntry, ZipOutputStream}

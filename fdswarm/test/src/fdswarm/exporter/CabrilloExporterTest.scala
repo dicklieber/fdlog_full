@@ -16,12 +16,13 @@
  *
  */
 
-package fdswarm.io
+package fdswarm.exporter
 
 import fdswarm.fx.contest.ContestType
 import fdswarm.model.*
 import java.time.Instant
 import munit.FunSuite
+import fdswarm.exporter.CabrilloExporter
 
 class CabrilloExporterTest extends FunSuite:
 
@@ -33,7 +34,7 @@ class CabrilloExporterTest extends FunSuite:
       callsign = Callsign("K1ABC"),
       contestClass = "1O",
       section = "CT",
-      bandMode = BandMode("20m CW"), // Using the string apply for BandMode
+      bandMode = BandMode("20m CW"),
       qsoMetadata = qsoMetadata,
       stamp = Instant.parse("2026-02-25T14:00:00Z")
     )
@@ -44,8 +45,6 @@ class CabrilloExporterTest extends FunSuite:
     assert(result.contains("START-OF-LOG: 3.0"))
     assert(result.contains("CALLSIGN: W1AW"))
     assert(result.contains("CONTEST: WFD"))
-    // QSO: freq mo date       time mycall       myclass mysect hiscall      hisclass hissect
-    // QSO: 14035 CW 2026-02-25 1400 W1AW         1A  XX  K1ABC        1O  CT 
     assert(result.contains("QSO: 14035 CW 2026-02-25 1400 W1AW         1A  XX  K1ABC        1O  CT "))
     assert(result.contains("END-OF-LOG:"))
 

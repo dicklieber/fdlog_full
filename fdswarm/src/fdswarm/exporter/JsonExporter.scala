@@ -16,10 +16,13 @@
  *
  */
 
-package fdswarm.io
+package fdswarm.exporter
 
 import fdswarm.model.Qso
 import io.circe.syntax.*
+import fdswarm.model.QsoMetadata
+import fdswarm.model.Station
+import fdswarm.fx.contest.ContestType
 
 object JsonExporter:
   def exportQsos(qsos: Seq[Qso]): String =

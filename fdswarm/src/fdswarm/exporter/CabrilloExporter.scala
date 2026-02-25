@@ -16,10 +16,11 @@
  *
  */
 
-package fdswarm.io
+package fdswarm.exporter
 
 import fdswarm.fx.contest.ContestType
 import fdswarm.model.Qso
+import fdswarm.model.Station
 import java.time.format.DateTimeFormatter
 import java.time.ZoneOffset
 
@@ -58,19 +59,6 @@ object CabrilloExporter:
     val date = dateFormatter.format(qso.stamp)
     val time = timeFormatter.format(qso.stamp)
     val myCall = qso.qsoMetadata.station.operator.value
-    val myClass = qso.qsoMetadata.station.rig // Wait, where is MY class? QsoMetadata doesn't seem to have it.
-    // Actually, in FdSwarm, it seems Qso has contestClass and section which are for the WORKED station.
-    // Let's look at how the exchange is built.
-    
-    // I will use a placeholder or best guess for my own class/section if not easily available.
-    // Looking at Qso.apply:
-    // Qso(callsign = callSign, contestClass = exchange.fdClass.toString, section = exchange.sectionCode, ...)
-    // This is for the OTHER station.
-    
-    // For Cabrillo, we need:
-    // QSO: freq mo date       time mycall       myclass mysect hiscall      hisclass hissect
-    
-    // For now, I'll use placeholders for my class and my section if I can't find them.
     val mySect = "XX" 
     val myCls = "1A"
 
@@ -79,4 +67,3 @@ object CabrilloExporter:
     val hisSect = qso.section
 
     f"QSO: $freq%5s $mode%2s $date $time $myCall%-12s $myCls%-3s $mySect%-3s $hisCall%-12s $hisClass%-3s $hisSect%-3s"
-
