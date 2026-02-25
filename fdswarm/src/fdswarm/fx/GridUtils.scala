@@ -57,6 +57,9 @@ object GridUtils:
     grid
 
   def fieldSet(title: String, content: Node): StackPane =
+    fieldSet(new Label(title), content)
+
+  def fieldSet(titleLabel: Node, content: Node): StackPane =
     new StackPane:
       children = Seq(
         new BorderPane:
@@ -67,11 +70,15 @@ object GridUtils:
                -fx-border-radius: 4;
                -fx-border-width: 1;"""
         ,
-        new Label(title):
-          StackPane.setAlignment(this, scalafx.geometry.Pos.TopLeft)
-          style =
-            """-fx-background-color: -fx-background;
-               -fx-padding: 0 6 0 6;"""
-          translateX = 10
-          translateY = -8
+        titleLabel match {
+          case l: Label =>
+            l.style = l.style.value +
+              """-fx-background-color: -fx-background;
+                 -fx-padding: 0 6 0 6;"""
+            l
+          case n => n
+        }
       )
+      titleLabel.translateX = 10
+      titleLabel.translateY = -8
+      StackPane.setAlignment(titleLabel, scalafx.geometry.Pos.TopLeft)

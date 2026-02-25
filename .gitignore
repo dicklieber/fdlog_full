@@ -5,5 +5,4 @@
 /fdlog-node.json
 /fdlog-qso-journal.ndjson
 /${sys:fdlog.logFile}
-/fdswarmClient.jar
 /fdswarm.jar

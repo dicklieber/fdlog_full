@@ -24,7 +24,7 @@ import fdswarm.model.BandMode.Band
 import jakarta.inject.{Inject, Singleton}
 import scalafx.geometry.Insets
 import scalafx.scene.Node
-import scalafx.scene.control.CheckBox
+import scalafx.scene.control.{CheckBox, Label, Tooltip}
 import scalafx.scene.layout.{Pane, VBox}
 
 @Singleton
@@ -64,10 +64,20 @@ final class ModeCheckBoxPane @Inject()(
 //  }
 
 // Layout
+  private val headerLabel = new Label("Modes") {
+    style = "-fx-cursor: hand; -fx-text-fill: derive(-fx-accent, -20%); -fx-underline: true;"
+    tooltip = Tooltip("Click to toggle all modes")
+    onMouseClicked = _ => {
+      val allChecked = checkBoxes.forall(_.selected.value)
+      val newState = !allChecked
+      checkBoxes.foreach(_.selected.value = newState)
+      saveSelected()
+    }
+  }
 
   val node: Node =
     GridUtils.fieldSet(
-      "Modes",
+      headerLabel,
       new VBox {
         spacing = 12.0
         children = checkBoxes

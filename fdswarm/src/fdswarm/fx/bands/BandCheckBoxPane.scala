@@ -48,13 +48,40 @@ final class BandCheckBoxPane @Inject()(
   for
     (bandClass, row) <- BandClass.values.zipWithIndex
     if byBandClass.contains(bandClass)
-    _ = grid.addRow(row, new Label(bandClass.toString))
+    _ = {
+      val label = new Label(bandClass.toString) {
+        style = "-fx-cursor: hand; -fx-text-fill: derive(-fx-accent, -20%); -fx-underline: true;"
+        tooltip = Tooltip("Click to toggle all in row")
+        onMouseClicked = _ => {
+          val rowBoxes = byBandClass(bandClass)
+          val allChecked = rowBoxes.forall(_.selected.value)
+          val newState = !allChecked
+          rowBoxes.foreach(_.selected.value = newState)
+          // availableBandsManager.bands.setAll(checked*) is called by each checkbox's onChange,
+          // but we can call it once here to be sure, although Platform.runLater or batching might be better
+          // if there are many. Since it's UI thread, it should be fine.
+          availableBandsManager.bands.setAll(checked*)
+        }
+      }
+      grid.addRow(row, label)
+    }
     (bandCheckBox, col) <- byBandClass(bandClass).zipWithIndex
   do
     grid.add(bandCheckBox, col + 1, row)
 
+  private val headerLabel = new Label("Ham bands") {
+    style = "-fx-cursor: hand; -fx-text-fill: derive(-fx-accent, -20%); -fx-underline: true;"
+    tooltip = Tooltip("Click to toggle all bands")
+    onMouseClicked = _ => {
+      val allChecked = checkBoxes.forall(_.selected.value)
+      val newState = !allChecked
+      checkBoxes.foreach(_.selected.value = newState)
+      availableBandsManager.bands.setAll(checked*)
+    }
+  }
+
   val node: Node =
-    GridUtils.fieldSet("Ham bands", grid)
+    GridUtils.fieldSet(headerLabel, grid)
 
   private def checked: Seq[Band] =
     checkBoxes.iterator.filter(_.selected.value).map(_.bandName).toSeq

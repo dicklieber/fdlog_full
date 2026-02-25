@@ -22,14 +22,9 @@
 read -p "How many server nodes? [2]: " howManyNodes
 howManyNodes=${howManyNodes:-2}
 
-# Prompt for howManyClients, default to 1
-read -p "How many client nodes? [1]: " howManyClients
-howManyClients=${howManyClients:-1}
-
-# Pre-compile to avoid multiple nodes trying to compile at once
-echo "Pre-compiling..."
-./mill fdswarm.compile
-./mill fdswarmClient.compile
+# Build the JAR first
+echo "Building JAR..."
+./build-jars.sh
 
 # Run each node (Server)
 pids=()
@@ -43,34 +38,15 @@ do
     LOG_DIR="$HOME/fdswarm/$PORT"
     mkdir -p "$LOG_DIR"
     
-    # Run mill in background, redirecting its own output to a file in the log dir
+    # Run java -jar in background, redirecting output to a file in the log dir
     # Start in a new process group so we can kill everything later
-    MILL_OUTPUT_DIR=out-$PORT PORT=$PORT ./mill --no-server fdswarm.run > "$LOG_DIR/mill-stdout.log" 2>&1 &
+    PORT=$PORT java -jar fdswarm.jar > "$LOG_DIR/stdout.log" 2>&1 &
     pids+=($!)
     pgids+=($(ps -o pgid= -p $!))
     sleep 2
 done
 
-# Run each client
-for (( i=0; i<howManyClients; i++ ))
-do
-    # Map clients to servers in a round-robin fashion
-    SERVER_PORT=$((8080 + (i % howManyNodes)))
-    CLIENT_PORT=$((9090 + i))
-    echo "Starting client $i connecting to server on port $SERVER_PORT (client local dir port suffix $CLIENT_PORT)..."
-    
-    LOG_DIR="$HOME/fdswarm/client-$CLIENT_PORT"
-    mkdir -p "$LOG_DIR"
-
-    # We use PORT here for ClientDirectoryProvider to distinguish local config/logs
-    # And SERVER_PORT for FdSwarmRestClient to know where to connect
-    MILL_OUTPUT_DIR=out-client-$CLIENT_PORT PORT=$CLIENT_PORT SERVER_PORT=$SERVER_PORT ./mill --no-server fdswarmClient.run > "$LOG_DIR/mill-stdout.log" 2>&1 &
-    pids+=($!)
-    pgids+=($(ps -o pgid= -p $!))
-    sleep 2
-done
-
-echo "All $howManyNodes servers and $howManyClients clients started."
+echo "All $howManyNodes servers started."
 # Use /dev/tty for read to ensure it works even if stdin is redirected
 read -p "Press any key to stop all nodes..." -n1 -s < /dev/tty
 echo ""

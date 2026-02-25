@@ -19,13 +19,11 @@
 
 set -euo pipefail
 
-echo "Building fdswarm and fdswarmClient JARs..."
+echo "Building fdswarm JAR..."
 ./mill fdswarm.assembly
-./mill fdswarmClient.assembly
 
-echo "Copying JARs to current directory..."
+echo "Copying JAR to current directory..."
 cp -v "out/fdswarm/assembly.dest/out.jar" "fdswarm.jar"
-cp -v "out/fdswarmClient/assembly.dest/out.jar" "fdswarmClient.jar"
 
 echo "Build and copy complete:"
-ls -lh fdswarm.jar fdswarmClient.jar
+ls -lh fdswarm.jar

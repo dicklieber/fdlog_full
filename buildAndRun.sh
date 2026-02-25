@@ -23,10 +23,6 @@ set -euo pipefail
 read -p "How many server nodes? [2]: " howManyNodes
 howManyNodes=${howManyNodes:-2}
 
-# Prompt for howManyClients, default to 1
-read -p "How many client nodes? [1]: " howManyClients
-howManyClients=${howManyClients:-1}
-
 echo "Building JARs..."
 ./build-jars.sh
 
@@ -53,26 +49,7 @@ do
     sleep 2
 done
 
-# Run each client
-for (( i=0; i<howManyClients; i++ ))
-do
-    # Map clients to servers in a round-robin fashion
-    SERVER_PORT=$((8080 + (i % howManyNodes)))
-    CLIENT_PORT=$((9090 + i))
-    echo "Starting client $i connecting to server on port $SERVER_PORT (client local dir port suffix $CLIENT_PORT)..."
-    
-    LOG_DIR="$HOME/fdswarm/client-$CLIENT_PORT"
-    mkdir -p "$LOG_DIR"
-
-    # We use PORT here for ClientDirectoryProvider to distinguish local config/logs
-    # And SERVER_PORT for FdSwarmRestClient to know where to connect
-    PORT=$CLIENT_PORT SERVER_PORT=$SERVER_PORT java -jar fdswarmClient.jar > "$LOG_DIR/stdout.log" 2>&1 &
-    pids+=($!)
-    pgids+=($(ps -o pgid= -p $!))
-    sleep 2
-done
-
-echo "All $howManyNodes servers and $howManyClients clients started."
+echo "All $howManyNodes servers started."
 # Use /dev/tty for read to ensure it works even if stdin is redirected
 read -p "Press any key to stop all nodes..." -n1 -s < /dev/tty
 echo ""
