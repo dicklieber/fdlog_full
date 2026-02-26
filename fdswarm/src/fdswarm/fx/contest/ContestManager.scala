@@ -19,23 +19,28 @@
 package fdswarm.fx.contest
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.caseForm.MyCaseForm
+import fdswarm.fx.caseForm.{ChoiceField, MyCaseForm}
+import fdswarm.fx.sections.{Section, Sections}
+import fdswarm.model.Callsign
 import fdswarm.io.DirectoryProvider
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
 import scalafx.beans.property.ObjectProperty
+import scalafx.collections.ObservableBuffer
 import scalafx.scene.control.*
 import scalafx.scene.layout.*
 import scalafx.stage.Window
 import io.circe.parser.*
 import io.circe.syntax.*
 import fdswarm.util.JavaTimeCirce.given
+import javafx.util.StringConverter
 import java.time.*
 
 @Singleton
 final class ContestManager @Inject()(
                                       productionDirectory: DirectoryProvider,
-                                      contestCatalog: ContestCatalog
+                                      contestCatalog: ContestCatalog,
+                                      sections: Sections
                                     ) extends LazyLogging:
 
   private val file: os.Path =
@@ -65,15 +70,91 @@ final class ContestManager @Inject()(
       contest = config.contest,
       start = config.start,
       end = config.end,
-      classChars = catalogEntry.map(_.classChars.map(_.ch).mkString).getOrElse("")
+      classChars = catalogEntry.map(_.classChars.map(_.ch).mkString).getOrElse(""),
+      ourCallsign = config.ourCallsign,
+      transmitters = config.transmitters,
+      ourClass = config.ourClass,
+      ourSection = config.ourSection
     )
 
-  def show(ownerWindow: Window): Unit =
-    val myCaseForm = MyCaseForm[ContestConfig](config)
-    val pane = myCaseForm.pane()
+  private case class ContestConfigProxy(
+      contest: ContestType,
+      start: ZonedDateTime,
+      end: ZonedDateTime,
+      ourCallsign: Callsign,
+      transmitters: Int,
+      ourClass: ChoiceField[String],
+      ourSection: ChoiceField[String]
+  )
 
-    // Setup listener for contest type change to prompt for year
+  def show(ownerWindow: Window): Unit =
+    def getClasses(contestType: ContestType): Seq[ContestClassChar] =
+      contestCatalog.contests.find(_.name == contestType).map(_.classChars).getOrElse(Seq.empty)
+
+    val sectionsList = sections.all.sortBy(_.code)
+
+    def classChoiceField(ct: ContestType, currentClassCode: String): ChoiceField[String] =
+      val classes = getClasses(ct)
+      ChoiceField(
+        currentClassCode,
+        _ =>
+          new ComboBox[String](ObservableBuffer.from(classes.map(_.ch))) {
+            editable = false
+            converter = new StringConverter[String] {
+              override def toString(ch: String): String =
+                if ch == null then ""
+                else
+                  classes
+                    .find(_.ch == ch)
+                    .map(c => s"${c.ch} - ${c.description}")
+                    .getOrElse(ch)
+              override def fromString(s: String): String =
+                if s == null then ""
+                else if s.contains(" - ") then s.split(" - ").head
+                else s
+            }
+          }
+      )
+
+    def sectionChoiceField(currentSectionCode: String): ChoiceField[String] =
+      ChoiceField(
+        currentSectionCode,
+        _ =>
+          new ComboBox[String](ObservableBuffer.from(sectionsList.map(_.code))) {
+            editable = false
+            converter = new StringConverter[String] {
+              override def toString(code: String): String =
+                if code == null then ""
+                else
+                  sectionsList
+                    .find(_.code == code)
+                    .map(s => s"${s.code} - ${s.name}")
+                    .getOrElse(code)
+              override def fromString(s: String): String =
+                if s == null then ""
+                else if s.contains(" - ") then s.split(" - ").head
+                else s
+            }
+          }
+      )
+
+    val proxy = ContestConfigProxy(
+      config.contest,
+      config.start,
+      config.end,
+      config.ourCallsign,
+      config.transmitters,
+      classChoiceField(config.contest, config.ourClass),
+      sectionChoiceField(config.ourSection)
+    )
+
+    val myCaseForm = MyCaseForm[ContestConfigProxy](proxy)
+    val pane       = myCaseForm.pane()
+
+    // Setup listener for contest type change to prompt for year and update class choices
     val contestCombo = myCaseForm.control[ComboBox[ContestType]]("contest")
+    val classCombo   = myCaseForm.control[ComboBox[String]]("ourClass")
+
     contestCombo.onAction = _ =>
       val newType = contestCombo.value.value
       promptForYear(ownerWindow).foreach { year =>
@@ -81,6 +162,10 @@ final class ContestManager @Inject()(
         updateZonedDateTimeControl(myCaseForm, "start", newDates.startUtc)
         updateZonedDateTimeControl(myCaseForm, "end", newDates.endUtc)
       }
+      val newClasses = getClasses(newType)
+      classCombo.items = ObservableBuffer.from(newClasses.map(_.ch))
+      if newClasses.nonEmpty && !newClasses.exists(_.ch == classCombo.value.value) then
+        classCombo.value = newClasses.head.ch
 
     val recalculateButton = new Button("Recalculate Dates"):
       onAction = (e: javafx.event.ActionEvent) =>
@@ -93,7 +178,7 @@ final class ContestManager @Inject()(
 
     val dialogContent = new VBox(10, pane, recalculateButton)
 
-    val d = new Dialog[ContestConfig]():
+    val d = new Dialog[ContestConfigProxy]():
       initOwner(ownerWindow)
       title = "Contest Detail"
       headerText = "Edit Contest Configuration"
@@ -101,11 +186,22 @@ final class ContestManager @Inject()(
       dialogPane().buttonTypes = Seq(ButtonType.OK, ButtonType.Cancel)
       resultConverter =
         case ButtonType.OK => myCaseForm.result
-        case _ => null
+        case _             => null
 
     val result = d.showAndWait()
     result match
-      case Some(c: ContestConfig) => setConfig(c)
+      case Some(p: ContestConfigProxy) =>
+        setConfig(
+          ContestConfig(
+            p.contest,
+            p.start,
+            p.end,
+            p.ourCallsign,
+            p.transmitters,
+            p.ourClass.value,
+            p.ourSection.value
+          )
+        )
       case _ => ()
 
   private def promptForYear(ownerWindow: Window): Option[Int] =
@@ -117,7 +213,7 @@ final class ContestManager @Inject()(
 
     d.showAndWait().flatMap(_.toIntOption)
 
-  private def updateZonedDateTimeControl(form: MyCaseForm[ContestConfig], fieldName: String, zdt: ZonedDateTime): Unit =
+  private def updateZonedDateTimeControl(form: MyCaseForm[?], fieldName: String, zdt: ZonedDateTime): Unit =
     // MyCaseForm uses an HBox for ZonedDateTime with DatePicker and two Spinners
     val field = form.fields.find(_.name == fieldName).get
     val hb = field.control.asInstanceOf[scalafx.scene.layout.HBox]
@@ -152,4 +248,12 @@ final class ContestManager @Inject()(
 
   private def defaultConfig(): ContestConfig =
     val now = ZonedDateTime.now(ZoneOffset.UTC)
-    ContestConfig(ContestType.WFD, now, now.plusHours(24))
+    ContestConfig(
+      ContestType.WFD,
+      now,
+      now.plusHours(24),
+      Callsign("W1AW"),
+      1,
+      "O",
+      "CT"
+    )

@@ -42,13 +42,25 @@ class CirceSupportTest extends FunSuite:
 
   test("ContestConfig round trip"):
     val now = ZonedDateTime.now(ZoneOffset.UTC)
-    val config = ContestConfig(ContestType.WFD, now, now.plusDays(2))
+    val config = ContestConfig(
+      ContestType.WFD,
+      now,
+      now.plusDays(2),
+      Callsign("W1AW"),
+      1,
+      "O",
+      "CT"
+    )
     val json = config.asJson.noSpaces
     val decoded = decode[ContestConfig](json).toOption.get
     // ZonedDateTime might lose some precision or change format slightly, but should be equivalent
     assertEquals(decoded.contest, config.contest)
     assertEquals(decoded.contest.name, "Winter Field Day")
     assert(decoded.start.isEqual(config.start))
+    assertEquals(decoded.ourCallsign, config.ourCallsign)
+    assertEquals(decoded.transmitters, config.transmitters)
+    assertEquals(decoded.ourClass, config.ourClass)
+    assertEquals(decoded.ourSection, config.ourSection)
 
   test("ContestType name field"):
     assertEquals(ContestType.WFD.name, "Winter Field Day")
@@ -71,7 +83,15 @@ class CirceSupportTest extends FunSuite:
 
   test("Node round trip"):
     val now = ZonedDateTime.now(ZoneOffset.UTC)
-    val config = ContestConfig(ContestType.ARRL, now, now.plusDays(2))
+    val config = ContestConfig(
+      ContestType.ARRL,
+      now,
+      now.plusDays(2),
+      Callsign("W1AW"),
+      1,
+      "O",
+      "CT"
+    )
     val node = Node(new URL("http://localhost:8080"), config, Callsign("WA9NNN"))
     val json = node.asJson.noSpaces
     val decoded = decode[Node](json).toOption.get

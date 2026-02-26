@@ -31,7 +31,8 @@ final class ExportService @Inject()(
                                      qsoStore: QsoStore,
                                      directoryProvider: DirectoryProvider,
                                      contestManager: ContestManager,
-                                     stationStore: StationStore
+                                     stationStore: StationStore,
+                                     cabrilloHeaderStore: CabrilloHeaderStore
                                    ):
 
   enum ExportFormat(val extension: String, val description: String):
@@ -52,7 +53,8 @@ final class ExportService @Inject()(
         val qsos = qsoStore.all
         val station = stationStore.station.value
         val contest = contestManager.config.contest
-        val cabrillo = CabrilloExporter.exportQsos(qsos, station, contest)
+        val header = cabrilloHeaderStore.header.value
+        val cabrillo = CabrilloExporter.exportQsos(qsos, station, contest, header)
         os.write.over(path, cabrillo)
       case ExportFormat.JSON =>
         val qsos = qsoStore.all

@@ -19,6 +19,8 @@
 package fdswarm.util
  
 import fdswarm.fx.contest.{ContestCatalog, ContestConfig, ContestManager, ContestType}
+import fdswarm.fx.sections.{Sections, SectionsProvider}
+import fdswarm.model.Callsign
 import fdswarm.TestDirectory
 import com.typesafe.config.ConfigFactory
 import java.time.{Instant, ZoneOffset, ZonedDateTime}
@@ -43,9 +45,12 @@ class FilenameStampTest extends FunSuite:
         |    ]
         |  }
         |]
+        |fdswarm.sections = []
         |""".stripMargin)
     val catalog = new ContestCatalog(config)
-    contestManager = new ContestManager(testDir, catalog)
+    val sectionsProvider = new SectionsProvider(config)
+    val sections = new Sections(sectionsProvider)
+    contestManager = new ContestManager(testDir, catalog, sections)
     filenameStamp = new FilenameStamp(contestManager)
  
   override def afterEach(context: AfterEach): Unit =
@@ -53,7 +58,17 @@ class FilenameStampTest extends FunSuite:
 
   test("build() creates a filename using current contest"):
     val now = ZonedDateTime.now(ZoneOffset.UTC)
-    contestManager.setConfig(ContestConfig(ContestType.ARRL, now, now.plusHours(24)))
+    contestManager.setConfig(
+      ContestConfig(
+        ContestType.ARRL,
+        now,
+        now.plusHours(24),
+        Callsign("W1AW"),
+        1,
+        "O",
+        "CT"
+      )
+    )
     
     val instant = Instant.parse("2026-02-25T12:00:00Z")
     val result = filenameStamp.build(instant)

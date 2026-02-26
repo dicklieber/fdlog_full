@@ -40,18 +40,24 @@ class CabrilloExporterTest extends FunSuite:
     )
 
     val qsos = Seq(qso1)
-    val result = CabrilloExporter.exportQsos(qsos, station, ContestType.WFD)
+    val header = CabrilloHeader(
+      callsign = "W1AW",
+      stationClass = "1A",
+      stationSection = "CT"
+    )
+    val result = CabrilloExporter.exportQsos(qsos, station, ContestType.WFD, header)
     
     assert(result.contains("START-OF-LOG: 3.0"))
     assert(result.contains("CALLSIGN: W1AW"))
     assert(result.contains("CONTEST: WFD"))
-    assert(result.contains("QSO: 14035 CW 2026-02-25 1400 W1AW         1A  XX  K1ABC        1O  CT "))
+    assert(result.contains("QSO: 14035 CW 2026-02-25 1400 W1AW         1A  CT  K1ABC        1O  CT "))
     assert(result.contains("END-OF-LOG:"))
 
   test("mapContest maps correctly"):
     val station = Station(operator = Callsign("W1AW"))
-    val resultWfd = CabrilloExporter.exportQsos(Seq.empty, station, ContestType.WFD)
+    val header = CabrilloHeader()
+    val resultWfd = CabrilloExporter.exportQsos(Seq.empty, station, ContestType.WFD, header)
     assert(resultWfd.contains("CONTEST: WFD"))
     
-    val resultArrl = CabrilloExporter.exportQsos(Seq.empty, station, ContestType.ARRL)
+    val resultArrl = CabrilloExporter.exportQsos(Seq.empty, station, ContestType.ARRL, header)
     assert(resultArrl.contains("CONTEST: ARRL-FIELD-DAY"))
