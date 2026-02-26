@@ -27,6 +27,7 @@ import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
 import scalafx.beans.property.ObjectProperty
 import scalafx.collections.ObservableBuffer
+import scalafx.geometry.Insets
 import scalafx.scene.control.*
 import scalafx.scene.layout.*
 import scalafx.stage.Window
@@ -40,7 +41,8 @@ import java.time.*
 final class ContestManager @Inject()(
                                       productionDirectory: DirectoryProvider,
                                       contestCatalog: ContestCatalog,
-                                      sections: Sections
+                                      sections: Sections,
+                                      qsoStore: fdswarm.store.QsoStore
                                     ) extends LazyLogging:
 
   private val file: os.Path =
@@ -171,7 +173,22 @@ final class ContestManager @Inject()(
           updateZonedDateTimeControl(myCaseForm, "end", newDates.endUtc)
         }
 
-    val dialogContent = new VBox(10, pane, recalculateButton)
+    val hasQsos = qsoStore.all.nonEmpty
+
+    val dialogContent = new VBox(10):
+      padding = Insets(10)
+      children = Seq(pane, recalculateButton)
+      if hasQsos then
+        val warningLabel = new Label("Logged QSOs exist. Some changes are not allowed.") {
+          style = "-fx-text-fill: red; -fx-font-weight: bold;"
+        }
+        children.add(0, warningLabel)
+        
+        // Lock specific fields if QSOs exist
+        myCaseForm.control[Control]("contest").disable = true
+        myCaseForm.control[Control]("transmitters").disable = true
+        myCaseForm.control[Control]("ourClass").disable = true
+        myCaseForm.control[Control]("ourSection").disable = true
 
     val d = new Dialog[ContestConfigProxy]():
       initOwner(ownerWindow)
@@ -179,6 +196,9 @@ final class ContestManager @Inject()(
       headerText = "Edit Contest Configuration"
       dialogPane().content = dialogContent
       dialogPane().buttonTypes = Seq(ButtonType.OK, ButtonType.Cancel)
+      
+      val okButton = dialogPane().lookupButton(ButtonType.OK)
+      
       resultConverter =
         case ButtonType.OK => myCaseForm.result
         case _             => null

@@ -46,7 +46,7 @@ final class ExportDialog @Inject()(
       prefWidth = 350
 
     val formatCombo = new ComboBox[ExportFormat](ExportFormat.values.toIndexedSeq):
-      value = ExportFormat.ADIF
+      value = ExportFormat.CABRILLO
 
     val directoryField = new TextField:
       text = System.getProperty("user.home")
@@ -76,7 +76,7 @@ final class ExportDialog @Inject()(
     dialog.dialogPane().setPrefWidth(550)
 
     val headerButton = new Button("Cabrillo Header..."):
-      disable = true
+      disable = formatCombo.value.value != ExportFormat.CABRILLO
       onAction = _ => cabrilloHeaderDialog.show(ownerWindow)
 
     // Enable header button only when Cabrillo format is selected

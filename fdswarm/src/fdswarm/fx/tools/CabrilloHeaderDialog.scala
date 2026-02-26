@@ -38,10 +38,16 @@ final class CabrilloHeaderDialog @Inject()(
   def show(ownerWindow: Window): Unit =
     val currentHeader = headerStore.header.value
     val station = stationStore.station.value
-    val contest = contestManager.config.contest
+    val contest = contestManager.config
 
-    val callsignField = new TextField { text = if currentHeader.callsign.isEmpty then station.operator.value else currentHeader.callsign }
-    val contestField = new TextField { text = if currentHeader.contest.isEmpty then contest.toString else currentHeader.contest }
+    val callsignField = new TextField {
+      text = contest.ourCallsign.toString
+      editable = false
+    }
+    val contestField = new TextField {
+      text = contest.contest.toString
+      editable = false
+    }
     
     val categoryOperatorCombo = new ComboBox[CategoryOperator](CategoryOperator.values.toIndexedSeq) { value = currentHeader.categoryOperator }
     val categoryAssistedCombo = new ComboBox[CategoryAssisted](CategoryAssisted.values.toIndexedSeq) { value = currentHeader.categoryAssisted }
@@ -60,8 +66,14 @@ final class CabrilloHeaderDialog @Inject()(
     val stateField = new TextField { text = currentHeader.addressStateProvince }
     val postalCodeField = new TextField { text = currentHeader.addressPostalCode }
     val countryField = new TextField { text = currentHeader.addressCountry }
-    val stationClassField = new TextField { text = currentHeader.stationClass }
-    val stationSectionField = new TextField { text = currentHeader.stationSection }
+    val stationClassField = new TextField {
+      text = s"${contest.transmitters}${contest.ourClass}"
+      editable = false
+    }
+    val stationSectionField = new TextField {
+      text = contest.ourSection
+      editable = false
+    }
     val soapboxField = new TextArea { 
       text = currentHeader.soapbox
       prefRowCount = 3
@@ -89,8 +101,8 @@ final class CabrilloHeaderDialog @Inject()(
         GridPane.setHgrow(control, Priority.Always)
         row += 1
 
-      addRow("Callsign:", callsignField)
-      addRow("Contest:", contestField)
+      addRow("Callsign (from Contest Config):", callsignField)
+      addRow("Contest (from Contest Config):", contestField)
       addRow("Category Operator:", categoryOperatorCombo)
       addRow("Category Assisted:", categoryAssistedCombo)
       addRow("Category Band:", categoryBandCombo)
@@ -107,8 +119,8 @@ final class CabrilloHeaderDialog @Inject()(
       addRow("State/Province:", stateField)
       addRow("Postal Code:", postalCodeField)
       addRow("Country:", countryField)
-      addRow("Station Class (e.g. 1A):", stationClassField)
-      addRow("Station Section (e.g. IL):", stationSectionField)
+      addRow("Station Class (from Contest Config):", stationClassField)
+      addRow("Station Section (from Contest Config):", stationSectionField)
       addRow("Soapbox:", soapboxField)
 
     val scrollPane = new ScrollPane:
@@ -122,8 +134,8 @@ final class CabrilloHeaderDialog @Inject()(
     val result = dialog.showAndWait()
     if result.contains(saveButtonType) then
       val newHeader = CabrilloHeader(
-        callsign = callsignField.text.value.trim,
-        contest = contestField.text.value.trim,
+        callsign = contest.ourCallsign.toString,
+        contest = contest.contest.toString,
         categoryOperator = categoryOperatorCombo.value.value,
         categoryAssisted = categoryAssistedCombo.value.value,
         categoryBand = categoryBandCombo.value.value,
@@ -140,8 +152,8 @@ final class CabrilloHeaderDialog @Inject()(
         addressStateProvince = stateField.text.value.trim,
         addressPostalCode = postalCodeField.text.value.trim,
         addressCountry = countryField.text.value.trim,
-        stationClass = stationClassField.text.value.trim,
-        stationSection = stationSectionField.text.value.trim,
+        stationClass = s"${contest.transmitters}${contest.ourClass}",
+        stationSection = contest.ourSection,
         soapbox = soapboxField.text.value.trim
       )
       headerStore.update(newHeader)

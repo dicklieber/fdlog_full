@@ -36,8 +36,8 @@ final class ExportService @Inject()(
                                    ):
 
   enum ExportFormat(val extension: String, val description: String):
-    case ADIF extends ExportFormat("adi", "ADIF Files (*.adi)")
     case CABRILLO extends ExportFormat("cbr", "Cabrillo Files (*.cbr)")
+    case ADIF extends ExportFormat("adi", "ADIF Files (*.adi)")
     case JSON extends ExportFormat("json", "JSON Files (*.json)")
     case ZIP  extends ExportFormat("zip", "Zip Files (*.zip)")
 
