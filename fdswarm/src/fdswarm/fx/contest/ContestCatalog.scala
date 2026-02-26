@@ -34,6 +34,7 @@ case class Contest(
                   ) derives Codec.AsObject:
   def isValidClass(classChar: String): Boolean =
     classChars.exists(_.ch == classChar)
+  def classCharsString: String = classChars.map(_.ch).mkString
 
 @Singleton
 final class ContestCatalog @Inject()(config: Config):
@@ -47,3 +48,6 @@ final class ContestCatalog @Inject()(config: Config):
   private val configValue: ConfigValue = config.getValue(key)
   val contests: Seq[Contest] =
     decode[Seq[Contest]](configValue.render(renderOpts)).toTry.get
+
+  def getContest(contestType: ContestType): Option[Contest] =
+    contests.find(_.name == contestType)

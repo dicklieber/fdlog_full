@@ -19,7 +19,7 @@
 package fdswarm.fx.contest
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.caseForm.{ChoiceField, MyCaseForm}
+import fdswarm.fx.caseForm.{ChoiceField, MyCaseForm, SpinnerField}
 import fdswarm.fx.sections.{Section, Sections}
 import fdswarm.model.Callsign
 import fdswarm.io.DirectoryProvider
@@ -49,12 +49,8 @@ final class ContestManager @Inject()(
   val configProperty: ObjectProperty[ContestConfig] =
     ObjectProperty(load())
 
-  val currentDetailProperty: ObjectProperty[ContestDetail] =
-    ObjectProperty(toDetail(configProperty.value))
-
-  // Keep detail in sync with config
-  configProperty.onChange { (_, _, newValue) =>
-    currentDetailProperty.value = toDetail(newValue)
+  // Keep persist in sync with config
+  configProperty.onChange { (_, _, _) =>
     persist()
   }
 
@@ -62,27 +58,16 @@ final class ContestManager @Inject()(
 
   def setConfig(newConfig: ContestConfig): Unit =
     configProperty.value = newConfig
-    configProperty.value = newConfig
 
-  private def toDetail(config: ContestConfig): ContestDetail =
-    val catalogEntry = contestCatalog.contests.find(_.name == config.contest)
-    ContestDetail(
-      contest = config.contest,
-      start = config.start,
-      end = config.end,
-      classChars = catalogEntry.map(_.classChars.map(_.ch).mkString).getOrElse(""),
-      ourCallsign = config.ourCallsign,
-      transmitters = config.transmitters,
-      ourClass = config.ourClass,
-      ourSection = config.ourSection
-    )
+  def classChars: String =
+    contestCatalog.getContest(config.contest).map(_.classCharsString).getOrElse("")
 
   private case class ContestConfigProxy(
       contest: ContestType,
       start: ZonedDateTime,
       end: ZonedDateTime,
       ourCallsign: Callsign,
-      transmitters: Int,
+      transmitters: SpinnerField,
       ourClass: ChoiceField[String],
       ourSection: ChoiceField[String]
   )
@@ -91,20 +76,25 @@ final class ContestManager @Inject()(
     def getClasses(contestType: ContestType): Seq[ContestClassChar] =
       contestCatalog.contests.find(_.name == contestType).map(_.classChars).getOrElse(Seq.empty)
 
+    var currentContestType: ContestType = config.contest
+
     val sectionsList = sections.all.sortBy(_.code)
 
-    def classChoiceField(ct: ContestType, currentClassCode: String): ChoiceField[String] =
-      val classes = getClasses(ct)
+    def transmittersSpinnerField(currentTransmitters: Int): SpinnerField =
+      SpinnerField(currentTransmitters, 1, 100)
+
+    def classChoiceField(currentClassCode: String): ChoiceField[String] =
       ChoiceField(
         currentClassCode,
-        _ =>
-          new ComboBox[String](ObservableBuffer.from(classes.map(_.ch))) {
+        currentVal =>
+          new ComboBox[String](ObservableBuffer.from(getClasses(currentContestType).map(_.ch))) {
             editable = false
+            currentVal.foreach(v => value = v)
             converter = new StringConverter[String] {
               override def toString(ch: String): String =
                 if ch == null then ""
                 else
-                  classes
+                  getClasses(currentContestType)
                     .find(_.ch == ch)
                     .map(c => s"${c.ch} - ${c.description}")
                     .getOrElse(ch)
@@ -119,9 +109,10 @@ final class ContestManager @Inject()(
     def sectionChoiceField(currentSectionCode: String): ChoiceField[String] =
       ChoiceField(
         currentSectionCode,
-        _ =>
+        currentVal =>
           new ComboBox[String](ObservableBuffer.from(sectionsList.map(_.code))) {
             editable = false
+            currentVal.foreach(v => value = v)
             converter = new StringConverter[String] {
               override def toString(code: String): String =
                 if code == null then ""
@@ -143,8 +134,8 @@ final class ContestManager @Inject()(
       config.start,
       config.end,
       config.ourCallsign,
-      config.transmitters,
-      classChoiceField(config.contest, config.ourClass),
+      transmittersSpinnerField(config.transmitters),
+      classChoiceField(config.ourClass),
       sectionChoiceField(config.ourSection)
     )
 
@@ -155,8 +146,12 @@ final class ContestManager @Inject()(
     val contestCombo = myCaseForm.control[ComboBox[ContestType]]("contest")
     val classCombo   = myCaseForm.control[ComboBox[String]]("ourClass")
 
+    // Initialize classCombo items
+    classCombo.items = ObservableBuffer.from(getClasses(config.contest).map(_.ch))
+
     contestCombo.onAction = _ =>
       val newType = contestCombo.value.value
+      currentContestType = newType
       promptForYear(ownerWindow).foreach { year =>
         val newDates = newType.dates(year)
         updateZonedDateTimeControl(myCaseForm, "start", newDates.startUtc)
@@ -164,8 +159,8 @@ final class ContestManager @Inject()(
       }
       val newClasses = getClasses(newType)
       classCombo.items = ObservableBuffer.from(newClasses.map(_.ch))
-      if newClasses.nonEmpty && !newClasses.exists(_.ch == classCombo.value.value) then
-        classCombo.value = newClasses.head.ch
+      // fully reset selection to the first valid option for the new contest (if any)
+      if newClasses.nonEmpty then classCombo.value = newClasses.head.ch else classCombo.value = null
 
     val recalculateButton = new Button("Recalculate Dates"):
       onAction = (e: javafx.event.ActionEvent) =>
@@ -197,7 +192,7 @@ final class ContestManager @Inject()(
             p.start,
             p.end,
             p.ourCallsign,
-            p.transmitters,
+            p.transmitters.value,
             p.ourClass.value,
             p.ourSection.value
           )

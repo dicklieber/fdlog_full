@@ -54,11 +54,3 @@ case class ContestConfig(contest:ContestType,
                          transmitters: Int,
                          ourClass: String,
                          ourSection: String) derives Codec.AsObject
-case class ContestDetail(contest:ContestType,
-                         start:ZonedDateTime,
-                         end:ZonedDateTime,
-                         classChars: String,
-                         ourCallsign: Callsign,
-                         transmitters: Int,
-                         ourClass: String,
-                         ourSection: String) derives Codec.AsObject

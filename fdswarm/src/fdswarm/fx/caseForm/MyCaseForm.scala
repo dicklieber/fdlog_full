@@ -27,9 +27,39 @@ import scalafx.geometry.Insets
 import scalafx.scene.Node
 import scalafx.scene.control.*
 import scalafx.scene.layout.{GridPane, HBox, Pane}
+import scalafx.util.StringConverter
 
 import java.time.{Instant, LocalTime, ZoneId, ZonedDateTime}
 import scala.deriving.Mirror
+
+/**
+ * A "field value" that knows:
+ *  - the current selected value
+ *  - how to build a Spinner
+ *
+ * This is meant to be embedded in your case class.
+ */
+final case class SpinnerField(
+    value: Int,
+    min: Int,
+    max: Int
+):
+  def spinner(): Spinner[Int] =
+    new Spinner[Int](min, max, value) {
+      editable = true
+      editor.value.textFormatter = new TextFormatter[String]((change: TextFormatter.Change) => {
+        if (change.isContentChange) {
+          val newText = change.controlNewText
+          if (newText.matches("-?\\d*")) {
+            change
+          } else {
+            null
+          }
+        } else {
+          change
+        }
+      })
+    }
 
 class MyCaseForm[T <: Product](initial: T)(using m: Mirror.ProductOf[T]):
 
@@ -81,11 +111,27 @@ class MyCaseForm[T <: Product](initial: T)(using m: Mirror.ProductOf[T]):
             val combo = cf0.comboBox().asInstanceOf[ComboBox[AnyRef]]
             (combo, () => cf0.withValue(combo.value.value))
 
+          case sf: SpinnerField =>
+            val spinner = sf.spinner()
+            (spinner, () => sf.copy(value = spinner.value.value))
+
           case _ =>
-            // First try Scala 3 parameterized enum detection (HamBand, etc.)
             scala3EnumItems(fieldValue) match
               case Some(items) =>
-                val combo = new ComboBox[AnyRef](ObservableBuffer.from(items))
+                val combo = new ComboBox[AnyRef](ObservableBuffer.from(items)) {
+                  converter = new StringConverter[AnyRef] {
+                    override def toString(obj: AnyRef): String =
+                      if (obj == null) ""
+                      else
+                        try {
+                          val nameMethod = obj.getClass.getMethod("name")
+                          nameMethod.invoke(obj).asInstanceOf[String]
+                        } catch {
+                          case _: NoSuchMethodException => obj.toString
+                        }
+                    override def fromString(string: String): AnyRef = null // read-only ComboBox typically
+                  }
+                }
                 combo.value.value = fieldValue.asInstanceOf[AnyRef]
                 (combo, () => combo.value.value)
 
@@ -100,7 +146,20 @@ class MyCaseForm[T <: Product](initial: T)(using m: Mirror.ProductOf[T]):
 
                   case e: java.lang.Enum[_] =>
                     val items = javaEnumItems(e)
-                    val combo = new ComboBox[AnyRef](ObservableBuffer.from(items))
+                    val combo = new ComboBox[AnyRef](ObservableBuffer.from(items)) {
+                      converter = new StringConverter[AnyRef] {
+                        override def toString(obj: AnyRef): String =
+                          if (obj == null) ""
+                          else
+                            try {
+                              val nameMethod = obj.getClass.getMethod("name")
+                              nameMethod.invoke(obj).asInstanceOf[String]
+                            } catch {
+                              case _: NoSuchMethodException => obj.toString
+                            }
+                        override def fromString(string: String): AnyRef = null
+                      }
+                    }
                     combo.value.value = e.asInstanceOf[AnyRef]
                     (combo, () => combo.value.value)
 

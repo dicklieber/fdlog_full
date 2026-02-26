@@ -43,7 +43,7 @@ class ContestClassField @Inject() (
 
   focused.onChange { (_, _, nv) =>
     val currentText = text.value
-    val classChars = contestManager.currentDetailProperty.value.classChars
+    val classChars = contestManager.classChars
     val typingPattern = "^([0-9]{1,2}[" + classChars.toUpperCase + "]|[0-9]{0,2})$"
     if nv && !currentText.matches(typingPattern) then showHelp()
   }
@@ -53,7 +53,7 @@ class ContestClassField @Inject() (
       change.setText(change.getText.toUpperCase)
     }
     val newText = change.controlNewText
-    val classChars = contestManager.currentDetailProperty.value.classChars
+    val classChars = contestManager.classChars
     // Match partial strings during typing: empty, 1-2 digits, or 1-2 digits + 1 classChar
     val typingPattern = "^([0-9]{1,2}[" + classChars.toUpperCase + "]|[0-9]{0,2})$"
     if (newText.matches(typingPattern)) {
@@ -70,7 +70,7 @@ class ContestClassField @Inject() (
 
   text.onChange { (_, _, nv) =>
     validProperty.value = isValid(nv)
-    val classChars = contestManager.currentDetailProperty.value.classChars
+    val classChars = contestManager.classChars
     val typingPattern = "^([0-9]{1,2}[" + classChars.toUpperCase + "]|[0-9]{0,2})$"
     if nv.matches(typingPattern) then dupPanel.clear
   }
@@ -79,6 +79,6 @@ class ContestClassField @Inject() (
     super.isTransitionKey(key) || key.isLetterKey
 
   override def isValid(str: String): Boolean =
-    val classChars = contestManager.currentDetailProperty.value.classChars
+    val classChars = contestManager.classChars
     val pattern = "^[0-9]{1,2}[" + classChars.toUpperCase + "]$"
     str.matches(pattern)
