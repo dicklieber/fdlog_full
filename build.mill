@@ -3,15 +3,16 @@
 //| - com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION
 //| - com.lihaoyi::mill-contrib-scoverage:$MILL_VERSION
 
-
 package build
 
 import mill._
 import mill.scalalib._
 import mill.contrib.buildinfo.BuildInfo
 import mill.contrib.scoverage._
+import mill.scalalib.JpackageModule
+import mill.javalib.Assembly.*
 
-object fdswarm extends ScalaModule with ScoverageModule with BuildInfo {
+object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with JpackageModule {
   val majorVersion = "0"
   val version = s"$majorVersion.0.0"
   val name = "fdswarm"
@@ -19,46 +20,49 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo {
 
   def scalaVersion = "3.7.4"
 
-  def scalacOptions = Seq("-feature", "-deprecation", "-Wconf:msg=Implicit parameters should be provided with a `using` clause:s")
+  def scalacOptions =
+    Seq(
+      "-feature",
+      "-deprecation",
+      "-Wconf:msg=Implicit parameters should be provided with a `using` clause:s"
+    )
 
   def mainClass = Some("fdswarm.FdLogApp")
 
   override def manifest = Task {
     super.manifest().add(
-      "Implementation-Title" -> "FdSwarm",
+      "Implementation-Title"   -> "FdSwarm",
       "Implementation-Version" -> version,
-      "Bundle-Name" -> "FdSwarm",
-      "Bundle-SymbolicName" -> "fdswarm",
-      "Bundle-Version" -> version
+      "Bundle-Name"            -> "FdSwarm",
+      "Bundle-SymbolicName"    -> "fdswarm",
+      "Bundle-Version"         -> version
     )
   }
 
-  override def forkArgs = Task {
-    val cp = runClasspath()
-    val jfxJars = cp.filter(p => p.path.toString.contains("openjfx") && p.path.ext == "jar")
-    val baseArgs = if (System.getProperty("os.name").toLowerCase.contains("mac")) {
-      Seq(
-        "-Xdock:name=FdSwarm",
-        "-Dapple.awt.application.name=FdSwarm",
-        "-Dcom.apple.mrj.application.apple.menu.about.name=FdSwarm",
-        "-Dapple.laf.useScreenMenuBar=true"
-      )
-    } else {
-      Seq.empty[String]
-    }
-    
-    if (jfxJars.isEmpty) {
-      baseArgs
-    } else {
-      val modulePath = jfxJars.map(_.path.toIO.getAbsolutePath).mkString(java.io.File.pathSeparator)
-      val modules = Seq("javafx.controls", "javafx.graphics", "javafx.base", "javafx.media", "javafx.web")
-      baseArgs ++ Seq(
-        "--module-path", modulePath,
-        "--add-modules", modules.mkString(",")
-      )
-    }
+  // ---- jpackage (Mill 1.0.6 supports these knobs) ----
+  override def jpackageName = Task { "FdSwarm" }
+
+  override def jpackageType = Task {
+    val osName = sys.props("os.name").toLowerCase
+    if (osName.contains("mac")) "dmg"
+    else if (osName.contains("win")) "msi"
+    else "deb" // or "rpm"
   }
 
+  // Optional: helps JavaFX artifacts resolve correctly across OS runners (JavaFX is OS-activated)
+  override def resolutionCustomizer = Task.Anon {
+    Some((r: coursier.core.Resolution) =>
+      r.withOsInfo(coursier.core.Activation.Os.fromProperties(sys.props.toMap))
+    )
+  }
+
+  // Optional: if you use `assembly`, these help with common resource collisions
+  override def assemblyRules = Seq(
+    Rule.Append("reference.conf"),
+    Rule.AppendPattern(".*\\.conf")
+  )
+
+  // ---- BuildInfo ----
   def buildInfoPackageName = "com.organization"
 
   def buildInfoMembers = Seq(
@@ -74,14 +78,10 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo {
   def mvnDeps = Seq(
     mvn"com.typesafe.scala-logging::scala-logging:3.9.5",
 
-    // SLF4J API
     mvn"org.slf4j:slf4j-api:2.0.16",
 
-    // Log4j2 API + core (needed for org.apache.logging.log4j.core.*)
     mvn"org.apache.logging.log4j:log4j-api:$log4jV",
     mvn"org.apache.logging.log4j:log4j-core:$log4jV",
-
-    // SLF4J 2.x → Log4j2 bridge
     mvn"org.apache.logging.log4j:log4j-slf4j2-impl:$log4jV",
 
     mvn"com.fasterxml.jackson.core:jackson-databind:2.17.2",
@@ -90,7 +90,6 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo {
     mvn"io.github.classgraph:classgraph:4.8.179",
     mvn"net.codingwell::scala-guice:7.0.0",
 
-    //    mvn"com.lihaoyi::cask:0.11.3",
     mvn"com.lihaoyi::os-lib:0.11.6",
     mvn"com.lihaoyi::scalatags:0.13.1",
     mvn"org.apache.commons:commons-text:1.10.0",
@@ -107,6 +106,7 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo {
     mvn"com.softwaremill.sttp.tapir:tapir-http4s-client_3:1.13.8",
     mvn"com.softwaremill.sttp.tapir:tapir-json-circe_3:1.13.8",
     mvn"com.softwaremill.sttp.tapir::tapir-swagger-ui-bundle:1.13.8",
+
     mvn"org.http4s:http4s-ember-server_3:0.23.33",
     mvn"org.http4s:http4s-ember-client_3:0.23.33",
     mvn"org.http4s:http4s-dsl_3:0.23.33",
@@ -117,23 +117,18 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo {
     mvn"org.scala-lang.modules::scala-xml:2.3.0",
 
     mvn"io.micrometer:micrometer-registry-prometheus:1.14.4",
-    // Use io.github.keirlawson:meters4s-http4s_3:2.0.1
-    mvn"io.github.keirlawson:meters4s-http4s_3:2.0.1",
+    mvn"io.github.keirlawson:meters4s-http4s_3:2.0.1"
   )
 
-
   object test extends ScoverageTests with TestModule.Munit {
-
     override def mvnDeps = super.mvnDeps() ++ Seq(
       mvn"org.apache.logging.log4j:log4j-core:$log4jV",
       mvn"org.apache.logging.log4j:log4j-core-test:$log4jV",
       mvn"com.softwaremill.sttp.tapir:tapir-http4s-client_3:1.13.8",
-      mvn"org.http4s:http4s-ember-client_3:0.23.33",
+      mvn"org.http4s:http4s-ember-client_3:0.23.33"
     )
 
     def scalaVersion = "3.7.4"
-
     def munitVersion = "1.0.0"
   }
-
 }
