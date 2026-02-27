@@ -25,7 +25,7 @@ import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
 import scalafx.geometry.Insets
 import scalafx.scene.control.*
-import scalafx.scene.layout.{GridPane, Priority, VBox}
+import scalafx.scene.layout.{GridPane, Priority, Region, VBox}
 import scalafx.stage.Window
 
 @Singleton
@@ -96,7 +96,10 @@ final class CabrilloHeaderDialog @Inject()(
 
       var row = 0
       def addRow(label: String, control: javafx.scene.Node): Unit =
-        add(new Label(label), 0, row)
+        val l = new Label(label) {
+          minWidth = Region.USE_PREF_SIZE
+        }
+        add(l, 0, row)
         add(control, 1, row)
         GridPane.setHgrow(control, Priority.Always)
         row += 1
