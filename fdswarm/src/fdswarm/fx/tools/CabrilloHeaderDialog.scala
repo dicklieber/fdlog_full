@@ -21,9 +21,10 @@ package fdswarm.fx.tools
 import fdswarm.exporter.*
 import fdswarm.fx.contest.ContestManager
 import fdswarm.fx.station.StationStore
+import fdswarm.fx.utils.{BootstrapIcons, IconButton}
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
-import scalafx.geometry.Insets
+import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control.*
 import scalafx.scene.layout.{GridPane, Priority, Region, VBox}
 import scalafx.stage.Window
@@ -85,9 +86,18 @@ final class CabrilloHeaderDialog @Inject()(
       headerText = "Configure Cabrillo Header Fields"
       resizable = true
 
+    val helpButtonType = new ButtonType("", ButtonBar.ButtonData.Help)
     val saveButtonType = new ButtonType("Save", ButtonBar.ButtonData.OKDone)
-    dialog.dialogPane().buttonTypes = Seq(ButtonType.Cancel, saveButtonType)
+    dialog.dialogPane().buttonTypes = Seq(helpButtonType, ButtonType.Cancel, saveButtonType)
     dialog.dialogPane().setPrefWidth(600)
+
+    val helpButton = dialog.dialogPane().lookupButton(helpButtonType).asInstanceOf[javafx.scene.control.Button]
+    helpButton.setGraphic(BootstrapIcons.svgPath("info-circle-fill", 24).delegate)
+    helpButton.setTooltip(new javafx.scene.control.Tooltip("Cabrillo Specification (WWROF)"))
+    helpButton.setStyle("-fx-background-color: transparent; -fx-border-color: transparent; -fx-padding: 6;")
+    helpButton.setOnAction(_ =>
+      java.awt.Desktop.getDesktop.browse(new java.net.URI("https://wwrof.org/cabrillo/cabrillo-v3-header/"))
+    )
 
     val grid = new GridPane:
       hgap = 10
@@ -95,36 +105,38 @@ final class CabrilloHeaderDialog @Inject()(
       padding = Insets(20)
 
       var row = 0
-      def addRow(label: String, control: javafx.scene.Node): Unit =
+      def addRow(label: String, control: Control, tooltipText: String): Unit =
         val l = new Label(label) {
           minWidth = Region.USE_PREF_SIZE
+          tooltip = new Tooltip(tooltipText)
         }
+        control.tooltip = new Tooltip(tooltipText)
         add(l, 0, row)
         add(control, 1, row)
         GridPane.setHgrow(control, Priority.Always)
         row += 1
 
-      addRow("Callsign (from Contest Config):", callsignField)
-      addRow("Contest (from Contest Config):", contestField)
-      addRow("Category Operator:", categoryOperatorCombo)
-      addRow("Category Assisted:", categoryAssistedCombo)
-      addRow("Category Band:", categoryBandCombo)
-      addRow("Category Mode:", categoryModeCombo)
-      addRow("Category Power:", categoryPowerCombo)
-      addRow("Category Station:", categoryStationCombo)
-      addRow("Category Transmitter:", categoryTransmitterCombo)
-      addRow("Category Overlay:", categoryOverlayCombo)
-      addRow("Club:", clubField)
-      addRow("Operators (comma separated):", operatorsField)
-      addRow("Name:", nameField)
-      addRow("Address:", addressField)
-      addRow("City:", cityField)
-      addRow("State/Province:", stateField)
-      addRow("Postal Code:", postalCodeField)
-      addRow("Country:", countryField)
-      addRow("Station Class (from Contest Config):", stationClassField)
-      addRow("Station Section (from Contest Config):", stationSectionField)
-      addRow("Soapbox:", soapboxField)
+      addRow("Callsign (from Contest Config):", callsignField, "The callsign used during the contest.")
+      addRow("Contest (from Contest Config):", contestField, "String to identify the contest (e.g., ARRL-FIELD-DAY).")
+      addRow("Category Operator:", categoryOperatorCombo, "The category-operator must be one of: SINGLE-OP, MULTI-OP, CHECKLOG.")
+      addRow("Category Assisted:", categoryAssistedCombo, "The category-assisted must be one of: ASSISTED, NON-ASSISTED.")
+      addRow("Category Band:", categoryBandCombo, "The category-band must be ALL or one of the individual bands (e.g., 160M, 80M, etc.).")
+      addRow("Category Mode:", categoryModeCombo, "The category-mode must be one of: CW, DIGI, FM, RTTY, SSB, MIXED.")
+      addRow("Category Power:", categoryPowerCombo, "The category-power must be one of: HIGH, LOW, QRP.")
+      addRow("Category Station:", categoryStationCombo, "Type of station (e.g., FIXED, MOBILE, PORTABLE, ROVER, etc.).")
+      addRow("Category Transmitter:", categoryTransmitterCombo, "The category-transmitter is required for multi-operator entries (e.g., ONE, TWO, LIMITED, UNLIMITED, etc.).")
+      addRow("Category Overlay:", categoryOverlayCombo, "Category overlay (e.g., CLASSIC, ROOKIE, TB-WIRES, etc.).")
+      addRow("Club:", clubField, "Name of the radio club to which the score should be applied.")
+      addRow("Operators (comma separated):", operatorsField, "A space or comma-delimited list of operator callsign(s).")
+      addRow("Name:", nameField, "Contact name for the entry (max 75 characters).")
+      addRow("Address:", addressField, "Mailing address (max 45 characters per line).")
+      addRow("City:", cityField, "Mailing address city.")
+      addRow("State/Province:", stateField, "Mailing address state or province.")
+      addRow("Postal Code:", postalCodeField, "Mailing address postal code.")
+      addRow("Country:", countryField, "Mailing address country.")
+      addRow("Station Class (from Contest Config):", stationClassField, "The ARRL section or LOCATION where the station was operating from.")
+      addRow("Station Section (from Contest Config):", stationSectionField, "The ARRL section or LOCATION where the station was operating from.")
+      addRow("Soapbox:", soapboxField, "Soapbox comments (max 75 characters per line).")
 
     val scrollPane = new ScrollPane:
       content = grid
