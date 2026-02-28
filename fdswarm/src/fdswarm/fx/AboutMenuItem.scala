@@ -43,7 +43,7 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
   def setOwner(window: Window): Unit =
     onAction = _ => showAboutDialog(window)
 
-  private def getIconNode: Option[SVGPath] = {
+  private def getIconNode: Option[scalafx.scene.Group] = {
     try {
       val resource = getClass.getResource("/icons/fdswarm.svg")
       if (resource != null) {
@@ -52,12 +52,16 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
         val paths = pathRegex.findAllMatchIn(svgContent).map(_.group(1)).toList
         if (paths.nonEmpty) {
           val combinedPathValue = paths.mkString(" ")
-          Some(new SVGPath {
+          val svgPath = new SVGPath {
             content = combinedPathValue
             fill = Color.Black
-            scaleX = 4.0
-            scaleY = 4.0
-          })
+          }
+          val group = new scalafx.scene.Group(svgPath)
+          // The SVG is 64x64. Let's make it about 80x80 or 100x100
+          val scale = 0.75 
+          group.scaleX = scale
+          group.scaleY = scale
+          Some(group)
         } else None
       } else None
     } catch {
