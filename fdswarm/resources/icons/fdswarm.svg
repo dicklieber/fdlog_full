@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="fdswarm icon">
+    <g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+
+        <!-- LEFT tower -->
+        <path d="M12 46L16 18L20 46"/>      <!-- legs -->
+        <path d="M14 38h4"/>
+        <path d="M13 32h6"/>
+        <path d="M14 26h4"/>
+        <path d="M16 16v-2"/>              <!-- tip -->
+
+        <!-- CENTER tower -->
+        <path d="M28 46L32 14L36 46"/>
+        <path d="M30 38h4"/>
+        <path d="M29 32h6"/>
+        <path d="M30 26h4"/>
+        <path d="M32 12v-2"/>
+
+        <!-- RIGHT tower -->
+        <path d="M44 46L48 18L52 46"/>
+        <path d="M46 38h4"/>
+        <path d="M45 32h6"/>
+        <path d="M46 26h4"/>
+        <path d="M48 16v-2"/>
+
+        <!-- subtle RF arcs -->
+        <path d="M20 20c4-4 20-4 24 0"/>
+        <path d="M16 16c6-6 32-6 36 0"/>
+
+        <!-- shared ground -->
+        <path d="M8 46H56"/>
+        <path d="M18 52H46"/>
+        <path d="M24 58H40"/>
+
+    </g>
+</svg>

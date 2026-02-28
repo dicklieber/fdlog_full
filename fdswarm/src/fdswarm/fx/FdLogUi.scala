@@ -39,7 +39,13 @@ import scalafx.application.Platform
 import scalafx.scene.{Node, Scene}
 import scalafx.scene.control.*
 import scalafx.scene.layout.*
+import scalafx.scene.image.Image
 import scalafx.stage.{Stage, Window}
+import scalafx.scene.shape.SVGPath
+import scalafx.scene.paint.Color
+import scalafx.scene.SnapshotParameters
+import scalafx.scene.Scene
+import scalafx.Includes.*
 
 import java.time.Duration
 
@@ -165,7 +171,44 @@ final class FdLogUi @Inject()(
     center = centerPane
   private var ownerWindow: Window = null.asInstanceOf[Window]
 
+  private def setAppIcon(stage: Stage): Unit = {
+    try {
+      // Use the SVG data from fdswarm.svg to create a Stage icon.
+      // Since JavaFX Stage icons must be Images, we'll try to render it.
+      val resource = getClass.getResource("/icons/fdswarm.svg")
+      if (resource != null) {
+        // Prefer loading as a direct Image if the runtime supports it (some modern JavaFX versions do for SVG)
+        // But our manual snapshot approach is safer for older versions.
+        val svgContent = os.read(os.Path(java.nio.file.Paths.get(resource.toURI)))
+        val pathRegex = "d=\"([^\"]+)\"".r
+        val paths = pathRegex.findAllMatchIn(svgContent).map(_.group(1)).toList
+        if (paths.nonEmpty) {
+          val combinedPathValue = paths.mkString(" ")
+          val svgPath = new SVGPath {
+            content = combinedPathValue
+            fill = Color.Black
+          }
+          // Create a small icon image via snapshot
+          val params = new SnapshotParameters {
+            fill = Color.Transparent
+          }
+          val iconImage = svgPath.snapshot(params, null)
+          stage.getIcons.add(iconImage)
+        }
+      }
+      
+      // Fallback: Add the PNG icon as well, JavaFX will pick the best resolution.
+      val pngResource = getClass.getResource("/icons/icon_256.png")
+      if (pngResource != null) {
+        stage.getIcons.add(new Image(pngResource.toExternalForm))
+      }
+    } catch {
+      case e: Exception => logger.warn("Could not set application icon", e)
+    }
+  }
+
   def start(stage: Stage): Unit =
+    setAppIcon(stage)
     stage.title = "FdSwarm"
     nodeStatusService.start()
 

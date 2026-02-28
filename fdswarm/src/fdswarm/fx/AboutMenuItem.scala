@@ -33,17 +33,57 @@ import fdswarm.replication.UDPHeader
 import scalafx.scene.input.Clipboard
 import scalafx.scene.input.ClipboardContent
 
+import scalafx.scene.shape.SVGPath
+import scalafx.scene.paint.Color
+import scalafx.geometry.Pos
+
 class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
                               hostAndPortProvider: HostAndPortProvider)
   extends MenuItem("About"):
   def setOwner(window: Window): Unit =
     onAction = _ => showAboutDialog(window)
 
+  private def getIconNode: Option[SVGPath] = {
+    try {
+      val resource = getClass.getResource("/icons/fdswarm.svg")
+      if (resource != null) {
+        val svgContent = os.read(os.Path(java.nio.file.Paths.get(resource.toURI)))
+        val pathRegex = "d=\"([^\"]+)\"".r
+        val paths = pathRegex.findAllMatchIn(svgContent).map(_.group(1)).toList
+        if (paths.nonEmpty) {
+          val combinedPathValue = paths.mkString(" ")
+          Some(new SVGPath {
+            content = combinedPathValue
+            fill = Color.Black
+            scaleX = 4.0
+            scaleY = 4.0
+          })
+        } else None
+      } else None
+    } catch {
+      case _: Exception => None
+    }
+  }
+
   def showAboutDialog(window: Window): Unit =
     val grid = new GridPane:
       hgap = 10
       vgap = 10
       padding = Insets(20, 150, 10, 10)
+
+    val iconNode = getIconNode
+    val headerBox = new HBox {
+      spacing = 20
+      alignment = Pos.CenterLeft
+      children = iconNode.toSeq ++ Seq(
+        new VBox {
+          children = Seq(
+            new Label("FdSwarm") { style = "-fx-font-size: 24px; -fx-font-weight: bold;" },
+            new Label(s"v$version")
+          )
+        }
+      )
+    }
 
     val dataPath = directoryProvider()
     val dataFilesNode = if os.exists(dataPath) && os.isDir(dataPath) then
@@ -143,7 +183,7 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
 
     val contentBox = new VBox:
       spacing = 10
-      children = Seq(copyAllButton, grid)
+      children = Seq(headerBox, copyAllButton, grid)
 
     val aboutAlert = new Alert(AlertType.Information):
       initOwner(window)

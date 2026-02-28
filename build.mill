@@ -42,6 +42,146 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
   // ---- jpackage (Mill 1.0.6 supports these knobs) ----
   override def jpackageName = Task { "FdSwarm" }
 
+  /** macOS DMG/PKG require app-version to start at 1+ (not 0.x.y). */
+  def jpackageAppVersion = Task {
+    val v = version
+    val parts = v.split("\\.")
+    if (parts.headOption.contains("0"))
+      ("1" +: parts.drop(1)).mkString(".")
+    else v
+  }
+
+  private def isMac: Boolean = sys.props("os.name").toLowerCase.contains("mac")
+
+  /** Build a macOS .dmg using the JDK's `jpackage` tool. */
+  def macDmg = Task {
+    if (!isMac)
+      throw new RuntimeException("fdswarm.macDmg can only run on macOS (it calls the macOS jpackage backend).")
+
+    val dest = Task.dest / "jpackage"
+    os.makeDir.all(dest)
+
+    val inputDir = Task.dest / "jpackage-input"
+    os.makeDir.all(inputDir)
+
+    val cp = jpackageRunClasspath()
+    if (cp.isEmpty) throw new RuntimeException("jpackageRunClasspath was empty")
+
+    cp.foreach { p =>
+      val src = os.Path(p.path.toString)
+      os.copy.over(src, inputDir / src.last, createFolders = true)
+    }
+
+    val mainJarName = os.Path(cp.head.path.toString).last
+
+    val baseArgs = Seq(
+      "jpackage",
+      "--type",
+      "dmg",
+      "--name",
+      jpackageName(),
+      "--app-version",
+      jpackageAppVersion(),
+      "--dest",
+      dest.toString,
+      "--input",
+      inputDir.toString,
+      "--main-jar",
+      mainJarName,
+      "--main-class",
+      jpackageMainClass()
+    )
+
+    val iconIcns = os.Path("/Users/dlieber/devlocal/github/fdlog_full/fdswarm/resources/icons/icon.icns")
+    val iconArgs = if (os.exists(iconIcns)) Seq("--icon", iconIcns.toString) else Seq.empty
+
+    // Optional signing via env vars
+    val signEnabled = sys.env.get("JPACKAGE_MAC_SIGN").exists(_.trim.nonEmpty)
+    val signingKey = sys.env.get("JPACKAGE_MAC_SIGNING_KEY_USER_NAME").map(_.trim).filter(_.nonEmpty)
+    val signArgs =
+      if (signEnabled && signingKey.nonEmpty)
+        Seq("--mac-sign", "--mac-signing-key-user-name", signingKey.get)
+      else Seq.empty
+
+    val baseArgsWithIcon = baseArgs ++ iconArgs
+    println(baseArgsWithIcon.mkString(" "))
+    
+    val cmd = baseArgsWithIcon ++ signArgs
+    val exit = os.proc(cmd).call(stdout = os.Inherit, stderr = os.Inherit).exitCode
+    if (exit != 0) throw new RuntimeException(s"jpackage failed with exit code $exit")
+
+    PathRef(dest)
+  }
+
+  /** Build a Windows .msi using the JDK's `jpackage` tool (per-machine install, no console). */
+  def winMsi = Task {
+    val osName = sys.props("os.name").toLowerCase
+    if (!osName.contains("win"))
+      throw new RuntimeException("fdswarm.winMsi can only run on Windows (it calls the Windows jpackage backend).")
+
+    val rawArch = sys.props.getOrElse("os.arch", "").toLowerCase
+    val arch =
+      if (rawArch.contains("aarch64") || rawArch.contains("arm64")) "arm64"
+      else if (rawArch.contains("amd64") || rawArch.contains("x86_64")) "x64"
+      else rawArch
+
+    val dest = Task.dest / s"jpackage-win-$arch"
+    os.makeDir.all(dest)
+
+    val inputDir = Task.dest / "jpackage-input"
+    os.makeDir.all(inputDir)
+
+    val cp = jpackageRunClasspath()
+    if (cp.isEmpty) throw new RuntimeException("jpackageRunClasspath was empty")
+
+    cp.foreach { p =>
+      val src = os.Path(p.path.toString)
+      os.copy.over(src, inputDir / src.last, createFolders = true)
+    }
+
+    val mainJarName = os.Path(cp.head.path.toString).last
+
+    val baseArgs = Seq(
+      "jpackage",
+      "--type",
+      "msi",
+      "--name",
+      jpackageName(),
+      "--app-version",
+      version,
+      "--dest",
+      dest.toString,
+      "--input",
+      inputDir.toString,
+      "--main-jar",
+      mainJarName,
+      "--main-class",
+      jpackageMainClass(),
+      "--win-per-machine-install",
+      "--win-menu",
+      "--win-shortcut"
+    )
+
+    val iconIco = os.Path("/Users/dlieber/devlocal/github/fdlog_full/fdswarm/resources/icons/icon.ico")
+    val iconArgs = if (os.exists(iconIco)) Seq("--icon", iconIco.toString) else Seq.empty
+
+    val cmd = baseArgs ++ iconArgs
+    println(cmd.mkString(" "))
+
+    val exit = os.proc(cmd).call(stdout = os.Inherit, stderr = os.Inherit).exitCode
+    if (exit != 0) throw new RuntimeException(s"jpackage failed with exit code $exit")
+
+    // Rename MSI to include arch (handy in CI releases)
+    val produced = os.list(dest).filter(_.ext == "msi").sortBy(_.last).lastOption
+    produced.foreach { msi =>
+      val renamed = dest / s"${jpackageName()}-${version}-windows-$arch.msi"
+      os.move(msi, renamed, replaceExisting = true)
+      println(s"MSI: $renamed")
+    }
+
+    PathRef(dest)
+  }
+
   override def jpackageType = Task {
     val osName = sys.props("os.name").toLowerCase
     if (osName.contains("mac")) "dmg"
