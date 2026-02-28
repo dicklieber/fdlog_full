@@ -56,9 +56,23 @@ jpackage \
   --mac-package-name "$APP_NAME" \
   --verbose
 
+echo "Building macOS Installer Package..."
+# Run jpackage to create a native macOS .pkg installer
+jpackage \
+  --type pkg \
+  --dest out/jpackage-pkg \
+  --name "$APP_NAME" \
+  --main-jar "$MAIN_JAR" \
+  --main-class "$MAIN_CLASS" \
+  --input out/jpackage/input \
+  --app-version "$VERSION" \
+  --mac-package-name "$APP_NAME" \
+  --verbose
+
 echo ""
-echo "Successfully created native macOS application bundle:"
-echo "Location: out/jpackage/$APP_NAME.app"
+echo "Successfully created native macOS application bundle and installer package:"
+echo "App Bundle: out/jpackage/$APP_NAME.app"
+echo "Installer:  out/jpackage-pkg/$APP_NAME-$VERSION.pkg"
 echo ""
 echo "To run the application with the correct menu name, use:"
 echo "open out/jpackage/$APP_NAME.app"

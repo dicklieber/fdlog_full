@@ -113,6 +113,66 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
     PathRef(dest)
   }
 
+  /** Build a macOS .pkg using the JDK's `jpackage` tool. */
+  def macPkg = Task {
+    if (!isMac)
+      throw new RuntimeException("fdswarm.macPkg can only run on macOS (it calls the macOS jpackage backend).")
+
+    val dest = Task.dest / "jpackage"
+    os.makeDir.all(dest)
+
+    val inputDir = Task.dest / "jpackage-input"
+    os.makeDir.all(inputDir)
+
+    val cp = jpackageRunClasspath()
+    if (cp.isEmpty) throw new RuntimeException("jpackageRunClasspath was empty")
+
+    cp.foreach { p =>
+      val src = os.Path(p.path.toString)
+      os.copy.over(src, inputDir / src.last, createFolders = true)
+    }
+
+    val mainJarName = os.Path(cp.head.path.toString).last
+
+    val baseArgs = Seq(
+      "jpackage",
+      "--type",
+      "pkg",
+      "--name",
+      jpackageName(),
+      "--app-version",
+      jpackageAppVersion(),
+      "--dest",
+      dest.toString,
+      "--input",
+      inputDir.toString,
+      "--main-jar",
+      mainJarName,
+      "--main-class",
+      jpackageMainClass()
+    )
+
+    val iconIcns = os.Path("/Users/dlieber/devlocal/github/fdlog_full/fdswarm/resources/icons/icon.icns")
+    val iconArgs = if (os.exists(iconIcns)) Seq("--icon", iconIcns.toString) else Seq.empty
+
+    // Optional signing via env vars
+    val signEnabled = sys.env.get("JPACKAGE_MAC_SIGN").exists(_.trim.nonEmpty)
+    val signingKey = sys.env.get("JPACKAGE_MAC_SIGNING_KEY_USER_NAME").map(_.trim).filter(_.nonEmpty)
+    val signArgs =
+      if (signEnabled && signingKey.nonEmpty)
+        Seq("--mac-sign", "--mac-signing-key-user-name", signingKey.get)
+      else Seq.empty
+
+    val baseArgsWithIcon = baseArgs ++ iconArgs
+    println(baseArgsWithIcon.mkString(" "))
+
+    val cmd = baseArgsWithIcon ++ signArgs
+    val exit = os.proc(cmd).call(stdout = os.Inherit, stderr = os.Inherit).exitCode
+    if (exit != 0) throw new RuntimeException(s"jpackage failed with exit code $exit")
+
+    PathRef(dest)
+  }
+
   /** Build a Windows .msi using the JDK's `jpackage` tool (per-machine install, no console). */
   def winMsi = Task {
     val osName = sys.props("os.name").toLowerCase
