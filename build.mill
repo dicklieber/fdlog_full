@@ -7,22 +7,14 @@ package build
 
 import mill._
 import mill.scalalib._
-import mill.scalalib.Dep
 import mill.contrib.buildinfo.BuildInfo
 import mill.contrib.scoverage._
 import mill.scalalib.JpackageModule
 import mill.javalib.Assembly.*
 
 object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with JpackageModule {
-
-  // ---- App versioning ----
   val majorVersion = "0"
-  val appVersionStr = s"$majorVersion.0.0"
-
-  // Mill already defines a `version(): T[String]` task on modules.
-  // Defining a `val version = ...` breaks `version()` calls (StringOps.apply).
-  def version = Task { appVersionStr }
-
+  val version = s"$majorVersion.0.0"
   val name = "fdswarm"
   val log4jV = "2.24.2"
 
@@ -40,32 +32,14 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
   override def manifest = Task {
     super.manifest().add(
       "Implementation-Title"   -> "FdSwarm",
-      "Implementation-Version" -> version(),
+      "Implementation-Version" -> version,
       "Bundle-Name"            -> "FdSwarm",
       "Bundle-SymbolicName"    -> "fdswarm",
-      "Bundle-Version"         -> version()
+      "Bundle-Version"         -> version
     )
   }
 
-  // ---- JavaFX / ScalaFX ----
-  // ScalaFX 23.0.1-R34 pulls OpenJFX 23.0.1 transitively, but the OpenJFX POM uses
-  // a `${javafx.platform}` property for the classifier which Mill/Coursier won't substitute.
-  // Fix: exclude those transitive OpenJFX deps and add OpenJFX explicitly with a concrete classifier.
-  def javafxVersion = "23.0.1"
-
-  def javafxClassifier: String = {
-    val os = sys.props("os.name").toLowerCase
-    val arch = sys.props.getOrElse("os.arch", "").toLowerCase
-
-    if (os.contains("win")) "win"
-    else if (os.contains("mac")) {
-      if (arch.contains("aarch64") || arch.contains("arm64")) "mac-aarch64"
-      else "mac"
-    }
-    else "linux"
-  }
-
-  // ---- jpackage ----
+  // ---- jpackage (Mill 1.0.6 supports these knobs) ----
   override def jpackageName = Task { "FdSwarm" }
 
   override def jpackageType = Task {
@@ -93,152 +67,13 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
 
   def buildInfoMembers = Seq(
     BuildInfo.Value("name", name),
-    BuildInfo.Value("version", version()),
+    BuildInfo.Value("version", version),
     BuildInfo.Value("majorVersion", majorVersion),
     BuildInfo.Value("scalaVersion", scalaVersion()),
     BuildInfo.Value("dataVersion", majorVersion)
   )
 
   def scoverageVersion = "2.1.1"
-
-  /** macOS DMG/PKG require app-version to start at 1+ (not 0.x.y). */
-  def jpackageAppVersion = Task {
-    val v = version()
-    val parts = v.split("\\.")
-    if (parts.headOption.contains("0"))
-      ("1" +: parts.drop(1)).mkString(".")
-    else v
-  }
-
-  private def isMac: Boolean = sys.props("os.name").toLowerCase.contains("mac")
-
-  /** Build a macOS .dmg using the JDK's `jpackage` tool. */
-  def macDmg = Task {
-    if (!isMac)
-      throw new RuntimeException("fdswarm.macDmg can only run on macOS (it calls the macOS jpackage backend).")
-
-    val dest = Task.dest / "jpackage"
-    os.makeDir.all(dest)
-
-    val inputDir = Task.dest / "jpackage-input"
-    os.makeDir.all(inputDir)
-
-    val cp = jpackageRunClasspath()
-    if (cp.isEmpty) throw new RuntimeException("jpackageRunClasspath was empty")
-
-    cp.foreach { p =>
-      val src = os.Path(p.path.toString)
-      os.copy.over(src, inputDir / src.last, createFolders = true)
-    }
-
-    val mainJarName = os.Path(cp.head.path.toString).last
-
-    val baseArgs = Seq(
-      "jpackage",
-      "--type",
-      "dmg",
-      "--name",
-      jpackageName(),
-      "--app-version",
-      jpackageAppVersion(),
-      "--dest",
-      dest.toString,
-      "--input",
-      inputDir.toString,
-      "--main-jar",
-      mainJarName,
-      "--main-class",
-      jpackageMainClass()
-    )
-
-    val iconIcns = os.pwd / "src" / "main" / "resources" / "icon.icns"
-    val iconArgs = if (os.exists(iconIcns)) Seq("--icon", iconIcns.toString) else Seq.empty
-
-    // Optional signing via env vars
-    val signEnabled = sys.env.get("JPACKAGE_MAC_SIGN").exists(_.trim.nonEmpty)
-    val signingKey = sys.env.get("JPACKAGE_MAC_SIGNING_KEY_USER_NAME").map(_.trim).filter(_.nonEmpty)
-    val signArgs =
-      if (signEnabled && signingKey.nonEmpty)
-        Seq("--mac-sign", "--mac-signing-key-user-name", signingKey.get)
-      else Seq.empty
-
-    val cmd = baseArgs ++ iconArgs ++ signArgs
-    println(cmd.mkString(" "))
-
-    val exit = os.proc(cmd).call(stdout = os.Inherit, stderr = os.Inherit).exitCode
-    if (exit != 0) throw new RuntimeException(s"jpackage failed with exit code $exit")
-
-    PathRef(dest)
-  }
-
-  /** Build a Windows .msi using the JDK's `jpackage` tool (per-machine install, no console). */
-  def winMsi = Task {
-    val osName = sys.props("os.name").toLowerCase
-    if (!osName.contains("win"))
-      throw new RuntimeException("fdswarm.winMsi can only run on Windows (it calls the Windows jpackage backend).")
-
-    val rawArch = sys.props.getOrElse("os.arch", "").toLowerCase
-    val arch =
-      if (rawArch.contains("aarch64") || rawArch.contains("arm64")) "arm64"
-      else if (rawArch.contains("amd64") || rawArch.contains("x86_64")) "x64"
-      else rawArch
-
-    val dest = Task.dest / s"jpackage-win-$arch"
-    os.makeDir.all(dest)
-
-    val inputDir = Task.dest / "jpackage-input"
-    os.makeDir.all(inputDir)
-
-    val cp = jpackageRunClasspath()
-    if (cp.isEmpty) throw new RuntimeException("jpackageRunClasspath was empty")
-
-    cp.foreach { p =>
-      val src = os.Path(p.path.toString)
-      os.copy.over(src, inputDir / src.last, createFolders = true)
-    }
-
-    val mainJarName = os.Path(cp.head.path.toString).last
-
-    val baseArgs = Seq(
-      "jpackage",
-      "--type",
-      "msi",
-      "--name",
-      jpackageName(),
-      "--app-version",
-      version(),
-      "--dest",
-      dest.toString,
-      "--input",
-      inputDir.toString,
-      "--main-jar",
-      mainJarName,
-      "--main-class",
-      jpackageMainClass(),
-      "--win-per-machine-install",
-      "--win-menu",
-      "--win-shortcut"
-    )
-
-    val iconIco = os.pwd / "src" / "main" / "resources" / "icon.ico"
-    val iconArgs = if (os.exists(iconIco)) Seq("--icon", iconIco.toString) else Seq.empty
-
-    val cmd = baseArgs ++ iconArgs
-    println(cmd.mkString(" "))
-
-    val exit = os.proc(cmd).call(stdout = os.Inherit, stderr = os.Inherit).exitCode
-    if (exit != 0) throw new RuntimeException(s"jpackage failed with exit code $exit")
-
-    // Rename MSI to include arch (handy in CI releases)
-    val produced = os.list(dest).filter(_.ext == "msi").sortBy(_.last).lastOption
-    produced.foreach { msi =>
-      val renamed = dest / s"${jpackageName()}-${version()}-windows-$arch.msi"
-      os.move(msi, renamed, replaceExisting = true)
-      println(s"MSI: $renamed")
-    }
-
-    PathRef(dest)
-  }
 
   def mvnDeps = Seq(
     mvn"com.typesafe.scala-logging::scala-logging:3.9.5",
@@ -278,24 +113,7 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
     mvn"org.http4s:http4s-circe_3:0.23.33",
     mvn"org.typelevel:cats-effect_3:3.5.7",
 
-    // ScalaFX, but without its broken transitive OpenJFX classifier resolution
-    mvn"org.scalafx:scalafx_3:23.0.1-R34"
-      .exclude("org.openjfx" -> "javafx-base")
-      .exclude("org.openjfx" -> "javafx-controls")
-      .exclude("org.openjfx" -> "javafx-fxml")
-      .exclude("org.openjfx" -> "javafx-graphics")
-      .exclude("org.openjfx" -> "javafx-media")
-      .exclude("org.openjfx" -> "javafx-swing")
-      .exclude("org.openjfx" -> "javafx-web"),
-
-    // Explicit OpenJFX deps with a concrete classifier (no ${javafx.platform})
-    Dep.parse(s"org.openjfx:javafx-base:$javafxVersion").withClassifier(javafxClassifier),
-    Dep.parse(s"org.openjfx:javafx-controls:$javafxVersion").withClassifier(javafxClassifier),
-    Dep.parse(s"org.openjfx:javafx-fxml:$javafxVersion").withClassifier(javafxClassifier),
-    Dep.parse(s"org.openjfx:javafx-graphics:$javafxVersion").withClassifier(javafxClassifier),
-    Dep.parse(s"org.openjfx:javafx-media:$javafxVersion").withClassifier(javafxClassifier),
-    Dep.parse(s"org.openjfx:javafx-swing:$javafxVersion").withClassifier(javafxClassifier),
-    Dep.parse(s"org.openjfx:javafx-web:$javafxVersion").withClassifier(javafxClassifier),
+    mvn"org.scalafx:scalafx_3:23.0.1-R34",
     mvn"org.scala-lang.modules::scala-xml:2.3.0",
 
     mvn"io.micrometer:micrometer-registry-prometheus:1.14.4",
