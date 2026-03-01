@@ -95,9 +95,13 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
         .filter(p => os.isFile(p) && !p.last.startsWith("."))
         .map(_.last)
         .sorted
-      new VBox:
-        children = files.map { fileName =>
-          new Hyperlink(fileName):
+      new GridPane:
+        hgap = 10
+        vgap = 0
+        files.zipWithIndex.foreach { (fileName, index) =>
+          val col = index % 2
+          val row = index / 2
+          val link = new Hyperlink(fileName):
             onAction = _ =>
               val fileContent = try
                 os.read(dataPath / fileName)
@@ -120,7 +124,7 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
                     copyButton,
                     if fileName.endsWith(".json") || fileName.endsWith(".ndjson") then
                       new ScrollPane:
-                        content = JsonPrettyPrinter.colorize(fileContent)
+                        content = JsonPrettyPrinter.toTable(fileContent)
                         prefViewportHeight = 400
                         prefViewportWidth = 600
                     else
@@ -132,6 +136,7 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
                         styleClass.add("fixed-width")
                   )
               alert.showAndWait()
+          add(link, col, row)
         }
     else
       new Label("Directory does not exist")
@@ -164,8 +169,83 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
     grid.add(new Label("API Docs:"), 0, 8)
     grid.add(docsLink, 1, 8)
 
-    grid.add(new Label("UDP Instance ID:"), 0, 9)
-    grid.add(new Label(UDPHeader.localInstanceId.toString), 1, 9)
+    grid.add(new Label("Java Version:"), 0, 9)
+    grid.add(new Label(sys.props("java.version")), 1, 9)
+    grid.add(new Label("Java Home:"), 0, 10)
+    grid.add(new Label(sys.props("java.home")), 1, 10)
+
+    val javaDetailsButton = new Hyperlink("More Java Details"):
+      onAction = _ =>
+        val props = sys.props.toSeq.sortBy(_._1).filter { (k, v) =>
+          (k.startsWith("java.") || k.contains("arch") || k.contains("os.") || k.contains("vendor") || k.contains("vm.")) &&
+          k != "java.class.path"
+        }
+        val javaInfo = props.map { case (k, v) => s"$k: $v" }.mkString("\n")
+
+        val groups = props.groupBy { (k, v) =>
+          if (k.startsWith("java.")) "Java"
+          else if (k.contains("os.")) "OS"
+          else if (k.contains("vm.")) "VM"
+          else if (k.contains("arch")) "Architecture"
+          else if (k.contains("vendor")) "Vendor"
+          else "Other"
+        }.toSeq.sortBy(_._1)
+
+        val container = new VBox { spacing = 20 }
+
+        groups.foreach { case (groupName, groupProps) =>
+          val groupLabel = new Label(groupName) {
+            style = "-fx-font-size: 16px; -fx-font-weight: bold; -fx-underline: true;"
+          }
+          val table = new GridPane:
+            hgap = 10
+            vgap = 4
+            padding = Insets(5, 10, 10, 10)
+
+            groupProps.sortBy(_._1).zipWithIndex.foreach { case ((k, v), idx) =>
+              val keyLabel = new Label(k + ":") {
+                style = "-fx-font-weight: bold;"
+                minWidth = scalafx.scene.layout.Region.USE_PREF_SIZE
+              }
+              val valueLabel = new Label(v) {
+                wrapText = true
+                maxWidth = Double.MaxValue
+              }
+              GridPane.setHgrow(valueLabel, Priority.Always)
+              add(keyLabel, 0, idx)
+              add(valueLabel, 1, idx)
+            }
+          container.children.addAll(groupLabel, table)
+        }
+
+        val contentScroll = new ScrollPane:
+          content = container
+          fitToWidth = true
+          prefViewportHeight = 400
+          prefViewportWidth = 700
+
+        val alert = new Alert(AlertType.Information):
+          initOwner(window)
+          title = "Java & Architecture Details"
+          headerText = "Detailed Java and System Information"
+          val copyButton = new Button("Copy to Clipboard"):
+            onAction = _ =>
+              val content = new ClipboardContent()
+              content.putString(javaInfo)
+              Clipboard.systemClipboard.setContent(content)
+          dialogPane().content = new VBox:
+            spacing = 10
+            children = Seq(
+              copyButton,
+              contentScroll
+            )
+        alert.showAndWait()
+
+    grid.add(new Label("Java Details:"), 0, 11)
+    grid.add(javaDetailsButton, 1, 11)
+
+    grid.add(new Label("UDP Instance ID:"), 0, 12)
+    grid.add(new Label(UDPHeader.localInstanceId.toString), 1, 12)
 
     val labels = grid.children.collect { case l: javafx.scene.control.Label => l }
     labels.foreach(_.getStyleClass.add("fixed-width"))
@@ -181,6 +261,8 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
         sb.append(s"Data Directory: $dataPath\n")
         sb.append(s"Host: ${hostAndPortProvider.http}\n")
         sb.append(s"UDP Instance ID: ${UDPHeader.localInstanceId}\n")
+        sb.append(s"Java Version: ${sys.props("java.version")}\n")
+        sb.append(s"Java Home: ${sys.props("java.home")}\n")
         val content = new ClipboardContent()
         content.putString(sb.toString())
         Clipboard.systemClipboard.setContent(content)

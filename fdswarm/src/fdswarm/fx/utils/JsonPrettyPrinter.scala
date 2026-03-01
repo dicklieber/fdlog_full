@@ -90,3 +90,93 @@ object JsonPrettyPrinter:
         flow.children.add(new Text("}") { styleClass.add("fixed-width") })
       }
     )
+
+  def toTable(json: String): Pane =
+    import scalafx.scene.layout.{GridPane, Priority, VBox}
+    import scalafx.scene.control.Label
+    import scalafx.geometry.Insets
+
+    try
+      val parsed = parse(json).getOrElse(throw new Exception("Invalid JSON"))
+      val items = if parsed.isArray then
+        parsed.asArray.get
+      else
+        Seq(parsed)
+
+      val container = new VBox { spacing = 15 }
+      items.foreach { item =>
+        val grid = new GridPane {
+          hgap = 10
+          vgap = 4
+          padding = Insets(5)
+          style = "-fx-border-color: lightgray; -fx-border-width: 0 0 1 0;"
+        }
+
+        item.asObject.foreach { obj =>
+          obj.toList.zipWithIndex.foreach { case ((k, v), idx) =>
+            val keyLabel = new Label(k + ":") {
+              style = "-fx-font-weight: bold;"
+            }
+            val valueStr = v.fold(
+              "null",
+              b => b.toString,
+              n => n.toString,
+              s => s,
+              arr => Json.fromValues(arr).noSpaces,
+              obj => Json.fromJsonObject(obj).noSpaces
+            )
+            val valueLabel = new Label(valueStr) {
+              wrapText = true
+              maxWidth = Double.MaxValue
+            }
+            GridPane.setHgrow(valueLabel, Priority.Always)
+            grid.add(keyLabel, 0, idx)
+            grid.add(valueLabel, 1, idx)
+          }
+        }
+        if item.isObject then container.children.add(grid)
+        else
+          container.children.add(new Label(item.noSpaces))
+      }
+      container
+    catch
+      case _: Exception =>
+        // Try NDJSON
+        val lines = json.split("\n").filter(_.trim.nonEmpty)
+        val container = new VBox { spacing = 15 }
+        lines.foreach { line =>
+          parse(line).toOption.foreach { item =>
+            val grid = new GridPane {
+              hgap = 10
+              vgap = 4
+              padding = Insets(5)
+              style = "-fx-border-color: lightgray; -fx-border-width: 0 0 1 0;"
+            }
+            item.asObject.foreach { obj =>
+              obj.toList.zipWithIndex.foreach { case ((k, v), idx) =>
+                val keyLabel = new Label(k + ":") {
+                  style = "-fx-font-weight: bold;"
+                }
+                val valueStr = v.fold(
+                  "null",
+                  b => b.toString,
+                  n => n.toString,
+                  s => s,
+                  arr => Json.fromValues(arr).noSpaces,
+                  obj => Json.fromJsonObject(obj).noSpaces
+                )
+                val valueLabel = new Label(valueStr) {
+                  wrapText = true
+                  maxWidth = Double.MaxValue
+                }
+                GridPane.setHgrow(valueLabel, Priority.Always)
+                grid.add(keyLabel, 0, idx)
+                grid.add(valueLabel, 1, idx)
+              }
+            }
+            if item.isObject then container.children.add(grid)
+            else
+              container.children.add(new Label(item.noSpaces))
+          }
+        }
+        container
