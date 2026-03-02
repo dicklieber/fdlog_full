@@ -22,56 +22,69 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.GridUtils
 import fdswarm.fx.qso.QsoEntryPanel
 import jakarta.inject.Inject
-import scalafx.beans.binding.Bindings
+import scalafx.beans.binding.{Bindings, BooleanBinding}
+import scalafx.beans.property.StringProperty
 import scalafx.geometry.Insets
 import scalafx.scene.Node
 import scalafx.scene.control.Label
 import scalafx.scene.layout.{HBox, Priority, Region, VBox}
 
 class SectionPanel @Inject()(sectionsProvider: SectionsProvider, qsoEntryPanel: QsoEntryPanel) extends LazyLogging:
-  val mainVBox: VBox = new VBox():
-    spacing = 10
-    padding = Insets(5)
 
-  private val canSubmit = Bindings.createBooleanBinding(
-    () => qsoEntryPanel.callsignValidProperty.value && qsoEntryPanel.contestClassValidProperty.value,
-    qsoEntryPanel.callsignValidProperty,
-    qsoEntryPanel.contestClassValidProperty
+  def node: Node = buildNode(
+    qsoEntryPanel.sectionFieldProperty,
+    () => qsoEntryPanel.submit(),
+    Bindings.createBooleanBinding(
+      () => qsoEntryPanel.callsignValidProperty.value && qsoEntryPanel.contestClassValidProperty.value,
+      qsoEntryPanel.callsignValidProperty,
+      qsoEntryPanel.contestClassValidProperty
+    ),
+    "Sections"
   )
 
-  canSubmit.onChange { (_, _, nv) =>
-    if nv then mainVBox.styleClass.remove("sections-panel-disabled")
-    else if !mainVBox.styleClass.contains("sections-panel-disabled") then
-      mainVBox.styleClass.add("sections-panel-disabled")
-  }
-  if !canSubmit.value then mainVBox.styleClass.add("sections-panel-disabled")
-
-  for
-    case (sectionGroup, row) <- sectionsProvider.sectionGroups.zipWithIndex
-  do
-    val nameLabel = new Label(sectionGroup.name):
-      minWidth = Region.USE_PREF_SIZE
-      padding = Insets(0, 10, 0, 0)
-      style = "-fx-font-weight: bold;"
-
-    sectionGroup.sections.foreach(
-      _.onSelect(
-        qsoEntryPanel.sectionFieldProperty,
-        () => qsoEntryPanel.submit(),
-        canSubmit
-      )
-    )
-    val groupGrid = GridUtils.toGrid(sectionGroup.sections, 11)
-    groupGrid.maxWidth = Double.MaxValue
-    HBox.setHgrow(groupGrid, Priority.Always)
-
-    val rowContainer = new HBox():
-      children = Seq(nameLabel, groupGrid)
+  def buildNode(
+      sectionField: StringProperty,
+      onSelected: () => Unit,
+      canSubmit: BooleanBinding,
+      title: String
+  ): Node =
+    val mainVBox: VBox = new VBox():
+      spacing = 10
       padding = Insets(5)
-      style = "-fx-background-color: #f4f4f4; -fx-background-radius: 5; -fx-border-color: #cccccc; -fx-border-radius: 5; -fx-border-width: 1;"
-      alignment = scalafx.geometry.Pos.CenterLeft
 
-    mainVBox.children.add(rowContainer)
+    canSubmit.onChange { (_, _, nv) =>
+      if nv then mainVBox.styleClass.remove("sections-panel-disabled")
+      else if !mainVBox.styleClass.contains("sections-panel-disabled") then
+        mainVBox.styleClass.add("sections-panel-disabled")
+    }
+    if !canSubmit.value then mainVBox.styleClass.add("sections-panel-disabled")
 
-  val node: Node = GridUtils.fieldSet("Sections", mainVBox)
+    for
+      case (sectionGroup, row) <- sectionsProvider.sectionGroups.zipWithIndex
+    do
+      val nameLabel = new Label(sectionGroup.name):
+        minWidth = Region.USE_PREF_SIZE
+        padding = Insets(0, 10, 0, 0)
+        style = "-fx-font-weight: bold;"
+
+      sectionGroup.sections.foreach(
+        _.onSelect(
+          sectionField,
+          onSelected,
+          canSubmit
+        )
+      )
+      val groupGrid = GridUtils.toGrid(sectionGroup.sections, 11)
+      groupGrid.maxWidth = Double.MaxValue
+      HBox.setHgrow(groupGrid, Priority.Always)
+
+      val rowContainer = new HBox():
+        children = Seq(nameLabel, groupGrid)
+        padding = Insets(5)
+        style = "-fx-background-color: #f4f4f4; -fx-background-radius: 5; -fx-border-color: #cccccc; -fx-border-radius: 5; -fx-border-width: 1;"
+        alignment = scalafx.geometry.Pos.CenterLeft
+
+      mainVBox.children.add(rowContainer)
+
+    GridUtils.fieldSet(title, mainVBox)
 

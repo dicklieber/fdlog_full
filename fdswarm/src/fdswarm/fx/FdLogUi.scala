@@ -34,6 +34,7 @@ import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.Inject
 import java.util.concurrent.TimeUnit
 import scalafx.Includes.*
+import scalafx.beans.binding.{Bindings, BooleanBinding}
 import scalafx.beans.property.{BooleanProperty, StringProperty}
 import scalafx.application.Platform
 import scalafx.scene.{Node, Scene}
@@ -46,6 +47,16 @@ import scalafx.scene.paint.Color
 import scalafx.scene.SnapshotParameters
 import scalafx.scene.Scene
 import scalafx.Includes.*
+import scalafx.scene.web.WebView
+
+import javafx.concurrent.Worker
+import netscape.javascript.JSObject
+
+
+import scala.io.Source
+import io.circe.generic.auto.*
+import io.circe.parser.decode
+import io.circe.syntax.*
 
 import java.time.Duration
 
@@ -70,8 +81,45 @@ final class FdLogUi @Inject()(
                                meterRegistry: MeterRegistry,
                                qsoStore: fdswarm.store.QsoStore,
                                exportDialog: fdswarm.fx.tools.ExportDialog,
-                               webSessionsAdmin: fdswarm.fx.admin.WebSessionsAdmin
+                               webSessionsAdmin: fdswarm.fx.admin.WebSessionsAdmin,
+                               sectionsProvider: fdswarm.fx.sections.SectionsProvider,
+                               sectionPanel: fdswarm.fx.sections.SectionPanel
                              ) extends LazyLogging:
+
+  // --- ARRL Sections Map (SVG) -------------------------------------------------
+
+  private val labelArrlRegionsMenuItem = new CheckMenuItem("Label ARRL Regions"):
+    selected = false
+
+  // Persist the region->section mapping as JSON next to where you run the app.
+  // You can move this to a user config directory later.
+  private val arrlRegionMapPath: os.Path = os.pwd / "arrl-region-map.json"
+
+  private var arrlRegionToSection: Map[String, String] = loadArrlRegionMap()
+
+  private def loadArrlRegionMap(): Map[String, String] =
+    if os.exists(arrlRegionMapPath) then
+      val txt = os.read(arrlRegionMapPath)
+      decode[Map[String, String]](txt) match
+        case Right(m) => m
+        case Left(err) =>
+          logger.warn(s"Could not parse ${arrlRegionMapPath.toString}: ${err.getMessage}")
+          Map.empty
+    else Map.empty
+
+  private def saveArrlRegionMap(m: Map[String, String]): Unit =
+    try
+      val json = m.asJson.spaces2
+      os.write.over(arrlRegionMapPath, json)
+    catch
+      case e: Exception => logger.warn(s"Could not write ${arrlRegionMapPath.toString}", e)
+
+  private val arrlSectionsMapMenuItem: MenuItem =
+    new MenuItem("ARRL Sections Map"):
+      onAction = _ =>
+        Option(ownerWindow) match
+          case Some(w) => showArrlSectionsMap(w)
+          case None => ()
 
   private val qsoNode: Node =
     contestEntry.node
@@ -196,7 +244,7 @@ final class FdLogUi @Inject()(
           stage.getIcons.add(iconImage)
         }
       }
-      
+
       // Fallback: Add the PNG icon as well, JavaFX will pick the best resolution.
       val pngResource = getClass.getResource("/icons/icon_256.png")
       if (pngResource != null) {
@@ -220,7 +268,7 @@ final class FdLogUi @Inject()(
       try
         // Set the application name for AWT (often needed for macOS integration)
         System.setProperty("apple.awt.application.name", "FdSwarm")
-        
+
         if java.awt.Desktop.isDesktopSupported then
           val desktop = java.awt.Desktop.getDesktop
           if desktop.isSupported(java.awt.Desktop.Action.APP_ABOUT) then
@@ -273,9 +321,11 @@ final class FdLogUi @Inject()(
 
       items = if isMac then Seq(exportItem) else Seq(exportItem, exitItem)
 
-  private def configMenu: Menu =
+  // NOTE: On macOS with `useSystemMenuBar = true`, `items = Seq(...)` can be finicky.
+  // Using `items ++= ...` plus a stable `lazy val` is more reliable.
+  private lazy val configMenu: Menu =
     new Menu("Config"):
-      items = Seq(
+      items ++= Seq(
         new MenuItem("Band / Mode Manager"):
           onAction = _ =>
             Option(ownerWindow) match
@@ -285,9 +335,187 @@ final class FdLogUi @Inject()(
         stationMenuItem,
         contestMenuItem,
         new SeparatorMenuItem(),
+        arrlSectionsMapMenuItem,
+        labelArrlRegionsMenuItem,
+        new SeparatorMenuItem(),
         userConfigMenuItem,
         developerModeMenuItem
       )
+
+  private def showArrlSectionsMap(parentWindow: Window): Unit =
+    val svgText =
+      // Prefer bundling the SVG as a resource in your app jar:
+      //   src/resources/maps/arrl_sections_autotrace.svg
+      val res = getClass.getResourceAsStream("/maps/arrl_sections_autotrace.svg")
+      if res != null then
+        val s = Source.fromInputStream(res, "UTF-8")
+        try s.mkString finally s.close()
+      else
+        // Dev fallback: if you’re running from the repo and haven’t moved it into resources yet.
+        val dev = os.pwd / "arrl_sections_autotrace.svg"
+        if os.exists(dev) then os.read(dev)
+        else
+          """<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"800\" height=\"200\">
+            <rect width=\"100%\" height=\"100%\" fill=\"#f7f7f7\"/>
+            <text x=\"20\" y=\"110\" font-size=\"20\" fill=\"#333\" font-family=\"system-ui\">
+              Missing /maps/arrl_sections_autotrace.svg (bundle it in resources)
+            </text>
+          </svg>""".stripMargin
+
+    val webView = new WebView()
+
+    // Scala <-> JS bridge (hook for future code)
+    final class JsBridge:
+      private val allArrlSectionCodes: Seq[String] =
+        sectionsProvider.allSections.map(_.code).distinct.sorted
+
+      def getMappings: String =
+        arrlRegionToSection.asJson.noSpaces
+
+      def getAllSections: String =
+        allArrlSectionCodes.asJson.noSpaces
+
+      def isLabelingMode: Boolean =
+        labelArrlRegionsMenuItem.selected.value
+
+      private var activeRegionId: Option[String] = None
+      def getActiveRegionId: Option[String] = activeRegionId
+
+      def updateMapping(regionId: String, sectionCode: String): Unit =
+        Platform.runLater {
+          val section = sectionCode.trim.toUpperCase
+          if section.nonEmpty then
+            arrlRegionToSection = arrlRegionToSection.updated(regionId, section)
+            saveArrlRegionMap(arrlRegionToSection)
+            logger.info(s"ARRL region mapped via SectionPanel: $regionId -> $section")
+            webView.engine.executeScript("refreshLabels();")
+        }
+
+      def sectionClicked(id: String): Unit =
+        Platform.runLater {
+          val mapped = arrlRegionToSection.get(id)
+          logger.info(s"ARRL map clicked: $id${mapped.fold("")(s => s" -> $s")}")
+          if labelArrlRegionsMenuItem.selected.value then
+            activeRegionId = Some(id)
+            // Visual feedback in JS that this region is selected for mapping
+            webView.engine.executeScript(s"highlightRegion('$id');")
+          webView.engine.executeScript("refreshLabels();")
+        }
+
+    val bridge = new JsBridge
+
+    val mappingSectionField = new StringProperty("")
+    val mappingCanSubmit = Bindings.createBooleanBinding(() => true) // Always allowed to map in this view
+
+    mappingSectionField.onChange { (_, _, newValue) =>
+      if newValue != null && newValue.nonEmpty then
+        bridge.getActiveRegionId.foreach { regionId =>
+          bridge.updateMapping(regionId, newValue)
+        }
+    }
+
+    val sectionPanelNode = sectionPanel.buildNode(
+      mappingSectionField,
+      () => (), // No extra submit action needed
+      mappingCanSubmit,
+      "Select ARRL Section to Map"
+    )
+
+    def wrap(svg: String): String =
+      s"""<!doctype html>
+         |<html><head><meta charset=\"utf-8\"/>
+         |<style>
+         |  html, body { margin:0; padding:0; background:#ffffff; overflow: hidden; }
+         |  svg { width:100vw; height:100vh; display:block; }
+         |  .section-label {
+         |    font-family: sans-serif;
+         |    font-size: 14px;
+         |    font-weight: bold;
+         |    fill: black;
+         |    pointer-events: none;
+         |    text-anchor: middle;
+         |    dominant-baseline: middle;
+         |  }
+         |  .section { cursor: pointer; }
+         |  .section:hover { opacity: 0.8; }
+         |  .active-region { stroke: red; stroke-width: 3px; }
+         |</style>
+         |</head><body>
+         |$svg
+         |<script>
+         |  function highlightRegion(id) {
+         |    document.querySelectorAll('.active-region').forEach(el => el.classList.remove('active-region'));
+         |    const el = document.getElementById(id);
+         |    if (el) el.classList.add('active-region');
+         |  }
+         |
+         |  function refreshLabels() {
+         |    if (!window.app) return;
+         |    const mappings = JSON.parse(window.app.getMappings());
+         |    const svg = document.querySelector('svg');
+         |    
+         |    // Remove existing labels
+         |    document.querySelectorAll('.section-label').forEach(el => el.remove());
+         |
+         |    for (const [regionId, sectionCode] of Object.entries(mappings)) {
+         |      const path = document.getElementById(regionId);
+         |      if (path) {
+         |        const bbox = path.getBBox();
+         |        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+         |        text.setAttribute('x', bbox.x + bbox.width / 2);
+         |        text.setAttribute('y', bbox.y + bbox.height / 2);
+         |        text.setAttribute('class', 'section-label');
+         |        text.textContent = sectionCode;
+         |        svg.appendChild(text);
+         |        
+         |        // Also update title for tooltip
+         |        let title = path.querySelector('title');
+         |        if (!title) {
+         |          title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+         |          path.appendChild(title);
+         |        }
+         |        title.textContent = sectionCode;
+         |      }
+         |    }
+         |  }
+         |
+         |  // Fallback: attach click handlers to anything with class=\"section\".
+         |  function wireSectionClicks() {
+         |    const els = document.querySelectorAll('.section');
+         |    els.forEach(el => {
+         |      el.addEventListener('click', (e) => {
+         |        const id = el.id || el.getAttribute('data-section') || '';
+         |        if (window.app && typeof window.app.sectionClicked === 'function') {
+         |          window.app.sectionClicked(id);
+         |        }
+         |      });
+         |    });
+         |  }
+         |</script>
+         |</body></html>""".stripMargin
+
+    webView.engine.loadContent(wrap(svgText))
+    webView.engine.getLoadWorker.stateProperty.addListener { (_, _, state) =>
+      if state == Worker.State.SUCCEEDED then
+        val window = webView.engine.executeScript("window").asInstanceOf[JSObject]
+        window.setMember("app", bridge)
+        // If the SVG already has onclick handlers, this is harmless.
+        webView.engine.executeScript("wireSectionClicks();")
+        webView.engine.executeScript("refreshLabels();")
+    }
+
+    val stage = new Stage:
+      initOwner(parentWindow)
+      title = "ARRL Sections Map"
+      scene = new Scene(new VBox {
+        children = Seq(
+          webView,
+          sectionPanelNode
+        )
+        VBox.setVgrow(webView, Priority.Always)
+      }, 1000, 850)
+
+    stage.show()
 
   private def helpMenu: Menu =
     new Menu("Help"):
