@@ -17,8 +17,15 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
   val version = s"$majorVersion.0.0"
   val name = "fdswarm"
   val log4jV = "2.24.2"
+  val scalaV = "3.7.4"
+  val jacksonV = "2.17.2"
+  val tapirV = "1.13.8"
+  val http4sV = "0.23.33"
+  val scoverageV = "2.1.1"
+  val munitV = "1.0.0"
 
-  def scalaVersion = "3.7.4"
+
+  def scalaVersion = scalaV
 
   def scalacOptions =
     Seq(
@@ -65,6 +72,29 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
     "--java-options", "-Dapple.awt.application.appearance=system"
   )
 
+  private def stageJpackageInput(inputDir: os.Path, cp: Seq[PathRef]): String = {
+    if (cp.isEmpty) throw new RuntimeException("jpackageRunClasspath was empty")
+
+    cp.foreach { p =>
+      val src = os.Path(p.path.toString)
+      os.copy.over(src, inputDir / src.last, createFolders = true)
+    }
+
+    os.Path(cp.head.path.toString).last
+  }
+
+
+  private def macSignArgs: Seq[String] = {
+    val signEnabled = sys.env.get("JPACKAGE_MAC_SIGN").exists(_.trim.nonEmpty)
+    val signingKey  = sys.env.get("JPACKAGE_MAC_SIGNING_KEY_USER_NAME").map(_.trim).filter(_.nonEmpty)
+
+    if (signEnabled && signingKey.nonEmpty)
+      Seq("--mac-sign", "--mac-signing-key-user-name", signingKey.get)
+    else
+      Seq.empty
+  }
+
+
 
   /** Build a macOS .dmg using the JDK's `jpackage` tool. */
   def macDmg = Task {
@@ -76,16 +106,9 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
 
     val inputDir = Task.dest / "jpackage-input"
     os.makeDir.all(inputDir)
-
     val cp = jpackageRunClasspath()
-    if (cp.isEmpty) throw new RuntimeException("jpackageRunClasspath was empty")
 
-    cp.foreach { p =>
-      val src = os.Path(p.path.toString)
-      os.copy.over(src, inputDir / src.last, createFolders = true)
-    }
-
-    val mainJarName = os.Path(cp.head.path.toString).last
+    val mainJarName = stageJpackageInput(inputDir, cp)
 
     val baseArgs = Seq(
       "jpackage",
@@ -109,18 +132,10 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
     val iconIcns = macIconIcns
     val iconArgs = if (os.exists(iconIcns)) Seq("--icon", iconIcns.toString) else Seq.empty
 
-    // Optional signing via env vars
-    val signEnabled = sys.env.get("JPACKAGE_MAC_SIGN").exists(_.trim.nonEmpty)
-    val signingKey = sys.env.get("JPACKAGE_MAC_SIGNING_KEY_USER_NAME").map(_.trim).filter(_.nonEmpty)
-    val signArgs =
-      if (signEnabled && signingKey.nonEmpty)
-        Seq("--mac-sign", "--mac-signing-key-user-name", signingKey.get)
-      else Seq.empty
-
     val baseArgsWithIcon = baseArgs ++ iconArgs
     println(baseArgsWithIcon.mkString(" "))
 
-    val cmd = baseArgsWithIcon ++ signArgs
+    val cmd = baseArgsWithIcon ++ macSignArgs
     val exit = os.proc(cmd).call(stdout = os.Inherit, stderr = os.Inherit).exitCode
     if (exit != 0) throw new RuntimeException(s"jpackage failed with exit code $exit")
 
@@ -138,16 +153,9 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
 
     val inputDir = Task.dest / "jpackage-input"
     os.makeDir.all(inputDir)
-
     val cp = jpackageRunClasspath()
-    if (cp.isEmpty) throw new RuntimeException("jpackageRunClasspath was empty")
 
-    cp.foreach { p =>
-      val src = os.Path(p.path.toString)
-      os.copy.over(src, inputDir / src.last, createFolders = true)
-    }
-
-    val mainJarName = os.Path(cp.head.path.toString).last
+    val mainJarName = stageJpackageInput(inputDir, cp)
 
     val baseArgs = Seq(
       "jpackage",
@@ -170,18 +178,10 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
     val iconIcns = macIconIcns
     val iconArgs = if (os.exists(iconIcns)) Seq("--icon", iconIcns.toString) else Seq.empty
 
-    // Optional signing via env vars
-    val signEnabled = sys.env.get("JPACKAGE_MAC_SIGN").exists(_.trim.nonEmpty)
-    val signingKey = sys.env.get("JPACKAGE_MAC_SIGNING_KEY_USER_NAME").map(_.trim).filter(_.nonEmpty)
-    val signArgs =
-      if (signEnabled && signingKey.nonEmpty)
-        Seq("--mac-sign", "--mac-signing-key-user-name", signingKey.get)
-      else Seq.empty
-
     val baseArgsWithIcon = baseArgs ++ iconArgs
     println(baseArgsWithIcon.mkString(" "))
 
-    val cmd = baseArgsWithIcon ++ signArgs
+    val cmd = baseArgsWithIcon ++ macSignArgs
     val exit = os.proc(cmd).call(stdout = os.Inherit, stderr = os.Inherit).exitCode
     if (exit != 0) throw new RuntimeException(s"jpackage failed with exit code $exit")
 
@@ -198,16 +198,9 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
 
     val inputDir = Task.dest / "jpackage-input"
     os.makeDir.all(inputDir)
-
     val cp = jpackageRunClasspath()
-    if (cp.isEmpty) throw new RuntimeException("jpackageRunClasspath was empty")
 
-    cp.foreach { p =>
-      val src = os.Path(p.path.toString)
-      os.copy.over(src, inputDir / src.last, createFolders = true)
-    }
-
-    val mainJarName = os.Path(cp.head.path.toString).last
+    val mainJarName = stageJpackageInput(inputDir, cp)
 
     val baseArgs = Seq(
       "jpackage",
@@ -231,18 +224,10 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
     val iconIcns = macIconIcns
     val iconArgs = if (os.exists(iconIcns)) Seq("--icon", iconIcns.toString) else Seq.empty
 
-    // Optional signing via env vars
-    val signEnabled = sys.env.get("JPACKAGE_MAC_SIGN").exists(_.trim.nonEmpty)
-    val signingKey = sys.env.get("JPACKAGE_MAC_SIGNING_KEY_USER_NAME").map(_.trim).filter(_.nonEmpty)
-    val signArgs =
-      if (signEnabled && signingKey.nonEmpty)
-        Seq("--mac-sign", "--mac-signing-key-user-name", signingKey.get)
-      else Seq.empty
-
     val baseArgsWithIcon = baseArgs ++ iconArgs
     println(baseArgsWithIcon.mkString(" "))
 
-    val cmd = baseArgsWithIcon ++ signArgs
+    val cmd = baseArgsWithIcon ++ macSignArgs
     val exit = os.proc(cmd).call(stdout = os.Inherit, stderr = os.Inherit).exitCode
     if (exit != 0) throw new RuntimeException(s"jpackage failed with exit code $exit")
 
@@ -266,16 +251,9 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
 
     val inputDir = Task.dest / "jpackage-input"
     os.makeDir.all(inputDir)
-
     val cp = jpackageRunClasspath()
-    if (cp.isEmpty) throw new RuntimeException("jpackageRunClasspath was empty")
 
-    cp.foreach { p =>
-      val src = os.Path(p.path.toString)
-      os.copy.over(src, inputDir / src.last, createFolders = true)
-    }
-
-    val mainJarName = os.Path(cp.head.path.toString).last
+    val mainJarName = stageJpackageInput(inputDir, cp)
 
     val baseArgs = Seq(
       "jpackage",
@@ -349,7 +327,7 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
     BuildInfo.Value("dataVersion", majorVersion)
   )
 
-  def scoverageVersion = "2.1.1"
+  def scoverageVersion = scoverageV
 
   def mvnDeps = Seq(
     mvn"com.typesafe.scala-logging::scala-logging:3.9.5",
@@ -360,8 +338,8 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
     mvn"org.apache.logging.log4j:log4j-core:$log4jV",
     mvn"org.apache.logging.log4j:log4j-slf4j2-impl:$log4jV",
 
-    mvn"com.fasterxml.jackson.core:jackson-databind:2.17.2",
-    mvn"com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.17.2",
+    mvn"com.fasterxml.jackson.core:jackson-databind:$jacksonV",
+    mvn"com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonV",
 
     mvn"io.github.classgraph:classgraph:4.8.179",
     mvn"net.codingwell::scala-guice:7.0.0",
@@ -370,23 +348,22 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
     mvn"com.lihaoyi::scalatags:0.13.1",
     mvn"org.apache.commons:commons-text:1.10.0",
     mvn"com.google.inject:guice:7.0.0",
-    mvn"net.codingwell:scala-guice_3:7.0.0",
     mvn"com.github.andyglow::typesafe-config-scala:2.0.0",
 
     mvn"io.circe::circe-core:0.14.10",
     mvn"io.circe::circe-generic:0.14.10",
     mvn"io.circe::circe-parser:0.14.10",
 
-    mvn"com.softwaremill.sttp.tapir:tapir-core_3:1.13.8",
-    mvn"com.softwaremill.sttp.tapir:tapir-http4s-server_3:1.13.8",
-    mvn"com.softwaremill.sttp.tapir:tapir-http4s-client_3:1.13.8",
-    mvn"com.softwaremill.sttp.tapir:tapir-json-circe_3:1.13.8",
-    mvn"com.softwaremill.sttp.tapir::tapir-swagger-ui-bundle:1.13.8",
+    mvn"com.softwaremill.sttp.tapir:tapir-core_3:$tapirV",
+    mvn"com.softwaremill.sttp.tapir:tapir-http4s-server_3:$tapirV",
+    mvn"com.softwaremill.sttp.tapir:tapir-http4s-client_3:$tapirV",
+    mvn"com.softwaremill.sttp.tapir:tapir-json-circe_3:$tapirV",
+    mvn"com.softwaremill.sttp.tapir::tapir-swagger-ui-bundle:$tapirV",
 
-    mvn"org.http4s:http4s-ember-server_3:0.23.33",
-    mvn"org.http4s:http4s-ember-client_3:0.23.33",
-    mvn"org.http4s:http4s-dsl_3:0.23.33",
-    mvn"org.http4s:http4s-circe_3:0.23.33",
+    mvn"org.http4s:http4s-ember-server_3:$http4sV",
+    mvn"org.http4s:http4s-ember-client_3:$http4sV",
+    mvn"org.http4s:http4s-dsl_3:$http4sV",
+    mvn"org.http4s:http4s-circe_3:$http4sV",
     mvn"org.typelevel:cats-effect_3:3.5.7",
 
     mvn"org.scalafx:scalafx_3:23.0.1-R34",
@@ -400,11 +377,11 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
     override def mvnDeps = super.mvnDeps() ++ Seq(
       mvn"org.apache.logging.log4j:log4j-core:$log4jV",
       mvn"org.apache.logging.log4j:log4j-core-test:$log4jV",
-      mvn"com.softwaremill.sttp.tapir:tapir-http4s-client_3:1.13.8",
-      mvn"org.http4s:http4s-ember-client_3:0.23.33"
+      mvn"com.softwaremill.sttp.tapir:tapir-http4s-client_3:$tapirV",
+      mvn"org.http4s:http4s-ember-client_3:$http4sV"
     )
 
-    def scalaVersion = "3.7.4"
-    def munitVersion = "1.0.0"
+    def scalaVersion = scalaV
+    def munitVersion = munitV
   }
 }
