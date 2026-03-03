@@ -36,10 +36,14 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
   def javafxClassifier: String = {
     val osName = sys.props.getOrElse("os.name", "").toLowerCase
     val arch   = sys.props.getOrElse("os.arch", "").toLowerCase
+    val isArm  = arch.contains("aarch64") || arch.contains("arm64") || arch.contains("arm")
     if (osName.contains("win")) "win"
     else if (osName.contains("mac")) {
-      if (arch.contains("aarch64") || arch.contains("arm64")) "mac-aarch64" else "mac"
-    } else "linux"
+      if (isArm) "mac-aarch64" else "mac"
+    } else {
+      // Linux
+      if (isArm) "linux-aarch64" else "linux"
+    }
   }
 
 
