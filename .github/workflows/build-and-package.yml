@@ -20,7 +20,7 @@ jobs:
           distribution: 'liberica'
 
       - name: Run tests
-        run: ./mill --no-server -i fdswarm.test.testLocal
+        run: ./mill --no-daemon fdswarm.test.testLocal
   package-windows:
     name: Package Windows (MSI)
     needs: test
