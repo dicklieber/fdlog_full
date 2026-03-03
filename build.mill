@@ -394,13 +394,13 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
     // controlled by `javafxV`) are downloaded and available on the classpath at
     // compile and run time. Coursier's OS activation (see `resolutionCustomizer`)
     // selects the appropriate classifier automatically.
-    mvn"org.openjfx:javafx-base:$javafxV:$javafxClassifier",
-    mvn"org.openjfx:javafx-controls:$javafxV:$javafxClassifier",
-    mvn"org.openjfx:javafx-fxml:$javafxV:$javafxClassifier",
-    mvn"org.openjfx:javafx-graphics:$javafxV:$javafxClassifier",
-    mvn"org.openjfx:javafx-media:$javafxV:$javafxClassifier",
-    mvn"org.openjfx:javafx-swing:$javafxV:$javafxClassifier",
-    mvn"org.openjfx:javafx-web:$javafxV:$javafxClassifier",
+    mvn"org.openjfx:javafx-base:$javafxV;classifier=$javafxClassifier",
+    mvn"org.openjfx:javafx-controls:$javafxV;classifier=$javafxClassifier",
+    mvn"org.openjfx:javafx-fxml:$javafxV;classifier=$javafxClassifier",
+    mvn"org.openjfx:javafx-graphics:$javafxV;classifier=$javafxClassifier",
+    mvn"org.openjfx:javafx-media:$javafxV;classifier=$javafxClassifier",
+    mvn"org.openjfx:javafx-swing:$javafxV;classifier=$javafxClassifier",
+    mvn"org.openjfx:javafx-web:$javafxV;classifier=$javafxClassifier",
 
     mvn"io.micrometer:micrometer-registry-prometheus:1.14.4",
     mvn"io.github.keirlawson:meters4s-http4s_3:2.0.1"
