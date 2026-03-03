@@ -273,12 +273,6 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
 
     val mainJarName = stageJpackageInput(inputDir, cp)
 
-    // JDK 16 added --win-per-machine-install. Old JDK 14/15 incubator versions don't have it.
-    val javaSpec = sys.props.getOrElse("java.specification.version", "11")
-    val specParts = javaSpec.split('.')
-    val major = specParts.headOption.flatMap(_.toIntOption).getOrElse(0)
-    val winPerMachineArgs = if (major >= 16) Seq("--win-per-machine-install") else Seq.empty
-
     val baseArgs = Seq(
       "jpackage",
       "--type",
@@ -295,7 +289,7 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
       mainJarName,
       "--main-class",
       jpackageMainClass()
-    ) ++ winPerMachineArgs ++ Seq(
+    ) ++ Seq(
       "--win-menu",
       "--win-shortcut"
     )
