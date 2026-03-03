@@ -31,6 +31,18 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
   // not find classes absent from older JDK-bundled JavaFX versions.
   val javafxV = "23.0.1"
 
+  // OpenJFX publishes OS-specific artifacts using Maven classifiers.
+  // We compute the right classifier so builds/run work across Windows/macOS/Linux.
+  def javafxClassifier: String = {
+    val osName = sys.props.getOrElse("os.name", "").toLowerCase
+    val arch   = sys.props.getOrElse("os.arch", "").toLowerCase
+    if (osName.contains("win")) "win"
+    else if (osName.contains("mac")) {
+      if (arch.contains("aarch64") || arch.contains("arm64")) "mac-aarch64" else "mac"
+    } else "linux"
+  }
+
+
   def scalaVersion = scalaV
 
   def scalacOptions =
@@ -382,13 +394,13 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
     // controlled by `javafxV`) are downloaded and available on the classpath at
     // compile and run time. Coursier's OS activation (see `resolutionCustomizer`)
     // selects the appropriate classifier automatically.
-    mvn"org.openjfx:javafx-base:$javafxV",
-    mvn"org.openjfx:javafx-controls:$javafxV",
-    mvn"org.openjfx:javafx-fxml:$javafxV",
-    mvn"org.openjfx:javafx-graphics:$javafxV",
-    mvn"org.openjfx:javafx-media:$javafxV",
-    mvn"org.openjfx:javafx-swing:$javafxV",
-    mvn"org.openjfx:javafx-web:$javafxV",
+    mvn"org.openjfx:javafx-base:$javafxV:$javafxClassifier",
+    mvn"org.openjfx:javafx-controls:$javafxV:$javafxClassifier",
+    mvn"org.openjfx:javafx-fxml:$javafxV:$javafxClassifier",
+    mvn"org.openjfx:javafx-graphics:$javafxV:$javafxClassifier",
+    mvn"org.openjfx:javafx-media:$javafxV:$javafxClassifier",
+    mvn"org.openjfx:javafx-swing:$javafxV:$javafxClassifier",
+    mvn"org.openjfx:javafx-web:$javafxV:$javafxClassifier",
 
     mvn"io.micrometer:micrometer-registry-prometheus:1.14.4",
     mvn"io.github.keirlawson:meters4s-http4s_3:2.0.1"
