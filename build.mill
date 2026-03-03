@@ -24,6 +24,12 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
   val scoverageV = "2.1.1"
   val munitV = "1.0.0"
 
+  // JavaFX version to match the ScalaFX dependency. ScalaFX 23.x expects JavaFX 23
+  // modules. Defining this constant makes it easy to keep these in sync when upgrading.
+  // Newer APIs like Platform.Preferences introduced in JavaFX 22 require matching
+  // JavaFX libraries; without adding these explicit dependencies the compiler will
+  // not find classes absent from older JDK-bundled JavaFX versions.
+  val javafxV = "23.0.1"
 
   def scalaVersion = scalaV
 
@@ -83,7 +89,6 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
     os.Path(cp.head.path.toString).last
   }
 
-
   private def macSignArgs: Seq[String] = {
     val signEnabled = sys.env.get("JPACKAGE_MAC_SIGN").exists(_.trim.nonEmpty)
     val signingKey  = sys.env.get("JPACKAGE_MAC_SIGNING_KEY_USER_NAME").map(_.trim).filter(_.nonEmpty)
@@ -93,8 +98,6 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
     else
       Seq.empty
   }
-
-
 
   /** Build a macOS .dmg using the JDK's `jpackage` tool. */
   def macDmg = Task {
@@ -141,7 +144,6 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
 
     PathRef(dest)
   }
-
 
   /** Build a macOS .app (app-image) using the JDK's `jpackage` tool. */
   def macAppImage = Task {
@@ -374,6 +376,19 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
 
     mvn"org.scalafx:scalafx_3:23.0.1-R34",
     mvn"org.scala-lang.modules::scala-xml:2.3.0",
+
+    // Add explicit OpenJFX modules. ScalaFX wraps JavaFX but does not include it.
+    // These dependencies ensure the correct OS-specific JavaFX libraries (version
+    // controlled by `javafxV`) are downloaded and available on the classpath at
+    // compile and run time. Coursier's OS activation (see `resolutionCustomizer`)
+    // selects the appropriate classifier automatically.
+    mvn"org.openjfx:javafx-base:$javafxV",
+    mvn"org.openjfx:javafx-controls:$javafxV",
+    mvn"org.openjfx:javafx-fxml:$javafxV",
+    mvn"org.openjfx:javafx-graphics:$javafxV",
+    mvn"org.openjfx:javafx-media:$javafxV",
+    mvn"org.openjfx:javafx-swing:$javafxV",
+    mvn"org.openjfx:javafx-web:$javafxV",
 
     mvn"io.micrometer:micrometer-registry-prometheus:1.14.4",
     mvn"io.github.keirlawson:meters4s-http4s_3:2.0.1"
