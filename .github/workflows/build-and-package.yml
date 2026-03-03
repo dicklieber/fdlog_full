@@ -18,9 +18,15 @@ jobs:
         with:
           java-version: '21'
           distribution: 'liberica'
-
       - name: Run tests
+        timeout-minutes: 10
         run: ./mill --no-daemon fdswarm.test.testLocal
+
+      - name: Ensure mill daemon is stopped
+        if: always()
+        run: ./mill --no-daemon shutdown
+#      - name: Run tests
+#        run: ./mill --no-daemon fdswarm.test.testLocal
   package-windows:
     name: Package Windows (MSI)
     needs: test
