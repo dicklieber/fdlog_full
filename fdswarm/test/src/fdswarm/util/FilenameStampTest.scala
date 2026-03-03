@@ -21,16 +21,30 @@ package fdswarm.util
 import fdswarm.fx.contest.{ContestCatalog, ContestConfig, ContestManager, ContestType}
 import fdswarm.fx.sections.{Sections, SectionsProvider}
 import fdswarm.model.Callsign
+import fdswarm.store.QsoStore
+import fdswarm.replication.{MulticastTransport, Service}
+import fdswarm.util.{HostAndPort, HostAndPortProvider}
 import fdswarm.TestDirectory
 import com.typesafe.config.ConfigFactory
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import java.time.{Instant, ZoneOffset, ZonedDateTime}
 import munit.FunSuite
+import scala.compiletime.uninitialized
  
 class FilenameStampTest extends FunSuite:
  
-  private var testDir: TestDirectory = _
-  private var filenameStamp: FilenameStamp = _
-  private var contestManager: ContestManager = _
+  private var testDir: TestDirectory = uninitialized
+  private var filenameStamp: FilenameStamp = uninitialized
+  private var contestManager: ContestManager = uninitialized
+  private var qsoStore: QsoStore = uninitialized
+
+  class MockMulticastTransport extends MulticastTransport(8900, "239.192.0.88", new HostAndPortProvider(8080)):
+    var sentData: Seq[(Service, Array[Byte])] = Seq.empty
+    override def send(service: Service, data: Array[Byte]): Unit =
+      sentData = sentData :+ (service, data)
+    override def stop(): Unit = ()
+
+  private val mockTransport = new MockMulticastTransport()
  
   override def beforeEach(context: BeforeEach): Unit =
     testDir = new TestDirectory()
@@ -50,7 +64,9 @@ class FilenameStampTest extends FunSuite:
     val catalog = new ContestCatalog(config)
     val sectionsProvider = new SectionsProvider(config)
     val sections = new Sections(sectionsProvider)
-    contestManager = new ContestManager(testDir, catalog, sections)
+    val registry = new SimpleMeterRegistry()
+    qsoStore = new QsoStore(testDir, registry, mockTransport)
+    contestManager = new ContestManager(testDir, catalog, sections, qsoStore)
     filenameStamp = new FilenameStamp(contestManager)
  
   override def afterEach(context: AfterEach): Unit =
