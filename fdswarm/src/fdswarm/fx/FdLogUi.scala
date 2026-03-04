@@ -26,7 +26,7 @@ import fdswarm.fx.bandmodes.BandsAndModesPane
 import fdswarm.fx.contest.ContestManager
 import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.station.StationEditor
-import fdswarm.fx.tools.{ContestTimeDialog, FdHourDialogService, FdHourDigestsPane, HowManyDialogService, LoggingDialog, StatusBroadcastDialog}
+import fdswarm.fx.tools.{ContestTimeDialog, FdHourDialogService, FdHourDigestsPane, HowManyDialogService, IpAddressDialogService, LoggingDialog, StatusBroadcastDialog}
 import fdswarm.replication.{NodeStatusHandler, NodeStatusSender, SwarmStatusPane}
 import fdswarm.store.FdHourDigest
 import fdswarm.util.{DurationFormat, HostAndPortProvider}
@@ -83,7 +83,8 @@ final class FdLogUi @Inject()(
                                exportDialog: fdswarm.fx.tools.ExportDialog,
                                webSessionsAdmin: fdswarm.fx.admin.WebSessionsAdmin,
                                sectionsProvider: fdswarm.fx.sections.SectionsProvider,
-                               sectionPanel: fdswarm.fx.sections.SectionPanel
+                               sectionPanel: fdswarm.fx.sections.SectionPanel,
+                               ipAddressDialogService: IpAddressDialogService
                              ) extends LazyLogging:
 
   // --- ARRL Sections Map (SVG) -------------------------------------------------
@@ -179,6 +180,12 @@ final class FdLogUi @Inject()(
           onAction = _ =>
             Option(ownerWindow) match
               case Some(w) => contestTimeDialog.show(w)
+              case None => ()
+        ,
+        new MenuItem("Set IP Address"):
+          onAction = _ =>
+            Option(ownerWindow) match
+              case Some(w) => ipAddressDialogService.show(w)
               case None => ()
       )
 

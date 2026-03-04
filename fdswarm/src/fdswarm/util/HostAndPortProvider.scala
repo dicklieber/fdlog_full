@@ -18,32 +18,58 @@
 
 package fdswarm.util
 
+import com.typesafe.scalalogging.LazyLogging
 import jakarta.inject.{Inject, Named, Singleton}
+
+import java.net.{Inet4Address, InetAddress, NetworkInterface}
+import java.util
+import scala.jdk.CollectionConverters.*
 
 
 @Singleton
-class HostAndPortProvider @Inject(@Named("fdswarm.httpPort") httpPort: Int):
+class HostAndPortProvider @Inject(@Named("fdswarm.httpPort") httpPort: Int) extends LazyLogging:
+  def suitableInterfaces: Seq[AnIpAddress] = (for
+    interface: NetworkInterface <- NetworkInterface.getNetworkInterfaces.asScala
+    anIpo = AnIpAddress(interface)
+    if anIpo.hasIp
+  yield
+    logger.trace(s"anIpo: $anIpo")
+    anIpo).toSeq
+
+  private var ourIp:AnIpAddress = suitableInterfaces.headOption.getOrElse(AnIpAddress("loopback", "127.0.0.1"))
+
+  def currentIp: AnIpAddress = ourIp
+  def setIp(newIp: AnIpAddress): Unit =
+    ourIp = newIp
+    logger.info(s"ourIp updated to: $ourIp")
 
   // Override port with PORT env var if present
   private val port = sys.env.get("PORT").map { sPort =>
     sPort.toInt
   }.getOrElse(httpPort)
-  val http: HostAndPort = apply(port)
 
-  private def apply(port: Int): HostAndPort = HostAndPort(localIPv4Address, port)
+  def http: HostAndPort = apply(port)
 
-  private def localIPv4Address: String =
-    import java.net.NetworkInterface
-    import scala.jdk.CollectionConverters.*
+  private def apply(port: Int): HostAndPort = HostAndPort(ourIp.ip, port)
 
-    val interfaces = NetworkInterface.getNetworkInterfaces.asScala
-    val addresses = for {
-      interface <- interfaces
-      if interface.isUp && !interface.isLoopback && !interface.isVirtual
-      address <- interface.getInetAddresses.asScala
-      if address.isSiteLocalAddress && address.getHostAddress.contains(".")
-    } yield address.getHostAddress
-
-    addresses.toSeq.headOption.getOrElse("127.0.0.1")
+//  
+//    val addresses = for {
+//      interface <- interfaces
+//      if interface.isUp && !interface.isLoopback && !interface.isVirtual
+//      address <- interface.getInetAddresses.asScala
+//      if address.isSiteLocalAddress && address.getHostAddress.contains(".")
+//    } yield address.getHostAddress
+//
+//    addresses.toSeq.headOption.getOrElse("127.0.0.1")
 
 
+case class AnIpAddress(interfaceName: String, ip: String):
+  def hasIp:Boolean = ip.nonEmpty
+
+object AnIpAddress:
+  def apply(interface: NetworkInterface): AnIpAddress =
+    val ip = interface.getInetAddresses.asScala
+      .find(_.isInstanceOf[Inet4Address])
+      .map(_.getHostAddress)
+      .getOrElse("")
+    AnIpAddress(interface.getName, ip)
