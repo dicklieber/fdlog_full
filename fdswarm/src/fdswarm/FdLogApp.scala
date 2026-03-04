@@ -23,7 +23,7 @@ import cats.effect.unsafe.implicits.global
 import com.google.inject.{Guice, Injector}
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.{ConfigModule, FdLogUi}
-import fdswarm.replication.NodeStatus
+import fdswarm.replication.{NodeStatusHandler, StatusBroadcastService}
 import javafx.application.Platform
 import net.codingwell.scalaguice.InjectorExtensions.*
 import scalafx.application.JFXApp3
@@ -58,13 +58,14 @@ object FdLogApp extends JFXApp3:
 
   private lazy val injector: Injector =
     Guice.createInjector(new ConfigModule())
+  var statusBroadcastService: Option[StatusBroadcastService] = None
 
   override def start(): Unit =
     val loggingManager = injector.instance[fdswarm.util.LoggingManager]
     loggingManager.applyInitialConfig()
-    
-    val nodeStatus = injector.instance[NodeStatus]
-    
+//    statusBroadcastService = Option(injector.instance[StatusBroadcastService])
+//    injector.instance[NodeStatusHandler]
+
     log.debug("fdlog start")
     
     val ui = injector.instance[FdLogUi]
@@ -79,8 +80,7 @@ object FdLogApp extends JFXApp3:
 
   override def stopApp(): Unit =
     log.debug("stopApp")
-    val nodeStatus = injector.instance[NodeStatus]
-    nodeStatus.stop()
-  
+    statusBroadcastService.foreach(_.stop())
+
 
   

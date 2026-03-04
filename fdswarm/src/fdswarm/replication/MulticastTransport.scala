@@ -16,7 +16,7 @@ class MulticastTransport @Inject()(
                                     @Named("fdswarm.UDP.groupAddr") groupAddr: String,
                                     hostAndPortProvider: HostAndPortProvider
                                   ) extends LazyLogging:
-
+  logger.debug("Starting MulticastTransport on {}:{}", groupAddr, port)
   val queue = new LinkedBlockingQueue[UDPHeaderData]()
 
   private val group = InetAddress.getByName(groupAddr)
@@ -24,11 +24,19 @@ class MulticastTransport @Inject()(
   private var socket: MulticastSocket = uninitialized
   private var thread: Thread = uninitialized
 
+  private def getNetworkInterface: NetworkInterface =
+    val ip = hostAndPortProvider.currentIp.ip
+    logger.debug(s"Using IP $ip for MulticastTransport")
+    NetworkInterface.getByInetAddress(InetAddress.getByName(ip))
+
   // Start receiver in constructor
   try
-    socket = new MulticastSocket(port)
+    socket = new MulticastSocket(null)
     socket.setReuseAddress(true)
-    val ni = NetworkInterface.getByInetAddress(InetAddress.getByName(NetworkConfig.findNonLocalhostIPv4().getOrElse("127.0.0.1")))
+    socket.bind(new InetSocketAddress(port))
+
+    val ni = getNetworkInterface
+    socket.setNetworkInterface(ni)
     socket.joinGroup(socketAddress, ni)
 
     thread = new Thread(() =>
@@ -38,14 +46,16 @@ class MulticastTransport @Inject()(
         try
           val packet = new DatagramPacket(buffer, buffer.length)
           socket.receive(packet)
+          logger.trace(s"Received UDP packet from ${packet.getAddress}:${packet.getPort}")
 
           val data = packet.getData.slice(packet.getOffset, packet.getOffset + packet.getLength)
           try
             UDPHeader.parse(data) match
               case Some(udpHeader) =>
+                logger.trace(s"Received UDP packet from ${packet.getAddress}:${packet.getPort}: ${udpHeader.service}")
                 queue.offer(udpHeader)
               case None =>
-                logger.trace(s"Ignoring our own message from ${packet.getAddress}:${packet.getPort}")
+                logger.debug(s"Ignoring our own message from ${packet.getAddress}:${packet.getPort}")
           catch
             case e: IllegalArgumentException =>
               logger.error(s"Received invalid UDP packet: ${e.getMessage}")
@@ -80,7 +90,7 @@ class MulticastTransport @Inject()(
     if socket != null then
       try
         if !socket.isClosed then
-          val ni = NetworkInterface.getByInetAddress(InetAddress.getByName(NetworkConfig.findNonLocalhostIPv4().getOrElse("127.0.0.1")))
+          val ni = getNetworkInterface
           socket.leaveGroup(socketAddress, ni)
           socket.close()
       catch

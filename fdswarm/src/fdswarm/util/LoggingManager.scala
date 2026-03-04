@@ -32,21 +32,21 @@ class LoggingManager @Inject() (directoryProvider: DirectoryProvider):
   private val loggingJsonPath = directoryProvider() / "logging.json"
   private var currentLoggers: List[LoggerLevel] = load()
 
+
   def getLoggers: List[LoggerLevel] = currentLoggers
 
   def updateLogger(loggerName: String, level: LevelEnum): Unit =
     val index = currentLoggers.indexWhere(_.logger == loggerName)
-    if (index >= 0) {
+    if (index >= 0) 
       currentLoggers = currentLoggers.updated(index, LoggerLevel(loggerName, level))
-    } else {
+    else 
       currentLoggers = currentLoggers :+ LoggerLevel(loggerName, level)
-    }
     applyToLog4j2(loggerName, level)
     save()
 
 
   def removeAllLoggers(): Unit =
-    currentLoggers.foreach(ll => Configurator.setLevel(ll.logger, null.asInstanceOf[org.apache.logging.log4j.Level]))
+    currentLoggers.foreach(ll => Configurator.setLevel(ll.logger, Level.INFO))
     currentLoggers = List.empty
     save()
 
@@ -80,4 +80,12 @@ class LoggingManager @Inject() (directoryProvider: DirectoryProvider):
   private def defaultLoggers: List[LoggerLevel] = List.empty
 
   def applyInitialConfig(): Unit =
-    currentLoggers.foreach(ll => applyToLog4j2(ll.logger, ll.level))
+    if (currentLoggers.nonEmpty) {
+      System.out.println("Logging configuration from logging.json:")
+      currentLoggers.foreach { ll =>
+        System.out.println(s"  ${ll.logger}: ${ll.level}")
+        applyToLog4j2(ll.logger, ll.level)
+      }
+    } else {
+      System.out.println("No logging configuration found in logging.json.")
+    }

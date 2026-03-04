@@ -25,17 +25,17 @@ import fdswarm.store.ReplicationSupport
 import fdswarm.util.HostAndPortProvider
 import io.circe.parser.decode
 import io.micrometer.core.instrument.MeterRegistry
-import jakarta.inject.Inject
+import jakarta.inject.{Inject, Singleton}
 
 import java.net.http.HttpClient
-
+@Singleton
 class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
                                   statusProcessor: StatusProcessor,
                                   multicastTransport: MulticastTransport,
                                   hostAndPortProvider: HostAndPortProvider,
                                   swarmStatus: SwarmStatus,
                                   meterRegistry: MeterRegistry) extends LazyLogging:
-
+  logger.debug("Starting NodeStatusHandler")
   private val statusCounter = meterRegistry.counter("fdswarm_received_status_total")
   private val qsoCounter = meterRegistry.counter("fdswarm_received_qso_total")
 
@@ -43,41 +43,33 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
     .followRedirects(HttpClient.Redirect.NORMAL)
     .build()
 
-  private var thread: Option[Thread] = None
-
-  def start(): Unit =
-    val t = new Thread(() =>
-      while !Thread.currentThread().isInterrupted do
-        try
-          val udpHeader: UDPHeaderData = multicastTransport.queue.take()
-          udpHeader.service match
-            case Service.Status =>
-              statusCounter.increment()
-              val statusMessage = StatusMessage(udpHeader.payload)
-              swarmStatus.put(statusMessage)
-              logger.trace("StatusHandle: StatusMessage from {} with {} digests.", statusMessage.hostAndPort, statusMessage.fdDigests.size)
-              statusProcessor.processStatus(statusMessage).unsafeRunAndForget()
-            case Service.QSO =>
-              qsoCounter.increment()
-              val json = new String(udpHeader.payload, "UTF-8")
-              decode[Qso](json) match
-                case Right(qso) =>
-                  logger.debug(s"Received QSO via multicast: ${qso.callsign}")
-                  replicationSupport.add(qso)
-                case Left(error) =>
-                  logger.error(s"Failed to decode QSO from multicast: $json", error)
-        catch
-          case _: InterruptedException => Thread.currentThread().interrupt()
-          case e: Exception =>
-            logger.error("Error in Repl processing loop", e)
-      , "Repl-Processor")
-    t.setDaemon(true)
-    t.start()
-    thread = Some(t)
-
-  def stop(): Unit =
-    logger.debug("Stopping Repl service")
-    thread.foreach(_.interrupt())
-    thread = None
+  private val thread = new Thread(() =>
+    while !Thread.currentThread().isInterrupted do
+      try
+        val udpHeader: UDPHeaderData = multicastTransport.queue.take()
+        udpHeader.service match
+          case Service.Status =>
+            statusCounter.increment()
+            val statusMessage = StatusMessage(udpHeader.payload)
+            swarmStatus.put(statusMessage)
+            logger.trace("StatusHandle: StatusMessage from {} with {} digests.", statusMessage.hostAndPort, statusMessage.fdDigests.size)
+            statusProcessor.processStatus(statusMessage).unsafeRunAndForget()
+          case Service.QSO =>
+            qsoCounter.increment()
+            val json = new String(udpHeader.payload, "UTF-8")
+            decode[Qso](json) match
+              case Right(qso) =>
+                logger.debug(s"Received QSO via multicast: ${qso.callsign}")
+                replicationSupport.add(qso)
+              case Left(error) =>
+                logger.error(s"Failed to decode QSO from multicast: $json", error)
+      catch
+        case _: InterruptedException => Thread.currentThread().interrupt()
+        case e: Exception =>
+          logger.error("Error in Repl processing loop", e)
+    , "Repl-Processor")
+  thread.setDaemon(true)
+  logger.debug("Starting NodeStatusHandler thread")
+  thread.start()
 
  

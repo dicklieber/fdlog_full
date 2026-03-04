@@ -37,7 +37,8 @@ import org.http4s.syntax.all.*
 import cats.syntax.all.*
 import _root_.meters4s.Reporter
 import _root_.meters4s.http4s.Meters4s
-import sttp.tapir.server.http4s.Http4sServerInterpreter
+import sttp.tapir.server.http4s.{Http4sServerInterpreter, Http4sServerOptions}
+import sttp.tapir.server.interceptor.log.DefaultServerLog
 import com.comcast.ip4s.{Host, Port}
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 
@@ -109,8 +110,14 @@ final class HttpApi @Inject()(apiEndpoints: java.util.Set[ApiEndpoints],
     val webRoutes = apiEndpoints.asScala.collect { case w: fdswarm.web.WebRoutes => w.routes }.foldLeft(HttpRoutes.empty[IO])(_ <+> _)
     val swaggerEndpoints = SwaggerInterpreter().fromServerEndpoints[IO](endpoints, "Field Day Swarm API", "1.0.0")
 
-    val routes = Http4sServerInterpreter[IO]().toRoutes(endpoints)
-    val swaggerRoutes = Http4sServerInterpreter[IO]().toRoutes(swaggerEndpoints)
+    val serverOptions: Http4sServerOptions[IO] =
+      Http4sServerOptions.customiseInterceptors[IO]
+        .serverLog(None) // Disable default tapir server logging
+        .options
+
+    val interpreter = Http4sServerInterpreter[IO](serverOptions)
+    val routes = interpreter.toRoutes(endpoints)
+    val swaggerRoutes = interpreter.toRoutes(swaggerEndpoints)
 
     val metricsOps = Meters4s[IO](reporter)
     val instrumentedRoutes = ServerMetrics[IO](metricsOps)(routes <+> swaggerRoutes <+> webRoutes)

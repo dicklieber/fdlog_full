@@ -27,11 +27,12 @@ import fdswarm.fx.contest.ContestManager
 import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.station.StationEditor
 import fdswarm.fx.tools.{ContestTimeDialog, FdHourDialogService, FdHourDigestsPane, HowManyDialogService, IpAddressDialogService, LoggingDialog, StatusBroadcastDialog}
-import fdswarm.replication.{NodeStatusHandler, NodeStatusSender, SwarmStatusPane}
+import fdswarm.replication.{NodeStatusHandler, StatusBroadcastService, SwarmStatusPane}
 import fdswarm.store.FdHourDigest
 import fdswarm.util.{DurationFormat, HostAndPortProvider}
 import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.Inject
+
 import java.util.concurrent.TimeUnit
 import scalafx.Includes.*
 import scalafx.beans.binding.{Bindings, BooleanBinding}
@@ -48,10 +49,8 @@ import scalafx.scene.SnapshotParameters
 import scalafx.scene.Scene
 import scalafx.Includes.*
 import scalafx.scene.web.WebView
-
 import javafx.concurrent.Worker
 import netscape.javascript.JSObject
-
 
 import scala.io.Source
 import io.circe.generic.auto.*
@@ -73,7 +72,7 @@ final class FdLogUi @Inject()(
                                fdHourDigestsPane: FdHourDigestsPane,
                                repl: NodeStatusHandler,
                                swarmStatusPane: SwarmStatusPane,
-                               nodeStatusService: NodeStatusSender,
+                               statusBroadcastService: StatusBroadcastService,
                                aboutMenuItem: AboutMenuItem,
                                hostAndPortProvider: HostAndPortProvider,
                                userConfig: UserConfig,
@@ -265,7 +264,7 @@ final class FdLogUi @Inject()(
   def start(stage: Stage): Unit =
     setAppIcon(stage)
     stage.title = "FdSwarm"
-    nodeStatusService.start()
+    statusBroadcastService.start()
 
 
     ownerWindow = stage
