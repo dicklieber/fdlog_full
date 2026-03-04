@@ -69,7 +69,7 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
           logger.error("Error in Repl processing loop", e)
     , "Repl-Processor")
   thread.setDaemon(true)
-  logger.debug("Starting NodeStatusHandler thread")
+  logger.debug("Starting NodeStatusHandler Thread")
   thread.start()
 
  

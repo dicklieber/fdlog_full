@@ -47,8 +47,6 @@ object FdLogApp extends JFXApp3:
       // Some versions of Java/JavaFX also look for this
       System.setProperty("apple.awt.application.appearance", "system")
     }
-    val directoryProvider = new fdswarm.io.ProductionDirectory()
-    fdswarm.util.LoggingConfigurator.addFileAppender(directoryProvider)
     System.setProperty("javafx.embed.singleThread", "true")
     super.main(args)
 
@@ -61,8 +59,6 @@ object FdLogApp extends JFXApp3:
   var statusBroadcastService: Option[StatusBroadcastService] = None
 
   override def start(): Unit =
-    val loggingManager = injector.instance[fdswarm.util.LoggingManager]
-    loggingManager.applyInitialConfig()
 //    statusBroadcastService = Option(injector.instance[StatusBroadcastService])
 //    injector.instance[NodeStatusHandler]
 

@@ -44,6 +44,13 @@ class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
 
 
   override def configure(): Unit =
+    val directoryProvider = new ProductionDirectory
+    bind[DirectoryProvider].toInstance(directoryProvider)
+    fdswarm.util.LoggingConfigurator.addFileAppender(directoryProvider)
+
+    val loggingManager = new fdswarm.util.LoggingManager(directoryProvider)
+    loggingManager.applyInitialConfig()
+    bind[fdswarm.util.LoggingManager].toInstance(loggingManager)
 
     val pkgs = Seq("fdswarm.api", "fdswarm.grafana", "fdswarm.web")
     val allPkgs = Seq("fdswarm")
@@ -60,7 +67,6 @@ class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
     bind[Seq[String]].annotatedWith(Names.named("discoveredLoggerNames")).toInstance(discoveredLoggers)
     bind[StatusBroadcastService].asEagerSingleton()
     bind[NodeStatusHandler].asEagerSingleton()
-    bind[DirectoryProvider].toInstance(new ProductionDirectory)
     bind[QsoStore].to[ReplicationSupport].asEagerSingleton()
     bind[MeterRegistry].to[PrometheusMeterRegistry].asEagerSingleton()
     val prometheusRegistry = new PrometheusMeterRegistry(io.micrometer.prometheusmetrics.PrometheusConfig.DEFAULT)
