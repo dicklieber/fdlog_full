@@ -61,4 +61,28 @@ class LoggingReproductionTest extends FunSuite {
     val accessLines = Files.readAllLines(accessLogFile).asScala
     assert(accessLines.exists(_.contains(accessMessage)), s"Access log file should contain the message: '$accessMessage'. Content: ${accessLines.mkString("\n")}")
   }
+
+  test("TRACE logging should work after Setting level via LoggingManager") {
+    val tempDir = Files.createTempDirectory("fdswarm-trace-test")
+    val directoryProvider: DirectoryProvider = () => os.Path(tempDir.toAbsolutePath.toString)
+
+    // 1. Configure logging
+    LoggingConfigurator.addFileAppender(directoryProvider)
+
+    // 2. Use LoggingManager to set level to TRACE
+    val loggingManager = new LoggingManager(directoryProvider)
+    val loggerName = "fdswarm.util.HostAndPortProvider"
+    loggingManager.updateLogger(loggerName, LevelEnum.TRACE)
+
+    // 3. Log at TRACE level
+    val log = org.slf4j.LoggerFactory.getLogger(loggerName)
+    val traceMessage = "TRACE TEST MESSAGE " + System.currentTimeMillis()
+    log.trace(traceMessage)
+
+    // 4. Verify it's in the log file
+    Thread.sleep(500)
+    val logFile = tempDir.resolve("fdswarm.log")
+    val lines = Files.readAllLines(logFile).asScala
+    assert(lines.exists(_.contains(traceMessage)), s"Log file should contain TRACE message. Content: ${lines.mkString("\n")}")
+  }
 }

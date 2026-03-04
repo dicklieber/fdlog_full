@@ -65,7 +65,7 @@ object LoggingConfigurator:
       .add(builder.newAppenderRef("AccessLogAppender")))
 
     // Root Logger
-    builder.add(builder.newRootLogger(Level.INFO)
+    builder.add(builder.newRootLogger(Level.ALL)
       .add(builder.newAppenderRef("TestConsole"))
       .add(builder.newAppenderRef("FileAppender")))
 

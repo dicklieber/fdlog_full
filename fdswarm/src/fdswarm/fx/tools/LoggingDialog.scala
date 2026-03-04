@@ -67,15 +67,25 @@ class LoggingDialog @Inject() (
             new TableCell[LoggerRow, LevelEnum]:
               item.onChange { (_, _, newLevel) =>
                 if newLevel != null then
-                  graphic = new ComboBox[LevelEnum](LevelEnum.values.toSeq):
+                  val cb = new ComboBox[LevelEnum](LevelEnum.values.toSeq):
                     value = newLevel
                     onAction = _ =>
                       val row = tv.items.value(index.value)
                       row.levelProp.value = value.value
                       loggingManager.updateLogger(row.loggerName.value, value.value)
+                  graphic = cb
                 else
                   graphic = null
               }
+              // Force update graphic if item is already set
+              if item.value != null then
+                val cb = new ComboBox[LevelEnum](LevelEnum.values.toSeq):
+                  value = item.value
+                  onAction = _ =>
+                    val row = tv.items.value(index.value)
+                    row.levelProp.value = value.value
+                    loggingManager.updateLogger(row.loggerName.value, value.value)
+                graphic = cb
           prefWidth = 100
       )
 
@@ -85,7 +95,7 @@ class LoggingDialog @Inject() (
     }
 
     val newLevelCombo = new ComboBox[LevelEnum](LevelEnum.values.toSeq) {
-      value = LevelEnum.INFO
+      value = LevelEnum.TRACE
     }
 
     // Button to pick from discovered LazyLogging implementations
@@ -132,8 +142,8 @@ class LoggingDialog @Inject() (
         def chooseAndClose(): Unit =
           val sel = listView.selectionModel().getSelectedItem
           if sel != null then
-            val level = LevelEnum.DEBUG
-            loggingManager.addLogger(sel, level)
+            val level = newLevelCombo.value.value
+            loggingManager.updateLogger(sel, level)
             // Update table if not already there, or update existing row
             val existingIndex = rows.indexWhere(_.loggerName.value == sel)
             if existingIndex >= 0 then
@@ -154,7 +164,7 @@ class LoggingDialog @Inject() (
         val name = newLoggerField.text.value.trim
         if name.nonEmpty then
           val level = newLevelCombo.value.value
-          loggingManager.addLogger(name, level)
+          loggingManager.updateLogger(name, level)
           rows.add(new LoggerRow(name, level))
           newLoggerField.clear()
     }

@@ -44,8 +44,6 @@ class LoggingManager @Inject() (directoryProvider: DirectoryProvider):
     applyToLog4j2(loggerName, level)
     save()
 
-  def addLogger(loggerName: String, level: LevelEnum): Unit =
-    updateLogger(loggerName, level)
 
   def removeAllLoggers(): Unit =
     currentLoggers.foreach(ll => Configurator.setLevel(ll.logger, null.asInstanceOf[org.apache.logging.log4j.Level]))
