@@ -57,13 +57,13 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
             statusProcessor.processStatus(nodeStuff).unsafeRunAndForget()
           case Service.QSO =>
             qsoCounter.increment()
-            val json = new String(udpHeader.payload, "UTF-8")
-            decode[Qso](json) match
+            val sJson = new String(udpHeader.payload, "UTF-8")
+            decode[Qso](sJson) match
               case Right(qso) =>
                 logger.debug(s"Received QSO via multicast: ${qso.callsign}")
                 replicationSupport.add(qso)
               case Left(error) =>
-                logger.error(s"Failed to decode QSO from multicast: $json", error)
+                logger.error(s"Failed to decode QSO from multicast: $sJson", error)
       catch
         case _: InterruptedException => Thread.currentThread().interrupt()
         case e: Exception =>

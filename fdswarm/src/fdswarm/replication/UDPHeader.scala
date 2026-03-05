@@ -72,7 +72,7 @@ object UDPHeader:
   @throws[IllegalArgumentException]("if packet is invalid")
   def parse(packet: DatagramPacket): Option[UDPHeaderData] =
     Try {
-      val data: Array[Byte] = packet.getData
+      val data: Array[Byte] = packet.getData.take(packet.getLength)
       val newlineIndex = data.indexOf('\n'.toByte)
       if (newlineIndex == -1) throw new IllegalArgumentException("Invalid packet: no newline found")
 

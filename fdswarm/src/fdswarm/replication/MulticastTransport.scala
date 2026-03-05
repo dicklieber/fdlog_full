@@ -102,7 +102,6 @@ class MulticastTransport @Inject() (
           try
             val packet: DatagramPacket = new DatagramPacket(buffer, buffer.length)
             socket.receive(packet)
-
             val senderAddr = packet.getAddress
             val senderPort = packet.getPort
             logger.trace(
