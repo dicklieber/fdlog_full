@@ -39,7 +39,7 @@ object UDPHeader:
     val id = Ids.generateInstanceId()
     logger.info(s"localInstanceId: $id")
     id
-  private val headerRegx = s"""^FDSWARM\\|(${Service.values.map(_.toString).mkString("|")})\\|(\\d+)\\|([^|]+)\\|$$""".r
+  private val headerRegx = s"""^FDSWARM\\|(${Service.values.map(_.toString).mkString("|")})\\|([^|]+)\\|([^|]+)\\|$$""".r
 
   /**
    * Creates a UDP packet from a Header.

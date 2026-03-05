@@ -5,72 +5,157 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.util.{HostAndPortProvider, Ids}
 import jakarta.inject.{Inject, Singleton}
 
-import java.net.{DatagramPacket, InetAddress, InetSocketAddress, MulticastSocket, NetworkInterface}
-import scala.compiletime.uninitialized
+import java.net.{
+  DatagramPacket,
+  InetAddress,
+  InetSocketAddress,
+  MulticastSocket,
+  NetworkInterface
+}
 import java.util.concurrent.LinkedBlockingQueue
+import scala.compiletime.uninitialized
 import scala.jdk.CollectionConverters.*
 
 @Singleton
-class MulticastTransport @Inject()(
-                                    @Named("fdswarm.UDP.port") port: Int,
-                                    @Named("fdswarm.UDP.groupAddr") groupAddr: String,
-                                    hostAndPortProvider: HostAndPortProvider
-                                  ) extends LazyLogging:
+class MulticastTransport @Inject() (
+                                     @Named("fdswarm.UDP.port") port: Int,
+                                     @Named("fdswarm.UDP.groupAddr") groupAddr: String,
+                                     hostAndPortProvider: HostAndPortProvider
+                                   ) extends LazyLogging:
+
   logger.debug("Starting MulticastTransport on {}:{}", groupAddr, port)
+
   val queue = new LinkedBlockingQueue[UDPHeaderData]()
 
   private val group = InetAddress.getByName(groupAddr)
   private val socketAddress = new InetSocketAddress(group, port)
+
   private var socket: MulticastSocket = uninitialized
   private var thread: Thread = uninitialized
 
-  private def getNetworkInterface: NetworkInterface =
+  private def getNetworkInterfaceOrThrow(): NetworkInterface =
     val ip = hostAndPortProvider.currentIp.ip
     logger.debug(s"Using IP $ip for MulticastTransport")
-    NetworkInterface.getByInetAddress(InetAddress.getByName(ip))
+    val ni = NetworkInterface.getByInetAddress(InetAddress.getByName(ip))
+    if ni == null then
+      val all = NetworkInterface.getNetworkInterfaces.asScala.toList
+      val msg =
+        s"Could not find NetworkInterface for ip=$ip. Available: " +
+          all.map { n =>
+            val addrs = n.getInetAddresses.asScala.mkString(",")
+            s"${n.getName}(${n.getDisplayName}) up=${n.isUp} loop=${n.isLoopback} mc=${n.supportsMulticast} addrs=[$addrs]"
+          }.mkString("; ")
+      throw new RuntimeException(msg)
+    ni
+
+  private def maybeLoopbackInterface(exclude: NetworkInterface): Option[NetworkInterface] =
+    NetworkInterface.getNetworkInterfaces.asScala.find { n =>
+      try n.isLoopback && n.isUp && n.supportsMulticast && n != exclude
+      catch case _: Exception => false
+    }
 
   // Start receiver in constructor
   try
     socket = new MulticastSocket(null)
+
+    // Important on some OSes: set before bind
     socket.setReuseAddress(true)
-    socket.bind(new InetSocketAddress(port))
 
-    val ni = getNetworkInterface
+    // Bind explicitly to wildcard (often helps Windows/VM multicast reception)
+    socket.bind(new InetSocketAddress("0.0.0.0", port))
+
+    val ni = getNetworkInterfaceOrThrow()
+
+    logger.debug(s"Setting network interface to ${ni.getName} (${ni.getDisplayName})")
     socket.setNetworkInterface(ni)
-    socket.joinGroup(socketAddress, ni)
 
-    thread = new Thread(() =>
-      val buffer = new Array[Byte](65535)
+    // Allow same-host multicast delivery (macOS often needs this for 2 local processes)
+    // NOTE: API is inverted: true = disable loopback, false = enable loopback
+//    socket.setLoopbackMode(false)
 
-      while !Thread.currentThread().isInterrupted do
-        try
-          val packet = new DatagramPacket(buffer, buffer.length)
-          socket.receive(packet)
-          logger.trace(s"Received UDP packet from ${packet.getAddress}:${packet.getPort}")
+    // TTL: keep it >1 to avoid surprises with some local network setups (still stays on LAN)
+    socket.setTimeToLive(8)
 
-          val data = packet.getData.slice(packet.getOffset, packet.getOffset + packet.getLength)
+    // Join on ALL multicast-capable interfaces (avoids "picked the wrong NIC" problems on macOS)
+    val ifaces =
+      NetworkInterface.getNetworkInterfaces.asScala.toList
+        .filter { n =>
+          try n.isUp && n.supportsMulticast
+          catch case _: Exception => false
+        }
+
+    ifaces.foreach { n =>
+      try
+        val addrs = n.getInetAddresses.asScala.mkString(", ")
+        socket.joinGroup(socketAddress, n)
+        logger.info(s"Joined multicast $groupAddr:$port on ${n.getName} (${n.getDisplayName}) addrs=[$addrs]")
+      catch
+        case e: Exception =>
+          logger.debug(s"Join failed on ${n.getName} (${n.getDisplayName}): ${e.getMessage}")
+    }
+
+    thread = new Thread(
+      () =>
+        val buffer = new Array[Byte](65535)
+
+        while !Thread.currentThread().isInterrupted do
           try
-            UDPHeader.parse(data) match
-              case Some(udpHeader) =>
-                logger.trace(s"Received UDP packet from ${packet.getAddress}:${packet.getPort}: ${udpHeader.service}")
-                queue.offer(udpHeader)
-              case None =>
-                logger.debug(s"Ignoring our own message from ${packet.getAddress}:${packet.getPort}")
+            val packet = new DatagramPacket(buffer, buffer.length)
+            socket.receive(packet)
+
+            val senderAddr = packet.getAddress
+            val senderPort = packet.getPort
+            logger.trace(
+              s"Received UDP packet from $senderAddr:$senderPort, length ${packet.getLength}"
+            )
+
+            val data = packet.getData
+              .slice(packet.getOffset, packet.getOffset + packet.getLength)
+
+            try
+              UDPHeader.parse(data) match
+                case Some(udpHeader) =>
+                  logger.trace(
+                    s"Received UDP packet from $senderAddr:$senderPort: ${udpHeader.service}"
+                  )
+                  queue.offer(udpHeader)
+                case None =>
+                  logger.debug(
+                    s"Ignoring our own message from $senderAddr:$senderPort"
+                  )
+            catch
+              case e: IllegalArgumentException =>
+                logger.error(
+                  s"Received invalid UDP packet from $senderAddr:$senderPort: ${e.getMessage}"
+                )
+
           catch
-            case e: IllegalArgumentException =>
-              logger.error(s"Received invalid UDP packet: ${e.getMessage}")
-        catch
-          case _: InterruptedException => Thread.currentThread().interrupt()
-          case e: Exception =>
-            if socket != null && !socket.isClosed then
-              logger.error(s"Error in MulticastTransport receiver: ${e.getMessage}")
-    , "Multicast-Receiver")
+            case _: InterruptedException =>
+              Thread.currentThread().interrupt()
+
+            case e: java.net.SocketException if socket != null && socket.isClosed =>
+              // receive() unblocks with SocketException when socket is closed during stop()
+              Thread.currentThread().interrupt()
+
+            case e: Exception =>
+              if socket != null && !socket.isClosed then
+                logger.error(
+                  s"Error in MulticastTransport receiver: ${e.getMessage}",
+                  e
+                )
+      ,
+      "Multicast-Receiver"
+    )
 
     thread.setDaemon(true)
     thread.start()
+
   catch
     case e: Exception =>
-      logger.error(s"Failed to start MulticastTransport receiver: ${e.getMessage}")
+      logger.error(
+        s"Failed to start MulticastTransport receiver: ${e.getMessage}",
+        e
+      )
       stop()
 
   def send(data: Array[Byte]): Unit =
@@ -78,22 +163,22 @@ class MulticastTransport @Inject()(
 
   def send(service: Service, data: Array[Byte]): Unit =
     val packetBytes = UDPHeader(service, data)
-    val packet = new DatagramPacket(packetBytes, packetBytes.length, group, port)
+    val packet =
+      new DatagramPacket(packetBytes, packetBytes.length, group, port)
     socket.send(packet)
 
   def stop(): Unit =
     logger.debug("Stopping MulticastTransport")
+
+    // Close the socket first to unblock receive()
+    if socket != null then
+      try
+        if !socket.isClosed then socket.close()
+      catch
+        case e: Exception =>
+          logger.debug(s"Error while closing MulticastSocket: ${e.getMessage}")
+      finally socket = null
+
     if thread != null then
       thread.interrupt()
       thread = null
-
-    if socket != null then
-      try
-        if !socket.isClosed then
-          val ni = getNetworkInterface
-          socket.leaveGroup(socketAddress, ni)
-          socket.close()
-      catch
-        case e: Exception => logger.debug(s"Error while closing MulticastSocket: ${e.getMessage}")
-      finally
-        socket = null
