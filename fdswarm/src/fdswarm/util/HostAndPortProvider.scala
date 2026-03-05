@@ -21,8 +21,7 @@ package fdswarm.util
 import com.typesafe.scalalogging.LazyLogging
 import jakarta.inject.{Inject, Named, Singleton}
 
-import java.net.{Inet4Address, InetAddress, NetworkInterface}
-import java.util
+import java.net.{Inet4Address, NetworkInterface}
 import scala.jdk.CollectionConverters.*
 
 
@@ -49,8 +48,8 @@ class HostAndPortProvider @Inject(@Named("fdswarm.httpPort") httpPort: Int) exte
     sPort.toInt
   }.getOrElse(httpPort)
 
-  val hostPort:String = s"${currentIp.ip}:${port}"
-  val nodeIdentity: NodeIdentity = NodeIdentity(currentIp.ip, httpPort)
+  val hostPort:String = s"${currentIp.ip}:$port"
+  val nodeIdentity: NodeIdentity = NodeIdentity(currentIp.ip, port)
   val portAndInstance = PortAndInstance(port, fdswarm.util.NodeIdentity.ourInstance)
 
 

@@ -155,10 +155,10 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
     grid.add(new Label(dataPath.toString), 1, 5)
     grid.add(new Label("Data Files:"), 0, 6)
     grid.add(dataFilesNode, 1, 6)
-    grid.add(new Label("Host:"), 0, 7)
-    grid.add(new Label(hostAndPortProvider.http.toString), 1, 7)
+    grid.add(new Label("Node:"), 0, 7)
+    grid.add(new Label(hostAndPortProvider.nodeIdentity.toString), 1, 7)
 
-    val docsUrl = s"http://${hostAndPortProvider.http}/docs"
+    val docsUrl = s"http://${hostAndPortProvider.hostPort}/docs"
     val docsLink = new Hyperlink(docsUrl):
       onAction = _ =>
         try
@@ -245,7 +245,6 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
     grid.add(javaDetailsButton, 1, 11)
 
     grid.add(new Label("UDP Instance ID:"), 0, 12)
-    grid.add(new Label(UDPHeader.localInstanceId.toString), 1, 12)
 
     val labels = grid.children.collect { case l: javafx.scene.control.Label => l }
     labels.foreach(_.getStyleClass.add("fixed-width"))
@@ -259,8 +258,7 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
         sb.append(s"Scala Version: $scalaVersion\n")
         sb.append(s"Data Version: $dataVersion\n")
         sb.append(s"Data Directory: $dataPath\n")
-        sb.append(s"Host: ${hostAndPortProvider.http}\n")
-        sb.append(s"UDP Instance ID: ${UDPHeader.localInstanceId}\n")
+        sb.append(s"Host: ${hostAndPortProvider.nodeIdentity}\n")
         sb.append(s"Java Version: ${sys.props("java.version")}\n")
         sb.append(s"Java Home: ${sys.props("java.home")}\n")
         val content = new ClipboardContent()

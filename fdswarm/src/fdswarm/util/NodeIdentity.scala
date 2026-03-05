@@ -32,7 +32,7 @@ case class NodeIdentity(host: String, port: Int, instanceId: Id = ourInstance) e
     f"$host:$port%d{$instanceId}"
   lazy val short:String =
     host.split('.').last
-  val notUs: Boolean =
+  def notUs: Boolean =
     instanceId != ourInstance
 
   def toURL: String =
@@ -66,11 +66,11 @@ object NodeIdentity:
     )
 
   private val regx = """^(localhost|[0-9.]+):(\d{1,5})-(\w+)$""".r
-  
+
   given Encoder[NodeIdentity] = Encoder.encodeString.contramap(_.toString)
   given Decoder[NodeIdentity] = Decoder.decodeString.map(NodeIdentity.apply)
   given Schema[NodeIdentity] = Schema.string
-  
+
   def apply(s: String): NodeIdentity =
       s match
         case regx(host, sPort, instanceId) =>

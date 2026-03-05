@@ -33,6 +33,7 @@ import fdswarm.util.{DurationFormat, HostAndPortProvider}
 import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.Inject
 
+import cats.effect.unsafe.implicits.global
 import java.util.concurrent.TimeUnit
 import scalafx.Includes.*
 import scalafx.beans.binding.{Bindings, BooleanBinding}
@@ -83,7 +84,8 @@ final class FdLogUi @Inject()(
                                webSessionsAdmin: fdswarm.fx.admin.WebSessionsAdmin,
                                sectionsProvider: fdswarm.fx.sections.SectionsProvider,
                                sectionPanel: fdswarm.fx.sections.SectionPanel,
-                               ipAddressDialogService: IpAddressDialogService
+                               ipAddressDialogService: IpAddressDialogService,
+                               apiServer: fdswarm.api.ApiServer
                              ) extends LazyLogging:
 
   // --- ARRL Sections Map (SVG) -------------------------------------------------
@@ -265,6 +267,7 @@ final class FdLogUi @Inject()(
     setAppIcon(stage)
     stage.title = "FdSwarm"
     statusBroadcastService.start()
+    apiServer.start().unsafeRunAndForget()
 
 
     ownerWindow = stage
@@ -303,7 +306,7 @@ final class FdLogUi @Inject()(
     stationMenuItem.disable = false
     contestMenuItem.disable = false
 
-    stage.title = s"FdSwarm@${hostAndPortProvider.nodeIdentity}"
+    stage.title = s"FdSwarm@${hostAndPortProvider.nodeIdentity.toString}"
     stage.scene = new Scene(root, 1100, 800):
       stylesheets = Seq(getClass.getResource("/styles/app.css").toExternalForm)
     stage.show()
