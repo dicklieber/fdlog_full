@@ -2,7 +2,7 @@ package fdswarm.replication
 
 import com.google.inject.name.Named
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.util.{HostAndPortProvider, Ids}
+import fdswarm.util.{HostAndPortProvider}
 import jakarta.inject.{Inject, Singleton}
 
 import java.net.{
@@ -117,9 +117,8 @@ class MulticastTransport @Inject() (
                   )
                   queue.offer(udpHeader)
                 case None =>
-                  logger.debug(
-                    s"Ignoring our own message from $senderAddr:$senderPort"
-                  )
+                  logger.trace("Ignoring our own message from {}", senderPort)
+
             catch
               case e: IllegalArgumentException =>
                 logger.error(
