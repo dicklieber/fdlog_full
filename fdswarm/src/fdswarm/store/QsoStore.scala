@@ -53,7 +53,7 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
     if isDuplicateInStore then
       StyledMessage(qso.rejectedMsg, "duplicate-qso")
     else
-      val jsonString = qso.asJson.noSpaces
+      val jsonString = qso.asJsonCompact
       os.write.append(journalFile, jsonString + "\n", createFolders = true)
 
       addToMap(qso)
@@ -137,7 +137,7 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
       maybeQso.foreach(was =>
         logger.error(s"Was already a qso for uuid: $uuid $qso")
       )
-      qso.asJson.noSpaces + "\n"
+      qso.asJsonCompact + "\n"
 
     if lines.nonEmpty then
       os.write.append(journalFile, lines.mkString, createFolders = true)

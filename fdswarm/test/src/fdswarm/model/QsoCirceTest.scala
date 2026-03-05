@@ -38,12 +38,19 @@ class QsoCirceTest extends FunSuite:
       section = "CT",
       bandMode = bandMode,
       qsoMetadata = qsoMetadata,
-      stamp = Instant.now(),
+      stamp = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS),
       uuid = "unique-id-123"
     )
 
     // Encode to JSON
     val json = qso.asJson.noSpaces
+    
+    // Simple check that it is NOT a long number (no quotes) or a formatted date string
+    // Base64 of a Long (8 bytes) will be 11 characters.
+    // Let's just print it for debugging and check it doesn't look like a number or ISO string
+    // println(s"[DEBUG_LOG] JSON: $json")
+    val stampPart = "\"stamp\":\""
+    assert(json.contains(stampPart), s"JSON should contain $stampPart - actually: $json")
     
     // Decode back to Qso
     val decoded = decode[Qso](json)

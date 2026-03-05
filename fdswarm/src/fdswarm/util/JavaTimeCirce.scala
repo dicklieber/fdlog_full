@@ -41,9 +41,13 @@ object JavaTimeCirce:
   given Encoder[ZonedDateTime] = Encoder.encodeString.contramap(_.format(DateTimeFormatter.ISO_ZONED_DATE_TIME))
   given Decoder[ZonedDateTime] = Decoder.decodeString.map(ZonedDateTime.parse)
 
-  private def formatter = new DateTimeFormatterBuilder()
-    .appendInstant(2) // Limit fractional digits to 2 on write.
-    .toFormatter()
-
-  given Encoder[Instant] = Encoder.encodeString.contramap(formatter.format)
-  given Decoder[Instant] = Decoder.decodeString.map(Instant.parse)
+  given Encoder[Instant] = Encoder.encodeString.contramap { instant =>
+    val bb = java.nio.ByteBuffer.allocate(8)
+    bb.putLong(instant.getEpochSecond)
+    java.util.Base64.getUrlEncoder.withoutPadding().encodeToString(bb.array())
+  }
+  given Decoder[Instant] = Decoder.decodeString.map { s =>
+    val bytes = java.util.Base64.getUrlDecoder.decode(s)
+    val bb = java.nio.ByteBuffer.wrap(bytes)
+    Instant.ofEpochSecond(bb.getLong)
+  }

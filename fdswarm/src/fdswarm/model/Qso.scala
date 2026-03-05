@@ -23,6 +23,7 @@ import fdswarm.fx.qso.FdHour
 import fdswarm.util.Ids
 import fdswarm.util.Ids.Id
 import io.circe.Codec
+import fdswarm.util.JavaTimeCirce.given
 
 import java.time.Instant
 /**
@@ -52,6 +53,11 @@ case class Qso(callsign: Callsign,
    * to create a unique key for comparison.
    */
   val dupCriterion:String = s"$callsign-$bandMode"
+
+  def asJsonCompact: String =
+    import io.circe.syntax.*
+    import fdswarm.util.JavaTimeCirce.given
+    this.asJson.noSpaces
 
 
 object Qso:
