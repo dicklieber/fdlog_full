@@ -30,8 +30,8 @@ import jakarta.inject.{Inject, Singleton}
 import scalafx.beans.property.{BooleanProperty, IntegerProperty}
 
 final case class StatusBroadcastSettings(
-    periodicEnabled: Boolean = false,
-    broadcastPeriodSec: Option[Int] = None
+    periodicEnabled: Boolean = true,
+    broadcastPeriodSec: Option[Int] = Option(10)
 ) derives Codec.AsObject
 
 @Singleton
