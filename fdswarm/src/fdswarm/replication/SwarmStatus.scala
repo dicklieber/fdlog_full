@@ -21,7 +21,7 @@ package fdswarm.replication
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.qso.FdHour
 import fdswarm.store.FdHourDigest
-import fdswarm.util.HostAndPort
+import fdswarm.util.NodeIdentity
 import jakarta.inject.*
 import javafx.beans.value.ObservableObjectValue
 import scalafx.application.Platform
@@ -32,38 +32,39 @@ import java.time.Instant
 import scala.collection.concurrent.TrieMap
 
 @Singleton
-class SwarmStatus @Inject()() extends LazyLogging:
-  val nodeMap: ObservableMap[HostAndPort, NodeDetails] = ObservableMap[HostAndPort, NodeDetails]()
+class SwarmStatus @Inject() extends LazyLogging:
+  val nodeMap: ObservableMap[NodeIdentity, NodeDetails] = ObservableMap[NodeIdentity, NodeDetails]()
 
-  def put(statusMessage:StatusMessage):Unit=
-    val hostAndPort = statusMessage.hostAndPort
+  def put(nodeStuff: NodeStuff):Unit=
     for
-      fdHourDigest <- statusMessage.fdDigests
-    do
-      nodeMap.get(hostAndPort) match
+      fdHourDigest <- nodeStuff.status.fdDigests
+    do {
+      val nodeIdentity = nodeStuff.nodeIdentity
+      nodeMap.get(nodeIdentity) match
         case Some(nodeDetails) =>
           nodeDetails.put(fdHourDigest)
         case None =>
-          val nodeDetails = NodeDetails(hostAndPort)
+          val nodeDetails = NodeDetails(nodeIdentity)
           nodeDetails.put(fdHourDigest)
           try
             Platform.runLater {
-              nodeMap.put(hostAndPort, nodeDetails)
+              nodeMap.put(nodeIdentity, nodeDetails)
             }
           catch
             case _: IllegalStateException =>
-              nodeMap.put(hostAndPort, nodeDetails)
+              nodeMap.put(nodeIdentity, nodeDetails) //todo I don't know why this is needed.
+    }
 
 
 case class LHData(fdHourDigest: FdHourDigest, lastSeen: Instant = Instant.EPOCH)
-case class FdHourNodeCell(hostAndPort: HostAndPort, fdHour:FdHour):
+case class FdHourNodeCell(nideIdentity: NodeIdentity, fdHour: FdHour):
   val lhData: ObjectProperty[LHData] =  ObjectProperty[LHData](LHData(FdHourDigest.empty(fdHour)))
 
-class NodeDetails(hostAndPort: HostAndPort):
+class NodeDetails(nodeIdentity: NodeIdentity):
   val map: TrieMap[FdHour, FdHourNodeCell] = new TrieMap[FdHour, FdHourNodeCell]
 
   def put(fdHourDigest: FdHourDigest): Unit =
-    val cell = map.getOrElseUpdate(fdHourDigest.fdHour, FdHourNodeCell(hostAndPort, fdHourDigest.fdHour))
+    val cell = map.getOrElseUpdate(fdHourDigest.fdHour, FdHourNodeCell(nodeIdentity, fdHourDigest.fdHour))
     val data = LHData(fdHourDigest, Instant.now())
     try
       Platform.runLater {

@@ -139,10 +139,7 @@ class StatusBroadcastService @Inject()(
 
   def broadcastStatus(): Unit =
     try
-      val statusMessage = StatusMessage(
-        hostAndPort = hostAndPortProvider.http,
-        fdDigests = qsoStore.digests()
-      )
+      val statusMessage = StatusMessage( fdDigests = qsoStore.digests())
       logger.trace(s"Broadcasting status: $statusMessage")
       val gzipBytes = statusMessage.toPacket
       multicastTransport.send(Service.Status, gzipBytes)

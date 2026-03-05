@@ -19,7 +19,7 @@
 package fdswarm.replication
 
 import fdswarm.store.FdHourDigest
-import fdswarm.util.HostAndPort
+import fdswarm.util.NodeIdentity
 import fdswarm.fx.qso.FdHour
 import io.circe.parser.decode
 import munit.FunSuite
@@ -28,9 +28,9 @@ import java.util.zip.GZIPInputStream
 
 class StatusMessageTest extends FunSuite:
   test("toPacket should serialize to JSON and gzip") {
-    val hp = HostAndPort("localhost", 8080)
+    val hp = NodeIdentity("localhost", 8080)
     val digests = Seq(FdHourDigest(FdHour(15, 12), 10, "digest-abc"))
-    val sm = StatusMessage(hp, digests)
+    val sm = StatusMessage(digests)
     
     val packet = sm.toPacket
     
@@ -43,15 +43,14 @@ class StatusMessageTest extends FunSuite:
     val readSm = decode[StatusMessage](json).toTry.get
     
     assertEquals(readSm, sm)
-    assertEquals(readSm.hostAndPort, hp)
     assertEquals(readSm.fdDigests.size, 1)
     assertEquals(readSm.fdDigests.head.count, 10)
   }
 
   test("fromPacket should deserialize from gzipped packet") {
-    val hp = HostAndPort("localhost", 8080)
+    val hp = NodeIdentity("localhost", 8080)
     val digests = Seq(FdHourDigest(FdHour(15, 12), 10, "digest-abc"))
-    val sm = StatusMessage(hp, digests)
+    val sm = StatusMessage(digests)
     
     val packet = sm.toPacket
     val readSm = StatusMessage.apply(packet)

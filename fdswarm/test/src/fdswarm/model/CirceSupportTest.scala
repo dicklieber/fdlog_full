@@ -27,7 +27,7 @@ import fdswarm.fx.sections.*
 import fdswarm.fx.bands.*
 import fdswarm.store.*
 import fdswarm.replication.*
-import fdswarm.util.HostAndPort
+import fdswarm.util.NodeIdentity
 import fdswarm.ContestDates
 import java.time.*
 import java.net.URL
@@ -73,10 +73,10 @@ class CirceSupportTest extends FunSuite:
     assertEquals(decoded, exchange)
 
   test("StatusMessage round trip"):
-    val hostAndPort = HostAndPort("localhost", 8080)
+    val hostAndPort = NodeIdentity("localhost", 8080)
     val fdHour = FdHour(15, 23)
     val digest = FdHourDigest(fdHour, 10, "some-digest")
-    val status = StatusMessage(hostAndPort, Seq(digest))
+    val status = StatusMessage(Seq(digest))
     val json = status.asJson.noSpaces
     val decoded = decode[StatusMessage](json).toOption.get
     assertEquals(decoded, status)

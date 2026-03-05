@@ -28,6 +28,7 @@ import scala.jdk.CollectionConverters.*
 
 @Singleton
 class HostAndPortProvider @Inject(@Named("fdswarm.httpPort") httpPort: Int) extends LazyLogging:
+  
   def suitableInterfaces: Seq[AnIpAddress] = (for
     interface: NetworkInterface <- NetworkInterface.getNetworkInterfaces.asScala
     anIpo = AnIpAddress(interface)
@@ -48,19 +49,10 @@ class HostAndPortProvider @Inject(@Named("fdswarm.httpPort") httpPort: Int) exte
     sPort.toInt
   }.getOrElse(httpPort)
 
-  def http: HostAndPort = apply(port)
+  val hostPort:String = s"${currentIp.ip}:${port}"
+  val nodeIdentity: NodeIdentity = NodeIdentity(currentIp.ip, httpPort)
+  val portAndInstance = PortAndInstance(port, fdswarm.util.NodeIdentity.ourInstance)
 
-  private def apply(port: Int): HostAndPort = HostAndPort(ourIp.ip, port)
-
-//  
-//    val addresses = for {
-//      interface <- interfaces
-//      if interface.isUp && !interface.isLoopback && !interface.isVirtual
-//      address <- interface.getInetAddresses.asScala
-//      if address.isSiteLocalAddress && address.getHostAddress.contains(".")
-//    } yield address.getHostAddress
-//
-//    addresses.toSeq.headOption.getOrElse("127.0.0.1")
 
 
 case class AnIpAddress(interfaceName: String, ip: String):

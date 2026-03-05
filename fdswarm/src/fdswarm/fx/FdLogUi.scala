@@ -303,7 +303,7 @@ final class FdLogUi @Inject()(
     stationMenuItem.disable = false
     contestMenuItem.disable = false
 
-    stage.title = s"FdSwarm@${hostAndPortProvider.http}"
+    stage.title = s"FdSwarm@${hostAndPortProvider.nodeIdentity}"
     stage.scene = new Scene(root, 1100, 800):
       stylesheets = Seq(getClass.getResource("/styles/app.css").toExternalForm)
     stage.show()

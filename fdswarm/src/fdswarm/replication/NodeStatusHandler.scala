@@ -22,7 +22,7 @@ import cats.effect.unsafe.implicits.global
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.model.Qso
 import fdswarm.store.ReplicationSupport
-import fdswarm.util.HostAndPortProvider
+import fdswarm.util.{HostAndPortProvider, NodeIdentity}
 import io.circe.parser.decode
 import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.{Inject, Singleton}
@@ -51,9 +51,10 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
           case Service.Status =>
             statusCounter.increment()
             val statusMessage = StatusMessage(udpHeader.payload)
-            swarmStatus.put(statusMessage)
-            logger.trace("StatusHandle: StatusMessage from {} with {} digests.", statusMessage.hostAndPort, statusMessage.fdDigests.size)
-            statusProcessor.processStatus(statusMessage).unsafeRunAndForget()
+            val nodeStuff = NodeStuff(statusMessage, udpHeader.nodeIdentity)
+            swarmStatus.put(nodeStuff)
+            logger.trace("StatusHandle: StatusMessage  {}.", statusMessage)
+            statusProcessor.processStatus(nodeStuff).unsafeRunAndForget()
           case Service.QSO =>
             qsoCounter.increment()
             val json = new String(udpHeader.payload, "UTF-8")
@@ -71,5 +72,3 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
   thread.setDaemon(true)
   logger.debug("Starting NodeStatusHandler Thread")
   thread.start()
-
- 

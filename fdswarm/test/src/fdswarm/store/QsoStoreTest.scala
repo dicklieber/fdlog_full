@@ -22,7 +22,7 @@ import fdswarm.TestDirectory
 import fdswarm.model.QsoMetadata.testQsoMetadata
 import fdswarm.model.{BandMode, Callsign, Qso}
 import fdswarm.replication.{MulticastTransport, Service, StatusMessage}
-import fdswarm.util.{HostAndPort, HostAndPortProvider}
+import fdswarm.util.{NodeIdentity, HostAndPortProvider}
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import munit.FunSuite
 

@@ -19,16 +19,20 @@
 package fdswarm.replication
 
 import fdswarm.store.FdHourDigest
-import fdswarm.util.{HostAndPort, CirceGzip}
+import fdswarm.util.Ids.Id
+import fdswarm.util.{CirceGzip, Ids, NodeIdentity}
 import io.circe.Codec
 
-case class StatusMessage(hostAndPort: HostAndPort, fdDigests:Seq[FdHourDigest]) derives Codec.AsObject:
+import java.time.Instant
+
+case class StatusMessage( fdDigests: Seq[FdHourDigest], id:Id = Ids.generateId()) derives Codec.AsObject:
   def toPacket: Array[Byte] = CirceGzip.encode(this)
 
   override def toString: String =
-    s"StatusMessage(hostAndPort: $hostAndPort, fdDigests:${fdDigests.size} gzipSize: ${toPacket.length} bytes.)"
+    s"StatusMessage( fdDigests:${fdDigests.size} gzipSize: ${toPacket.length} bytes.)"
 
 object StatusMessage:
   def apply(gzipped: Array[Byte]): StatusMessage =
     CirceGzip.decode[StatusMessage](gzipped).toTry.get
    
+class NodeStatus(val lastStatusMessage:StatusMessage, val statusReceievdCount:Int, val lastStatusReceived:Instant)

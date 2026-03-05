@@ -19,24 +19,29 @@
 package fdswarm.replication
 
 import com.organization.BuildInfo
+import fdswarm.util.PortAndInstance
 import munit.FunSuite
 import scala.util.Success
 import scala.util.Failure
 
 import java.io.ByteArrayOutputStream
 import java.util.zip.GZIPOutputStream
+import java.net.DatagramPacket
+import java.net.InetAddress
 
 class UDPHeaderTest extends FunSuite:
 
   test("UDPHeader generates correct Status header"):
-    val bytes = UDPHeader(Service.Status)
-    val expected = s"FDSWARM|Status|${BuildInfo.dataVersion}|${UDPHeader.localInstanceId}|\n".getBytes("UTF-8")
+    val pi = PortAndInstance(8080, "test-instance")
+    val bytes = UDPHeader(Service.Status, pi)
+    val expected = s"FDSWARM|Status|$pi|${BuildInfo.dataVersion}|\n".getBytes("UTF-8")
     assert(bytes.sameElements(expected))
 
   test("UDPHeader generates correct header with payload"):
+    val pi = PortAndInstance(8080, "test-instance")
     val payload = "Hello World".getBytes("UTF-8")
-    val bytes = UDPHeader(Service.Status, payload)
-    val headerPart = s"FDSWARM|Status|${BuildInfo.dataVersion}|${UDPHeader.localInstanceId}|\n".getBytes("UTF-8")
+    val bytes = UDPHeader(Service.Status, pi, payload)
+    val headerPart = s"FDSWARM|Status|$pi|${BuildInfo.dataVersion}|\n".getBytes("UTF-8")
     val expected = new Array[Byte](headerPart.length + payload.length)
     System.arraycopy(headerPart, 0, expected, 0, headerPart.length)
     System.arraycopy(payload, 0, expected, headerPart.length, payload.length)
@@ -44,20 +49,32 @@ class UDPHeaderTest extends FunSuite:
 
   test("UDPHeader.parse correctly parses valid Status header from another instance"):
     val instance = "other-instance"
+    val port = 8081
+    val pi = PortAndInstance(port, instance)
     val jsonPayload = "\"status-ok\""
-    val header = (s"FDSWARM|Status|${BuildInfo.dataVersion}|$instance|\n" + jsonPayload).getBytes("UTF-8")
-    val result = UDPHeader.parse(header).get
+    val headerData = (s"FDSWARM|Status|$pi|${BuildInfo.dataVersion}|\n" + jsonPayload).getBytes("UTF-8")
+    val address = InetAddress.getByName("192.168.1.100")
+    val packet = new DatagramPacket(headerData, headerData.length, address, 1234)
+    
+    val result = UDPHeader.parse(packet).get
     assertEquals(result.service, Service.Status)
-    assertEquals(result.instance, instance)
+    assertEquals(result.nodeIdentity.instanceId, instance)
+    assertEquals(result.nodeIdentity.host, "192.168.1.100")
+    assertEquals(result.nodeIdentity.port, port)
     assertEquals(new String(result.payload, "UTF-8"), jsonPayload)
 
   test("UDPHeader.parse returns None for local instance"):
-    val header = (s"FDSWARM|Status|${BuildInfo.dataVersion}|${UDPHeader.localInstanceId}|\n").getBytes("UTF-8")
-    val result = UDPHeader.parse(header)
+    val pi = PortAndInstance(8080, fdswarm.util.NodeIdentity.ourInstance)
+    val headerData = (s"FDSWARM|Status|$pi|${BuildInfo.dataVersion}|\n").getBytes("UTF-8")
+    val address = InetAddress.getLoopbackAddress
+    val packet = new DatagramPacket(headerData, headerData.length, address, 1234)
+    val result = UDPHeader.parse(packet)
     assert(result.isEmpty)
 
   test("UDPHeader.parse correctly parses gzipped payload"):
     val instance = "test-instance"
+    val port = 8082
+    val pi = PortAndInstance(port, instance)
     val jsonPayload = "\"gzipped-payload\""
     val baos = new ByteArrayOutputStream()
     val gzos = new GZIPOutputStream(baos)
@@ -65,24 +82,30 @@ class UDPHeaderTest extends FunSuite:
     gzos.close()
     val gzippedPayload = baos.toByteArray
     
-    val headerPart = s"FDSWARM|Status|${BuildInfo.dataVersion}|$instance|\n".getBytes("UTF-8")
-    val packet = new Array[Byte](headerPart.length + gzippedPayload.length)
-    System.arraycopy(headerPart, 0, packet, 0, headerPart.length)
-    System.arraycopy(gzippedPayload, 0, packet, headerPart.length, gzippedPayload.length)
+    val headerPart = s"FDSWARM|Status|$pi|${BuildInfo.dataVersion}|\n".getBytes("UTF-8")
+    val packetData = new Array[Byte](headerPart.length + gzippedPayload.length)
+    System.arraycopy(headerPart, 0, packetData, 0, headerPart.length)
+    System.arraycopy(gzippedPayload, 0, packetData, headerPart.length, gzippedPayload.length)
     
+    val address = InetAddress.getByName("192.168.1.101")
+    val packet = new DatagramPacket(packetData, packetData.length, address, 1234)
+
     val result = UDPHeader.parse(packet).get
     assertEquals(result.service, Service.Status)
-    assertEquals(result.instance, instance)
+    assertEquals(result.nodeIdentity.instanceId, instance)
     assert(result.payload.sameElements(gzippedPayload))
 
   test("UDPHeader.parse fails on invalid prefix"):
-    val header = s"INVALID|Status|${BuildInfo.dataVersion}|test-instance|\n".getBytes("UTF-8")
-    intercept[IllegalArgumentException](UDPHeader.parse(header))
+    val headerData = s"INVALID|Status|8080-instance|${BuildInfo.dataVersion}|\n".getBytes("UTF-8")
+    val packet = new DatagramPacket(headerData, headerData.length, InetAddress.getLoopbackAddress, 1234)
+    intercept[IllegalArgumentException](UDPHeader.parse(packet))
 
   test("UDPHeader.parse fails on invalid version"):
-    val header = s"FDSWARM|Status|999|test-instance|\n".getBytes("UTF-8")
-    intercept[IllegalArgumentException](UDPHeader.parse(header))
+    val headerData = s"FDSWARM|Status|8080-instance|999|\n".getBytes("UTF-8")
+    val packet = new DatagramPacket(headerData, headerData.length, InetAddress.getLoopbackAddress, 1234)
+    intercept[IllegalArgumentException](UDPHeader.parse(packet))
 
   test("UDPHeader.parse fails on unknown service"):
-    val header = s"FDSWARM|Unknown|${BuildInfo.dataVersion}|test-instance|\n".getBytes("UTF-8")
-    intercept[IllegalArgumentException](UDPHeader.parse(header))
+    val headerData = s"FDSWARM|Unknown|8080-instance|${BuildInfo.dataVersion}|\n".getBytes("UTF-8")
+    val packet = new DatagramPacket(headerData, headerData.length, InetAddress.getLoopbackAddress, 1234)
+    intercept[IllegalArgumentException](UDPHeader.parse(packet))

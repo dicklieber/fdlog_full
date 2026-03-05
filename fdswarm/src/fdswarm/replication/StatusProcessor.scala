@@ -24,7 +24,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.api.ReplEndpoints
 import fdswarm.fx.qso.FdHour
 import fdswarm.store.{FdHourIds, FdHourRequest, ReplicationSupport}
-import fdswarm.util.HostAndPort
+import fdswarm.util.NodeIdentity
 import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.{Inject, Singleton}
 
@@ -47,20 +47,20 @@ class StatusProcessor @Inject()(qsoStore: ReplicationSupport,
    * and POST them to the remote node.
    *
    * @param status incoming status from a remote node
+   * @param nodeIdentity the node identity of the remote node hoist, port, instanceId.
    * @return IO completing after the HTTP call finishes
    */
-  def processStatus(status: StatusMessage): IO[Unit] =
-    val needed = status.fdDigests.flatMap(qsoStore.isFdHourNeeded)
+  def processStatus(nodeStuff: NodeStuff): IO[Unit] =
+    val needed = nodeStuff.status.fdDigests.flatMap(qsoStore.isFdHourNeeded)
     if needed.nonEmpty then
       // Record at least one timing sample to indicate processing occurred
       IO(timer.record(1L, TimeUnit.NANOSECONDS)) >>
-        processStatusInternal(status, needed).handleError(_ => IO.unit)
+        processStatusInternal(nodeStuff, needed).handleError(_ => IO.unit)
     else
       IO.unit
 
-  private def processStatusInternal(status: StatusMessage, needed: Seq[FdHour]): IO[Unit] =
-    given HostAndPort = status.hostAndPort
-    logger.debug(s"Processing status from ${status.hostAndPort}")
+  private def processStatusInternal(nodeStuff: NodeStuff, needed: Seq[FdHour]): IO[Unit] =
+    given NodeIdentity = nodeStuff.nodeIdentity
     needed.traverse_ { fdHour =>
       for
         // 1. Ask remote for all IDs in this hour
@@ -84,3 +84,4 @@ class StatusProcessor @Inject()(qsoStore: ReplicationSupport,
       yield ()
     }
   
+case class NodeStuff(status: StatusMessage, nodeIdentity: NodeIdentity)

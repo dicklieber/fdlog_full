@@ -21,7 +21,7 @@ package fdswarm.replication
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.GridUtils
 import fdswarm.fx.qso.FdHour
-import fdswarm.util.HostAndPort
+import fdswarm.util.NodeIdentity
 import jakarta.inject.{Inject, Singleton}
 import scalafx.application.Platform
 import scalafx.beans.binding.Bindings
@@ -52,7 +52,7 @@ class SwarmStatusPane @Inject()(swarmStatus: SwarmStatus) extends LazyLogging:
       vgap = 5
       gridLinesVisible = true
 
-    val nodes: Seq[HostAndPort] = swarmStatus.nodeMap.keys.toSeq.sorted
+    val nodes: Seq[NodeIdentity] = swarmStatus.nodeMap.keys.toSeq.sorted
     val allHours: Set[FdHour] = swarmStatus.nodeMap.values.flatMap(_.map.keys).toSet
     val hours: Seq[FdHour] = allHours.toSeq.sorted
 

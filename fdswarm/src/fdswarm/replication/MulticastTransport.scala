@@ -100,7 +100,7 @@ class MulticastTransport @Inject() (
 
         while !Thread.currentThread().isInterrupted do
           try
-            val packet = new DatagramPacket(buffer, buffer.length)
+            val packet: DatagramPacket = new DatagramPacket(buffer, buffer.length)
             socket.receive(packet)
 
             val senderAddr = packet.getAddress
@@ -109,11 +109,8 @@ class MulticastTransport @Inject() (
               s"Received UDP packet from $senderAddr:$senderPort, length ${packet.getLength}"
             )
 
-            val data = packet.getData
-              .slice(packet.getOffset, packet.getOffset + packet.getLength)
-
             try
-              UDPHeader.parse(data) match
+              UDPHeader.parse(packet) match
                 case Some(udpHeader) =>
                   logger.trace(
                     s"Received UDP packet from $senderAddr:$senderPort: ${udpHeader.service}"
@@ -162,7 +159,7 @@ class MulticastTransport @Inject() (
     send(Service.QSO, data)
 
   def send(service: Service, data: Array[Byte]): Unit =
-    val packetBytes = UDPHeader(service, data)
+    val packetBytes = UDPHeader(service, hostAndPortProvider.portAndInstance, data)
     val packet =
       new DatagramPacket(packetBytes, packetBytes.length, group, port)
     socket.send(packet)

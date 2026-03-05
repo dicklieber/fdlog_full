@@ -19,37 +19,46 @@
 package fdswarm.replication
 
 import com.organization.BuildInfo
+import fdswarm.util.Ids.Id
+import fdswarm.util.{Ids, NodeIdentity, PortAndInstance}
 import org.slf4j.LoggerFactory
 
+import java.net.DatagramPacket
 import scala.util.Try
 
-import fdswarm.util.Ids
-import fdswarm.util.Ids.Id
-
-case class UDPHeaderData(service: Service, instance: Id, payload: Array[Byte])
+case class UDPHeaderData(service: Service, nodeIdentity: NodeIdentity, payload: Array[Byte])
 
 /**
- * UDP Header format:
- * FDSWARM|SERVICE|VERSION|INSTANCE|\n
- * JSON_PAYLOAD
+ *
+ * Node identity used in the cluster.
+ * e.g. "fdswarm|Status|8078-s123232131)|0\n"
+ *
+ * | Field      | Type   | Description                              |
+ * |------------|--------|------------------------------------------|
+ * | `fdswarm`     | String | the fdswarm app, helps in WireShark                   |
+ * | `service`     | String | from [[fdswarm.replication.Service]]                   |
+ * | `port`     | String    | TCP Port and instnaceID
+ * | \n | end of line   | marks end of header.  |
+ *
+ *
  */
 object UDPHeader:
   private val logger = LoggerFactory.getLogger(getClass)
-  val localInstanceId: Id =
-    val id = Ids.generateInstanceId()
-    logger.info(s"localInstanceId: $id")
-    id
-  private val headerRegx = s"""^FDSWARM\\|(${Service.values.map(_.toString).mkString("|")})\\|([^|]+)\\|([^|]+)\\|$$""".r
-
+  private val serviceNames: String = Service.values.map(_.toString).mkString("|")
+  private val headerRegx =
+    """^FDSWARM\|([^|]+)\|([^|]+)\|(\d+)\|$""".r
   /**
-   * Creates a UDP packet from a Header.
+   * Constructs a byte array representing a UDP header along with an optional payload.
+   * The header adheres to the format: `FDSWARM|SERVICE|NODE|DATAVERSION|.
+   * e.g. "fdswarm|Status|10.10.10.10:8078(s123232131)|0"
    *
-   * @param service what this data is about.
-   * @param payload contents of the packet.
-   * @return suitable for sending over UDP.
+   * @param service      the service type, represented as an instance of the `Service` enum (e.g., Status or QSO).
+   * @param portAndInstance just the port and instanceID ultimately will get the host from the [[DatagramPacket]].
+   * @param payload      optional byte array representing additional data to append after the header, defaulting to an empty array.
+   * @return a byte array combining the formatted header and the optional payload.
    */
-  def apply(service: Service, payload: Array[Byte] = Array.emptyByteArray): Array[Byte] =
-    val header = s"FDSWARM|$service|${BuildInfo.dataVersion}|$localInstanceId|\n"
+  def apply(service: Service, portAndInstance: PortAndInstance, payload: Array[Byte] = Array.emptyByteArray): Array[Byte] =
+    val header = s"FDSWARM|$service|$portAndInstance|${BuildInfo.dataVersion}|\n"
     val headerBytes: Array[Byte] = header.getBytes("UTF-8")
     val result: Array[Byte] = headerBytes ++ payload
     result
@@ -61,23 +70,26 @@ object UDPHeader:
    * @return Option[UDPHeaderData] None if the packet is from the local instance.
    */
   @throws[IllegalArgumentException]("if packet is invalid")
-  def parse(packet: Array[Byte]): Option[UDPHeaderData] =
+  def parse(packet: DatagramPacket): Option[UDPHeaderData] =
     Try {
-      val newlineIndex = packet.indexOf('\n'.toByte)
+      val data: Array[Byte] = packet.getData
+      val newlineIndex = data.indexOf('\n'.toByte)
       if (newlineIndex == -1) throw new IllegalArgumentException("Invalid packet: no newline found")
 
-      val headerStr = new String(packet.take(newlineIndex), "UTF-8")
-      val payloadBytes = packet.drop(newlineIndex + 1)
+      val headerBytes = data.take(newlineIndex)
+      val headerStr = new String(headerBytes, "UTF-8")
+      val payloadBytes = data.drop(newlineIndex + 1) // after newline
 
       headerStr match
-        case headerRegx(sService, dataVersion, instance) =>
-          if dataVersion != BuildInfo.dataVersion then
-            throw new IllegalArgumentException(s"Data version mismatch: expected ${BuildInfo.dataVersion}, got $dataVersion")
-
-          Option.when(instance != localInstanceId) {
-            val service = Service.valueOf(sService)
-            val payload = payloadBytes
-            UDPHeaderData(service, instance, payload)
+        case headerRegx(sService, sPortAndInstance, sDataVersion) =>
+          if sDataVersion != BuildInfo.dataVersion then
+            throw new IllegalArgumentException(s"Data version mismatch: expected ${BuildInfo.dataVersion}, got $sDataVersion")
+          val hostAddress = packet.getAddress.getHostAddress
+          val portAndInstance: PortAndInstance = PortAndInstance.fromString(sPortAndInstance)
+          val nodeIdentity= NodeIdentity(hostAddress,portAndInstance.port, portAndInstance.instanceId )
+          
+          Option.when(nodeIdentity.notUs) {
+            UDPHeaderData(Service.valueOf(sService), nodeIdentity, payloadBytes)
           }
         case _ =>
           throw new IllegalArgumentException(s"Invalid header format: $headerStr")

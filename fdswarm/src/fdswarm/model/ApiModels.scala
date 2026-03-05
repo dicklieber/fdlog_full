@@ -19,7 +19,7 @@
 package fdswarm.model
 
 import com.organization.BuildInfo
-import fdswarm.util.HostAndPort
+import fdswarm.util.NodeIdentity
 import fdswarm.util.Ids.Id
 import io.circe.Codec
 import sttp.tapir.Schema
@@ -27,12 +27,7 @@ import sttp.tapir.Schema
 import java.time.Instant
 
 /** Header containing node metadata for API responses. */
-case class NodeHeader(
-    version: String,
-    hostAndPort: HostAndPort,
-    udpInstanceId: Id,
-    timestamp: Instant
-) derives Codec.AsObject, Schema
+case class NodeHeader(version: String, hostAndPort: NodeIdentity, udpInstanceId: Id) derives Codec.AsObject, Schema
 
 /** Generic wrapper for API responses including a NodeHeader. */
 case class ApiResponse[T](

@@ -23,7 +23,7 @@ import fdswarm.fx.sections.{Sections, SectionsProvider}
 import fdswarm.model.Callsign
 import fdswarm.store.QsoStore
 import fdswarm.replication.{MulticastTransport, Service}
-import fdswarm.util.{HostAndPort, HostAndPortProvider}
+import fdswarm.util.{NodeIdentity, HostAndPortProvider}
 import fdswarm.TestDirectory
 import com.typesafe.config.ConfigFactory
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry

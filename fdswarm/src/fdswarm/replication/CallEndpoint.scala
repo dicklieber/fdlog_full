@@ -21,7 +21,7 @@ package fdswarm.replication
 import cats.effect.IO
 import scala.concurrent.duration.*
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.util.HostAndPort
+import fdswarm.util.NodeIdentity
 import jakarta.inject.Singleton
 import org.http4s.Uri
 import org.http4s.ember.client.EmberClientBuilder
@@ -42,12 +42,12 @@ class CallEndpoint @jakarta.inject.Inject()(reporter: Reporter[IO]) extends Lazy
    * it during test initialization when it's not needed, preventing NoClassDefFoundError
    * if the client dependency isn't on the test runtime classpath.
    */
-  def apply[I, E, O]( endpoint: sttp.tapir.PublicEndpoint[I, E, O, Any], input: I)(using hostAndPort: HostAndPort): IO[O] =
+  def apply[I, E, O]( endpoint: sttp.tapir.PublicEndpoint[I, E, O, Any], input: I)(using  nodeIdentity:NodeIdentity): IO[O] =
     val baseUri = Uri(
       scheme = Some(Uri.Scheme.http),
       authority = Some(Uri.Authority(
-        host = Uri.RegName(hostAndPort.host),
-        port = Some(hostAndPort.port)
+        host = Uri.RegName(nodeIdentity.host),
+        port = Some(nodeIdentity.port)
       ))
     )
 

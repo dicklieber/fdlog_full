@@ -20,7 +20,7 @@ package fdswarm.replication
 
 import fdswarm.fx.qso.FdHour
 import fdswarm.store.FdHourDigest
-import fdswarm.util.HostAndPort
+import fdswarm.util.NodeIdentity
 import munit.FunSuite
 
 import java.time.Instant
@@ -29,12 +29,13 @@ class SwarmStatusTest extends FunSuite:
 
   test("SwarmStatus.put should update nodeMap and NodeDetails"):
     val swarmStatus = new SwarmStatus
-    val hp = HostAndPort("192.168.1.100", 8080)
+    val hp = NodeIdentity("192.168.1.100", 8080)
     val hour = FdHour(15, 12)
     val digest = FdHourDigest(hour, 10, "abc")
-    val statusMessage = StatusMessage(hp, Seq(digest))
+    val statusMessage = StatusMessage(Seq(digest))
+    val nodeStuff = NodeStuff(statusMessage, hp)
 
-    swarmStatus.put(statusMessage)
+    swarmStatus.put(nodeStuff)
 
     assert(swarmStatus.nodeMap.contains(hp))
     val nodeDetails = swarmStatus.nodeMap(hp)
@@ -46,7 +47,7 @@ class SwarmStatusTest extends FunSuite:
     // In many ScalaFX/JavaFX test environments, Platform.runLater might not execute immediately or at all without a Toolkit.
     
     // However, the FdHourNodeCell is created SYNC in NodeDetails.put (map.getOrElseUpdate)
-    assertEquals(cell.hostAndPort, hp)
+    assertEquals(cell.nideIdentity, hp)
     assertEquals(cell.fdHour, hour)
     
     // The lhData update should have happened (either via Platform.runLater or fallback)
