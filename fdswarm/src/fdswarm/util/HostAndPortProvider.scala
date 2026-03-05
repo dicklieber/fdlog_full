@@ -50,7 +50,7 @@ class HostAndPortProvider @Inject(@Named("fdswarm.httpPort") httpPort: Int) exte
 
   val hostPort:String = s"${currentIp.ip}:$port"
   val nodeIdentity: NodeIdentity = NodeIdentity(currentIp.ip, port)
-  val portAndInstance = PortAndInstance(port, fdswarm.util.NodeIdentity.ourInstance)
+  val portAndInstance = PortAndInstance(port)
 
 
 

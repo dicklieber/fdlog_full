@@ -18,22 +18,23 @@
 package fdswarm.util
 
 import fdswarm.util.Ids.Id
-import fdswarm.util.NodeIdentity.ourInstance
+import fdswarm.util.PortAndInstance.ourInstanceId
 import io.circe.*
 import io.circe.KeyEncoder.encodeKeyLong
 import jakarta.inject.*
 import sttp.tapir.Schema
 
 import java.net.{InetAddress, InetSocketAddress, URI}
+import java.util.Base64
 import scala.util.matching.Regex
 
-case class NodeIdentity(host: String, port: Int, instanceId: Id = ourInstance) extends Ordered[NodeIdentity]:
+case class NodeIdentity(host: String, port: Int, instanceId: Id = ourInstanceId) extends Ordered[NodeIdentity]:
   override val toString: String =
     f"$host:$port%d{$instanceId}"
   lazy val short:String =
     host.split('.').last
   def notUs: Boolean =
-    instanceId != ourInstance
+    instanceId != ourInstanceId
 
   def toURL: String =
     toURI.toString
@@ -56,7 +57,6 @@ case class NodeIdentity(host: String, port: Int, instanceId: Id = ourInstance) e
     ret
 
 object NodeIdentity:
-  val ourInstance: Id = Ids.generateId()
 
   def fromURI(uri: URI): NodeIdentity =
     NodeIdentity(
@@ -89,7 +89,7 @@ import io.circe.{Encoder, Decoder}
  *                   The `toString` method provides a string representation
  *                   in the format `port-instanceId`.
  */
-case class PortAndInstance(port: Int, instanceId: Id):
+case class PortAndInstance(port: Int, instanceId: Id = ourInstanceId):
   override def toString: String =
     s"$port-$instanceId"
 
@@ -115,3 +115,9 @@ object PortAndInstance:
 
   given Decoder[PortAndInstance] =
     Decoder.decodeString.emap(parse)
+
+  val ourInstanceId: String = Base64.getUrlEncoder.withoutPadding()
+    .encodeToString(Array(
+      scala.util.Random.nextInt(256).toByte,
+      scala.util.Random.nextInt(256).toByte
+    ))

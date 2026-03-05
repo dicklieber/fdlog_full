@@ -20,10 +20,11 @@ package fdswarm.replication
 
 import com.organization.BuildInfo
 import fdswarm.util.PortAndInstance
+import fdswarm.util.PortAndInstance.ourInstanceId
 import munit.FunSuite
+
 import scala.util.Success
 import scala.util.Failure
-
 import java.io.ByteArrayOutputStream
 import java.util.zip.GZIPOutputStream
 import java.net.DatagramPacket
@@ -64,7 +65,7 @@ class UDPHeaderTest extends FunSuite:
     assertEquals(new String(result.payload, "UTF-8"), jsonPayload)
 
   test("UDPHeader.parse returns None for local instance"):
-    val pi = PortAndInstance(8080, fdswarm.util.NodeIdentity.ourInstance)
+    val pi = PortAndInstance(8080, ourInstanceId)
     val headerData = (s"FDSWARM|Status|$pi|${BuildInfo.dataVersion}|\n").getBytes("UTF-8")
     val address = InetAddress.getLoopbackAddress
     val packet = new DatagramPacket(headerData, headerData.length, address, 1234)
