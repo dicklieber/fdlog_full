@@ -21,7 +21,7 @@ package fdswarm.fx.tools
 import fdswarm.fx.qso.{FdHour, QsoDialog}
 import fdswarm.model.Qso
 import fdswarm.store.QsoStore
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import scalafx.collections.ObservableBuffer
 import scalafx.scene.Scene
 import scalafx.scene.control.*

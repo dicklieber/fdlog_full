@@ -18,6 +18,7 @@
 
 package fdswarm.fx.qso
 
+import scala.compiletime.uninitialized
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.GridUtils
 import fdswarm.fx.bandmodes.{BandModeStore, SelectedBandModeStore}
@@ -40,8 +41,8 @@ class DupPanel @Inject()(
     hgap = 10
     vgap = 5
   }
-  private var root: Pane = _
-  private var titleLabel: Label = _
+  private var root: Pane = uninitialized
+  private var titleLabel: Label = uninitialized
 
   def show(styledMessage: StyledMessage): Unit =
     Platform.runLater {

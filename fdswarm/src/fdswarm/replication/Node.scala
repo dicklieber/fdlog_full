@@ -21,7 +21,7 @@ package fdswarm.replication
 import fdswarm.fx.contest.ContestConfig
 import fdswarm.model.Callsign
 import io.circe.{Codec, Encoder, Decoder}
-import java.net.URL
+import java.net.{URI, URL}
 import scala.util.Try
 
 /**
@@ -31,7 +31,7 @@ import scala.util.Try
  * @param ourStation who is participating in this contest.
  */
 given Encoder[URL] = Encoder.encodeString.contramap(_.toString)
-given Decoder[URL] = Decoder.decodeString.emap(str => Try(new URL(str)).toEither.left.map(_.getMessage))
+given Decoder[URL] = Decoder.decodeString.emap(str => Try(new URI(str).toURL).toEither.left.map(_.getMessage))
 
 case class Node(url: URL,
                 contestConfig: ContestConfig,

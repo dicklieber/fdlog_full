@@ -19,7 +19,7 @@
 package fdswarm.fx.qso
 
 import fdswarm.model.Qso
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import scalafx.scene.control.*
 import scalafx.scene.layout.GridPane
 import scalafx.geometry.Insets

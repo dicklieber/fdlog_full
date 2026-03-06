@@ -20,7 +20,7 @@ package fdswarm.fx.tools
 
 import fdswarm.fx.qso.ContestTimerPanel
 import jakarta.inject.{Inject, Singleton}
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import scalafx.geometry.Insets
 import scalafx.scene.Scene
 import scalafx.scene.control.*

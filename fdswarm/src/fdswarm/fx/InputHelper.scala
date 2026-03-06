@@ -37,7 +37,7 @@
 
 package fdswarm.fx
 
-import _root_.scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import _root_.scalafx.scene.control.{TextField, TextFormatter, TextInputControl}
 import _root_.scalafx.scene.input.KeyEvent
 import _root_.scalafx.util.converter.FormatStringConverter

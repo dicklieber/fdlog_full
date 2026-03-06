@@ -26,7 +26,7 @@ import scalafx.scene.layout.{GridPane, HBox, Priority, VBox}
 import scalafx.stage.Window
 import fdswarm.io.DirectoryProvider
 import jakarta.inject.Inject
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import fdswarm.fx.utils.JsonPrettyPrinter
 import fdswarm.util.HostAndPortProvider
 import fdswarm.replication.UDPHeader

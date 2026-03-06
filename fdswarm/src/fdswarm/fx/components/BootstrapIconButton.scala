@@ -22,7 +22,7 @@ import scalafx.beans.property.StringProperty
 import scalafx.scene.control.{Button, Tooltip}
 import scalafx.scene.image.{Image, ImageView}
 import scalafx.scene.layout.{Priority, StackPane}
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 
 /**
  * A reusable ScalaFX Button that displays an icon (e.g., Bootstrap icons) 

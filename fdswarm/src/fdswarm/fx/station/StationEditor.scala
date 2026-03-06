@@ -20,7 +20,7 @@ package fdswarm.fx.station
 
 import fdswarm.model.{Callsign, Station}
 import jakarta.inject.{Inject, Singleton}
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import scalafx.beans.binding.Bindings
 import scalafx.geometry.Insets
 import scalafx.scene.control.*

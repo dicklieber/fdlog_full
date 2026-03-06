@@ -27,7 +27,7 @@ import fdswarm.fx.utils.IconButton
 import fdswarm.model.BandMode
 import fdswarm.model.BandMode.{Band, Mode}
 import jakarta.inject.{Inject, Provider, Singleton}
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.Node
 import scalafx.scene.control.*

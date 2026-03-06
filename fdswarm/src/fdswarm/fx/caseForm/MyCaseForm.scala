@@ -21,7 +21,7 @@ package fdswarm.fx.caseForm
 import fdswarm.fx.InputHelper.*
 import fdswarm.model.Callsign
 import javafx.event.{ActionEvent as JfxActionEvent, EventHandler as JfxEventHandler}
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import scalafx.collections.ObservableBuffer
 import scalafx.geometry.Insets
 import scalafx.scene.Node

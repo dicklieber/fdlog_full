@@ -23,7 +23,7 @@ import fdswarm.fx.qso.FdHour
 import fdswarm.store.QsoStore
 import io.circe.syntax.*
 import jakarta.inject.{Inject, Singleton}
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import scalafx.geometry.Insets
 import scalafx.scene.control.*
 import scalafx.scene.layout.FlowPane

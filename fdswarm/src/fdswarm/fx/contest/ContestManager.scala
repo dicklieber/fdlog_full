@@ -24,7 +24,7 @@ import fdswarm.fx.sections.{Section, Sections}
 import fdswarm.model.Callsign
 import fdswarm.io.DirectoryProvider
 import jakarta.inject.{Inject, Singleton}
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import scalafx.beans.property.ObjectProperty
 import scalafx.collections.ObservableBuffer
 import scalafx.geometry.Insets

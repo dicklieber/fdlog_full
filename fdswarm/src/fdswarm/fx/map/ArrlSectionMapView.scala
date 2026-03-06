@@ -1,6 +1,6 @@
 package fdswarm.fx.map
 
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import scalafx.application.Platform
 import scalafx.beans.property.ObjectProperty
 import scalafx.scene.layout.VBox

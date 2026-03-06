@@ -23,7 +23,7 @@ import fdswarm.fx.contest.ContestManager
 import fdswarm.fx.station.StationStore
 import fdswarm.fx.utils.{BootstrapIcons, IconButton}
 import jakarta.inject.{Inject, Singleton}
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control.*
 import scalafx.scene.layout.{GridPane, Priority, Region, VBox}

@@ -18,7 +18,7 @@
 
 package fdswarm.fx.utils
 import fdswarm.fx.NamedValueCollector
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import scalafx.scene.Node
 import scalafx.scene.control.Label
 import scalafx.scene.layout.GridPane

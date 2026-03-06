@@ -21,7 +21,7 @@ package fdswarm.fx.qso
 import fdswarm.fx.{NextField, UserConfig}
 import fdswarm.fx.contest.{ContestCatalog, ContestManager}
 import jakarta.inject.*
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import scalafx.scene.control.{TextField, TextFormatter}
 
 class ContestClassField @Inject() (

@@ -43,7 +43,7 @@ import _root_.scalafx.scene.control.TextInputControl
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.InputHelper.forceCaps
 import _root_.scalafx.scene.input.{KeyCode, KeyEvent}
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 /**
  * Most of the common logic for any qso input field.
  */

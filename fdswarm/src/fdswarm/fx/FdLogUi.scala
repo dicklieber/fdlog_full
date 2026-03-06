@@ -44,7 +44,7 @@ import jakarta.inject.Inject
 
 import cats.effect.unsafe.implicits.global
 import java.util.concurrent.TimeUnit
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import scalafx.beans.binding.{Bindings, BooleanBinding}
 import scalafx.beans.property.{BooleanProperty, StringProperty}
 import scalafx.application.Platform
@@ -57,7 +57,7 @@ import scalafx.scene.shape.SVGPath
 import scalafx.scene.paint.Color
 import scalafx.scene.SnapshotParameters
 import scalafx.scene.Scene
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import scalafx.scene.web.WebView
 import javafx.concurrent.Worker
 import netscape.javascript.JSObject

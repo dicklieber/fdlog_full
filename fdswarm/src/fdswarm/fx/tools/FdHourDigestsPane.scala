@@ -20,7 +20,7 @@ package fdswarm.fx.tools
 
 import fdswarm.store.{FdHourDigest, QsoStore}
 import jakarta.inject.{Inject, Singleton}
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import scalafx.beans.property.ReadOnlyStringWrapper
 import scalafx.collections.ObservableBuffer
 import scalafx.scene.control.*

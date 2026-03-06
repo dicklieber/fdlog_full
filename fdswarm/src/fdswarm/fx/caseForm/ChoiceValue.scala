@@ -17,7 +17,7 @@
  */
 package fdswarm.fx.caseForm
 
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import scalafx.collections.ObservableBuffer
 import scalafx.scene.control.{ComboBox, ListCell, ListView}
 

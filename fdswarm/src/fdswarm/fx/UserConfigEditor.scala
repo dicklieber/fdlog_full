@@ -19,7 +19,7 @@
 package fdswarm.fx
 
 import jakarta.inject.{Inject, Singleton}
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import scalafx.beans.property.{BooleanProperty, IntegerProperty, Property, StringProperty}
 import scalafx.collections.ObservableBuffer
 import scalafx.geometry.Insets
@@ -50,7 +50,7 @@ final class UserConfigEditor @Inject()(userConfig: UserConfig) {
           cellFactory = (col: TableColumn[ConfigRow, Any]) => new TableCell[ConfigRow, Any] {
             item.onChange { (_, _, newValue) =>
               if (newValue != null) {
-                val row = tv.items.value(index.value)
+                val row = tv.items.get.apply(index.value)
                 row.property match {
                   case bp: BooleanProperty =>
                     val cb = new CheckBox {

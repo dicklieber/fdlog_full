@@ -29,7 +29,7 @@ import scalafx.scene.Node
 import scalafx.scene.control.Label
 import scalafx.util.Duration
 import java.time.{Duration as JDuration, ZonedDateTime}
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 
 @Singleton
 class ContestTimerPanel @Inject()(

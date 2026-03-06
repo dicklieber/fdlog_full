@@ -21,7 +21,7 @@ package fdswarm.fx.tools
 import fdswarm.fx.contest.{ContestConfig, ContestDiscovery}
 import fdswarm.util.NodeIdentity
 import jakarta.inject.{Inject, Singleton}
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import scalafx.animation.{KeyFrame, Timeline}
 import scalafx.application.Platform
 import scalafx.beans.property.ReadOnlyStringWrapper

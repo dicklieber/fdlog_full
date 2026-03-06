@@ -22,7 +22,7 @@ import fdswarm.fx.utils.IconButton
 import fdswarm.util.{LevelEnum, LoggerLevel, LoggingManager}
 import jakarta.inject.{Inject, Named, Singleton}
 import com.typesafe.scalalogging.LazyLogging
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import scalafx.beans.property.{ObjectProperty, StringProperty}
 import scalafx.collections.ObservableBuffer
 import scalafx.geometry.Insets

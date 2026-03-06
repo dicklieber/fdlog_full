@@ -20,7 +20,7 @@ package fdswarm.fx.admin
 
 import fdswarm.replication.SwarmStatusPane
 import jakarta.inject.{Inject, Singleton}
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import scalafx.scene.Scene
 import scalafx.scene.layout.StackPane
 import scalafx.stage.Stage

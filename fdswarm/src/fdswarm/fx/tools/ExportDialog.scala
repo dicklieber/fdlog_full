@@ -22,7 +22,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.exporter.ExportService
 import fdswarm.util.FilenameStamp
 import jakarta.inject.{Inject, Singleton}
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import scalafx.geometry.Insets
 import scalafx.scene.control.*
 import scalafx.scene.layout.{GridPane, HBox, Priority}

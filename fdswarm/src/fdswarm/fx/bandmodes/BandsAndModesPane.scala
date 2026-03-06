@@ -22,7 +22,7 @@ import com.typesafe.config.Config
 import fdswarm.fx.bands.{BandCheckBoxPane, ModeCatalog, ModeCheckBoxPane}
 import jakarta.inject.{Inject, Singleton}
 import javafx.event.{EventHandler, ActionEvent as JfxActionEvent}
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import scalafx.beans.property.BooleanProperty
 import scalafx.geometry.Insets
 import scalafx.scene.control.*

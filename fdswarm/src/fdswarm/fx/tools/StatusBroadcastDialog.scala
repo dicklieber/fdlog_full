@@ -20,7 +20,7 @@ package fdswarm.fx.tools
 
 import fdswarm.replication.StatusBroadcastService
 import jakarta.inject.{Inject, Singleton}
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control.*
 import scalafx.scene.layout.{HBox, VBox}

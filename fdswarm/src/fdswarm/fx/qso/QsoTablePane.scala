@@ -22,7 +22,7 @@ import fdswarm.fx.{GridUtils, UserConfig}
 import fdswarm.model.Qso
 import fdswarm.store.QsoStore
 import jakarta.inject.*
-import scalafx.Includes.*
+import fdswarm.fx.SfxUtils.*
 import scalafx.beans.property.IntegerProperty
 import scalafx.beans.binding.Bindings
 import scalafx.collections.ObservableBuffer
