@@ -50,3 +50,25 @@ jobs:
         with:
           name: FdSwarm-macOS-PKG
           path: out/fdswarm/macPkg.dest/jpackage/*.pkg
+
+
+  package-assembly:
+    name: Build Assembly JAR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'liberica'
+
+      - name: Build assembly
+        run: ./mill --no-daemon fdswarm.assembly
+
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FdSwarm-Assembly-JAR
+          path: out/fdswarm/assembly.dest/*.jar

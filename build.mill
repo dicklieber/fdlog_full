@@ -334,6 +334,13 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
     Rule.AppendPattern(".*\\.conf")
   )
 
+  override def assembly = Task {
+    val dest = Task.dest / s"${jpackageName()}-${version}-assembly.jar"
+    val assemblyRes = super.assembly()
+    os.copy(assemblyRes.path, dest)
+    PathRef(dest)
+  }
+
   // ---- BuildInfo ----
   def buildInfoPackageName = "com.organization"
 
