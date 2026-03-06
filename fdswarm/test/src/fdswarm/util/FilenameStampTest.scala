@@ -22,7 +22,7 @@ import fdswarm.fx.contest.{ContestCatalog, ContestConfig, ContestManager, Contes
 import fdswarm.fx.sections.{Sections, SectionsProvider}
 import fdswarm.model.Callsign
 import fdswarm.store.QsoStore
-import fdswarm.replication.{MulticastTransport, Service}
+import fdswarm.replication.{MulticastTransport, Service, SwarmStatus}
 import fdswarm.util.{NodeIdentity, HostAndPortProvider, MockHostAndPortProvider}
 import fdswarm.TestDirectory
 import com.typesafe.config.ConfigFactory
@@ -65,7 +65,9 @@ class FilenameStampTest extends FunSuite:
     val sectionsProvider = new SectionsProvider(config)
     val sections = new Sections(sectionsProvider)
     val registry = new SimpleMeterRegistry()
-    qsoStore = new QsoStore(testDir, registry, mockTransport)
+    val mockHostAndPortProvider = MockHostAndPortProvider(port = 8080)
+    val swarmStatus = SwarmStatus(testDir, mockHostAndPortProvider)
+    qsoStore = new QsoStore(testDir, registry, mockTransport, swarmStatus)
     contestManager = new ContestManager(testDir, catalog, sections, qsoStore)
     filenameStamp = new FilenameStamp(contestManager)
  

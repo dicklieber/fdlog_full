@@ -130,3 +130,7 @@
     -fx-text-fill: gray;
     -fx-cursor: default;
 }
+
+.local-node-column {
+    -fx-background-color: lightblue;
+}

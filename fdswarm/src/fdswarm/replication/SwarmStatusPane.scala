@@ -27,7 +27,7 @@ import scalafx.application.Platform
 import scalafx.beans.binding.Bindings
 import scalafx.scene.Node
 import scalafx.scene.control.Label
-import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority, StackPane}
+import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority, Region, StackPane}
 import scalafx.Includes.*
 
 @Singleton
@@ -44,15 +44,16 @@ class SwarmStatusPane @Inject()(swarmStatus: SwarmStatus) extends LazyLogging:
 
   buildGrid()
 
-  def node: Node = container
+  def node: StackPane = container
 
   private def buildGrid(): Unit =
     val grid = new GridPane():
-      hgap = 5
-      vgap = 5
+      hgap = 1
+      vgap = 1
       gridLinesVisible = true
 
-    val nodes: Seq[NodeIdentity] = swarmStatus.nodeMap.keys.toSeq.sorted
+    val ourNode = swarmStatus.ourNodeIdentity
+    val nodes: Seq[NodeIdentity] = (swarmStatus.nodeMap.keys.toSeq :+ ourNode).distinct.sorted
     val allHours: Set[FdHour] = swarmStatus.nodeMap.values.flatMap(_.map.keys).toSet
     val hours: Seq[FdHour] = allHours.toSeq.sorted
 
@@ -60,14 +61,27 @@ class SwarmStatusPane @Inject()(swarmStatus: SwarmStatus) extends LazyLogging:
       container.children = Seq(GridUtils.fieldSet("Swarm Status", new Label("No nodes discovered yet.")))
       return
 
+    // Background for local node column
+    nodes.zipWithIndex.find(_._1 == ourNode).foreach { case (_, colIdx) =>
+      val bg = new Region {
+        styleClass += "local-node-column"
+        mouseTransparent = true
+      }
+      grid.add(bg, colIdx + 1, 0, 1, hours.size + 1)
+    }
+
     // Header row: Nodes
     grid.add(new Label("Hour \\ Node") {
       style = "-fx-font-weight: bold;"
+      maxWidth = Double.MaxValue
+      alignment = scalafx.geometry.Pos.Center
     }, 0, 0)
     nodes.zipWithIndex.foreach { case (node, colIdx) =>
       grid.add(new Label(node.toString) {
         tooltip = node.toString
         style = "-fx-font-weight: bold;"
+        maxWidth = Double.MaxValue
+        alignment = scalafx.geometry.Pos.Center
       }, colIdx + 1, 0)
     }
 
@@ -75,27 +89,49 @@ class SwarmStatusPane @Inject()(swarmStatus: SwarmStatus) extends LazyLogging:
     hours.zipWithIndex.foreach { case (hour, rowIdx) =>
       grid.add(new Label(hour.display) {
         style = "-fx-font-weight: bold;"
+        maxWidth = Double.MaxValue
+        alignment = scalafx.geometry.Pos.Center
       }, 0, rowIdx + 1)
       
       nodes.zipWithIndex.foreach { case (node, colIdx) =>
-        val nodeDetails = swarmStatus.nodeMap(node)
-        val cell = nodeDetails.map.get(hour) match
-          case Some(hourNodeCell) =>
-            val label = new Label()
-            // Bind label text to lhData count
-            label.text <== Bindings.createStringBinding(
-              () => {
-                val data = hourNodeCell.lhData.value
-                if data == null then "-" else data.fdHourDigest.count.toString
-              },
-              hourNodeCell.lhData
-            )
-            label
+        val cell = swarmStatus.nodeMap.get(node) match
+          case Some(nodeDetails) =>
+            nodeDetails.map.get(hour) match
+              case Some(hourNodeCell) =>
+                val label = new Label() {
+                  maxWidth = Double.MaxValue
+                  alignment = scalafx.geometry.Pos.Center
+                }
+                // Bind label text to lhData count
+                label.text <== Bindings.createStringBinding(
+                  () => {
+                    val data = hourNodeCell.lhData.value
+                    if data == null then "-" else data.fdHourDigest.count.toString
+                  },
+                  hourNodeCell.lhData
+                )
+                label
+              case None =>
+                new Label("-") {
+                  maxWidth = Double.MaxValue
+                  alignment = scalafx.geometry.Pos.Center
+                }
           case None =>
-            new Label("-")
+            new Label("-") {
+              maxWidth = Double.MaxValue
+              alignment = scalafx.geometry.Pos.Center
+            }
         
         grid.add(cell, colIdx + 1, rowIdx + 1)
       }
     }
 
-    container.children = Seq(GridUtils.fieldSet("Swarm Status", grid))
+    val helpText = new Label("TODO: help text below grid") {
+      style = "-fx-font-style: italic; -fx-padding: 10 0 0 0;"
+    }
+
+    val vBox = new scalafx.scene.layout.VBox {
+      children = Seq(grid, helpText)
+    }
+
+    container.children = Seq(GridUtils.fieldSet("Swarm Status", vBox))

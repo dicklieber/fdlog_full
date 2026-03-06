@@ -22,7 +22,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.TestDirectory
 import fdswarm.fx.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
 import fdswarm.model.BandMode
-import fdswarm.replication.MulticastTransport
+import fdswarm.replication.{MulticastTransport, SwarmStatus}
 import fdswarm.util.{HostAndPortProvider, MetricsDebug, MockHostAndPortProvider}
 import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
@@ -62,10 +62,12 @@ class BigQsosGeneratorTest extends FunSuite with LazyLogging:
 
   test("generate 100 QSOs using BigQsosGenerator with permissive BandModeBuilder"):
     val registry = new SimpleMeterRegistry()
-    val qsoStore = QsoStore(testDirectory, registry, mockTransport)
+    val mockHostAndPortProvider = MockHostAndPortProvider(port = 8080)
+    val swarmStatus = SwarmStatus(testDirectory, mockHostAndPortProvider)
+    val qsoStore = QsoStore(testDirectory, registry, mockTransport, swarmStatus)
 
     val bandModeBuilder = new AllowAllBandModeBuilder
-    val generator = new BigQsosGenerator(qsoStore, bandModeBuilder, MockHostAndPortProvider(port = 8080))
+    val generator = new BigQsosGenerator(qsoStore, bandModeBuilder, mockHostAndPortProvider)
 
     // Generate 100 QSOs at 20 per hour cadence with prefix "K"
     generator.qsos(howMany = 10000, howManyPerHour = 400, prefix = "K")

@@ -22,7 +22,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
 import fdswarm.store.FdHourDigest
-import fdswarm.util.{JavaTimeCirce, NodeIdentity}
+import fdswarm.util.{HostAndPortProvider, JavaTimeCirce, NodeIdentity}
 import io.circe.*
 import io.circe.syntax.*
 import io.circe.parser.decode
@@ -36,16 +36,45 @@ import java.time.Instant
 import scala.collection.concurrent.TrieMap
 
 @Singleton
-class SwarmStatus @Inject()(directoryProvider: DirectoryProvider) extends LazyLogging:
-  val nodeMap: ObservableMap[NodeIdentity, NodeDetails] = ObservableMap[NodeIdentity, NodeDetails]()
-
+class SwarmStatus @Inject() (
+    directoryProvider: DirectoryProvider,
+    hostAndPortProvider: HostAndPortProvider
+) extends LazyLogging:
+  val nodeMap: ObservableMap[NodeIdentity, NodeDetails] =
+    ObservableMap[NodeIdentity, NodeDetails]()
   private val statusFile = directoryProvider() / "swarmStatus.json"
 
+  def put(nodeStuff: NodeStuff): Unit =
+    logger.debug(
+      s"putting ${nodeStuff.nodeIdentity} ${nodeStuff.status.fdDigests.size} fdDigests"
+    )
+    val nodeIdentity = nodeStuff.nodeIdentity
+    val nodeDetails = nodeMap.getOrElseUpdate(
+      nodeIdentity, {
+        val details = NodeDetails(nodeIdentity)
+        try
+          Platform.runLater {
+            nodeMap.put(nodeIdentity, details)
+          }
+        catch
+          case _: IllegalStateException =>
+            nodeMap.put(nodeIdentity, details)
+        details
+      }
+    )
+
+    for fdHourDigest <- nodeStuff.status.fdDigests
+    do
+      logger.trace("fdHourDigest: {}", fdHourDigest)
+      nodeDetails.put(fdHourDigest, () => ())
+
+    save()
+
   // Load state on startup
-  try {
-    if (os.exists(statusFile)) {
+  try
+    if os.exists(statusFile) then
       val json = os.read(statusFile)
-      decode[Map[NodeIdentity, NodeDetailsDTO]](json) match {
+      decode[Map[NodeIdentity, NodeDetailsDTO]](json) match
         case Right(dtoMap: Map[NodeIdentity, NodeDetailsDTO]) =>
           dtoMap.foreach { (nodeIdentity, dto) =>
             val nodeDetails = NodeDetails(nodeIdentity)
@@ -58,15 +87,38 @@ class SwarmStatus @Inject()(directoryProvider: DirectoryProvider) extends LazyLo
           }
           logger.info(s"Loaded swarm status from $statusFile")
         case Left(decodeError) =>
-          logger.error(s"Failed to decode swarm status from $statusFile: $decodeError")
+          logger.error(
+            s"Failed to decode swarm status from $statusFile: $decodeError"
+          )
+  catch
+    case e: Exception =>
+      logger.error(s"Error loading swarm status: ${e.getMessage}")
+
+  def updateLocalDigests(digests: Seq[FdHourDigest]): Unit =
+    val nodeIdentity = ourNodeIdentity
+    val nodeDetails = nodeMap.getOrElseUpdate(
+      nodeIdentity, {
+        val details = NodeDetails(nodeIdentity)
+        try
+          Platform.runLater {
+            nodeMap.put(nodeIdentity, details)
+          }
+        catch
+          case _: IllegalStateException =>
+            nodeMap.put(nodeIdentity, details)
+        details
       }
+    )
+
+    digests.foreach { fdHourDigest =>
+      nodeDetails.put(fdHourDigest, () => ())
     }
-  } catch {
-    case e: Exception => logger.error(s"Error loading swarm status: ${e.getMessage}")
-  }
+    save()
+
+  def ourNodeIdentity: NodeIdentity = hostAndPortProvider.nodeIdentity
 
   private def save(): Unit =
-    try {
+    try
       val dtoMap = nodeMap.map { (id, details) =>
         val cellDTOs = details.map.values.map { cell =>
           FdHourNodeCellDTO(cell.fdHour, cell.lhData.value)
@@ -76,50 +128,31 @@ class SwarmStatus @Inject()(directoryProvider: DirectoryProvider) extends LazyLo
       val json = dtoMap.asJson.noSpaces
       os.write.over(statusFile, json, createFolders = true)
       logger.trace(s"Saved swarm status to $statusFile")
-    } catch {
-      case e: Exception => logger.error(s"Error saving swarm status: ${e.getMessage}")
-    }
-
-  def put(nodeStuff: NodeStuff): Unit =
-    logger.debug(s"putting ${nodeStuff.nodeIdentity} ${nodeStuff.status.fdDigests.size} fdDigests")
-    val nodeIdentity = nodeStuff.nodeIdentity
-    val nodeDetails = nodeMap.getOrElseUpdate(nodeIdentity, {
-      val details = NodeDetails(nodeIdentity)
-      try
-        Platform.runLater {
-          nodeMap.put(nodeIdentity, details)
-        }
-      catch
-        case _: IllegalStateException =>
-          nodeMap.put(nodeIdentity, details)
-      details
-    })
-
-    for
-      fdHourDigest <- nodeStuff.status.fdDigests
-    do
-      logger.trace("fdHourDigest: {}", fdHourDigest)
-      nodeDetails.put(fdHourDigest, () => ())
-
-    save()
-
+    catch
+      case e: Exception =>
+        logger.error(s"Error saving swarm status: ${e.getMessage}")
 
 case class LHData(fdHourDigest: FdHourDigest, lastSeen: Instant = Instant.EPOCH)
 object LHData:
   import JavaTimeCirce.given
   given Codec[LHData] = Codec.AsObject.derived
 
-case class FdHourNodeCellDTO(fdHour: FdHour, lhData: LHData) derives Codec.AsObject
+case class FdHourNodeCellDTO(fdHour: FdHour, lhData: LHData)
+    derives Codec.AsObject
 case class NodeDetailsDTO(cells: Seq[FdHourNodeCellDTO]) derives Codec.AsObject
 
 case class FdHourNodeCell(nideIdentity: NodeIdentity, fdHour: FdHour):
-  val lhData: ObjectProperty[LHData] =  ObjectProperty[LHData](LHData(FdHourDigest.empty(fdHour)))
+  val lhData: ObjectProperty[LHData] =
+    ObjectProperty[LHData](LHData(FdHourDigest.empty(fdHour)))
 
 class NodeDetails(nodeIdentity: NodeIdentity):
   val map: TrieMap[FdHour, FdHourNodeCell] = new TrieMap[FdHour, FdHourNodeCell]
 
   def put(fdHourDigest: FdHourDigest, onUpdate: () => Unit): Unit =
-    val cell = map.getOrElseUpdate(fdHourDigest.fdHour, FdHourNodeCell(nodeIdentity, fdHourDigest.fdHour))
+    val cell = map.getOrElseUpdate(
+      fdHourDigest.fdHour,
+      FdHourNodeCell(nodeIdentity, fdHourDigest.fdHour)
+    )
     val data = LHData(fdHourDigest, Instant.now())
     try
       Platform.runLater {
@@ -131,4 +164,3 @@ class NodeDetails(nodeIdentity: NodeIdentity):
         // Fallback for tests or headless environments where Toolkit is not initialized
         cell.lhData.value = data
         onUpdate()
-

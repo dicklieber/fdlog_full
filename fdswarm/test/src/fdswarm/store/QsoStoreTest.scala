@@ -21,7 +21,7 @@ package fdswarm.store
 import fdswarm.TestDirectory
 import fdswarm.model.QsoMetadata.testQsoMetadata
 import fdswarm.model.{BandMode, Callsign, Qso}
-import fdswarm.replication.{MulticastTransport, Service, StatusMessage}
+import fdswarm.replication.{MulticastTransport, Service, StatusMessage, SwarmStatus}
 import fdswarm.util.{NodeIdentity, HostAndPortProvider, MockHostAndPortProvider}
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import munit.FunSuite
@@ -38,6 +38,8 @@ class QsoStoreTest extends FunSuite:
     override def stop(): Unit = ()
 
   private val mockTransport = new MockMulticastTransport()
+  private val mockHostAndPortProvider = MockHostAndPortProvider()
+  private lazy val swarmStatus = SwarmStatus(testDirectory, mockHostAndPortProvider)
 
   override def beforeEach(context: BeforeEach): Unit =
     testDirectory = new TestDirectory()
@@ -47,14 +49,14 @@ class QsoStoreTest extends FunSuite:
 
   test("FdHour initially empty"):
     val registry = new SimpleMeterRegistry()
-    val qsoStore = QsoStore(testDirectory, registry, mockTransport)
+    val qsoStore = QsoStore(testDirectory, registry, mockTransport, swarmStatus)
 
     assertEquals(qsoStore.digests().isEmpty, true)
     assertEquals(qsoStore.qsoCollection.isEmpty, true)
 
   test("add 1st QSO"):
     val registry = new SimpleMeterRegistry()
-    val qsoStore = QsoStore(testDirectory, registry, mockTransport)
+    val qsoStore = QsoStore(testDirectory, registry, mockTransport, swarmStatus)
 
     val qso = Qso(callsign = Callsign("W9NNN"),
       contestClass = "WFD",
@@ -74,7 +76,7 @@ class QsoStoreTest extends FunSuite:
     os.write(journalFile, "this is not json\n", createFolders = true)
     
     // This should not throw an exception because of the new error handling
-    val qsoStore = QsoStore(testDirectory, registry, mockTransport)
+    val qsoStore = QsoStore(testDirectory, registry, mockTransport, swarmStatus)
     
     assertEquals(qsoStore.qsoCollection.isEmpty, true)
     assertEquals(qsoStore.digests().isEmpty, true)
@@ -82,7 +84,7 @@ class QsoStoreTest extends FunSuite:
   test("qsosForIds should return all qsos for hour if specificQsos is empty"):
     import cats.effect.unsafe.implicits.global
     val registry = new SimpleMeterRegistry()
-    val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport)
+    val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus)
     val qso1 = Qso(callsign = Callsign("W9NNN"),
       contestClass = "WFD",
       bandMode = BandMode("20m", "CW"),
@@ -105,7 +107,7 @@ class QsoStoreTest extends FunSuite:
   test("qsosForIds should return only requested qsos"):
     import cats.effect.unsafe.implicits.global
     val registry = new SimpleMeterRegistry()
-    val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport)
+    val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus)
     val qso1 = Qso(callsign = Callsign("W9NNN"),
       contestClass = "WFD",
       bandMode = BandMode("20m", "CW"),
@@ -127,7 +129,7 @@ class QsoStoreTest extends FunSuite:
   test("determineNeeded should return needed FdHourIds"):
     import cats.effect.unsafe.implicits.global
     val registry = new SimpleMeterRegistry()
-    val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport)
+    val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus)
     val qso1 = Qso(callsign = Callsign("W9NNN"),
       contestClass = "WFD",
       bandMode = BandMode("20m", "CW"),
@@ -154,7 +156,7 @@ class QsoStoreTest extends FunSuite:
 
   test("removeAll should clear all state and delete journal file"):
     val registry = new SimpleMeterRegistry()
-    val qsoStore = QsoStore(testDirectory, registry, mockTransport)
+    val qsoStore = QsoStore(testDirectory, registry, mockTransport, swarmStatus)
     val qso = Qso(callsign = Callsign("W9NNN"),
       contestClass = "WFD",
       bandMode = BandMode("20m", "CW"),
@@ -176,7 +178,7 @@ class QsoStoreTest extends FunSuite:
 
   test("potentialDups should limit results and return total count"):
     val registry = new SimpleMeterRegistry()
-    val qsoStore = QsoStore(testDirectory, registry, mockTransport)
+    val qsoStore = QsoStore(testDirectory, registry, mockTransport, swarmStatus)
     val bandMode = BandMode("20m", "CW")
     
     val qsos = (1 to 100).map { i =>

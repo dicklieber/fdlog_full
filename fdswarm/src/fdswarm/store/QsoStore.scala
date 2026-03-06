@@ -22,7 +22,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
 import fdswarm.model.*
-import fdswarm.replication.{MulticastTransport, Service}
+import fdswarm.replication.{MulticastTransport, Service, SwarmStatus}
 import fdswarm.util.Ids.Id
 import io.micrometer.core.instrument.{Counter, MeterRegistry, Timer}
 import jakarta.inject.*
@@ -34,7 +34,7 @@ import scala.collection.concurrent.TrieMap
 
 
 @Singleton
-class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRegistry, multicastTransport: MulticastTransport) extends LazyLogging:
+class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRegistry, multicastTransport: MulticastTransport, swarmStatus: SwarmStatus) extends LazyLogging:
   val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()
   protected val map: TrieMap[Id, Qso] = new TrieMap
   private val journalFile = directoryProvider() / "qsosJournal.json"
@@ -163,6 +163,7 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
         fdHourDigests = hourToQsos.map { case (fdHour, qsos) =>
           fdHour -> FdHourDigest(fdHour, qsos)
         }
+        swarmStatus.updateLocalDigests(fdHourDigests.values.toSeq)
     })
 
   /**
