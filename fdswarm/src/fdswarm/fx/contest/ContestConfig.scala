@@ -47,10 +47,11 @@ object ContestType:
  * @param start 1st day/time of contest
  * @param end last day/time of contest
  */
-case class ContestConfig(contest:ContestType,
-                         start:ZonedDateTime,
-                         end:ZonedDateTime,
+case class ContestConfig(contest: ContestType,
+                         start: ZonedDateTime,
+                         end: ZonedDateTime,
                          ourCallsign: Callsign,
                          transmitters: Int,
                          ourClass: String,
-                         ourSection: String) derives Codec.AsObject
+                         ourSection: String,
+                         stamp: Instant = Instant.now()) derives Codec.AsObject

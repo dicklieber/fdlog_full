@@ -42,15 +42,7 @@ class CirceSupportTest extends FunSuite:
 
   test("ContestConfig round trip"):
     val now = ZonedDateTime.now(ZoneOffset.UTC)
-    val config = ContestConfig(
-      ContestType.WFD,
-      now,
-      now.plusDays(2),
-      Callsign("W1AW"),
-      1,
-      "O",
-      "CT"
-    )
+    val config = ContestConfig(ContestType.WFD, now, now.plusDays(2), Callsign("W1AW"), 1, "O", "CT")
     val json = config.asJson.noSpaces
     val decoded = decode[ContestConfig](json).toOption.get
     // ZonedDateTime might lose some precision or change format slightly, but should be equivalent
@@ -83,15 +75,7 @@ class CirceSupportTest extends FunSuite:
 
   test("Node round trip"):
     val now = ZonedDateTime.now(ZoneOffset.UTC)
-    val config = ContestConfig(
-      ContestType.ARRL,
-      now,
-      now.plusDays(2),
-      Callsign("W1AW"),
-      1,
-      "O",
-      "CT"
-    )
+    val config = ContestConfig(ContestType.ARRL, now, now.plusDays(2), Callsign("W1AW"), 1, "O", "CT")
     val node = Node(new URL("http://localhost:8080"), config, Callsign("WA9NNN"))
     val json = node.asJson.noSpaces
     val decoded = decode[Node](json).toOption.get

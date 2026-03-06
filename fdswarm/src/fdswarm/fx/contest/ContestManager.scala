@@ -207,15 +207,7 @@ final class ContestManager @Inject()(
     result match
       case Some(p: ContestConfigProxy) =>
         setConfig(
-          ContestConfig(
-            p.contest,
-            p.start,
-            p.end,
-            p.ourCallsign,
-            p.transmitters.value,
-            p.ourClass.value,
-            p.ourSection.value
-          )
+          ContestConfig(p.contest, p.start, p.end, p.ourCallsign, p.transmitters.value, p.ourClass.value, p.ourSection.value)
         )
       case _ => ()
 
@@ -263,12 +255,4 @@ final class ContestManager @Inject()(
 
   private def defaultConfig(): ContestConfig =
     val now = ZonedDateTime.now(ZoneOffset.UTC)
-    ContestConfig(
-      ContestType.WFD,
-      now,
-      now.plusHours(24),
-      Callsign("W1AW"),
-      1,
-      "O",
-      "CT"
-    )
+    ContestConfig(ContestType.WFD, now, now.plusHours(24), Callsign("W1AW"), 1, "O", "CT")
