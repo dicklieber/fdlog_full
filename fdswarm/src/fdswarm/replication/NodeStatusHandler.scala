@@ -20,9 +20,12 @@ package fdswarm.replication
 
 import cats.effect.unsafe.implicits.global
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.fx.contest.{ContestConfig, ContestManager}
 import fdswarm.model.Qso
 import fdswarm.store.ReplicationSupport
 import fdswarm.util.{HostAndPortProvider, NodeIdentity}
+import io.circe.syntax.*
+import fdswarm.util.JavaTimeCirce.given
 import io.circe.parser.decode
 import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.{Inject, Singleton}
@@ -34,6 +37,7 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
                                   multicastTransport: MulticastTransport,
                                   hostAndPortProvider: HostAndPortProvider,
                                   swarmStatus: SwarmStatus,
+                                  contestManager: ContestManager,
                                   meterRegistry: MeterRegistry) extends LazyLogging:
   logger.debug("Starting NodeStatusHandler")
   private val statusCounter = meterRegistry.counter("fdswarm_received_status_total")
@@ -64,6 +68,13 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
                 replicationSupport.add(qso)
               case Left(error) =>
                 logger.error(s"Failed to decode QSO from multicast: $sJson", error)
+          case Service.DiscReq =>
+            logger.debug(s"Received ContestDiscoveryRequest from ${udpHeader.nodeIdentity}")
+            val configBytes = contestManager.config.asJson.noSpaces.getBytes("UTF-8")
+            multicastTransport.send(Service.DiscResponse, configBytes)
+          case Service.DiscResponse =>
+            // Handled by listeners in ContestDiscovery, ignore here
+            logger.trace(s"Received ContestDiscoveryResponse from ${udpHeader.nodeIdentity} (ignoring in NodeStatusHandler)")
       catch
         case _: InterruptedException => Thread.currentThread().interrupt()
         case e: Exception =>

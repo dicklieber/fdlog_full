@@ -26,6 +26,10 @@ class MulticastTransport @Inject() (
   logger.debug("Starting MulticastTransport on {}:{}", groupAddr, port)
 
   val queue = new LinkedBlockingQueue[UDPHeaderData]()
+  private val listeners = new java.util.concurrent.CopyOnWriteArrayList[UDPHeaderData => Unit]()
+
+  def addListener(listener: UDPHeaderData => Unit): Unit = listeners.add(listener)
+  def removeListener(listener: UDPHeaderData => Unit): Unit = listeners.remove(listener)
 
   private val group = InetAddress.getByName(groupAddr)
   private val socketAddress = new InetSocketAddress(group, port)
@@ -114,6 +118,7 @@ class MulticastTransport @Inject() (
                   logger.trace(
                     s"Received UDP packet from $senderAddr:$senderPort: ${udpHeader.service}"
                   )
+                  listeners.forEach(_.apply(udpHeader))
                   queue.offer(udpHeader)
                 case None =>
                   logger.trace("Ignoring our own message from {}", senderPort)

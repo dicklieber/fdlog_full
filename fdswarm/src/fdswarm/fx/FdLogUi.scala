@@ -26,7 +26,16 @@ import fdswarm.fx.bandmodes.BandsAndModesPane
 import fdswarm.fx.contest.ContestManager
 import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.station.StationEditor
-import fdswarm.fx.tools.{ContestTimeDialog, FdHourDialogService, FdHourDigestsPane, HowManyDialogService, IpAddressDialogService, LoggingDialog, StatusBroadcastDialog}
+import fdswarm.fx.tools.{
+  ContestTimeDialog,
+  DiscoveryDialogService,
+  FdHourDialogService,
+  FdHourDigestsPane,
+  HowManyDialogService,
+  IpAddressDialogService,
+  LoggingDialog,
+  StatusBroadcastDialog
+}
 import fdswarm.replication.{NodeStatusHandler, StatusBroadcastService, SwarmStatusPane}
 import fdswarm.store.FdHourDigest
 import fdswarm.util.{DurationFormat, HostAndPortProvider}
@@ -85,6 +94,7 @@ final class FdLogUi @Inject()(
                                sectionsProvider: fdswarm.fx.sections.SectionsProvider,
                                sectionPanel: fdswarm.fx.sections.SectionPanel,
                                ipAddressDialogService: IpAddressDialogService,
+                               discoveryDialogService: DiscoveryDialogService,
                                swarmStatusAdmin: fdswarm.fx.admin.SwarmStatusAdmin,
                                apiServer: fdswarm.api.ApiServer
                              ) extends LazyLogging:
@@ -182,6 +192,12 @@ final class FdLogUi @Inject()(
           onAction = _ =>
             Option(ownerWindow) match
               case Some(w) => contestTimeDialog.show(w)
+              case None => ()
+        ,
+        new MenuItem("Discovery"):
+          onAction = _ =>
+            Option(ownerWindow) match
+              case Some(w) => discoveryDialogService.show(w)
               case None => ()
         ,
         new MenuItem("Set IP Address"):
