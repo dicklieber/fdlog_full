@@ -23,7 +23,7 @@ import fdswarm.TestDirectory
 import fdswarm.fx.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
 import fdswarm.model.BandMode
 import fdswarm.replication.MulticastTransport
-import fdswarm.util.{HostAndPortProvider, MetricsDebug}
+import fdswarm.util.{HostAndPortProvider, MetricsDebug, MockHostAndPortProvider}
 import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import munit.FunSuite
@@ -37,7 +37,7 @@ import scala.compiletime.uninitialized
 class BigQsosGeneratorTest extends FunSuite with LazyLogging:
   private var testDirectory: TestDirectory = uninitialized
 
-  class MockMulticastTransport extends MulticastTransport(8900, "239.192.0.88", new HostAndPortProvider(8080)):
+  class MockMulticastTransport extends MulticastTransport(8900, "239.192.0.88", MockHostAndPortProvider(port = 8080)):
     override def send(service: fdswarm.replication.Service, data: Array[Byte]): Unit = ()
     override def stop(): Unit = ()
 
@@ -65,7 +65,7 @@ class BigQsosGeneratorTest extends FunSuite with LazyLogging:
     val qsoStore = QsoStore(testDirectory, registry, mockTransport)
 
     val bandModeBuilder = new AllowAllBandModeBuilder
-    val generator = new BigQsosGenerator(qsoStore, bandModeBuilder)
+    val generator = new BigQsosGenerator(qsoStore, bandModeBuilder, MockHostAndPortProvider(port = 8080))
 
     // Generate 100 QSOs at 20 per hour cadence with prefix "K"
     generator.qsos(howMany = 10000, howManyPerHour = 400, prefix = "K")

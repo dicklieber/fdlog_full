@@ -65,7 +65,7 @@ class SwarmStatusPane @Inject()(swarmStatus: SwarmStatus) extends LazyLogging:
       style = "-fx-font-weight: bold;"
     }, 0, 0)
     nodes.zipWithIndex.foreach { case (node, colIdx) =>
-      grid.add(new Label(node.short) {
+      grid.add(new Label(node.toString) {
         tooltip = node.toString
         style = "-fx-font-weight: bold;"
       }, colIdx + 1, 0)

@@ -85,6 +85,7 @@ final class FdLogUi @Inject()(
                                sectionsProvider: fdswarm.fx.sections.SectionsProvider,
                                sectionPanel: fdswarm.fx.sections.SectionPanel,
                                ipAddressDialogService: IpAddressDialogService,
+                               swarmStatusAdmin: fdswarm.fx.admin.SwarmStatusAdmin,
                                apiServer: fdswarm.api.ApiServer
                              ) extends LazyLogging:
 
@@ -209,6 +210,12 @@ final class FdLogUi @Inject()(
           onAction = _ =>
             Option(ownerWindow) match
               case Some(w) => webSessionsAdmin.show(w)
+              case None => ()
+        ,
+        new MenuItem("Swarm Status"):
+          onAction = _ =>
+            Option(ownerWindow) match
+              case Some(w) => swarmStatusAdmin.show(w)
               case None => ()
       )
 

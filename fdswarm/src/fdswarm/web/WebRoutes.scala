@@ -34,15 +34,17 @@ import io.circe.syntax.*
 import jakarta.inject.{Inject, Singleton}
 import org.http4s.*
 import org.http4s.dsl.io.*
-import org.http4s.headers.{Cookie as HCookie, `Content-Type`, Location}
+import org.http4s.headers.{Location, `Content-Type`, Cookie as HCookie}
 import org.http4s.server.Router
 import org.http4s.ResponseCookie
 import fdswarm.api.ApiEndpoints
 import sttp.tapir.server.ServerEndpoint
 import com.typesafe.scalalogging.LazyLogging
+
 import java.time.ZonedDateTime
-import fdswarm.util.DurationFormat
-import java.time.{Duration => JDuration}
+import fdswarm.util.{DurationFormat, HostAndPortProvider}
+
+import java.time.Duration as JDuration
 import cats.syntax.all.*
 
 @Singleton
@@ -57,7 +59,8 @@ class WebRoutes @Inject()(
                            userConfig: UserConfig,
                            multicastTransport: MulticastTransport,
                            bandModeBuilder: BandModeBuilder,
-                           webSessionStore: WebSessionStore
+                           webSessionStore: WebSessionStore,
+                           hostAndPortProvider:HostAndPortProvider
                          ) extends ApiEndpoints with LazyLogging:
 
   override def endpoints: List[ServerEndpoint[Any, IO]] = Nil
@@ -211,7 +214,7 @@ class WebRoutes @Inject()(
             if callsign.nonEmpty && contestClass.nonEmpty && section.nonEmpty then
               val metadata = QsoMetadata(
                 station = ws.station,
-                node = "local-web",
+                node = hostAndPortProvider.nodeIdentity,
                 contest = contestManager.config.contest
               )
               val qso = Qso(

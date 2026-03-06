@@ -21,6 +21,7 @@ package fdswarm.model
 
 import com.organization.BuildInfo
 import fdswarm.fx.contest.ContestType
+import fdswarm.util.NodeIdentity
 import io.circe.Codec
 
 /**
@@ -33,10 +34,11 @@ import io.circe.Codec
  */
 
 case class QsoMetadata(station: Station,
-                       node: String = "localhost;1",
+                       node: NodeIdentity,
                        contest: ContestType,
                        v: String = BuildInfo.version) derives Codec.AsObject, sttp.tapir.Schema
 
 object QsoMetadata:
   val testQsoMetadata: QsoMetadata = QsoMetadata(station = Station(),
+    node = NodeIdentity("44.0.0.1", 8888, "qO-"),
     contest = ContestType.WFD)

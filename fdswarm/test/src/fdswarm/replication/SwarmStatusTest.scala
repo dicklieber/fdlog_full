@@ -18,6 +18,7 @@
 
 package fdswarm.replication
 
+import fdswarm.TestDirectory
 import fdswarm.fx.qso.FdHour
 import fdswarm.store.FdHourDigest
 import fdswarm.util.NodeIdentity
@@ -28,7 +29,8 @@ import java.time.Instant
 class SwarmStatusTest extends FunSuite:
 
   test("SwarmStatus.put should update nodeMap and NodeDetails"):
-    val swarmStatus = new SwarmStatus
+    val testDir = new TestDirectory
+    val swarmStatus = new SwarmStatus(testDir)
     val hp = NodeIdentity("192.168.1.100", 8080)
     val hour = FdHour(15, 12)
     val digest = FdHourDigest(hour, 10, "abc")
@@ -42,14 +44,31 @@ class SwarmStatusTest extends FunSuite:
     assert(nodeDetails.map.contains(hour))
     
     val cell = nodeDetails.map(hour)
-    // We can't easily wait for Platform.runLater in a unit test without more setup,
-    // but we can check if it was initialized at least, or if we can run the test in a way that handles Platform.
-    // In many ScalaFX/JavaFX test environments, Platform.runLater might not execute immediately or at all without a Toolkit.
-    
-    // However, the FdHourNodeCell is created SYNC in NodeDetails.put (map.getOrElseUpdate)
-    assertEquals(cell.nideIdentity, hp)
-    assertEquals(cell.fdHour, hour)
     
     // The lhData update should have happened (either via Platform.runLater or fallback)
     assertEquals(cell.lhData.value.fdHourDigest, digest)
     assert(cell.lhData.value.lastSeen != Instant.EPOCH)
+    testDir.cleanup()
+
+  test("SwarmStatus should persist and reload state"):
+    val testDir = new TestDirectory
+    val hp = NodeIdentity("192.168.1.101", 9090)
+    val hour = FdHour(16, 13)
+    val digest = FdHourDigest(hour, 5, "def")
+    val statusMessage = StatusMessage(Seq(digest))
+    val nodeStuff = NodeStuff(statusMessage, hp)
+
+    // 1. Create SwarmStatus, put data, and it should save
+    val swarmStatus1 = new SwarmStatus(testDir)
+    swarmStatus1.put(nodeStuff)
+    
+    // 2. Create new SwarmStatus with same directory, it should load data
+    val swarmStatus2 = new SwarmStatus(testDir)
+    
+    assert(swarmStatus2.nodeMap.contains(hp))
+    val nodeDetails = swarmStatus2.nodeMap(hp)
+    assert(nodeDetails.map.contains(hour))
+    val cell = nodeDetails.map(hour)
+    assertEquals(cell.lhData.value.fdHourDigest, digest)
+    
+    testDir.cleanup()

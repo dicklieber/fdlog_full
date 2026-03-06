@@ -28,9 +28,9 @@ import java.net.{InetAddress, InetSocketAddress, URI}
 import java.util.Base64
 import scala.util.matching.Regex
 
-case class NodeIdentity(host: String, port: Int, instanceId: Id = ourInstanceId) extends Ordered[NodeIdentity]:
+case class NodeIdentity(host: String = "44.0.0.1", port: Int = 42, instanceId: Id = ourInstanceId) extends Ordered[NodeIdentity]:
   override val toString: String =
-    f"$host:$port%d{$instanceId}"
+    f"$host:$port%d-$instanceId"
   lazy val short:String =
     host.split('.').last
   def notUs: Boolean =
@@ -59,16 +59,14 @@ case class NodeIdentity(host: String, port: Int, instanceId: Id = ourInstanceId)
 object NodeIdentity:
 
   def fromURI(uri: URI): NodeIdentity =
-    NodeIdentity(
-      host = uri.getHost,
-      port = uri.getPort,
-      instanceId = uri.getUserInfo
-    )
+    NodeIdentity(host = uri.getHost, port = uri.getPort, instanceId = uri.getUserInfo)
 
   private val regx = """^(localhost|[0-9.]+):(\d{1,5})-(\w+)$""".r
 
   given Encoder[NodeIdentity] = Encoder.encodeString.contramap(_.toString)
   given Decoder[NodeIdentity] = Decoder.decodeString.map(NodeIdentity.apply)
+  given KeyEncoder[NodeIdentity] = KeyEncoder.encodeKeyString.contramap(_.toString)
+  given KeyDecoder[NodeIdentity] = KeyDecoder.instance(s => Some(NodeIdentity(s)))
   given Schema[NodeIdentity] = Schema.string
 
   def apply(s: String): NodeIdentity =
@@ -76,7 +74,7 @@ object NodeIdentity:
         case regx(host, sPort, instanceId) =>
           NodeIdentity(host, sPort.toInt, instanceId)
         case _ =>
-          throw new IllegalArgumentException(s"Invalid host and port: $s")
+          throw new IllegalArgumentException(s"Invalid NodeIdentity: $s")
 
 import io.circe.{Encoder, Decoder}
 
@@ -105,7 +103,9 @@ object PortAndInstance:
     s match
       case Pattern(portStr, idStr) =>
         portStr.toIntOption match
-          case Some(port) => Right(PortAndInstance(port, idStr))
+          case Some(port) =>
+            val portAndInstance = PortAndInstance(port, idStr)
+            Right(portAndInstance)
           case None       => Left(s"Invalid port: $portStr")
       case _ =>
         Left(s"Invalid PortAndInstance format: $s")
@@ -114,7 +114,7 @@ object PortAndInstance:
     Encoder.encodeString.contramap(_.toString)
 
   given Decoder[PortAndInstance] =
-    Decoder.decodeString.emap(parse)
+    Decoder.decodeString.emap(s => parse(s))
 
   val ourInstanceId: String = Base64.getUrlEncoder.withoutPadding()
     .encodeToString(Array(

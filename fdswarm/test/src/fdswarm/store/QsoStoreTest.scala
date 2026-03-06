@@ -22,7 +22,7 @@ import fdswarm.TestDirectory
 import fdswarm.model.QsoMetadata.testQsoMetadata
 import fdswarm.model.{BandMode, Callsign, Qso}
 import fdswarm.replication.{MulticastTransport, Service, StatusMessage}
-import fdswarm.util.{NodeIdentity, HostAndPortProvider}
+import fdswarm.util.{NodeIdentity, HostAndPortProvider, MockHostAndPortProvider}
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import munit.FunSuite
 
@@ -31,7 +31,7 @@ import scala.compiletime.uninitialized
 class QsoStoreTest extends FunSuite:
   private var testDirectory: TestDirectory = uninitialized
 
-  class MockMulticastTransport extends MulticastTransport(8900, "239.192.0.88", new HostAndPortProvider(8080)):
+  class MockMulticastTransport extends MulticastTransport(8900, "239.192.0.88", MockHostAndPortProvider(port = 8080)):
     var sentData: Seq[(Service, Array[Byte])] = Seq.empty
     override def send(service: Service, data: Array[Byte]): Unit =
       sentData = sentData :+ (service, data)

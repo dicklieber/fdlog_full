@@ -23,7 +23,7 @@ import fdswarm.fx.sections.{Sections, SectionsProvider}
 import fdswarm.model.Callsign
 import fdswarm.store.QsoStore
 import fdswarm.replication.{MulticastTransport, Service}
-import fdswarm.util.{NodeIdentity, HostAndPortProvider}
+import fdswarm.util.{NodeIdentity, HostAndPortProvider, MockHostAndPortProvider}
 import fdswarm.TestDirectory
 import com.typesafe.config.ConfigFactory
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
@@ -38,7 +38,7 @@ class FilenameStampTest extends FunSuite:
   private var contestManager: ContestManager = uninitialized
   private var qsoStore: QsoStore = uninitialized
 
-  class MockMulticastTransport extends MulticastTransport(8900, "239.192.0.88", new HostAndPortProvider(8080)):
+  class MockMulticastTransport extends MulticastTransport(8900, "239.192.0.88", MockHostAndPortProvider(port = 8080)):
     var sentData: Seq[(Service, Array[Byte])] = Seq.empty
     override def send(service: Service, data: Array[Byte]): Unit =
       sentData = sentData :+ (service, data)

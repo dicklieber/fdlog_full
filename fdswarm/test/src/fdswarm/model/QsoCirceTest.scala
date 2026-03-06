@@ -22,15 +22,16 @@ import munit.FunSuite
 import io.circe.syntax.*
 import io.circe.parser.decode
 import fdswarm.fx.contest.ContestType
-import java.time.Instant
 
+import java.time.Instant
 import fdswarm.fx.qso.FdHour
+import fdswarm.util.NodeIdentity
 
 class QsoCirceTest extends FunSuite:
 
   test("Qso round trip via Circe"):
     val station = Station(rig = "FT-891", antenna = "End Fed", operator = Callsign("WA9NNN"))
-    val qsoMetadata = QsoMetadata(station = station, node = "node1", contest = ContestType.WFD)
+    val qsoMetadata = QsoMetadata(station = station, node = NodeIdentity(), contest = ContestType.WFD)
     val bandMode = BandMode("40M", "CW")
     val qso = Qso(
       callsign = Callsign("K1ABC"),
@@ -79,7 +80,7 @@ class QsoCirceTest extends FunSuite:
 
   test("QsoMetadata Circe round trip"):
     val station = Station(rig = "IC-7300", antenna = "Dipole", operator = Callsign("N9VTB"))
-    val metadata = QsoMetadata(station = station, node = "pi-node", contest = ContestType.ARRL)
+    val metadata = QsoMetadata(station = station, node = NodeIdentity(), contest = ContestType.ARRL)
     val json = metadata.asJson.noSpaces
     val decoded = decode[QsoMetadata](json).getOrElse(fail("failed to decode"))
     assertEquals(decoded, metadata)

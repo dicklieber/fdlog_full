@@ -54,7 +54,7 @@ object QsoDialog:
     addRow("Class:", qso.contestClass, 4)
     addRow("Section:", qso.section, 5)
     addRow("Operator:", qso.qsoMetadata.station.operator.value, 6)
-    addRow("Node:", qso.qsoMetadata.node, 7)
+    addRow("Node:", qso.qsoMetadata.node.toString, 7)
     addRow("Rig:", qso.qsoMetadata.station.rig, 8)
     addRow("Antenna:", qso.qsoMetadata.station.antenna, 9)
     addRow("Contest:", qso.qsoMetadata.contest.toString, 10)

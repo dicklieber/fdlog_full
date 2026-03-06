@@ -140,7 +140,7 @@ class QsoEntryPanel @Inject()(
   private def qsoMetadata =
     QsoMetadata(
       station = stationManager.station,
-      node = "local",
+      node = hostAndPortProvider.nodeIdentity,
       contest = contestManager.config.contest
     )
 

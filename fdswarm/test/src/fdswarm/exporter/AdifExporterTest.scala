@@ -21,14 +21,16 @@ package fdswarm.exporter
 import munit.FunSuite
 import fdswarm.model.*
 import fdswarm.fx.contest.ContestType
+
 import java.time.Instant
 import fdswarm.exporter.AdifExporter
+import fdswarm.util.NodeIdentity
 
 class AdifExporterTest extends FunSuite:
 
   test("AdifExporter should generate correct ADIF"):
     val station = Station(rig = "FT-891", antenna = "End Fed", operator = Callsign("WA9NNN"))
-    val qsoMetadata = QsoMetadata(station = station, node = "node1", contest = ContestType.WFD)
+    val qsoMetadata = QsoMetadata(station = station, node = NodeIdentity(), contest = ContestType.WFD)
     val bandMode = BandMode("40M", "CW")
     val stamp = Instant.parse("2026-02-25T10:00:00Z")
     val qso = Qso(
@@ -61,7 +63,7 @@ class AdifExporterTest extends FunSuite:
 
   test("AdifExporter should map internal modes to ADIF modes"):
     val station = Station(rig = "FT-891", antenna = "End Fed", operator = Callsign("WA9NNN"))
-    val qsoMetadata = QsoMetadata(station = station, node = "node1", contest = ContestType.WFD)
+    val qsoMetadata = QsoMetadata(station = station, node = NodeIdentity(), contest = ContestType.WFD)
     val stamp = Instant.parse("2026-02-25T10:00:00Z")
 
     val qsoPh = Qso(Callsign("K1ABC"), "1A", "CT", BandMode("40M", "PH"), qsoMetadata, stamp, "id-ph")

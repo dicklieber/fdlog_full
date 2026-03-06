@@ -21,7 +21,7 @@ package fdswarm.store
 import fdswarm.model.*
 import fdswarm.fx.contest.ContestType
 import fdswarm.fx.qso.FdHour
-import fdswarm.util.Ids
+import fdswarm.util.{Ids, NodeIdentity}
 import munit.FunSuite
 
 class FdHourDigestTest extends FunSuite :
@@ -31,7 +31,7 @@ class FdHourDigestTest extends FunSuite :
     
     
     val station = Station("S1", "Home", Callsign("WA9NNN"))
-    val metadata = QsoMetadata(station, "node1", ContestType.WFD)
+    val metadata = QsoMetadata(station, NodeIdentity(), ContestType.WFD)
     
     val qso1 = Qso(
       callsign = Callsign("W1AW"),
@@ -83,7 +83,7 @@ class FdHourDigestTest extends FunSuite :
   test("FdHourDigest.apply is order-independent for input QSOs") {
     val fdHour = FdHour(15, 12)
     val station = Station("S1", "Home", Callsign("WA9NNN"))
-    val metadata = QsoMetadata(station, "node1", ContestType.WFD)
+    val metadata = QsoMetadata(station, NodeIdentity(), ContestType.WFD)
     
     val qso1 = Qso(Callsign("C1"), "1A", "CT", BandMode("20m", "CW"), metadata, uuid = "a")
     val qso2 = Qso(Callsign("C2"), "1A", "CT", BandMode("20m", "CW"), metadata, uuid = "b")

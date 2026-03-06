@@ -86,7 +86,7 @@ object UDPHeader:
             throw new IllegalArgumentException(s"Data version mismatch: expected ${BuildInfo.dataVersion}, got $sDataVersion")
           val hostAddress = packet.getAddress.getHostAddress
           val portAndInstance: PortAndInstance = PortAndInstance.fromString(sPortAndInstance)
-          val nodeIdentity= NodeIdentity(hostAddress,portAndInstance.port, portAndInstance.instanceId )
+          val nodeIdentity= NodeIdentity(hostAddress, portAndInstance.port, portAndInstance.instanceId)
           
           Option.when(nodeIdentity.notUs) {
             UDPHeaderData(Service.valueOf(sService), nodeIdentity, payloadBytes)

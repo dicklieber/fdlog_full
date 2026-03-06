@@ -20,15 +20,17 @@ package fdswarm.exporter
 
 import fdswarm.fx.contest.ContestType
 import fdswarm.model.*
+
 import java.time.Instant
 import munit.FunSuite
 import fdswarm.exporter.CabrilloExporter
+import fdswarm.util.NodeIdentity
 
 class CabrilloExporterTest extends FunSuite:
 
   test("exportQsos creates a valid Cabrillo format"):
     val station = Station(rig = "1A", antenna = "Wire", operator = Callsign("W1AW"))
-    val qsoMetadata = QsoMetadata(station = station, node = "local", contest = ContestType.WFD)
+    val qsoMetadata = QsoMetadata(station = station, node = NodeIdentity(), contest = ContestType.WFD)
     
     val qso1 = Qso(
       callsign = Callsign("K1ABC"),

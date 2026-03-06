@@ -21,12 +21,13 @@ package fdswarm.store
 import fdswarm.fx.bands.BandModeBuilder
 import fdswarm.fx.contest.ContestType.WFD
 import fdswarm.model.*
+import fdswarm.util.HostAndPortProvider
 import jakarta.inject.*
 
 import java.time.Instant
 
 @Singleton
-final class BigQsosGenerator @Inject()(qsoStore: QsoStore, bandModeBuilder: BandModeBuilder):
+final class BigQsosGenerator @Inject()(qsoStore: QsoStore, bandModeBuilder: BandModeBuilder, hostAndPortProvider: HostAndPortProvider):
 
   /** Generate synthetic QSOs and *immediately* add them to QsoStore.
    *
@@ -51,7 +52,7 @@ final class BigQsosGenerator @Inject()(qsoStore: QsoStore, bandModeBuilder: Band
       (callsign, index) <- generatedCallsigns
     yield
       val stamp = now.minusMillis(index * intervalMillis)
-      val qsoMetadata = QsoMetadata(station = Station(), contest = WFD)
+      val qsoMetadata = QsoMetadata(station = Station(), contest = WFD, node = hostAndPortProvider.nodeIdentity)
       Qso(callsign = Callsign(callsign),
         contestClass = "1H",
         section = "IL",
