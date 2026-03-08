@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+
+set -u
+
+jdk_dirs=(
+  "/Library/Java/JavaVirtualMachines"
+  "$HOME/Library/Java/JavaVirtualMachines"
+)
+
+declare -a found_jdks=()
+enable_delete=false
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --delete|-d)
+      enable_delete=true
+      shift
+      ;;
+    *)
+      echo "Unknown option: $1"
+      echo "Usage: $0 [--delete|-d]"
+      exit 1
+      ;;
+  esac
+done
+
+echo "Scanning for installed JDKs..."
+echo
+
+for dir in "${jdk_dirs[@]}"; do
+  if [[ -d "$dir" ]]; then
+    while IFS= read -r -d '' jdk; do
+      found_jdks+=("$jdk")
+    done < <(find "$dir" -mindepth 1 -maxdepth 1 -type d -name "*.jdk" -print0 2>/dev/null)
+  fi
+done
+
+if [[ ${#found_jdks[@]} -eq 0 ]]; then
+  echo "No JDK bundles found."
+  exit 0
+fi
+
+echo "Found ${#found_jdks[@]} JDK(s):"
+echo
+
+for i in "${!found_jdks[@]}"; do
+  jdk="${found_jdks[$i]}"
+  java_bin="$jdk/Contents/Home/bin/java"
+
+  echo "[$((i+1))] $jdk"
+
+  if [[ -x "$java_bin" ]]; then
+    version_output="$("$java_bin" -version 2>&1 | head -n 2)"
+    echo "$version_output" | sed 's/^/    /'
+  else
+    echo "    Warning: no java executable found in this bundle"
+  fi
+
+  echo
+done
+
+if [[ "$enable_delete" == true ]]; then
+  for jdk in "${found_jdks[@]}"; do
+    echo "JDK: $jdk"
+    read -r -p "Delete this JDK? [y/N] " reply
+
+    case "$reply" in
+      y|Y|yes|YES)
+        if [[ "$jdk" == /Library/Java/JavaVirtualMachines/* ]]; then
+          echo "Deleting with sudo: $jdk"
+          sudo rm -rf "$jdk"
+        else
+          echo "Deleting: $jdk"
+          rm -rf "$jdk"
+        fi
+        echo "Deleted."
+        ;;
+      *)
+        echo "Kept."
+        ;;
+    esac
+
+    echo
+  done
+else
+  echo "Deletion skipped. Use --delete or -d to enable interactive deletion."
+  echo
+fi
+
+echo "Remaining JDKs:"
+/usr/libexec/java_home -V 2>&1 || true
