@@ -37,13 +37,13 @@ echo
 for dir in "${jdk_dirs[@]}"; do
   if [[ -d "$dir" ]]; then
     while IFS= read -r -d '' jdk; do
-      # For Homebrew/opt and usr/local/opt, we only care about openjdk directories
-      if [[ ("$dir" == "/opt/homebrew/opt" || "$dir" == "/usr/local/opt") && ! "$(basename "$jdk")" == openjdk* ]]; then
+      # For Homebrew/opt and usr/local/opt, we only care about openjdk and java directories
+      if [[ ("$dir" == "/opt/homebrew/opt" || "$dir" == "/usr/local/opt") && ! ("$(basename "$jdk")" == openjdk* || "$(basename "$jdk")" == java) ]]; then
         continue
       fi
 
-      # Check if it has bin/java or Contents/Home/bin/java
-      if [[ -e "$jdk/bin/java" || -e "$jdk/Contents/Home/bin/java" ]]; then
+      # Check if it has bin/java or Contents/Home/bin/java or libexec/openjdk.jdk/Contents/Home/bin/java
+      if [[ -e "$jdk/bin/java" || -e "$jdk/Contents/Home/bin/java" || -e "$jdk/libexec/openjdk.jdk/Contents/Home/bin/java" ]]; then
         found_jdks+=("$jdk")
       fi
     done < <(find "$dir" -mindepth 1 -maxdepth 1 \( -type d -o -type l \) -print0 2>/dev/null)
@@ -63,6 +63,9 @@ for i in "${!found_jdks[@]}"; do
   java_bin="$jdk/Contents/Home/bin/java"
   if [[ ! -x "$java_bin" ]]; then
     java_bin="$jdk/bin/java"
+  fi
+  if [[ ! -x "$java_bin" ]]; then
+    java_bin="$jdk/libexec/openjdk.jdk/Contents/Home/bin/java"
   fi
 
   echo "[$((i+1))] $jdk"
