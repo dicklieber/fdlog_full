@@ -37,6 +37,10 @@ class NodeIdentityTest extends FunSuite:
       .getOrElse(fail("failed to decode"))
     assertEquals(decoded, nodeIdentity)
 
+  test("handle legacy 'local' string"):
+    val nodeIdentity = NodeIdentity("local")
+    assertEquals(nodeIdentity, NodeIdentity())
+
   test("PortAndInstance circe round trip"):
     val portAndInstance = PortAndInstance(8080)
     val json = portAndInstance.asJson.noSpaces

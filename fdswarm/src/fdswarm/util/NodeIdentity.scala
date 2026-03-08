@@ -71,6 +71,7 @@ object NodeIdentity:
 
   def apply(s: String): NodeIdentity =
       s match
+        case "local" => NodeIdentity()
         case regx(host, sPort, instanceId) =>
           NodeIdentity(host, sPort.toInt, instanceId)
         case _ =>
