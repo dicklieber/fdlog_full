@@ -22,7 +22,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
 import fdswarm.store.FdHourDigest
-import fdswarm.util.{HostAndPortProvider, JavaTimeCirce, NodeIdentity}
+import fdswarm.util.{JavaTimeCirce, NodeIdentity, NodeIdentityManager}
 import io.circe.*
 import io.circe.syntax.*
 import io.circe.parser.decode
@@ -38,7 +38,7 @@ import scala.collection.concurrent.TrieMap
 @Singleton
 class SwarmStatus @Inject() (
     directoryProvider: DirectoryProvider,
-    hostAndPortProvider: HostAndPortProvider
+    nodeIdentityManager: NodeIdentityManager
 ) extends LazyLogging:
   val nodeMap: ObservableMap[NodeIdentity, NodeDetails] =
     ObservableMap[NodeIdentity, NodeDetails]()
@@ -115,7 +115,7 @@ class SwarmStatus @Inject() (
     }
     save()
 
-  def ourNodeIdentity: NodeIdentity = hostAndPortProvider.nodeIdentity
+  def ourNodeIdentity: NodeIdentity = nodeIdentityManager.nodeIdentity
 
   private def save(): Unit =
     try

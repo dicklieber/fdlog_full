@@ -42,7 +42,7 @@ class NodeIdentityTest extends FunSuite:
     assertEquals(nodeIdentity, NodeIdentity())
 
   test("PortAndInstance circe round trip"):
-    val portAndInstance = PortAndInstance(8080)
+    val portAndInstance = PortAndInstance(8080, "test-instance")
     val json = portAndInstance.asJson.noSpaces
     println(json)
     val decoded = decode[PortAndInstance](json)

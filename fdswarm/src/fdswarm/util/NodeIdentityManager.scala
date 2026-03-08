@@ -24,10 +24,12 @@ import jakarta.inject.{Inject, Named, Singleton}
 import java.net.{Inet4Address, NetworkInterface}
 import scala.jdk.CollectionConverters.*
 
-
+/**
+ * Exposes the identity of the local node.
+ */
 @Singleton
-class HostAndPortProvider @Inject(@Named("fdswarm.httpPort") httpPort: Int) extends LazyLogging:
-  
+class NodeIdentityManager @Inject()(@Named("fdswarm.httpPort") httpPort: Int) extends LazyLogging:
+
   def suitableInterfaces: Seq[AnIpAddress] = (for
     interface: NetworkInterface <- NetworkInterface.getNetworkInterfaces.asScala
     anIpo = AnIpAddress(interface)
@@ -36,7 +38,7 @@ class HostAndPortProvider @Inject(@Named("fdswarm.httpPort") httpPort: Int) exte
     logger.trace(s"anIpo: $anIpo")
     anIpo).toSeq
 
-  private var ourIp:AnIpAddress = suitableInterfaces.headOption.getOrElse(AnIpAddress("loopback", "127.0.0.1"))
+  private var ourIp: AnIpAddress = suitableInterfaces.headOption.getOrElse(AnIpAddress("loopback", "127.0.0.1"))
 
   def currentIp: AnIpAddress = ourIp
   def setIp(newIp: AnIpAddress): Unit =
@@ -48,7 +50,7 @@ class HostAndPortProvider @Inject(@Named("fdswarm.httpPort") httpPort: Int) exte
     sPort.toInt
   }.getOrElse(httpPort)
 
-  def hostPort:String = s"${currentIp.ip}:$port"
+  def hostPort: String = s"${currentIp.ip}:$port"
   def nodeIdentity: NodeIdentity = NodeIdentity(currentIp.ip, port)
   def portAndInstance: PortAndInstance = PortAndInstance(port)
 

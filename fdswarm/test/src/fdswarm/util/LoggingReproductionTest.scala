@@ -71,7 +71,7 @@ class LoggingReproductionTest extends FunSuite {
 
     // 2. Use LoggingManager to set level to TRACE
     val loggingManager = new LoggingManager(directoryProvider)
-    val loggerName = "fdswarm.util.HostAndPortProvider"
+    val loggerName = "fdswarm.util.NodeIdentityManager"
     loggingManager.updateLogger(loggerName, LevelEnum.TRACE)
 
     // 3. Log at TRACE level

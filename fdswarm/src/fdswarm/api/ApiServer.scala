@@ -21,7 +21,7 @@ package fdswarm.api
 
 import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.util.HostAndPortProvider
+import fdswarm.util.NodeIdentityManager
 import fdswarm.web.WebRoutes
 import jakarta.inject.{Inject, Singleton}
 import org.http4s.ember.server.EmberServerBuilder
@@ -35,7 +35,7 @@ import scala.jdk.CollectionConverters.*
 
 @Singleton
 class ApiServer @Inject()(
-                           hostAndPortProvider: HostAndPortProvider,
+                           nodeIdentityManager: NodeIdentityManager,
                            webRoutes: WebRoutes,
                            endpointsSet: Set[ApiEndpoints]
                          ) extends LazyLogging:
@@ -54,7 +54,7 @@ class ApiServer @Inject()(
       "/" -> (webRoutes.routes <+> tapirRoutes)
     ).orNotFound
 
-    val port = hostAndPortProvider.portAndInstance.port
+    val port = nodeIdentityManager.portAndInstance.port
     
     logger.info(s"Starting API server on port $port")
     

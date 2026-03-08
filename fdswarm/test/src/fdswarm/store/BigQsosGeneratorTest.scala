@@ -23,7 +23,7 @@ import fdswarm.TestDirectory
 import fdswarm.fx.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
 import fdswarm.model.BandMode
 import fdswarm.replication.{MulticastTransport, SwarmStatus}
-import fdswarm.util.{HostAndPortProvider, MetricsDebug, MockHostAndPortProvider}
+import fdswarm.util.{MetricsDebug, MockNodeIdentityManager, NodeIdentityManager}
 import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import munit.FunSuite
@@ -37,7 +37,7 @@ import scala.compiletime.uninitialized
 class BigQsosGeneratorTest extends FunSuite with LazyLogging:
   private var testDirectory: TestDirectory = uninitialized
 
-  class MockMulticastTransport extends MulticastTransport(8900, "239.192.0.88", MockHostAndPortProvider(port = 8080)):
+  class MockMulticastTransport extends MulticastTransport(8900, "239.192.0.88", MockNodeIdentityManager(port = 8080)):
     override def send(service: fdswarm.replication.Service, data: Array[Byte]): Unit = ()
     override def stop(): Unit = ()
 
@@ -62,12 +62,12 @@ class BigQsosGeneratorTest extends FunSuite with LazyLogging:
 
   test("generate 100 QSOs using BigQsosGenerator with permissive BandModeBuilder"):
     val registry = new SimpleMeterRegistry()
-    val mockHostAndPortProvider = MockHostAndPortProvider(port = 8080)
-    val swarmStatus = SwarmStatus(testDirectory, mockHostAndPortProvider)
+    val mockNodeIdentityManager = MockNodeIdentityManager(port = 8080)
+    val swarmStatus = SwarmStatus(testDirectory, mockNodeIdentityManager)
     val qsoStore = QsoStore(testDirectory, registry, mockTransport, swarmStatus)
 
     val bandModeBuilder = new AllowAllBandModeBuilder
-    val generator = new BigQsosGenerator(qsoStore, bandModeBuilder, mockHostAndPortProvider)
+    val generator = new BigQsosGenerator(qsoStore, bandModeBuilder, mockNodeIdentityManager)
 
     // Generate 100 QSOs at 20 per hour cadence with prefix "K"
     generator.qsos(howMany = 10000, howManyPerHour = 400, prefix = "K")

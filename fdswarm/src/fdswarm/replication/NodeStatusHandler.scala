@@ -23,7 +23,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.contest.{ContestConfig, ContestManager}
 import fdswarm.model.Qso
 import fdswarm.store.ReplicationSupport
-import fdswarm.util.{HostAndPortProvider, NodeIdentity}
+import fdswarm.util.{NodeIdentityManager, NodeIdentity}
 import io.circe.syntax.*
 import fdswarm.util.JavaTimeCirce.given
 import io.circe.parser.decode
@@ -35,7 +35,7 @@ import java.net.http.HttpClient
 class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
                                   statusProcessor: StatusProcessor,
                                   multicastTransport: MulticastTransport,
-                                  hostAndPortProvider: HostAndPortProvider,
+                                  nodeIdentityManager: NodeIdentityManager,
                                   swarmStatus: SwarmStatus,
                                   contestManager: ContestManager,
                                   meterRegistry: MeterRegistry) extends LazyLogging:
@@ -75,6 +75,14 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
           case Service.DiscResponse =>
             // Handled by listeners in ContestDiscovery, ignore here
             logger.trace(s"Received ContestDiscoveryResponse from ${udpHeader.nodeIdentity} (ignoring in NodeStatusHandler)")
+          case Service.InstanceQuery =>
+            val requestedInstanceId = new String(udpHeader.payload, "UTF-8")
+            if requestedInstanceId == nodeIdentityManager.portAndInstance.instanceId then
+              logger.debug(s"Received InstanceQuery for our instance: $requestedInstanceId")
+              val responsePayload = nodeIdentityManager.nodeIdentity.toString.getBytes("UTF-8")
+              multicastTransport.send(Service.InstanceResponse, responsePayload)
+          case Service.InstanceResponse =>
+            logger.trace(s"Received InstanceResponse from ${udpHeader.nodeIdentity}")
       catch
         case _: InterruptedException => Thread.currentThread().interrupt()
         case e: Exception =>

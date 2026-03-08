@@ -21,7 +21,7 @@ package fdswarm.replication
 import fdswarm.TestDirectory
 import fdswarm.fx.qso.FdHour
 import fdswarm.store.FdHourDigest
-import fdswarm.util.{MockHostAndPortProvider, NodeIdentity}
+import fdswarm.util.{MockNodeIdentityManager, NodeIdentity}
 import munit.FunSuite
 
 import java.time.Instant
@@ -30,8 +30,8 @@ class SwarmStatusTest extends FunSuite:
 
   test("SwarmStatus.put should update nodeMap and NodeDetails"):
     val testDir = new TestDirectory
-    val swarmStatus = new SwarmStatus(testDir, MockHostAndPortProvider())
-    val hp = NodeIdentity("192.168.1.100", 8080)
+    val swarmStatus = new SwarmStatus(testDir, MockNodeIdentityManager())
+    val hp = NodeIdentity("192.168.1.100", 8080, "test-instance")
     val hour = FdHour(15, 12)
     val digest = FdHourDigest(hour, 10, "abc")
     val statusMessage = StatusMessage(Seq(digest))
@@ -52,18 +52,18 @@ class SwarmStatusTest extends FunSuite:
 
   test("SwarmStatus should persist and reload state"):
     val testDir = new TestDirectory
-    val hp = NodeIdentity("192.168.1.101", 9090)
+    val hp = NodeIdentity("192.168.1.101", 9090, "test-instance-2")
     val hour = FdHour(16, 13)
     val digest = FdHourDigest(hour, 5, "def")
     val statusMessage = StatusMessage(Seq(digest))
     val nodeStuff = NodeStuff(statusMessage, hp)
 
     // 1. Create SwarmStatus, put data, and it should save
-    val swarmStatus1 = new SwarmStatus(testDir, MockHostAndPortProvider())
+    val swarmStatus1 = new SwarmStatus(testDir, MockNodeIdentityManager())
     swarmStatus1.put(nodeStuff)
     
     // 2. Create new SwarmStatus with same directory, it should load data
-    val swarmStatus2 = new SwarmStatus(testDir, MockHostAndPortProvider())
+    val swarmStatus2 = new SwarmStatus(testDir, MockNodeIdentityManager())
     
     assert(swarmStatus2.nodeMap.contains(hp), "nodeMap should contain node identity after reload")
     val nodeDetails = swarmStatus2.nodeMap(hp)

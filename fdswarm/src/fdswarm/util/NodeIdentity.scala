@@ -28,7 +28,7 @@ import java.net.{InetAddress, InetSocketAddress, URI}
 import java.util.Base64
 import scala.util.matching.Regex
 
-case class NodeIdentity(host: String = "44.0.0.1", port: Int = 42, instanceId: Id = ourInstanceId) extends Ordered[NodeIdentity]:
+case class NodeIdentity(host: String = "44.0.0.1", port: Int = 42, instanceId: Id = "") extends Ordered[NodeIdentity]:
   override val toString: String =
     f"$host:$port%d-$instanceId"
   lazy val short:String =
@@ -61,7 +61,7 @@ object NodeIdentity:
   def fromURI(uri: URI): NodeIdentity =
     NodeIdentity(host = uri.getHost, port = uri.getPort, instanceId = uri.getUserInfo)
 
-  private val regx = """^(localhost|[0-9.]+):(\d{1,5})-(\w+)$""".r
+  private val regx = """^(localhost|[0-9.]+):(\d{1,5})-(.*)$""".r
 
   given Encoder[NodeIdentity] = Encoder.encodeString.contramap(_.toString)
   given Decoder[NodeIdentity] = Decoder.decodeString.map(NodeIdentity.apply)
@@ -75,6 +75,8 @@ object NodeIdentity:
         case regx(host, sPort, instanceId) =>
           NodeIdentity(host, sPort.toInt, instanceId)
         case _ =>
+          // Try to parse just host:port for backward compatibility if needed, 
+          // but based on toString it should always have -instanceId
           throw new IllegalArgumentException(s"Invalid NodeIdentity: $s")
 
 import io.circe.{Encoder, Decoder}
@@ -117,8 +119,16 @@ object PortAndInstance:
   given Decoder[PortAndInstance] =
     Decoder.decodeString.emap(s => parse(s))
 
-  val ourInstanceId: String = Base64.getUrlEncoder.withoutPadding()
-    .encodeToString(Array(
-      scala.util.Random.nextInt(256).toByte,
-      scala.util.Random.nextInt(256).toByte
-    ))
+  private var _ourInstanceId: String = ""
+
+  def initOurInstanceId(directoryProvider: fdswarm.io.DirectoryProvider): Unit =
+    val dir = directoryProvider()
+    val file = dir / ".instanceId"
+    if os.exists(file) then
+      _ourInstanceId = os.read(file).trim
+    else
+      _ourInstanceId = Ids.generateInstanceId()
+      os.makeDir.all(dir)
+      os.write.over(file, _ourInstanceId)
+
+  def ourInstanceId: String = _ourInstanceId

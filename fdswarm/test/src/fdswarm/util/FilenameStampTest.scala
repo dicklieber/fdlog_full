@@ -23,7 +23,7 @@ import fdswarm.fx.sections.{Sections, SectionsProvider}
 import fdswarm.model.Callsign
 import fdswarm.store.QsoStore
 import fdswarm.replication.{MulticastTransport, Service, SwarmStatus}
-import fdswarm.util.{NodeIdentity, HostAndPortProvider, MockHostAndPortProvider}
+import fdswarm.util.{NodeIdentity, NodeIdentityManager, MockNodeIdentityManager}
 import fdswarm.TestDirectory
 import com.typesafe.config.ConfigFactory
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
@@ -38,7 +38,7 @@ class FilenameStampTest extends FunSuite:
   private var contestManager: ContestManager = uninitialized
   private var qsoStore: QsoStore = uninitialized
 
-  class MockMulticastTransport extends MulticastTransport(8900, "239.192.0.88", MockHostAndPortProvider(port = 8080)):
+  class MockMulticastTransport extends MulticastTransport(8900, "239.192.0.88", MockNodeIdentityManager(port = 8080)):
     var sentData: Seq[(Service, Array[Byte])] = Seq.empty
     override def send(service: Service, data: Array[Byte]): Unit =
       sentData = sentData :+ (service, data)
@@ -65,8 +65,8 @@ class FilenameStampTest extends FunSuite:
     val sectionsProvider = new SectionsProvider(config)
     val sections = new Sections(sectionsProvider)
     val registry = new SimpleMeterRegistry()
-    val mockHostAndPortProvider = MockHostAndPortProvider(port = 8080)
-    val swarmStatus = SwarmStatus(testDir, mockHostAndPortProvider)
+    val mockNodeIdentityManager = MockNodeIdentityManager(port = 8080)
+    val swarmStatus = SwarmStatus(testDir, mockNodeIdentityManager)
     qsoStore = new QsoStore(testDir, registry, mockTransport, swarmStatus)
     contestManager = new ContestManager(testDir, catalog, sections, qsoStore)
     filenameStamp = new FilenameStamp(contestManager)

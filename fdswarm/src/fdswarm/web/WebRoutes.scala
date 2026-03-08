@@ -42,7 +42,7 @@ import sttp.tapir.server.ServerEndpoint
 import com.typesafe.scalalogging.LazyLogging
 
 import java.time.ZonedDateTime
-import fdswarm.util.{DurationFormat, HostAndPortProvider}
+import fdswarm.util.{DurationFormat, NodeIdentityManager}
 
 import java.time.Duration as JDuration
 import cats.syntax.all.*
@@ -60,7 +60,7 @@ class WebRoutes @Inject()(
                            multicastTransport: MulticastTransport,
                            bandModeBuilder: BandModeBuilder,
                            webSessionStore: WebSessionStore,
-                           hostAndPortProvider:HostAndPortProvider
+                           nodeIdentityManager: NodeIdentityManager
                          ) extends ApiEndpoints with LazyLogging:
 
   override def endpoints: List[ServerEndpoint[Any, IO]] = Nil
@@ -214,7 +214,7 @@ class WebRoutes @Inject()(
             if callsign.nonEmpty && contestClass.nonEmpty && section.nonEmpty then
               val metadata = QsoMetadata(
                 station = ws.station,
-                node = hostAndPortProvider.nodeIdentity,
+                node = nodeIdentityManager.nodeIdentity,
                 contest = contestManager.config.contest
               )
               val qso = Qso(

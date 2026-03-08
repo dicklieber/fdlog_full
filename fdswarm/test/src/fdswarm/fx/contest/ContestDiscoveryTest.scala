@@ -21,7 +21,7 @@ package fdswarm.fx.contest
 import fdswarm.TestDirectory
 import fdswarm.model.Callsign
 import fdswarm.replication.{MulticastTransport, Service, UDPHeaderData}
-import fdswarm.util.{MockHostAndPortProvider, NodeIdentity}
+import fdswarm.util.{MockNodeIdentityManager, NodeIdentity}
 import io.circe.syntax.*
 import munit.FunSuite
 import fdswarm.util.JavaTimeCirce.given
@@ -37,7 +37,7 @@ class ContestDiscoveryTest extends FunSuite:
   override def afterEach(context: AfterEach): Unit =
     testDirectory.cleanup()
 
-  class MockTransport extends MulticastTransport(8900, "239.192.0.88", MockHostAndPortProvider(port = 8080)):
+  class MockTransport extends MulticastTransport(8900, "239.192.0.88", MockNodeIdentityManager(port = 8080)):
     var lastSentService: Option[Service] = None
     override def send(service: Service, data: Array[Byte]): Unit =
       lastSentService = Some(service)

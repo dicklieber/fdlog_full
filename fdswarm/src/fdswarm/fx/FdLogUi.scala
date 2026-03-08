@@ -38,7 +38,7 @@ import fdswarm.fx.tools.{
 }
 import fdswarm.replication.{NodeStatusHandler, StatusBroadcastService, SwarmStatusPane}
 import fdswarm.store.FdHourDigest
-import fdswarm.util.{DurationFormat, HostAndPortProvider}
+import fdswarm.util.{DurationFormat, NodeIdentityManager}
 import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.Inject
 
@@ -84,7 +84,7 @@ final class FdLogUi @Inject()(
                                swarmStatusPane: SwarmStatusPane,
                                statusBroadcastService: StatusBroadcastService,
                                aboutMenuItem: AboutMenuItem,
-                               hostAndPortProvider: HostAndPortProvider,
+                               nodeIdentityManager: NodeIdentityManager,
                                userConfig: UserConfig,
                                userConfigEditor: UserConfigEditor,
                                meterRegistry: MeterRegistry,
@@ -329,7 +329,7 @@ final class FdLogUi @Inject()(
     stationMenuItem.disable = false
     contestMenuItem.disable = false
 
-    stage.title = s"FdSwarm@${hostAndPortProvider.nodeIdentity.toString}"
+    stage.title = s"FdSwarm@${nodeIdentityManager.nodeIdentity.toString}"
     stage.scene = new Scene(root, 1100, 800):
       stylesheets = Seq(getClass.getResource("/styles/app.css").toExternalForm)
     stage.show()

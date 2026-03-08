@@ -18,7 +18,7 @@
 
 package fdswarm.fx.tools
 
-import fdswarm.util.{AnIpAddress, HostAndPortProvider}
+import fdswarm.util.{AnIpAddress, NodeIdentityManager}
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
 import scalafx.geometry.Insets
@@ -28,12 +28,12 @@ import scalafx.stage.Window
 
 @Singleton
 final class IpAddressDialogService @Inject() (
-                                               hostAndPortProvider: HostAndPortProvider
+                                               nodeIdentityManager: NodeIdentityManager
                                              ) {
 
   def show(ownerWindow: Window): Unit = {
-    val interfaces = hostAndPortProvider.suitableInterfaces
-    val currentIp = hostAndPortProvider.currentIp
+    val interfaces = nodeIdentityManager.suitableInterfaces
+    val currentIp = nodeIdentityManager.currentIp
 
     val comboBox = new ComboBox[AnIpAddress](interfaces) {
       cellFactory = (list: ListView[AnIpAddress]) => new ListCell[AnIpAddress] {
@@ -72,7 +72,7 @@ final class IpAddressDialogService @Inject() (
 
     val result = dialog.delegate.showAndWait()
     if (result.isPresent && result.get() != null) {
-      hostAndPortProvider.setIp(result.get().asInstanceOf[AnIpAddress])
+      nodeIdentityManager.setIp(result.get().asInstanceOf[AnIpAddress])
     }
   }
 }

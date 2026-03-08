@@ -65,6 +65,9 @@ class UDPHeaderTest extends FunSuite:
     assertEquals(new String(result.payload, "UTF-8"), jsonPayload)
 
   test("UDPHeader.parse returns None for local instance"):
+    val provider = new fdswarm.io.DirectoryProvider:
+      def apply(): os.Path = os.temp.dir()
+    PortAndInstance.initOurInstanceId(provider)
     val pi = PortAndInstance(8080, ourInstanceId)
     val headerData = (s"FDSWARM|Status|$pi|${BuildInfo.dataVersion}|\n").getBytes("UTF-8")
     val address = InetAddress.getLoopbackAddress
@@ -106,7 +109,18 @@ class UDPHeaderTest extends FunSuite:
     val packet = new DatagramPacket(headerData, headerData.length, InetAddress.getLoopbackAddress, 1234)
     intercept[IllegalArgumentException](UDPHeader.parse(packet))
 
-  test("UDPHeader.parse fails on unknown service"):
-    val headerData = s"FDSWARM|Unknown|8080-instance|${BuildInfo.dataVersion}|\n".getBytes("UTF-8")
-    val packet = new DatagramPacket(headerData, headerData.length, InetAddress.getLoopbackAddress, 1234)
-    intercept[IllegalArgumentException](UDPHeader.parse(packet))
+  test("UDPHeader.parse handles InstanceQuery and InstanceResponse"):
+    val pi = PortAndInstance(8080, "other-instance")
+    val queryPayload = "target-instance".getBytes("UTF-8")
+    val headerData = (s"FDSWARM|InstanceQuery|$pi|${BuildInfo.dataVersion}|\n" + "target-instance").getBytes("UTF-8")
+    val packet = new DatagramPacket(headerData, headerData.length, InetAddress.getByName("1.2.3.4"), 1234)
+    
+    val result = UDPHeader.parse(packet).get
+    assertEquals(result.service, Service.InstanceQuery)
+    assertEquals(new String(result.payload, "UTF-8"), "target-instance")
+
+    val responseData = (s"FDSWARM|InstanceResponse|$pi|${BuildInfo.dataVersion}|\n" + "1.2.3.4:8080-target-instance").getBytes("UTF-8")
+    val responsePacket = new DatagramPacket(responseData, responseData.length, InetAddress.getByName("1.2.3.4"), 1234)
+    val responseResult = UDPHeader.parse(responsePacket).get
+    assertEquals(responseResult.service, Service.InstanceResponse)
+    assertEquals(new String(responseResult.payload, "UTF-8"), "1.2.3.4:8080-target-instance")

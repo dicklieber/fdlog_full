@@ -2,7 +2,7 @@ package fdswarm.replication
 
 import com.google.inject.name.Named
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.util.{HostAndPortProvider}
+import fdswarm.util.{NodeIdentityManager}
 import jakarta.inject.{Inject, Singleton}
 
 import java.net.{
@@ -20,7 +20,7 @@ import scala.jdk.CollectionConverters.*
 class MulticastTransport @Inject() (
                                      @Named("fdswarm.UDP.port") port: Int,
                                      @Named("fdswarm.UDP.groupAddr") groupAddr: String,
-                                     hostAndPortProvider: HostAndPortProvider
+                                     nodeIdentityManager: NodeIdentityManager
                                    ) extends LazyLogging:
 
   logger.debug("Starting MulticastTransport on {}:{}", groupAddr, port)
@@ -38,7 +38,7 @@ class MulticastTransport @Inject() (
   private var thread: Thread = uninitialized
 
   private def getNetworkInterfaceOrThrow(): NetworkInterface =
-    val ip = hostAndPortProvider.currentIp.ip
+    val ip = nodeIdentityManager.currentIp.ip
     logger.debug(s"Using IP $ip for MulticastTransport")
     val ni = NetworkInterface.getByInetAddress(InetAddress.getByName(ip))
     if ni == null then
@@ -165,7 +165,7 @@ class MulticastTransport @Inject() (
     send(Service.QSO, data)
 
   def send(service: Service, data: Array[Byte]): Unit =
-    val packetBytes = UDPHeader(service, hostAndPortProvider.portAndInstance, data)
+    val packetBytes = UDPHeader(service, nodeIdentityManager.portAndInstance, data)
     val packet =
       new DatagramPacket(packetBytes, packetBytes.length, group, port)
     socket.send(packet)

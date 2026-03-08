@@ -44,7 +44,7 @@ class QsoEntryPanel @Inject()(
                                contestClassField: ContestClassField,
                                sectionField: fdswarm.fx.sections.SectionField,
                                dupPanel: DupPanel,
-                               hostAndPortProvider: HostAndPortProvider
+                               nodeIdentityManager: NodeIdentityManager
                              ) extends LazyLogging:
 
   lazy val node: Node =
@@ -140,7 +140,7 @@ class QsoEntryPanel @Inject()(
   private def qsoMetadata =
     QsoMetadata(
       station = stationManager.station,
-      node = hostAndPortProvider.nodeIdentity,
+      node = nodeIdentityManager.nodeIdentity,
       contest = contestManager.config.contest
     )
 

@@ -28,7 +28,7 @@ import fdswarm.io.DirectoryProvider
 import jakarta.inject.Inject
 import scalafx.Includes.*
 import fdswarm.fx.utils.JsonPrettyPrinter
-import fdswarm.util.HostAndPortProvider
+import fdswarm.util.NodeIdentityManager
 import fdswarm.replication.UDPHeader
 import scalafx.scene.input.Clipboard
 import scalafx.scene.input.ClipboardContent
@@ -39,7 +39,7 @@ import scalafx.geometry.Pos
 
 import com.typesafe.config.Config
 class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
-                              hostAndPortProvider: HostAndPortProvider,
+                              nodeIdentityManager: NodeIdentityManager,
                               config: Config)
   extends MenuItem("About"):
   def setOwner(window: Window): Unit =
@@ -158,9 +158,9 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
     grid.add(new Label("Data Files:"), 0, 6)
     grid.add(dataFilesNode, 1, 6)
     grid.add(new Label("Node:"), 0, 7)
-    grid.add(new Label(hostAndPortProvider.nodeIdentity.toString), 1, 7)
+    grid.add(new Label(nodeIdentityManager.nodeIdentity.toString), 1, 7)
 
-    val docsUrl = s"http://${hostAndPortProvider.hostPort}/docs"
+    val docsUrl = s"http://${nodeIdentityManager.hostPort}/docs"
     val docsLink = new Hyperlink(docsUrl):
       onAction = _ =>
         try
@@ -292,7 +292,7 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
         sb.append(s"Scala Version: $scalaVersion\n")
         sb.append(s"Data Version: $dataVersion\n")
         sb.append(s"Data Directory: $dataPath\n")
-        sb.append(s"Host: ${hostAndPortProvider.nodeIdentity}\n")
+        sb.append(s"Host: ${nodeIdentityManager.nodeIdentity}\n")
         sb.append(s"Java Version: ${sys.props("java.version")}\n")
         sb.append(s"Java Home: ${sys.props("java.home")}\n")
         val groupAddr = if (config.hasPath("fdswarm.UDP.groupAddr")) config.getString("fdswarm.UDP.groupAddr") else "Not configured"

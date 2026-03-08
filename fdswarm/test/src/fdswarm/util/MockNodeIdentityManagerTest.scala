@@ -20,10 +20,10 @@ package fdswarm.util
 
 import munit.FunSuite
 
-class MockHostAndPortProviderTest extends FunSuite:
-  test("MockHostAndPortProvider should supply correct nodeIdentity"):
+class MockNodeIdentityManagerTest extends FunSuite:
+  test("MockNodeIdentityManager should supply correct nodeIdentity"):
     val ni = NodeIdentity("1.2.3.4", 9999, "my-instance")
-    val mock = new MockHostAndPortProvider(ni)
+    val mock = new MockNodeIdentityManager(ni)
     
     assertEquals(mock.nodeIdentity, ni)
     assertEquals(mock.currentIp.ip, "1.2.3.4")
@@ -31,7 +31,7 @@ class MockHostAndPortProviderTest extends FunSuite:
     assertEquals(mock.portAndInstance.instanceId, "my-instance")
     assertEquals(mock.hostPort, "1.2.3.4:9999")
 
-  test("MockHostAndPortProvider.apply should work"):
-    val mock = MockHostAndPortProvider("5.6.7.8", 1234)
+  test("MockNodeIdentityManager.apply should work"):
+    val mock = MockNodeIdentityManager("5.6.7.8", 1234)
     assertEquals(mock.nodeIdentity.host, "5.6.7.8")
     assertEquals(mock.nodeIdentity.port, 1234)

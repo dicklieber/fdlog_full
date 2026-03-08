@@ -22,7 +22,7 @@ import com.google.inject.name.Named
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.io.DirectoryProvider
 import fdswarm.store.QsoStore
-import fdswarm.util.HostAndPortProvider
+import fdswarm.util.NodeIdentityManager
 import io.circe.Codec
 import io.circe.parser.decode
 import io.circe.syntax.*
@@ -38,7 +38,7 @@ final case class StatusBroadcastSettings(
 class StatusBroadcastService @Inject()(
                                         qsoStore: QsoStore,
                                         multicastTransport: MulticastTransport,
-                                        hostAndPortProvider: HostAndPortProvider,
+                                        nodeIdentityManager: NodeIdentityManager,
                                         dirProvider: DirectoryProvider,
                                         @Named("fdswarm.broadcastPeriodSec") val defaultBroadcastPeriodSec: Int
                                       ) extends LazyLogging:
