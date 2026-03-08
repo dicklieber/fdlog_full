@@ -46,8 +46,13 @@ object JavaTimeCirce:
     bb.putLong(instant.getEpochSecond)
     java.util.Base64.getUrlEncoder.withoutPadding().encodeToString(bb.array())
   }
-  given Decoder[Instant] = Decoder.decodeString.map { s =>
-    val bytes = java.util.Base64.getUrlDecoder.decode(s)
-    val bb = java.nio.ByteBuffer.wrap(bytes)
-    Instant.ofEpochSecond(bb.getLong)
+  given Decoder[Instant] = Decoder.decodeString.emap { s =>
+    scala.util.Try {
+      val bytes = java.util.Base64.getUrlDecoder.decode(s)
+      val bb = java.nio.ByteBuffer.wrap(bytes)
+      Instant.ofEpochSecond(bb.getLong)
+    }.recover {
+      case _: IllegalArgumentException | _: java.nio.BufferUnderflowException =>
+        Instant.parse(s)
+    }.toEither.left.map(_.getMessage)
   }
