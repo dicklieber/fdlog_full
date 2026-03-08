@@ -84,7 +84,10 @@ class MulticastTransport @Inject() (
     val ifaces =
       NetworkInterface.getNetworkInterfaces.asScala.toList
         .filter { n =>
-          try n.isUp && n.supportsMulticast
+          try
+            n.isUp &&
+            n.supportsMulticast &&
+            n.getInetAddresses.asScala.exists(_.isInstanceOf[java.net.Inet4Address])
           catch case _: Exception => false
         }
 

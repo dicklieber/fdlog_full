@@ -37,8 +37,10 @@ import scalafx.scene.shape.SVGPath
 import scalafx.scene.paint.Color
 import scalafx.geometry.Pos
 
+import com.typesafe.config.Config
 class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
-                              hostAndPortProvider: HostAndPortProvider)
+                              hostAndPortProvider: HostAndPortProvider,
+                              config: Config)
   extends MenuItem("About"):
   def setOwner(window: Window): Unit =
     onAction = _ => showAboutDialog(window)
@@ -244,7 +246,39 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
     grid.add(new Label("Java Details:"), 0, 11)
     grid.add(javaDetailsButton, 1, 11)
 
-    grid.add(new Label("UDP Instance ID:"), 0, 12)
+    val configDetailsButton = new Hyperlink("Show application.conf"):
+      onAction = _ =>
+        val configStr = config.root().render(com.typesafe.config.ConfigRenderOptions.defaults().setOriginComments(false).setComments(true).setFormatted(true).setJson(false))
+        val alert = new Alert(AlertType.Information):
+          initOwner(window)
+          title = "application.conf"
+          headerText = "Application Configuration"
+          val copyButton = new Button("Copy to Clipboard"):
+            onAction = _ =>
+              val content = new ClipboardContent()
+              content.putString(configStr)
+              Clipboard.systemClipboard.setContent(content)
+          dialogPane().content = new VBox:
+            spacing = 10
+            children = Seq(
+              copyButton,
+              new TextArea:
+                text = configStr
+                editable = false
+                prefRowCount = 30
+                prefColumnCount = 80
+                styleClass.add("fixed-width")
+            )
+        alert.showAndWait()
+
+    grid.add(new Label("Application Config:"), 0, 12)
+    grid.add(configDetailsButton, 1, 12)
+
+    val groupAddr = if (config.hasPath("fdswarm.UDP.groupAddr")) config.getString("fdswarm.UDP.groupAddr") else "Not configured"
+    grid.add(new Label("UDP Group Addr:"), 0, 13)
+    grid.add(new Label(groupAddr), 1, 13)
+
+    grid.add(new Label("UDP Instance ID:"), 0, 14)
 
     val labels = grid.children.collect { case l: javafx.scene.control.Label => l }
     labels.foreach(_.getStyleClass.add("fixed-width"))
@@ -261,6 +295,10 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
         sb.append(s"Host: ${hostAndPortProvider.nodeIdentity}\n")
         sb.append(s"Java Version: ${sys.props("java.version")}\n")
         sb.append(s"Java Home: ${sys.props("java.home")}\n")
+        val groupAddr = if (config.hasPath("fdswarm.UDP.groupAddr")) config.getString("fdswarm.UDP.groupAddr") else "Not configured"
+        sb.append(s"UDP Group Addr: $groupAddr\n")
+        val configStr = config.root().render(com.typesafe.config.ConfigRenderOptions.defaults().setOriginComments(false).setComments(true).setFormatted(true).setJson(false))
+        sb.append(s"\n--- Application Config ---\n$configStr\n")
         val content = new ClipboardContent()
         content.putString(sb.toString())
         Clipboard.systemClipboard.setContent(content)
