@@ -18,6 +18,7 @@
 
 package fdswarm.util
 
+import com.typesafe.scalalogging.LazyLogging
 import fdswarm.io.DirectoryProvider
 import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.core.config.Configurator
@@ -28,7 +29,7 @@ import jakarta.inject.{Inject, Singleton}
 import java.nio.file.Files
 
 @Singleton
-class LoggingManager @Inject() (directoryProvider: DirectoryProvider):
+class LoggingManager @Inject() (directoryProvider: DirectoryProvider) extends LazyLogging:
   private val loggingJsonPath = directoryProvider() / "logging.json"
   private var currentLoggers: List[LoggerLevel] = load()
 
@@ -87,5 +88,5 @@ class LoggingManager @Inject() (directoryProvider: DirectoryProvider):
         applyToLog4j2(ll.logger, ll.level)
       }
     } else {
-      System.out.println("No logging configuration found in logging.json.")
+      logger.debug("No logging configuration found in logging.json.")
     }

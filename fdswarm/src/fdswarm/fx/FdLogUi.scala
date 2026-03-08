@@ -61,6 +61,7 @@ import scalafx.Includes.*
 import scalafx.scene.web.WebView
 import javafx.concurrent.Worker
 import netscape.javascript.JSObject
+import javafx.embed.swing.SwingFXUtils
 
 import scala.io.Source
 import io.circe.generic.auto.*
@@ -258,28 +259,68 @@ final class FdLogUi @Inject()(
       if (resource != null) {
         // Prefer loading as a direct Image if the runtime supports it (some modern JavaFX versions do for SVG)
         // But our manual snapshot approach is safer for older versions.
-        val svgContent = os.read(os.Path(java.nio.file.Paths.get(resource.toURI)))
+        val svgContent = scala.io.Source.fromResource("icons/fdswarm.svg").mkString
         val pathRegex = "d=\"([^\"]+)\"".r
         val paths = pathRegex.findAllMatchIn(svgContent).map(_.group(1)).toList
         if (paths.nonEmpty) {
           val combinedPathValue = paths.mkString(" ")
           val svgPath = new SVGPath {
             content = combinedPathValue
-            fill = Color.Black
+            fill = Color.Transparent
+            stroke = Color.Black
+            strokeWidth = 2.5
           }
+
           // Create a small icon image via snapshot
           val params = new SnapshotParameters {
             fill = Color.Transparent
           }
-          val iconImage = svgPath.snapshot(params, null)
+
+          // Need to wrap in a Pane to ensure it's rendered if just a raw node snapshot is finicky
+          val stackPane = new StackPane {
+            children = Seq(svgPath)
+          }
+          val iconImage = stackPane.snapshot(params, null)
           stage.getIcons.add(iconImage)
+
+          // On macOS, try to set the dock icon specifically using AWT Taskbar
+          if (isMac) {
+            try {
+              if (java.awt.Taskbar.isTaskbarSupported) {
+                val taskbar = java.awt.Taskbar.getTaskbar
+                if (taskbar.isSupported(java.awt.Taskbar.Feature.ICON_IMAGE)) {
+                  val bufferedImage = SwingFXUtils.fromFXImage(iconImage, null)
+                  taskbar.setIconImage(bufferedImage)
+                  logger.debug("Successfully set macOS dock icon via Taskbar")
+                }
+              }
+            } catch {
+              case e: Exception => logger.debug("Could not set macOS dock icon via Taskbar (expected on some JDKs)", e)
+            }
+          }
         }
       }
 
       // Fallback: Add the PNG icon as well, JavaFX will pick the best resolution.
       val pngResource = getClass.getResource("/icons/icon_256.png")
       if (pngResource != null) {
-        stage.getIcons.add(new Image(pngResource.toExternalForm))
+        val pngImage = new Image(pngResource.toExternalForm)
+        stage.getIcons.add(pngImage)
+
+        // Also try setting dock icon from PNG if Taskbar hasn't been set yet or as another attempt
+        if (isMac) {
+          try {
+            if (java.awt.Taskbar.isTaskbarSupported) {
+              val taskbar = java.awt.Taskbar.getTaskbar
+              if (taskbar.isSupported(java.awt.Taskbar.Feature.ICON_IMAGE)) {
+                val bufferedImage = SwingFXUtils.fromFXImage(pngImage, null)
+                taskbar.setIconImage(bufferedImage)
+              }
+            }
+          } catch {
+            case _: Exception => // Silently ignore second attempt
+          }
+        }
       }
     } catch {
       case e: Exception => logger.warn("Could not set application icon", e)
