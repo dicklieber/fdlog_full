@@ -22,7 +22,8 @@ set -euo pipefail
 # Build the assembly jar
 ./mill fdswarm.assembly
 
-SRC_JAR="out/fdswarm/assembly.dest/out.jar"
+# The assembly JAR name is defined in build.mill as ${jpackageName()}-${version}-assembly.jar
+SRC_JAR=$(ls out/fdswarm/assembly.dest/*.jar | head -n 1)
 
 # Default destination: macOS Desktop
 DEST_JAR="$HOME/parallels-deploy"

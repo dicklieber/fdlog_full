@@ -328,17 +328,49 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
     )
   }
 
-  // Optional: if you use `assembly`, these help with common resource collisions
+  // Fat jar for Windows/Parallels testing
   override def assemblyRules = Seq(
     Rule.Append("reference.conf"),
-    Rule.AppendPattern(".*\\.conf")
+    Rule.AppendPattern(raw".*\.conf"),
+    Rule.Append("META-INF/services/.*")
   )
 
   override def assembly = Task {
-    val dest = Task.dest / s"${jpackageName()}-${version}-assembly.jar"
+    val dest = Task.dest / "fdswarm-all.jar"
     val assemblyRes = super.assembly()
-    os.copy(assemblyRes.path, dest)
+    os.copy.over(assemblyRes.path, dest, replaceExisting = true)
     PathRef(dest)
+  }
+
+  /**
+   * Copy the fat jar to a Parallels-shared Mac folder so Windows can watch and run it.
+   *
+   * Default destination: ~/ParallelsShare
+   * Override with env var: FDSWARM_PARALLELS_SHARE=/some/path
+   */
+  def parallelsShareDir: os.Path =
+    sys.env.get("FDSWARM_PARALLELS_SHARE") match {
+      case Some(p) if p.trim.nonEmpty => os.Path(p.trim, os.pwd)
+      case _                          => os.home / "ParallelsShare"
+    }
+
+  def copyFatJarToParallels = Task {
+    val jar = assembly()
+    val destDir = parallelsShareDir
+    os.makeDir.all(destDir)
+    val dest = destDir / "fdswarm-all.jar"
+    os.copy.over(jar.path, dest, replaceExisting = true)
+    println(s"Copied fat jar to: $dest")
+    PathRef(dest)
+  }
+
+  def winTest = Task {
+    val dest = copyFatJarToParallels()
+    println()
+    println("Windows watch command:")
+    println(raw"watchexec --restart --watch C:\Mac\Home\ParallelsShare --filter fdswarm-all.jar -- java -jar C:\Mac\Home\ParallelsShare\fdswarm-all.jar")
+    println()
+    dest
   }
 
   // ---- BuildInfo ----
