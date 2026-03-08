@@ -24,13 +24,40 @@ echo.
 set "jdk_count=0"
 
 :: Standard installation paths
-set "jdk_dirs=C:\Program Files\Java;C:\Program Files (x86)\Java"
+set "jdk_dirs=C:\Program Files\Java;C:\Program Files (x86)\Java;%USERPROFILE%\.jdks;%USERPROFILE%\.sdkman\candidates\java;%LOCALAPPDATA%\Programs\Java;%USERPROFILE%\scoop\apps;C:\ProgramData\chocolatey\lib"
 
-for %%D in (%jdk_dirs%) do (
-    if exist "%%D" (
-        for /d %%J in ("%%D\*") do (
-            set /a jdk_count+=1
-            set "found_jdks[!jdk_count!]=%%J"
+for %%D in ("C:\Program Files\Java" "C:\Program Files (x86)\Java" "%USERPROFILE%\.jdks" "%USERPROFILE%\.sdkman\candidates\java" "%LOCALAPPDATA%\Programs\Java" "%USERPROFILE%\scoop\apps" "C:\ProgramData\chocolatey\lib") do (
+    set "dir=%%~D"
+    if exist "!dir!" (
+        for /d %%J in ("!dir!\*") do (
+            set "jdk=%%J"
+            set "found="
+            
+            :: For scoop and chocolatey, we only want things that look like java/jdk
+            set "is_java=true"
+            if "!dir!"=="%USERPROFILE%\scoop\apps" (
+                set "is_java=false"
+                echo %%~nxJ | findstr /i "java jdk openjdk" >nul && set "is_java=true"
+            )
+            if "!dir!"=="C:\ProgramData\chocolatey\lib" (
+                set "is_java=false"
+                echo %%~nxJ | findstr /i "java jdk openjdk" >nul && set "is_java=true"
+            )
+
+            if "!is_java!"=="true" (
+                if exist "%%J\bin\java.exe" (
+                    set /a jdk_count+=1
+                    set "found_jdks[!jdk_count!]=%%J"
+                ) else (
+                    :: Check one level deeper for things like scoop/chocolatey that might have versions
+                    for /d %%V in ("%%J\*") do (
+                        if exist "%%V\bin\java.exe" (
+                            set /a jdk_count+=1
+                            set "found_jdks[!jdk_count!]=%%V"
+                        )
+                    )
+                )
+            )
         )
     )
 )
@@ -49,12 +76,8 @@ for /l %%i in (1,1,%jdk_count%) do (
     
     echo [%%i] !jdk!
     
-    if exist "!java_bin!" (
-        for /f "tokens=*" %%v in ('"!java_bin!" -version 2^>^&1') do (
-            echo     %%v
-        )
-    ) else (
-        echo     Warning: no java executable found in this bundle
+    for /f "tokens=*" %%v in ('"!java_bin!" -version 2^>^&1') do (
+        echo     %%v
     )
     echo.
 )
@@ -84,4 +107,8 @@ if "%enable_delete%"=="true" (
 )
 
 echo Done.
+echo.
+echo Remaining JDKs on PATH:
+where java 2>nul
+if %errorlevel% neq 0 echo None found on PATH.
 exit /b 0
