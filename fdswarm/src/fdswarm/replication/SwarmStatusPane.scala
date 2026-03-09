@@ -70,7 +70,7 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
       container.children = Seq(GridColumns.fieldSet("Swarm Status", new Label("No nodes discovered yet.")))
       return
 
-    val builder = GridBuilder("The Swarm")
+    val builder = GridBuilder()
     builder.hgap = 1
     builder.vgap = 1
     builder.padding = Insets(0)
@@ -238,4 +238,4 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
       children = Seq(grid, footer)
     }
 
-    container.children = Seq(GridColumns.fieldSet("Swarm Status", vBox))
+    container.children = Seq(vBox)
