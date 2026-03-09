@@ -19,61 +19,68 @@
 package fdswarm.replication
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.{GridBuilder, GridColumns}
 import fdswarm.fx.qso.FdHour
-import fdswarm.util.{AgeStyleService, DurationFormat, NodeIdentity}
+import fdswarm.fx.{GridBuilder, GridColumns}
+import fdswarm.util.{
+  AgeStyleService,
+  DurationFormat,
+  NodeIdentity,
+  NodeIdentityManager
+}
 import jakarta.inject.{Inject, Singleton}
+import scalafx.Includes.*
 import scalafx.animation.{KeyFrame, Timeline}
 import scalafx.application.Platform
 import scalafx.beans.binding.Bindings
 import scalafx.beans.property.{LongProperty, StringProperty}
 import scalafx.geometry.Pos
 import scalafx.scene.Node
-import scalafx.scene.control.{Alert, Button, ButtonType, Label, Tooltip}
-import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority, Region, StackPane}
-import scalafx.Includes.*
+import scalafx.scene.control.*
+import scalafx.scene.layout.*
 import scalafx.util.Duration
 
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import scala.collection.concurrent.TrieMap
 
 @Singleton
-class SwarmStatusPane @Inject()(swarmStatus: SwarmStatus, ageStyleService: AgeStyleService) extends LazyLogging:
-
-  private val container = new StackPane()
-  
-  private val dateTimeFormatter = DateTimeFormatter.ofPattern("d, HH:mm:ss").withZone(ZoneId.systemDefault())
+class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
+                                nodeIdentityManager: NodeIdentityManager) extends LazyLogging:
 
   private val nowProperty = LongProperty(System.currentTimeMillis())
-  private val timer = new Timeline {
+
+  private val timeline = new Timeline {
+    cycleCount = Timeline.Indefinite
     keyFrames = Seq(
       KeyFrame(Duration(1000), onFinished = _ => nowProperty.value = System.currentTimeMillis())
     )
-    cycleCount = Timeline.Indefinite
   }
-  timer.play()
+  timeline.play()
 
-  // Rebuild the grid whenever nodeMap changes
-  swarmStatus.nodeMap.onChange {
+  private val container = new StackPane()
+
+  /**
+   * Updates the swarm status pane with the given node map.
+   *
+   * @param nodeMap
+   */
+  def update(allNodeDetails: Seq[NodeDetails]): Unit =
     Platform.runLater {
-      buildGrid()
+      buildGrid(allNodeDetails)
     }
-  }
-
-  buildGrid()
 
   def node: StackPane = container
 
-  private def buildGrid(): Unit =
+  private def buildGrid(allNodeDetails: Seq[NodeDetails]): Unit =
     val grid = new GridPane():
       hgap = 1
       vgap = 1
       gridLinesVisible = true
 
-    val ourNode = swarmStatus.ourNodeIdentity
-    val nodes: Seq[NodeIdentity] = (swarmStatus.nodeMap.keys.toSeq :+ ourNode).distinct.sorted
-    val allHours: Set[FdHour] = swarmStatus.nodeMap.values.flatMap(_.map.keys).toSet
-    val hours: Seq[FdHour] = allHours.toSeq.sorted
+    val ourNode = nodeIdentityManager.nodeIdentity
+    val nodes = allNodeDetails.map(_.nodeIdentity).distinct.sorted
+    val allHours = allNodeDetails.flatMap(_.map.keys).toSet
+    val hours = allHours.toSeq.sorted
 
     if nodes.isEmpty then
       container.children = Seq(GridColumns.fieldSet("Swarm Status", new Label("No nodes discovered yet.")))
@@ -98,18 +105,13 @@ class SwarmStatusPane @Inject()(swarmStatus: SwarmStatus, ageStyleService: AgeSt
     }
 
     // Header row: Nodes
-    grid.add(new Label("Hour \\ Node") {
-      style = "-fx-font-weight: bold;"
-      maxWidth = Double.MaxValue
-      alignment = scalafx.geometry.Pos.Center
-    }, 0, 0)
+    grid.add(new Label("Hour \\ Node"), 0, 0)
     nodes.zipWithIndex.foreach { case (nodeIdentity, colIdx) =>
-      grid.add(new Label(nodeIdentity.instanceId) {
-        val ourNodeLine = if nodeIdentity == ourNode then "Our Node\n" else ""
+      val nodeLabel = new Label(nodeIdentity.instanceId) {
 
         private val ageProperty = StringProperty("")
 
-        swarmStatus.nodeMap.get(nodeIdentity).foreach { nodeDetails =>
+        allNodeDetails.find(_.nodeIdentity == nodeIdentity).foreach { nodeDetails =>
           def updateStyle(): Unit =
             Platform.runLater {
               val last = nodeDetails.lastUpdate.value
@@ -142,22 +144,18 @@ class SwarmStatusPane @Inject()(swarmStatus: SwarmStatus, ageStyleService: AgeSt
         style = "-fx-font-weight: bold;"
 
         val tt = new Tooltip {
-          styleClass += "tooltip" // Use existing stylesheet style if needed, though Tooltip usually has its own
+          styleClass += "tooltip"
         }
         val builder = GridBuilder()
 
-        var rowIdx = 0
         if nodeIdentity == ourNode then
-          val ourNodeLabel = new Label("Our Node") {
+          val ourNodeValue = new Label("Our Node") {
             style = "-fx-font-weight: bold; -fx-text-fill: blue;"
           }
-          builder.result.add(ourNodeLabel, 0, rowIdx, 2, 1)
-          rowIdx += 1
+          builder("", ourNodeValue)
 
-        swarmStatus.nodeMap.get(nodeIdentity).foreach { _ =>
-          if nodeIdentity != ourNode then
-            builder("Age:", ageProperty)
-            rowIdx += 1
+        allNodeDetails.find(_.nodeIdentity == nodeIdentity).foreach { _ =>
+          builder("Age:", ageProperty)
         }
 
         builder("IP:", nodeIdentity.host)
@@ -169,7 +167,8 @@ class SwarmStatusPane @Inject()(swarmStatus: SwarmStatus, ageStyleService: AgeSt
 
         maxWidth = Double.MaxValue
         alignment = Pos.Center
-      }, colIdx + 1, 0)
+      }
+      grid.add(nodeLabel, colIdx + 1, 0)
     }
 
     // Row: Total QSOs
@@ -179,12 +178,12 @@ class SwarmStatusPane @Inject()(swarmStatus: SwarmStatus, ageStyleService: AgeSt
       alignment = Pos.Center
     }, 0, 1)
 
-    nodes.zipWithIndex.foreach { case (node, colIdx) =>
+    nodes.zipWithIndex.foreach { case (nodeId, colIdx) =>
       val label = new Label() {
         maxWidth = Double.MaxValue
         alignment = Pos.Center
       }
-      swarmStatus.nodeMap.get(node).foreach { nodeDetails =>
+      allNodeDetails.find(_.nodeIdentity == nodeId).foreach { nodeDetails =>
         label.text <== nodeDetails.qsoCount.asString()
       }
       grid.add(label, colIdx + 1, 1)
@@ -198,9 +197,9 @@ class SwarmStatusPane @Inject()(swarmStatus: SwarmStatus, ageStyleService: AgeSt
         maxWidth = Double.MaxValue
         alignment = Pos.Center
       }, 0, gridRow)
-      
-      nodes.zipWithIndex.foreach { case (node, colIdx) =>
-        val cell = swarmStatus.nodeMap.get(node) match
+
+      nodes.zipWithIndex.foreach { case (nodeId, colIdx) =>
+        val cell = allNodeDetails.find(_.nodeIdentity == nodeId) match
           case Some(nodeDetails) =>
             nodeDetails.map.get(hour) match
               case Some(hourNodeCell) =>
@@ -227,7 +226,7 @@ class SwarmStatusPane @Inject()(swarmStatus: SwarmStatus, ageStyleService: AgeSt
               maxWidth = Double.MaxValue
               alignment = Pos.Center
             }
-        
+
         grid.add(cell, colIdx + 1, gridRow)
       }
     }
@@ -245,10 +244,11 @@ class SwarmStatusPane @Inject()(swarmStatus: SwarmStatus, ageStyleService: AgeSt
           contentText = "This will remove all discovered nodes and their QSO counts. This cannot be undone."
         }
 
-        alert.showAndWait() match {
-          case Some(ButtonType.OK) => swarmStatus.clear()
-          case _ =>
-        }
+//todo need to fix this, get back to SwarmStatus
+        //        alert.showAndWait() match {
+//          case Some(ButtonType.OK) => swarmStatus.clear()
+//          case _ =>
+//        }
       }
     }
 

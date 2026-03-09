@@ -38,10 +38,10 @@ import scala.collection.concurrent.TrieMap
 @Singleton
 class SwarmStatus @Inject() (
     directoryProvider: DirectoryProvider,
+    swarmStatusPane: SwarmStatusPane,
     nodeIdentityManager: NodeIdentityManager
 ) extends LazyLogging:
-  val nodeMap: ObservableMap[NodeIdentity, NodeDetails] =
-    ObservableMap[NodeIdentity, NodeDetails]()
+  val nodeMap: TrieMap[NodeIdentity, NodeDetails] = new TrieMap[NodeIdentity, NodeDetails]
   private val statusFile = directoryProvider() / "swarmStatus.json"
 
   def put(nodeStuff: NodeStuff): Unit =
@@ -63,11 +63,12 @@ class SwarmStatus @Inject() (
       }
     )
 
-    for fdHourDigest <- nodeStuff.status.fdDigests
+    for 
+      fdHourDigest <- nodeStuff.status.fdDigests
     do
       logger.trace("fdHourDigest: {}", fdHourDigest)
       nodeDetails.put(fdHourDigest, () => ())
-
+    swarmStatusPane.update(nodeMap.values.toSeq)
     save()
 
   // Load state on startup
@@ -150,31 +151,3 @@ case class FdHourNodeCell(nideIdentity: NodeIdentity, fdHour: FdHour):
   val lhData: ObjectProperty[LHData] =
     ObjectProperty[LHData](LHData(FdHourDigest.empty(fdHour)))
 
-class NodeDetails(nodeIdentity: NodeIdentity):
-  val map: TrieMap[FdHour, FdHourNodeCell] = new TrieMap[FdHour, FdHourNodeCell]
-  val qsoCount: IntegerProperty = IntegerProperty(0)
-  val lastUpdate: ObjectProperty[Instant] = ObjectProperty[Instant](Instant.EPOCH)
-
-  def put(fdHourDigest: FdHourDigest, onUpdate: () => Unit): Unit =
-    val cell = map.getOrElseUpdate(
-      fdHourDigest.fdHour,
-      FdHourNodeCell(nodeIdentity, fdHourDigest.fdHour)
-    )
-    val data = LHData(fdHourDigest, Instant.now())
-    try
-      Platform.runLater {
-        cell.lhData.value = data
-        recalculateQsoCount()
-        lastUpdate.value = Instant.now()
-        onUpdate()
-      }
-    catch
-      case _: IllegalStateException =>
-        // Fallback for tests or headless environments where Toolkit is not initialized
-        cell.lhData.value = data
-        recalculateQsoCount()
-        lastUpdate.value = Instant.now()
-        onUpdate()
-
-  def recalculateQsoCount(): Unit =
-    qsoCount.value = map.values.map(_.lhData.value.fdHourDigest.count).toSeq.sum

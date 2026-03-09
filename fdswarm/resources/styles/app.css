@@ -27,6 +27,23 @@
 
 }
 
+.grid-row-label {
+    -fx-font-weight: bold;
+    -fx-background-color: lightgray;
+}
+
+.grid-header {
+    -fx-font-weight: bold;
+    -fx-background-color: lightgray;
+}
+
+.grid-value {
+    -fx-background-color: lightgray;
+}
+
+.gridNumber {
+    -fx-text-alignment: right;
+}
 .tooltip {
     -fx-background-color: white;
     -fx-text-fill: black;

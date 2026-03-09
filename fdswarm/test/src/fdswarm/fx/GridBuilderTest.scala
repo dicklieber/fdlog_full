@@ -31,7 +31,7 @@ class GridBuilderTest extends FunSuite:
     JavaFxTestKit.runOnFx {
       val builder = GridBuilder()
       builder("Name:", "John")
-      builder("Age:", 30)
+      builder("Age:", 1234)
       val nameProperty = StringProperty("Engineer")
       builder("Job:", nameProperty)
       
@@ -53,11 +53,66 @@ class GridBuilderTest extends FunSuite:
       assertEquals(getLabelAt(0, 1).text.value, "John")
       
       assertEquals(getLabelAt(1, 0).text.value, "Age:")
-      assertEquals(getLabelAt(1, 1).text.value, "30")
+      assertEquals(getLabelAt(1, 1).text.value, "1,234")
       
       assertEquals(getLabelAt(2, 0).text.value, "Job:")
       assertEquals(getLabelAt(2, 1).text.value, "Engineer")
       
       nameProperty.value = "Senior Engineer"
       assertEquals(getLabelAt(2, 1).text.value, "Senior Engineer")
+      
+    }
+
+  test("GridBuilder handles Node as value"):
+    JavaFxTestKit.runOnFx {
+      val builder = GridBuilder()
+      val customLabel = new Label("Custom Node Content")
+      builder("Label:", customLabel)
+      
+      val grid: GridPane = builder.result
+      
+      // Check labels
+      def getNodeAt(row: Int, col: Int): javafx.scene.Node =
+        grid.children.find(n => GridPane.getRowIndex(n) == row && GridPane.getColumnIndex(n) == col)
+          .getOrElse(fail(s"No node at $row, $col"))
+
+      val node = getNodeAt(0, 1)
+      assert(node.isInstanceOf[javafx.scene.control.Label])
+      assertEquals(node.asInstanceOf[javafx.scene.control.Label].getText, "Custom Node Content")
+      
+      // If it just calls .toString on the customLabel, the text would be something else
+      // (like "Label@...[styleClass=label]'Custom Node Content'")
+    }
+
+  test("GridBuilder handles empty label"):
+    JavaFxTestKit.runOnFx {
+      val builder = GridBuilder()
+      builder("", "Value Only")
+      
+      val grid: GridPane = builder.result
+      
+      // There should only be one child in this row at col 1
+      val childrenInRow0 = grid.children.filter(n => GridPane.getRowIndex(n) == 0)
+      assertEquals(childrenInRow0.size, 1)
+      assertEquals(GridPane.getColumnIndex(childrenInRow0.head).toInt, 1)
+      
+      val label = childrenInRow0.head.asInstanceOf[javafx.scene.control.Label]
+      assertEquals(label.getText, "Value Only")
+    }
+
+  test("GridBuilder handles header and column span"):
+    JavaFxTestKit.runOnFx {
+      val builder = new GridBuilder("Test Header")
+      builder("Label 1:", "Value 1", "Value 2")
+      builder("Label 2:", "Only 1")
+
+      val grid: GridPane = builder.result
+
+      // Header should be at (0, 0)
+      val headerNode = grid.children.find(n => GridPane.getRowIndex(n) == 0 && GridPane.getColumnIndex(n) == 0).get
+      val headerLabel = headerNode.asInstanceOf[javafx.scene.control.Label]
+      assertEquals(headerLabel.getText, "Test Header")
+
+      // Max values is 2 (from Label 1). Column span should be maxValues + 1 = 3.
+      assertEquals(GridPane.getColumnSpan(headerNode).toInt, 3)
     }

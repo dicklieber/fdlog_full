@@ -64,13 +64,15 @@ case class NodeIdentity(host: String = "44.0.0.1", port: Int = 42, instanceId: I
       null, // query
       null // fragment
     )
- 
 
+  /**
+   * Compares this NodeIdentity with another NodeIdentity based on instanceId..
+   * Order is arbitrary, but consistent.
+   *
+   * @param that
+   */
   override def compare(that: NodeIdentity): Int =
-    var ret = this.host.compareTo(that.host)
-    if (ret == 0)
-      ret = this.port.compareTo(that.port)
-    ret
+    this.instanceId.compareTo(that.instanceId)
 
 object NodeIdentity:
 
@@ -95,7 +97,7 @@ object NodeIdentity:
           // but based on toString it should always have -instanceId
           throw new IllegalArgumentException(s"Invalid NodeIdentity: $s")
 
-import io.circe.{Encoder, Decoder}
+import io.circe.{Decoder, Encoder}
 
 /**
  * Represents a combination of a numeric port and an instance identifier.
