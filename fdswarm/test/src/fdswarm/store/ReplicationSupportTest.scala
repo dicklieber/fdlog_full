@@ -32,6 +32,7 @@ class ReplicationSupportTest extends FunSuite:
   private var testDirectory: TestDirectory = uninitialized
 
   class MockTransport extends Transport:
+    override val nodeIdentityManager: NodeIdentityManager = MockNodeIdentityManager()
     override val mode: String = "Mock"
     override val queue = new java.util.concurrent.LinkedBlockingQueue[fdswarm.replication.UDPHeaderData]()
     override def addListener(listener: fdswarm.replication.UDPHeaderData => Unit): Unit = ()

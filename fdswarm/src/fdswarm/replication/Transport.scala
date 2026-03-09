@@ -18,9 +18,14 @@
 
 package fdswarm.replication
 
+import fdswarm.util.{NodeIdentity, NodeIdentityManager}
+
 import java.util.concurrent.LinkedBlockingQueue
 
 trait Transport:
+  val nodeIdentityManager: NodeIdentityManager
+  def isUs(candidate:NodeIdentity):Boolean=
+    nodeIdentityManager.isUs(candidate)
   val mode: String
   val queue: LinkedBlockingQueue[UDPHeaderData]
   def addListener(listener: UDPHeaderData => Unit): Unit

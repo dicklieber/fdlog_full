@@ -37,7 +37,7 @@ import scala.jdk.CollectionConverters.*
 @Singleton
 class BroadcastTransport @Inject() (
                                      @Named("fdswarm.UDP.port") port: Int,
-                                     nodeIdentityManager: NodeIdentityManager
+                                     val nodeIdentityManager: NodeIdentityManager,
                                    ) extends Transport with LazyLogging:
 
   logger.debug("Starting BroadcastTransport on port {}", port)
@@ -75,14 +75,17 @@ class BroadcastTransport @Inject() (
 
             try
               UDPHeader.parse(packet) match
-                case Some(udpHeader) =>
+                case Some(udpHeader) if !isUs(udpHeader.nodeIdentity) =>
                   logger.trace(
                     s"Received UDP packet from $senderAddr:$senderPort: ${udpHeader.service}"
                   )
                   listeners.forEach(_.apply(udpHeader))
                   queue.offer(udpHeader)
-                case None =>
+                case Some(_) =>
                   logger.trace("Ignoring our own message from {}", senderPort)
+                case None =>
+                  // Should not happen as UDPHeader.parse returns Some or throws
+                  logger.warn("Received empty UDP packet from $senderAddr:$senderPort")
 
             catch
               case e: IllegalArgumentException =>

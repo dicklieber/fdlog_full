@@ -18,7 +18,6 @@
 package fdswarm.util
 
 import fdswarm.util.Ids.Id
-import fdswarm.util.PortAndInstance.ourInstanceId
 import io.circe.*
 import io.circe.KeyEncoder.encodeKeyLong
 import jakarta.inject.*
@@ -33,8 +32,6 @@ case class NodeIdentity(host: String = "44.0.0.1", port: Int = 42, instanceId: I
     f"$host:$port%d-$instanceId"
   lazy val short:String =
     host.split('.').last
-  def notUs: Boolean =
-    instanceId != ourInstanceId
 
   def toURL: String =
     toURI.toString
@@ -49,6 +46,7 @@ case class NodeIdentity(host: String = "44.0.0.1", port: Int = 42, instanceId: I
       null, // query
       null // fragment
     )
+ 
 
   override def compare(that: NodeIdentity): Int =
     var ret = this.host.compareTo(that.host)
@@ -90,7 +88,7 @@ import io.circe.{Encoder, Decoder}
  *                   The `toString` method provides a string representation
  *                   in the format `port-instanceId`.
  */
-case class PortAndInstance(port: Int, instanceId: Id = ourInstanceId):
+case class PortAndInstance(port: Int, instanceId: Id):
   override def toString: String =
     s"$port-$instanceId"
 
@@ -118,17 +116,3 @@ object PortAndInstance:
 
   given Decoder[PortAndInstance] =
     Decoder.decodeString.emap(s => parse(s))
-
-  private var _ourInstanceId: String = ""
-
-  def initOurInstanceId(directoryProvider: fdswarm.io.DirectoryProvider): Unit =
-    val dir = directoryProvider()
-    val file = dir / ".instanceId"
-    if os.exists(file) then
-      _ourInstanceId = os.read(file).trim
-    else
-      _ourInstanceId = Ids.generateInstanceId()
-      os.makeDir.all(dir)
-      os.write.over(file, _ourInstanceId)
-
-  def ourInstanceId: String = _ourInstanceId

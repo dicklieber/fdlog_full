@@ -246,8 +246,8 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
             )
         alert.showAndWait()
 
-    grid.add(new Label("Java Details:"), 0, 11)
-    grid.add(javaDetailsButton, 1, 11)
+    grid.add(new Label("Java Details:"), 0, 12)
+    grid.add(javaDetailsButton, 1, 12)
 
     val configDetailsButton = new Hyperlink("Show application.conf"):
       onAction = _ =>
@@ -274,14 +274,15 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
             )
         alert.showAndWait()
 
-    grid.add(new Label("Application Config:"), 0, 12)
-    grid.add(configDetailsButton, 1, 12)
+    grid.add(new Label("Application Config:"), 0, 13)
+    grid.add(configDetailsButton, 1, 13)
 
     val groupAddr = if (config.hasPath("fdswarm.UDP.groupAddr")) config.getString("fdswarm.UDP.groupAddr") else "Not configured"
-    grid.add(new Label("UDP Group Addr:"), 0, 13)
-    grid.add(new Label(groupAddr), 1, 13)
+    grid.add(new Label("UDP Group Addr:"), 0, 14)
+    grid.add(new Label(groupAddr), 1, 14)
 
-    grid.add(new Label("UDP Instance ID:"), 0, 14)
+    grid.add(new Label("UDP Instance ID:"), 0, 15)
+    grid.add(new Label(nodeIdentityManager.nodeIdentity.instanceId), 1, 15)
 
     val labels = grid.children.collect { case l: javafx.scene.control.Label => l }
     labels.foreach(_.getStyleClass.add("fixed-width"))
@@ -300,6 +301,7 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
         sb.append(s"Java Home: ${sys.props("java.home")}\n")
         val groupAddr = if (config.hasPath("fdswarm.UDP.groupAddr")) config.getString("fdswarm.UDP.groupAddr") else "Not configured"
         sb.append(s"UDP Group Addr: $groupAddr\n")
+        sb.append(s"UDP Instance ID: ${nodeIdentityManager.nodeIdentity.instanceId}\n")
         val configStr = config.root().render(com.typesafe.config.ConfigRenderOptions.defaults().setOriginComments(false).setComments(true).setFormatted(true).setJson(false))
         sb.append(s"\n--- Application Config ---\n$configStr\n")
         val content = new ClipboardContent()

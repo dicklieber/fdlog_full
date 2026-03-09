@@ -21,7 +21,7 @@ package fdswarm.fx.contest
 import fdswarm.TestDirectory
 import fdswarm.model.Callsign
 import fdswarm.replication.{Transport, Service, UDPHeaderData}
-import fdswarm.util.{MockNodeIdentityManager, NodeIdentity}
+import fdswarm.util.{MockNodeIdentityManager, NodeIdentity, NodeIdentityManager}
 import io.circe.syntax.*
 import munit.FunSuite
 import fdswarm.util.JavaTimeCirce.given
@@ -38,6 +38,7 @@ class ContestDiscoveryTest extends FunSuite:
     testDirectory.cleanup()
 
   class MockTransport extends Transport:
+    override val nodeIdentityManager: NodeIdentityManager = MockNodeIdentityManager()
     override val mode: String = "Mock"
     override val queue = new java.util.concurrent.LinkedBlockingQueue[UDPHeaderData]()
     var lastSentService: Option[Service] = None

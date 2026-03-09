@@ -28,8 +28,12 @@ import scala.jdk.CollectionConverters.*
  * Exposes the identity of the local node.
  */
 @Singleton
-class NodeIdentityManager @Inject()(@Named("fdswarm.httpPort") httpPort: Int) extends LazyLogging:
+class NodeIdentityManager @Inject()(@Named("fdswarm.httpPort") httpPort: Int,
+                                    instanceIdManager: InstanceIdManager) extends LazyLogging:
 
+  def isUs(nodeIdentity: NodeIdentity):Boolean=
+    nodeIdentity.instanceId == instanceIdManager.ourInstanceId
+    
   def suitableInterfaces: Seq[AnIpAddress] = (for
     interface: NetworkInterface <- NetworkInterface.getNetworkInterfaces.asScala
     anIpo = AnIpAddress(interface)
@@ -51,8 +55,9 @@ class NodeIdentityManager @Inject()(@Named("fdswarm.httpPort") httpPort: Int) ex
   }.getOrElse(httpPort)
 
   def hostPort: String = s"${currentIp.ip}:$port"
-  def nodeIdentity: NodeIdentity = NodeIdentity(currentIp.ip, port)
-  def portAndInstance: PortAndInstance = PortAndInstance(port)
+  def nodeIdentity: NodeIdentity = NodeIdentity(currentIp.ip, port, instanceIdManager.ourInstanceId)
+  def portAndInstance: PortAndInstance = PortAndInstance(port, instanceIdManager.ourInstanceId)
+
 
 
 

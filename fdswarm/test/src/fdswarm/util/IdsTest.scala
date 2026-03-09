@@ -46,15 +46,11 @@ class IdsTest extends FunSuite:
     assert(id != "500")
     assertEquals(id.length, Ids.IdSize)
 
-  test("generateInstanceId is shorter than generateId"):
-    val id = Ids.generateId()
+  test("generateInstanceId is exactly three characters"):
     val instanceId = Ids.generateInstanceId()
-    assert(instanceId.length < id.length)
-    println(s"generateId: $id length: ${id.length}")
-    println(s"generateInstanceId: $instanceId length: ${instanceId.length}")
+    println(s"[DEBUG_LOG] generateInstanceId: $instanceId length: ${instanceId.length}")
+    assertEquals(instanceId.length, 3)
 
   test("generateInstanceId produces unique-ish IDs"):
-    val id1 = Ids.generateInstanceId()
-    Thread.sleep(1001) // Ensure time moves forward at least one second
-    val id2 = Ids.generateInstanceId()
-    assert(id1 != id2)
+    val ids = (1 to 100).map(_ => Ids.generateInstanceId()).toSet
+    assert(ids.size > 90) // Allow for some collisions in a small sample of 16-bit space

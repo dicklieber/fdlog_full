@@ -43,14 +43,13 @@ class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
 
   override def configure(): Unit =
     val directoryProvider = new ProductionDirectory
-    fdswarm.util.PortAndInstance.initOurInstanceId(directoryProvider)
     bind[DirectoryProvider].toInstance(directoryProvider)
     fdswarm.util.LoggingConfigurator.addFileAppender(directoryProvider)
 
     val loggingManager = new fdswarm.util.LoggingManager(directoryProvider)
     loggingManager.applyInitialConfig()
     bind[fdswarm.util.LoggingManager].toInstance(loggingManager)
-    // NodeIdentityManager is automatically bound because it's in a package scanned by AutoBind (or we can bind it explicitly)
+
     bind[fdswarm.util.NodeIdentityManager].asEagerSingleton()
 
     val pkgs = Seq("fdswarm.api", "fdswarm.grafana", "fdswarm.web")

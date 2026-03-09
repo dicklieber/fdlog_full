@@ -2,16 +2,10 @@ package fdswarm.replication
 
 import com.google.inject.name.Named
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.util.{NodeIdentityManager}
+import fdswarm.util.NodeIdentityManager
 import jakarta.inject.{Inject, Singleton}
 
-import java.net.{
-  DatagramPacket,
-  InetAddress,
-  InetSocketAddress,
-  MulticastSocket,
-  NetworkInterface
-}
+import java.net.*
 import java.util.concurrent.LinkedBlockingQueue
 import scala.compiletime.uninitialized
 import scala.jdk.CollectionConverters.*
@@ -20,7 +14,7 @@ import scala.jdk.CollectionConverters.*
 class MulticastTransport @Inject() (
                                      @Named("fdswarm.UDP.port") port: Int,
                                      @Named("fdswarm.UDP.groupAddr") groupAddr: String,
-                                     nodeIdentityManager: NodeIdentityManager
+                                     val nodeIdentityManager: NodeIdentityManager
                                    ) extends Transport with LazyLogging:
 
   logger.debug("Starting MulticastTransport on {}:{}", groupAddr, port)
@@ -118,14 +112,17 @@ class MulticastTransport @Inject() (
 
             try
               UDPHeader.parse(packet) match
-                case Some(udpHeader) =>
+                case Some(udpHeader) if !nodeIdentityManager.isUs(udpHeader.nodeIdentity) =>
                   logger.trace(
                     s"Received UDP packet from $senderAddr:$senderPort: ${udpHeader.service}"
                   )
                   listeners.forEach(_.apply(udpHeader))
                   queue.offer(udpHeader)
-                case None =>
+                case Some(_) =>
                   logger.trace("Ignoring our own message from {}", senderPort)
+                case None =>
+                  // Should not happen as UDPHeader.parse returns Some or throws
+                  logger.warn("Received empty UDP packet from $senderAddr:$senderPort")
 
             catch
               case e: IllegalArgumentException =>

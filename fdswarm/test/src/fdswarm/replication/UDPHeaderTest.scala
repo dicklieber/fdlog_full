@@ -20,7 +20,6 @@ package fdswarm.replication
 
 import com.organization.BuildInfo
 import fdswarm.util.PortAndInstance
-import fdswarm.util.PortAndInstance.ourInstanceId
 import munit.FunSuite
 
 import scala.util.Success
@@ -48,7 +47,7 @@ class UDPHeaderTest extends FunSuite:
     System.arraycopy(payload, 0, expected, headerPart.length, payload.length)
     assert(bytes.sameElements(expected))
 
-  test("UDPHeader.parse correctly parses valid Status header from another instance"):
+  test("UDPHeader.parse correctly parses valid Status header"):
     val instance = "other-instance"
     val port = 8081
     val pi = PortAndInstance(port, instance)
@@ -64,16 +63,15 @@ class UDPHeaderTest extends FunSuite:
     assertEquals(result.nodeIdentity.port, port)
     assertEquals(new String(result.payload, "UTF-8"), jsonPayload)
 
-  test("UDPHeader.parse returns None for local instance"):
-    val provider = new fdswarm.io.DirectoryProvider:
-      def apply(): os.Path = os.temp.dir()
-    PortAndInstance.initOurInstanceId(provider)
-    val pi = PortAndInstance(8080, ourInstanceId)
+  test("UDPHeader.parse does NOT return None for local instance anymore (filtering is done by transport)"):
+    val instance = "local-instance"
+    val pi = PortAndInstance(8080, instance)
     val headerData = (s"FDSWARM|Status|$pi|${BuildInfo.dataVersion}|\n").getBytes("UTF-8")
     val address = InetAddress.getLoopbackAddress
     val packet = new DatagramPacket(headerData, headerData.length, address, 1234)
     val result = UDPHeader.parse(packet)
-    assert(result.isEmpty)
+    assert(result.isDefined)
+    assertEquals(result.get.nodeIdentity.instanceId, instance)
 
   test("UDPHeader.parse correctly parses gzipped payload"):
     val instance = "test-instance"

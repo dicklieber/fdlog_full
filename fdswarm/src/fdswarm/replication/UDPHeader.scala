@@ -88,9 +88,7 @@ object UDPHeader:
           val portAndInstance: PortAndInstance = PortAndInstance.fromString(sPortAndInstance)
           val nodeIdentity= NodeIdentity(hostAddress, portAndInstance.port, portAndInstance.instanceId)
           
-          Option.when(nodeIdentity.notUs) {
-            UDPHeaderData(Service.valueOf(sService), nodeIdentity, payloadBytes)
-          }
+          Some(UDPHeaderData(Service.valueOf(sService), nodeIdentity, payloadBytes))
         case _ =>
           throw new IllegalArgumentException(s"Invalid header format: $headerStr")
     }.get
