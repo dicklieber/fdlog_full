@@ -38,6 +38,7 @@ class ContestDiscoveryTest extends FunSuite:
     testDirectory.cleanup()
 
   class MockTransport extends Transport:
+    override val mode: String = "Mock"
     override val queue = new java.util.concurrent.LinkedBlockingQueue[UDPHeaderData]()
     var lastSentService: Option[Service] = None
     override def send(data: Array[Byte]): Unit = ()

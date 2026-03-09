@@ -25,6 +25,7 @@ class MulticastTransport @Inject() (
 
   logger.debug("Starting MulticastTransport on {}:{}", groupAddr, port)
 
+  override val mode: String = "Multicast"
   val queue = new LinkedBlockingQueue[UDPHeaderData]()
   private val listeners = new java.util.concurrent.CopyOnWriteArrayList[UDPHeaderData => Unit]()
 

@@ -31,8 +31,7 @@ import scalafx.beans.property.{BooleanProperty, IntegerProperty, StringProperty}
 
 final case class StatusBroadcastSettings(
     periodicEnabled: Boolean = true,
-    broadcastPeriodSec: Option[Int] = Option(10),
-    transportType: String = "Multicast"
+    broadcastPeriodSec: Option[Int] = Option(10)
 ) derives Codec.AsObject
 
 @Singleton
@@ -55,8 +54,7 @@ class StatusBroadcastService @Inject()(
   private def saveSettings(): Unit =
     val settings = StatusBroadcastSettings(
       periodicEnabled = periodicEnabledProperty.value,
-      broadcastPeriodSec = Some(broadcastPeriodSecProperty.value),
-      transportType = transportTypeProperty.value
+      broadcastPeriodSec = Some(broadcastPeriodSecProperty.value)
     )
     val json = settings.asJson.spaces2
     os.write.over(settingsPath, json, createFolders = true)
@@ -66,12 +64,6 @@ class StatusBroadcastService @Inject()(
   val periodicEnabledProperty: BooleanProperty = new BooleanProperty(this, "periodicEnabled", initialSettings.periodicEnabled)
 
   val broadcastPeriodSecProperty: IntegerProperty = new IntegerProperty(this, "broadcastPeriodSec", initialSettings.broadcastPeriodSec.getOrElse(defaultBroadcastPeriodSec))
-
-  val transportTypeProperty: StringProperty = new StringProperty(this, "transportType", initialSettings.transportType)
-
-  transport match
-    case st: SwitchingTransport => st.transportTypeProperty <==> transportTypeProperty
-    case _ => logger.warn("Transport is not a SwitchingTransport, cannot link transportTypeProperty")
 
   periodicEnabledProperty.onChange { (_, _, newValue) =>
     saveSettings()
@@ -83,10 +75,6 @@ class StatusBroadcastService @Inject()(
     // Nudge the running scheduler so the new period controls the NEXT delay
     // without forcing an immediate broadcast.
     interruptForReschedule()
-  }
-
-  transportTypeProperty.onChange { (_, _, _) =>
-    saveSettings()
   }
 
   @volatile private var maybeThread: Option[Thread] = None

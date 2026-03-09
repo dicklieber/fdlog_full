@@ -33,7 +33,7 @@ import java.net.{
 import java.util.concurrent.LinkedBlockingQueue
 import scala.compiletime.uninitialized
 import scala.jdk.CollectionConverters.*
-
+/
 @Singleton
 class BroadcastTransport @Inject() (
                                      @Named("fdswarm.UDP.port") port: Int,
@@ -42,6 +42,7 @@ class BroadcastTransport @Inject() (
 
   logger.debug("Starting BroadcastTransport on port {}", port)
 
+  override val mode: String = "Broadcast"
   val queue = new LinkedBlockingQueue[UDPHeaderData]()
   private val listeners = new java.util.concurrent.CopyOnWriteArrayList[UDPHeaderData => Unit]()
 

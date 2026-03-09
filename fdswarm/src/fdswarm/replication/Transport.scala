@@ -21,6 +21,7 @@ package fdswarm.replication
 import java.util.concurrent.LinkedBlockingQueue
 
 trait Transport:
+  val mode: String
   val queue: LinkedBlockingQueue[UDPHeaderData]
   def addListener(listener: UDPHeaderData => Unit): Unit
   def removeListener(listener: UDPHeaderData => Unit): Unit

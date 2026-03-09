@@ -29,7 +29,7 @@ import jakarta.inject.Inject
 import scalafx.Includes.*
 import fdswarm.fx.utils.JsonPrettyPrinter
 import fdswarm.util.NodeIdentityManager
-import fdswarm.replication.UDPHeader
+import fdswarm.replication.{UDPHeader, Transport}
 import scalafx.scene.input.Clipboard
 import scalafx.scene.input.ClipboardContent
 
@@ -40,6 +40,7 @@ import scalafx.geometry.Pos
 import com.typesafe.config.Config
 class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
                               nodeIdentityManager: NodeIdentityManager,
+                              transport: Transport,
                               config: Config)
   extends MenuItem("About"):
   def setOwner(window: Window): Unit =
@@ -159,6 +160,8 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
     grid.add(dataFilesNode, 1, 6)
     grid.add(new Label("Node:"), 0, 7)
     grid.add(new Label(nodeIdentityManager.nodeIdentity.toString), 1, 7)
+    grid.add(new Label("Transport:"), 0, 8)
+    grid.add(new Label(transport.mode), 1, 8)
 
     val docsUrl = s"http://${nodeIdentityManager.hostPort}/docs"
     val docsLink = new Hyperlink(docsUrl):
@@ -168,13 +171,13 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
         catch
           case _: Throwable => ()
 
-    grid.add(new Label("API Docs:"), 0, 8)
-    grid.add(docsLink, 1, 8)
+    grid.add(new Label("API Docs:"), 0, 9)
+    grid.add(docsLink, 1, 9)
 
-    grid.add(new Label("Java Version:"), 0, 9)
-    grid.add(new Label(sys.props("java.version")), 1, 9)
-    grid.add(new Label("Java Home:"), 0, 10)
-    grid.add(new Label(sys.props("java.home")), 1, 10)
+    grid.add(new Label("Java Version:"), 0, 10)
+    grid.add(new Label(sys.props("java.version")), 1, 10)
+    grid.add(new Label("Java Home:"), 0, 11)
+    grid.add(new Label(sys.props("java.home")), 1, 11)
 
     val javaDetailsButton = new Hyperlink("More Java Details"):
       onAction = _ =>

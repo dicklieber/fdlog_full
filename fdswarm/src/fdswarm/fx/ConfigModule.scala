@@ -34,14 +34,12 @@ import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import _root_.meters4s.Reporter
 import net.codingwell.scalaguice.ScalaModule
 import com.google.inject.TypeLiteral
-import fdswarm.replication.{NodeStatusHandler, StatusBroadcastService, Transport, MulticastTransport, BroadcastTransport, SwitchingTransport}
+import fdswarm.replication.{NodeStatusHandler, StatusBroadcastService, Transport, MulticastTransport, BroadcastTransport}
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 
 class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
-  val config: Config = com.typesafe.config.ConfigFactory.load() // Reads application.conf
-
 
   override def configure(): Unit =
     val directoryProvider = new ProductionDirectory
@@ -68,25 +66,34 @@ class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
 
     val discoveredLoggers = AutoBind.discoverImplementationsOf[LazyLogging](allPkgs)
     bind[Seq[String]].annotatedWith(Names.named("discoveredLoggerNames")).toInstance(discoveredLoggers)
+
+    val primaryConfigFromFile = ConfigFactory.parseFile((os.pwd / "config" / "sarasec.conf").toIO)
+    val defaultConfigFromFile: Config = ConfigFactory.load()
+    val fullConfig: Config = primaryConfigFromFile.withFallback(defaultConfigFromFile)
+
     bind[StatusBroadcastService].asEagerSingleton()
     bind[NodeStatusHandler].asEagerSingleton()
     bind[MulticastTransport].asEagerSingleton()
     bind[BroadcastTransport].asEagerSingleton()
-    bind[Transport].to[SwitchingTransport].asEagerSingleton()
+
+    val transportType = if fullConfig.hasPath("fdswarm.transportType") then fullConfig.getString("fdswarm.transportType") else "Multicast"
+    if (transportType.equalsIgnoreCase("Broadcast")) {
+      bind[Transport].to[BroadcastTransport].asEagerSingleton()
+    } else {
+      bind[Transport].to[MulticastTransport].asEagerSingleton()
+    }
+
     bind[QsoStore].to[ReplicationSupport].asEagerSingleton()
     bind[MeterRegistry].to[PrometheusMeterRegistry].asEagerSingleton()
     val prometheusRegistry = new PrometheusMeterRegistry(io.micrometer.prometheusmetrics.PrometheusConfig.DEFAULT)
     bind[PrometheusMeterRegistry].toInstance(prometheusRegistry)
     val reporter = Reporter.fromRegistry[IO](prometheusRegistry).unsafeRunSync()
     bind(new TypeLiteral[Reporter[IO]](){}).toInstance(reporter)
-    val primaryConfig = ConfigFactory.parseFile((os.pwd / "config" / "sarasec.conf").toIO)
-    val defaultConfig: Config = ConfigFactory.load()
-    val config: Config = primaryConfig.withFallback(defaultConfig)
 
-    val entries = config.entrySet().asScala.toSeq
+    val entries = fullConfig.entrySet().asScala.toSeq
     for (entry <- entries) {
       val key = entry.getKey
-      val value = config.getAnyRef(key)
+      val value = fullConfig.getAnyRef(key)
       logger.trace(s"Config entry: $key = $value type: ${value.getClass}")
       // Determine type and bind accordingly
       value match {
@@ -121,7 +128,7 @@ class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
     }
 
     // Optionally bind the entire config too
-    bind[Config].toInstance(config)
+    bind[Config].toInstance(fullConfig)
 
 
 object ConfigModule:
