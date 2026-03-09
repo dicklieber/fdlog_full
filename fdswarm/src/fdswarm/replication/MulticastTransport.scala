@@ -21,7 +21,7 @@ class MulticastTransport @Inject() (
                                      @Named("fdswarm.UDP.port") port: Int,
                                      @Named("fdswarm.UDP.groupAddr") groupAddr: String,
                                      nodeIdentityManager: NodeIdentityManager
-                                   ) extends LazyLogging:
+                                   ) extends Transport with LazyLogging:
 
   logger.debug("Starting MulticastTransport on {}:{}", groupAddr, port)
 

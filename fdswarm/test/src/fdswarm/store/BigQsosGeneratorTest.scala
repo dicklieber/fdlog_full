@@ -22,7 +22,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.TestDirectory
 import fdswarm.fx.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
 import fdswarm.model.BandMode
-import fdswarm.replication.{MulticastTransport, SwarmStatus}
+import fdswarm.replication.{Transport, SwarmStatus}
 import fdswarm.util.{MetricsDebug, MockNodeIdentityManager, NodeIdentityManager}
 import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
@@ -37,11 +37,15 @@ import scala.compiletime.uninitialized
 class BigQsosGeneratorTest extends FunSuite with LazyLogging:
   private var testDirectory: TestDirectory = uninitialized
 
-  class MockMulticastTransport extends MulticastTransport(8900, "239.192.0.88", MockNodeIdentityManager(port = 8080)):
+  class MockTransport extends Transport:
+    override val queue = new java.util.concurrent.LinkedBlockingQueue[fdswarm.replication.UDPHeaderData]()
+    override def addListener(listener: fdswarm.replication.UDPHeaderData => Unit): Unit = ()
+    override def removeListener(listener: fdswarm.replication.UDPHeaderData => Unit): Unit = ()
+    override def send(data: Array[Byte]): Unit = ()
     override def send(service: fdswarm.replication.Service, data: Array[Byte]): Unit = ()
     override def stop(): Unit = ()
 
-  private val mockTransport = new MockMulticastTransport()
+  private val mockTransport = new MockTransport()
 
   override def beforeEach(context: BeforeEach): Unit =
     testDirectory = new TestDirectory()

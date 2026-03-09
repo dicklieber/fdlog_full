@@ -22,7 +22,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
 import fdswarm.model.*
-import fdswarm.replication.{MulticastTransport, Service, SwarmStatus}
+import fdswarm.replication.{Transport, Service, SwarmStatus}
 import fdswarm.util.Ids.Id
 import io.micrometer.core.instrument.{Counter, MeterRegistry, Timer}
 import jakarta.inject.*
@@ -34,7 +34,7 @@ import scala.collection.concurrent.TrieMap
 
 
 @Singleton
-class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRegistry, multicastTransport: MulticastTransport, swarmStatus: SwarmStatus) extends LazyLogging:
+class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRegistry, transport: Transport, swarmStatus: SwarmStatus) extends LazyLogging:
   val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()
   protected val map: TrieMap[Id, Qso] = new TrieMap
   private val journalFile = directoryProvider() / "qsosJournal.json"
@@ -60,7 +60,7 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider, registry: MeterRe
       qsoCollection.prepend(qso)
       buildFdHourDigests()
       val bytes: Array[Byte] = jsonString.getBytes("UTF-8")
-      multicastTransport.send(Service.QSO, bytes)
+      transport.send(Service.QSO, bytes)
       StyledMessage(s"Added ${qso.dupCriterion} to store", "addQsoOk")
 
   private def addToMap(qso: Qso): Unit =

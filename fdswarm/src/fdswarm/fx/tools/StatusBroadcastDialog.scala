@@ -52,6 +52,28 @@ final class StatusBroadcastDialog @Inject() (
       periodSpinner.valueFactory.value.value = newValue.intValue()
     }
 
+    val transportToggleGroup = new ToggleGroup()
+    val multicastRadio = new RadioButton("Multicast") {
+      toggleGroup = transportToggleGroup
+      userData = "Multicast"
+    }
+    val broadcastRadio = new RadioButton("Broadcast") {
+      toggleGroup = transportToggleGroup
+      userData = "Broadcast"
+    }
+
+    if (statusBroadcastService.transportTypeProperty.value == "Broadcast") {
+      broadcastRadio.selected = true
+    } else {
+      multicastRadio.selected = true
+    }
+
+    transportToggleGroup.selectedToggle.onChange { (_, _, newToggle) =>
+      if (newToggle != null) {
+        statusBroadcastService.transportTypeProperty.value = newToggle.asInstanceOf[javafx.scene.control.RadioButton].getUserData.toString
+      }
+    }
+
     val resetButton = new Button("Reset") {
       onAction = _ => {
         periodSpinner.valueFactory.value.value = statusBroadcastService.defaultBroadcastPeriodSec
@@ -79,6 +101,15 @@ final class StatusBroadcastDialog @Inject() (
             new Label("Broadcast Period (sec):"),
             periodSpinner,
             resetButton
+          )
+        },
+        new HBox {
+          spacing = 10
+          alignment = Pos.CenterLeft
+          children = Seq(
+            new Label("Transport:"),
+            multicastRadio,
+            broadcastRadio
           )
         },
         broadcastButton

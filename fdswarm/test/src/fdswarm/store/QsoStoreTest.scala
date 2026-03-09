@@ -21,7 +21,7 @@ package fdswarm.store
 import fdswarm.TestDirectory
 import fdswarm.model.QsoMetadata.testQsoMetadata
 import fdswarm.model.{BandMode, Callsign, Qso}
-import fdswarm.replication.{MulticastTransport, Service, StatusMessage, SwarmStatus}
+import fdswarm.replication.{Transport, Service, StatusMessage, SwarmStatus}
 import fdswarm.util.{NodeIdentity, NodeIdentityManager, MockNodeIdentityManager}
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import munit.FunSuite
@@ -31,13 +31,17 @@ import scala.compiletime.uninitialized
 class QsoStoreTest extends FunSuite:
   private var testDirectory: TestDirectory = uninitialized
 
-  class MockMulticastTransport extends MulticastTransport(8900, "239.192.0.88", MockNodeIdentityManager(port = 8080)):
+  class MockTransport extends Transport:
+    override val queue = new java.util.concurrent.LinkedBlockingQueue[fdswarm.replication.UDPHeaderData]()
+    override def addListener(listener: fdswarm.replication.UDPHeaderData => Unit): Unit = ()
+    override def removeListener(listener: fdswarm.replication.UDPHeaderData => Unit): Unit = ()
     var sentData: Seq[(Service, Array[Byte])] = Seq.empty
+    override def send(data: Array[Byte]): Unit = ()
     override def send(service: Service, data: Array[Byte]): Unit =
       sentData = sentData :+ (service, data)
     override def stop(): Unit = ()
 
-  private val mockTransport = new MockMulticastTransport()
+  private val mockTransport = new MockTransport()
   private val mockNodeIdentityManager = MockNodeIdentityManager()
   private lazy val swarmStatus = SwarmStatus(testDirectory, mockNodeIdentityManager)
 

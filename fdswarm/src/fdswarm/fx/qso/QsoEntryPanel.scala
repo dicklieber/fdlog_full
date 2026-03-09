@@ -24,7 +24,7 @@ import fdswarm.fx.bandmodes.SelectedBandModeStore
 import fdswarm.fx.contest.ContestManager
 import fdswarm.fx.{CallSignField, GridUtils}
 import fdswarm.model.*
-import fdswarm.replication.MulticastTransport
+import fdswarm.replication.{Transport, Service}
 import fdswarm.store.{QsoStore, StyledMessage}
 import fdswarm.util.*
 import jakarta.inject.{Inject, Singleton}
@@ -36,7 +36,7 @@ import scalafx.scene.layout.{GridPane, VBox}
 @Singleton
 class QsoEntryPanel @Inject()(
                                qsoStore: QsoStore,
-                               multicastTransport: MulticastTransport,
+                               transport: Transport,
                                selectedBandModeStore: SelectedBandModeStore,
                                stationManager: StationManager,
                                contestManager: ContestManager,

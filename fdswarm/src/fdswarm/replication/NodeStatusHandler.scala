@@ -34,7 +34,7 @@ import java.net.http.HttpClient
 @Singleton
 class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
                                   statusProcessor: StatusProcessor,
-                                  multicastTransport: MulticastTransport,
+                                  transport: Transport,
                                   nodeIdentityManager: NodeIdentityManager,
                                   swarmStatus: SwarmStatus,
                                   contestManager: ContestManager,
@@ -50,7 +50,7 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
   private val thread = new Thread(() =>
     while !Thread.currentThread().isInterrupted do
       try
-        val udpHeader: UDPHeaderData = multicastTransport.queue.take()
+        val udpHeader: UDPHeaderData = transport.queue.take()
         udpHeader.service match
           case Service.Status =>
             statusCounter.increment()
@@ -71,7 +71,7 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
           case Service.DiscReq =>
             logger.debug(s"Received ContestDiscoveryRequest from ${udpHeader.nodeIdentity}")
             val configBytes = contestManager.config.asJson.noSpaces.getBytes("UTF-8")
-            multicastTransport.send(Service.DiscResponse, configBytes)
+            transport.send(Service.DiscResponse, configBytes)
           case Service.DiscResponse =>
             // Handled by listeners in ContestDiscovery, ignore here
             logger.trace(s"Received ContestDiscoveryResponse from ${udpHeader.nodeIdentity} (ignoring in NodeStatusHandler)")
@@ -80,7 +80,7 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
             if requestedInstanceId == nodeIdentityManager.portAndInstance.instanceId then
               logger.debug(s"Received InstanceQuery for our instance: $requestedInstanceId")
               val responsePayload = nodeIdentityManager.nodeIdentity.toString.getBytes("UTF-8")
-              multicastTransport.send(Service.InstanceResponse, responsePayload)
+              transport.send(Service.InstanceResponse, responsePayload)
           case Service.InstanceResponse =>
             logger.trace(s"Received InstanceResponse from ${udpHeader.nodeIdentity}")
       catch

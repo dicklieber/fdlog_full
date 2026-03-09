@@ -27,17 +27,18 @@ import io.circe.Codec
 import io.circe.parser.decode
 import io.circe.syntax.*
 import jakarta.inject.{Inject, Singleton}
-import scalafx.beans.property.{BooleanProperty, IntegerProperty}
+import scalafx.beans.property.{BooleanProperty, IntegerProperty, StringProperty}
 
 final case class StatusBroadcastSettings(
     periodicEnabled: Boolean = true,
-    broadcastPeriodSec: Option[Int] = Option(10)
+    broadcastPeriodSec: Option[Int] = Option(10),
+    transportType: String = "Multicast"
 ) derives Codec.AsObject
 
 @Singleton
 class StatusBroadcastService @Inject()(
                                         qsoStore: QsoStore,
-                                        multicastTransport: MulticastTransport,
+                                        transport: Transport,
                                         nodeIdentityManager: NodeIdentityManager,
                                         dirProvider: DirectoryProvider,
                                         @Named("fdswarm.broadcastPeriodSec") val defaultBroadcastPeriodSec: Int
@@ -54,7 +55,8 @@ class StatusBroadcastService @Inject()(
   private def saveSettings(): Unit =
     val settings = StatusBroadcastSettings(
       periodicEnabled = periodicEnabledProperty.value,
-      broadcastPeriodSec = Some(broadcastPeriodSecProperty.value)
+      broadcastPeriodSec = Some(broadcastPeriodSecProperty.value),
+      transportType = transportTypeProperty.value
     )
     val json = settings.asJson.spaces2
     os.write.over(settingsPath, json, createFolders = true)
@@ -64,6 +66,12 @@ class StatusBroadcastService @Inject()(
   val periodicEnabledProperty: BooleanProperty = new BooleanProperty(this, "periodicEnabled", initialSettings.periodicEnabled)
 
   val broadcastPeriodSecProperty: IntegerProperty = new IntegerProperty(this, "broadcastPeriodSec", initialSettings.broadcastPeriodSec.getOrElse(defaultBroadcastPeriodSec))
+
+  val transportTypeProperty: StringProperty = new StringProperty(this, "transportType", initialSettings.transportType)
+
+  transport match
+    case st: SwitchingTransport => st.transportTypeProperty <==> transportTypeProperty
+    case _ => logger.warn("Transport is not a SwitchingTransport, cannot link transportTypeProperty")
 
   periodicEnabledProperty.onChange { (_, _, newValue) =>
     saveSettings()
@@ -75,6 +83,10 @@ class StatusBroadcastService @Inject()(
     // Nudge the running scheduler so the new period controls the NEXT delay
     // without forcing an immediate broadcast.
     interruptForReschedule()
+  }
+
+  transportTypeProperty.onChange { (_, _, _) =>
+    saveSettings()
   }
 
   @volatile private var maybeThread: Option[Thread] = None
@@ -142,7 +154,7 @@ class StatusBroadcastService @Inject()(
       val statusMessage = StatusMessage( fdDigests = qsoStore.digests())
       logger.trace(s"Broadcasting status: $statusMessage")
       val gzipBytes = statusMessage.toPacket
-      multicastTransport.send(Service.Status, gzipBytes)
+      transport.send(Service.Status, gzipBytes)
     catch
       case e: Exception =>
         logger.error("Error broadcasting node status", e)

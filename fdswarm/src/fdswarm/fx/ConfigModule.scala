@@ -34,7 +34,7 @@ import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import _root_.meters4s.Reporter
 import net.codingwell.scalaguice.ScalaModule
 import com.google.inject.TypeLiteral
-import fdswarm.replication.{NodeStatusHandler, StatusBroadcastService}
+import fdswarm.replication.{NodeStatusHandler, StatusBroadcastService, Transport, MulticastTransport, BroadcastTransport, SwitchingTransport}
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
@@ -70,6 +70,9 @@ class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
     bind[Seq[String]].annotatedWith(Names.named("discoveredLoggerNames")).toInstance(discoveredLoggers)
     bind[StatusBroadcastService].asEagerSingleton()
     bind[NodeStatusHandler].asEagerSingleton()
+    bind[MulticastTransport].asEagerSingleton()
+    bind[BroadcastTransport].asEagerSingleton()
+    bind[Transport].to[SwitchingTransport].asEagerSingleton()
     bind[QsoStore].to[ReplicationSupport].asEagerSingleton()
     bind[MeterRegistry].to[PrometheusMeterRegistry].asEagerSingleton()
     val prometheusRegistry = new PrometheusMeterRegistry(io.micrometer.prometheusmetrics.PrometheusConfig.DEFAULT)

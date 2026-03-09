@@ -22,7 +22,7 @@ import fdswarm.fx.contest.{ContestCatalog, ContestConfig, ContestManager, Contes
 import fdswarm.fx.sections.{Sections, SectionsProvider}
 import fdswarm.model.Callsign
 import fdswarm.store.QsoStore
-import fdswarm.replication.{MulticastTransport, Service, SwarmStatus}
+import fdswarm.replication.{Transport, Service, SwarmStatus}
 import fdswarm.util.{NodeIdentity, NodeIdentityManager, MockNodeIdentityManager}
 import fdswarm.TestDirectory
 import com.typesafe.config.ConfigFactory
@@ -38,13 +38,17 @@ class FilenameStampTest extends FunSuite:
   private var contestManager: ContestManager = uninitialized
   private var qsoStore: QsoStore = uninitialized
 
-  class MockMulticastTransport extends MulticastTransport(8900, "239.192.0.88", MockNodeIdentityManager(port = 8080)):
+  class MockTransport extends Transport:
+    override val queue = new java.util.concurrent.LinkedBlockingQueue[fdswarm.replication.UDPHeaderData]()
+    override def addListener(listener: fdswarm.replication.UDPHeaderData => Unit): Unit = ()
+    override def removeListener(listener: fdswarm.replication.UDPHeaderData => Unit): Unit = ()
     var sentData: Seq[(Service, Array[Byte])] = Seq.empty
+    override def send(data: Array[Byte]): Unit = ()
     override def send(service: Service, data: Array[Byte]): Unit =
       sentData = sentData :+ (service, data)
     override def stop(): Unit = ()
 
-  private val mockTransport = new MockMulticastTransport()
+  private val mockTransport = new MockTransport()
  
   override def beforeEach(context: BeforeEach): Unit =
     testDir = new TestDirectory()

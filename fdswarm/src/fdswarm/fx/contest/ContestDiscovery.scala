@@ -20,7 +20,7 @@ package fdswarm.fx.contest
 
 import com.google.inject.name.Named
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.replication.{MulticastTransport, Service, UDPHeaderData}
+import fdswarm.replication.{Transport, Service, UDPHeaderData}
 import fdswarm.util.NodeIdentity
 import io.circe.parser.decode
 import jakarta.inject.{Inject, Singleton}
@@ -30,7 +30,7 @@ import scala.jdk.CollectionConverters.*
 
 @Singleton
 class ContestDiscovery @Inject() (
-    multicastTransport: MulticastTransport,
+    transport: Transport,
     @Named("fdswarm.contestDiscoveryTimeoutSec") val timeoutSec: Int
 ) extends LazyLogging:
 
@@ -57,10 +57,10 @@ class ContestDiscovery @Inject() (
               error
             )
 
-    multicastTransport.addListener(handler)
+    transport.addListener(handler)
     try
-      multicastTransport.send(Service.DiscReq, Array.emptyByteArray)
+      transport.send(Service.DiscReq, Array.emptyByteArray)
       latch.await(timeoutSec, TimeUnit.SECONDS)
-    finally multicastTransport.removeListener(handler)
+    finally transport.removeListener(handler)
 
     responses.asScala.toMap

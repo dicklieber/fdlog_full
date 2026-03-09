@@ -20,7 +20,7 @@ package fdswarm.fx.contest
 
 import fdswarm.TestDirectory
 import fdswarm.model.Callsign
-import fdswarm.replication.{MulticastTransport, Service, UDPHeaderData}
+import fdswarm.replication.{Transport, Service, UDPHeaderData}
 import fdswarm.util.{MockNodeIdentityManager, NodeIdentity}
 import io.circe.syntax.*
 import munit.FunSuite
@@ -37,8 +37,10 @@ class ContestDiscoveryTest extends FunSuite:
   override def afterEach(context: AfterEach): Unit =
     testDirectory.cleanup()
 
-  class MockTransport extends MulticastTransport(8900, "239.192.0.88", MockNodeIdentityManager(port = 8080)):
+  class MockTransport extends Transport:
+    override val queue = new java.util.concurrent.LinkedBlockingQueue[UDPHeaderData]()
     var lastSentService: Option[Service] = None
+    override def send(data: Array[Byte]): Unit = ()
     override def send(service: Service, data: Array[Byte]): Unit =
       lastSentService = Some(service)
       if (service == Service.DiscReq) {

@@ -27,7 +27,7 @@ import fdswarm.fx.contest.ContestManager
 import fdswarm.fx.qso.ContestTimerPanel
 import fdswarm.fx.sections.SectionsProvider
 import fdswarm.model.{Callsign, Qso, QsoMetadata}
-import fdswarm.replication.{MulticastTransport, Service}
+import fdswarm.replication.{Transport, Service}
 import fdswarm.store.QsoStore
 import fdswarm.web.templates.*
 import io.circe.syntax.*
@@ -57,7 +57,7 @@ class WebRoutes @Inject()(
                            contestManager: ContestManager,
                            stationManager: StationManager,
                            userConfig: UserConfig,
-                           multicastTransport: MulticastTransport,
+                           transport: Transport,
                            bandModeBuilder: BandModeBuilder,
                            webSessionStore: WebSessionStore,
                            nodeIdentityManager: NodeIdentityManager
