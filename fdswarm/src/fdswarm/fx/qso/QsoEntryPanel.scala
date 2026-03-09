@@ -22,7 +22,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.StationManager
 import fdswarm.fx.bandmodes.SelectedBandModeStore
 import fdswarm.fx.contest.ContestManager
-import fdswarm.fx.{CallSignField, GridUtils}
+import fdswarm.fx.{CallSignField, GridColumns}
 import fdswarm.model.*
 import fdswarm.replication.{Transport, Service}
 import fdswarm.store.{QsoStore, StyledMessage}
@@ -48,7 +48,7 @@ class QsoEntryPanel @Inject()(
                              ) extends LazyLogging:
 
   lazy val node: Node =
-    GridUtils.fieldSet("QSO", mainLayout)
+    GridColumns.fieldSet("QSO", mainLayout)
   private val clearButton = new Button("\u21BA"):
     styleClass += "clear-button"
     tooltip = Tooltip("Clear fields")

@@ -22,7 +22,7 @@ import munit.FunSuite
 import scalafx.scene.control.Label
 import scalafx.scene.layout.{GridPane, StackPane, BorderPane}
 
-class GridUtilsTest extends FunSuite:
+class GridColumnsTest extends FunSuite:
 
   override def beforeAll(): Unit =
     JavaFxTestKit.init()
@@ -30,7 +30,7 @@ class GridUtilsTest extends FunSuite:
   test("toGrid arranges items in rows and columns") {
     val items = (1 to 8).map(i => new Label(i.toString))
     val nCols = 3
-    val grid = GridUtils.toGrid(items, nCols)
+    val grid = GridColumns.toGrid(items, nCols)
 
     // Layout should be (nCols = 3):
     // (0,0) (0,1) (0,2)  <- row 0
@@ -54,7 +54,7 @@ class GridUtilsTest extends FunSuite:
 
   test("fieldSet creates a StackPane with a Label and content") {
     val content = new Label("Content")
-    val pane = GridUtils.fieldSet("Title", content)
+    val pane = GridColumns.fieldSet("Title", content)
     assert(pane.isInstanceOf[StackPane])
     
     // Debug: print children classes

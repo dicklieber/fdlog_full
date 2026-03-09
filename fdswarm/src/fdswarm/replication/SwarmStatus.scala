@@ -117,6 +117,10 @@ class SwarmStatus @Inject() (
     save()
 
   def ourNodeIdentity: NodeIdentity = nodeIdentityManager.nodeIdentity
+  def clear(): Unit =
+    nodeMap.clear()
+    save()
+    logger.info("Cleared all swarm status data.")
 
   private def save(): Unit =
     try

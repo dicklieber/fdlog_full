@@ -19,7 +19,7 @@
 package fdswarm.fx.qso
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.GridUtils
+import fdswarm.fx.GridColumns
 import fdswarm.store.{DupInfo, StyledMessage}
 import jakarta.inject.Inject
 import scalafx.application.Platform
@@ -38,7 +38,7 @@ class QsoInfoPanel @Inject()() extends VBox with LazyLogging:
 
   managed = false
   visible = false
-  children = Seq(GridUtils.fieldSet("Possible Dups", grid))
+  children = Seq(GridColumns.fieldSet("Possible Dups", grid))
 
   /**
    * After attepting to add a QSO, show an error message if the callsign is already in the database. Or success.

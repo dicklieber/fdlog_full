@@ -19,7 +19,7 @@
 package fdswarm.fx.sections
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.GridUtils
+import fdswarm.fx.GridColumns
 import fdswarm.fx.qso.QsoEntryPanel
 import jakarta.inject.Inject
 import scalafx.beans.binding.{Bindings, BooleanBinding}
@@ -74,7 +74,7 @@ class SectionPanel @Inject()(sectionsProvider: SectionsProvider, qsoEntryPanel: 
           canSubmit
         )
       )
-      val groupGrid = GridUtils.toGrid(sectionGroup.sections, 11)
+      val groupGrid = GridColumns.toGrid(sectionGroup.sections, 11)
       groupGrid.maxWidth = Double.MaxValue
       HBox.setHgrow(groupGrid, Priority.Always)
 
@@ -86,5 +86,5 @@ class SectionPanel @Inject()(sectionsProvider: SectionsProvider, qsoEntryPanel: 
 
       mainVBox.children.add(rowContainer)
 
-    GridUtils.fieldSet(title, mainVBox)
+    GridColumns.fieldSet(title, mainVBox)
 

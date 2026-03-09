@@ -18,7 +18,7 @@
 
 package fdswarm.fx.qso
 
-import fdswarm.fx.{GridUtils, UserConfig}
+import fdswarm.fx.{GridColumns, UserConfig}
 import fdswarm.model.Qso
 import fdswarm.store.QsoStore
 import jakarta.inject.*
@@ -92,7 +92,7 @@ class QsoTablePane @Inject(qsoStore: QsoStore, userConfig: UserConfig):
     )
 
   val node: Node =
-    GridUtils.fieldSet("QSOs", new VBox {
+    GridColumns.fieldSet("QSOs", new VBox {
       children = Seq(
         countLabel,
         table

@@ -18,7 +18,7 @@
 
 package fdswarm.fx.bands
 
-import fdswarm.fx.GridUtils
+import fdswarm.fx.GridColumns
 import fdswarm.io.DirectoryProvider
 import fdswarm.model.BandMode.Band
 import jakarta.inject.{Inject, Singleton}
@@ -81,7 +81,7 @@ final class BandCheckBoxPane @Inject()(
   }
 
   val node: Node =
-    GridUtils.fieldSet(headerLabel, grid)
+    GridColumns.fieldSet(headerLabel, grid)
 
   private def checked: Seq[Band] =
     checkBoxes.iterator.filter(_.selected.value).map(_.bandName).toSeq

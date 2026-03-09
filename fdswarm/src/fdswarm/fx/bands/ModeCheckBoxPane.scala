@@ -19,7 +19,7 @@
 package fdswarm.fx.bands
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.GridUtils
+import fdswarm.fx.GridColumns
 import fdswarm.model.BandMode.Band
 import jakarta.inject.{Inject, Singleton}
 import scalafx.geometry.Insets
@@ -76,7 +76,7 @@ final class ModeCheckBoxPane @Inject()(
   }
 
   val node: Node =
-    GridUtils.fieldSet(
+    GridColumns.fieldSet(
       headerLabel,
       new VBox {
         spacing = 12.0

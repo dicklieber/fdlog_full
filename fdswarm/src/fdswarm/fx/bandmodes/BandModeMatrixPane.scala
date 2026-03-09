@@ -21,7 +21,7 @@ import scalafx.application.Platform
 import scalafx.beans.property.BooleanProperty
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.GridUtils
+import fdswarm.fx.GridColumns
 import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager, BandModeBuilder, HamBand}
 import fdswarm.fx.utils.IconButton
 import fdswarm.model.BandMode
@@ -126,7 +126,7 @@ final class BandModeMatrixPane @Inject()(availableBandsStore: AvailableBandsMana
       }
     }
     container.children = Seq(
-      GridUtils.fieldSet("Band & Mode", grid),
+      GridColumns.fieldSet("Band & Mode", grid),
       configButton
     )
     scalafx.scene.layout.StackPane.setAlignment(configButton, Pos.BottomRight)

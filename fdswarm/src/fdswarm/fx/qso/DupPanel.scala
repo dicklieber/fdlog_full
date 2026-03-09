@@ -19,7 +19,7 @@
 package fdswarm.fx.qso
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.GridUtils
+import fdswarm.fx.GridColumns
 import fdswarm.fx.bandmodes.{BandModeStore, SelectedBandModeStore}
 import fdswarm.store.{DupInfo, QsoStore, StyledMessage}
 import fdswarm.util.TimeHelpers.localFrom
@@ -120,7 +120,7 @@ class DupPanel @Inject()(
     }
 
   def pane(): Pane =
-    val stackPane = GridUtils.fieldSet("XYZZY", grid)
+    val stackPane = GridColumns.fieldSet("XYZZY", grid)
     titleLabel = new Label(stackPane.children(1).asInstanceOf[javafx.scene.control.Label])
     root = stackPane
     root.visible = false

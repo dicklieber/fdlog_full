@@ -20,14 +20,14 @@ package fdswarm.fx.qso
 
 import com.google.inject.Inject
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.GridUtils
+import fdswarm.fx.GridColumns
 import fdswarm.fx.bandmodes.BandModeMatrixPane
 import fdswarm.fx.sections.SectionPanel
 import jakarta.inject.Singleton
 import scalafx.geometry.Insets
 import scalafx.scene.Node
 import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority, VBox}
-import GridUtils.*
+import GridColumns.*
 
 @Singleton
 class ContestEntry @Inject()(qsoEntryPanel: QsoEntryPanel,

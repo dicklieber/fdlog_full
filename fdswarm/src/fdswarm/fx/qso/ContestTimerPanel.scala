@@ -19,7 +19,7 @@
 package fdswarm.fx.qso
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.GridUtils
+import fdswarm.fx.GridColumns
 import fdswarm.fx.contest.ContestManager
 import fdswarm.util.DurationFormat
 import jakarta.inject.{Inject, Named, Singleton}
@@ -86,4 +86,4 @@ class ContestTimerPanel @Inject()(
 
   def node: Node =
     val config = contestManager.config
-    GridUtils.fieldSet(s"${config.contest.name} ${config.start.getYear}", contestTimerLabel)
+    GridColumns.fieldSet(s"${config.contest.name} ${config.start.getYear}", contestTimerLabel)

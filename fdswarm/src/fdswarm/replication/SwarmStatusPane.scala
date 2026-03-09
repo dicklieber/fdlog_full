@@ -19,17 +19,17 @@
 package fdswarm.replication
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.GridUtils
+import fdswarm.fx.{GridBuilder, GridColumns}
 import fdswarm.fx.qso.FdHour
-import fdswarm.util.{DurationFormat, NodeIdentity}
+import fdswarm.util.{AgeStyleService, DurationFormat, NodeIdentity}
 import jakarta.inject.{Inject, Singleton}
 import scalafx.animation.{KeyFrame, Timeline}
 import scalafx.application.Platform
 import scalafx.beans.binding.Bindings
-import scalafx.beans.property.LongProperty
+import scalafx.beans.property.{LongProperty, StringProperty}
 import scalafx.geometry.Pos
 import scalafx.scene.Node
-import scalafx.scene.control.{Label, Tooltip}
+import scalafx.scene.control.{Alert, Button, ButtonType, Label, Tooltip}
 import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority, Region, StackPane}
 import scalafx.Includes.*
 import scalafx.util.Duration
@@ -38,7 +38,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Singleton
-class SwarmStatusPane @Inject()(swarmStatus: SwarmStatus) extends LazyLogging:
+class SwarmStatusPane @Inject()(swarmStatus: SwarmStatus, ageStyleService: AgeStyleService) extends LazyLogging:
 
   private val container = new StackPane()
   
@@ -76,7 +76,7 @@ class SwarmStatusPane @Inject()(swarmStatus: SwarmStatus) extends LazyLogging:
     val hours: Seq[FdHour] = allHours.toSeq.sorted
 
     if nodes.isEmpty then
-      container.children = Seq(GridUtils.fieldSet("Swarm Status", new Label("No nodes discovered yet.")))
+      container.children = Seq(GridColumns.fieldSet("Swarm Status", new Label("No nodes discovered yet.")))
       return
 
     // Equal column widths
@@ -94,7 +94,7 @@ class SwarmStatusPane @Inject()(swarmStatus: SwarmStatus) extends LazyLogging:
         styleClass += "local-node-column"
         mouseTransparent = true
       }
-      grid.add(bg, colIdx + 1, 0, 1, hours.size + 3)
+      grid.add(bg, colIdx + 1, 0, 1, hours.size + 2)
     }
 
     // Header row: Nodes
@@ -106,14 +106,67 @@ class SwarmStatusPane @Inject()(swarmStatus: SwarmStatus) extends LazyLogging:
     nodes.zipWithIndex.foreach { case (nodeIdentity, colIdx) =>
       grid.add(new Label(nodeIdentity.instanceId) {
         val ourNodeLine = if nodeIdentity == ourNode then "Our Node\n" else ""
-        tooltip =
-          s"""${ourNodeLine}IP: ${nodeIdentity.host}
-             |Port: ${nodeIdentity.port}
-             |InstanceId: ${nodeIdentity.instanceId}
-             |""".stripMargin
 
+        private val ageProperty = StringProperty("")
+
+        swarmStatus.nodeMap.get(nodeIdentity).foreach { nodeDetails =>
+          def updateStyle(): Unit =
+            Platform.runLater {
+              val last = nodeDetails.lastUpdate.value
+              styleClass.removeAll("fresh", "recent", "stale")
+              if last != null && last != java.time.Instant.EPOCH then
+                val styleAndAge = ageStyleService.calc("node", last)
+                styleClass.add(styleAndAge.style)
+            }
+
+          nodeDetails.lastUpdate.onChange(updateStyle())
+          nowProperty.onChange(updateStyle())
+
+          // Initial style
+          updateStyle()
+
+          ageProperty <== Bindings.createStringBinding(
+            () => {
+              val last = nodeDetails.lastUpdate.value
+              if nodeIdentity == ourNode || last == null || last == java.time.Instant.EPOCH then ""
+              else
+                val now = nowProperty.value
+                val duration = java.time.Duration.between(last, java.time.Instant.ofEpochMilli(now))
+                s"${DurationFormat(duration)} ago"
+            },
+            nodeDetails.lastUpdate,
+            nowProperty
+          )
+        }
 
         style = "-fx-font-weight: bold;"
+
+        val tt = new Tooltip {
+          styleClass += "tooltip" // Use existing stylesheet style if needed, though Tooltip usually has its own
+        }
+        val builder = GridBuilder()
+
+        var rowIdx = 0
+        if nodeIdentity == ourNode then
+          val ourNodeLabel = new Label("Our Node") {
+            style = "-fx-font-weight: bold; -fx-text-fill: blue;"
+          }
+          builder.result.add(ourNodeLabel, 0, rowIdx, 2, 1)
+          rowIdx += 1
+
+        swarmStatus.nodeMap.get(nodeIdentity).foreach { _ =>
+          if nodeIdentity != ourNode then
+            builder("Age:", ageProperty)
+            rowIdx += 1
+        }
+
+        builder("IP:", nodeIdentity.host)
+        builder("Port:", nodeIdentity.port.toString)
+        builder("InstanceId:", nodeIdentity.instanceId)
+
+        tt.graphic = builder.result
+        tooltip = tt
+
         maxWidth = Double.MaxValue
         alignment = Pos.Center
       }, colIdx + 1, 0)
@@ -137,46 +190,9 @@ class SwarmStatusPane @Inject()(swarmStatus: SwarmStatus) extends LazyLogging:
       grid.add(label, colIdx + 1, 1)
     }
 
-    // Row: Last Update
-    grid.add(new Label("Last Update") {
-      style = "-fx-font-weight: bold;"
-      maxWidth = Double.MaxValue
-      alignment = Pos.Center
-    }, 0, 2)
-
-    nodes.zipWithIndex.foreach { case (node, colIdx) =>
-      val label = new Label() {
-        maxWidth = Double.MaxValue
-        alignment = Pos.Center
-      }
-      swarmStatus.nodeMap.get(node).foreach { nodeDetails =>
-        label.text <== Bindings.createStringBinding(
-          () => {
-            val last = nodeDetails.lastUpdate.value
-            if last == null || last == java.time.Instant.EPOCH then "-"
-            else
-              // Access nowProperty to trigger re-binding update
-              val now = nowProperty.value
-              DurationFormat(java.time.Duration.between(last, java.time.Instant.ofEpochMilli(now))) + " ago"
-          },
-          nodeDetails.lastUpdate,
-          nowProperty
-        )
-        label.tooltip <== Bindings.createObjectBinding(
-          () => {
-            val last = nodeDetails.lastUpdate.value
-            if last == null || last == java.time.Instant.EPOCH then null
-            else Tooltip(dateTimeFormatter.format(last)).delegate
-          },
-          nodeDetails.lastUpdate
-        )
-      }
-      grid.add(label, colIdx + 1, 2)
-    }
-
     // Rows: FdHours
     hours.zipWithIndex.foreach { case (hour, rowIdx) =>
-      val gridRow = rowIdx + 3
+      val gridRow = rowIdx + 2
       grid.add(new Label(hour.display) {
         style = "-fx-font-weight: bold;"
         maxWidth = Double.MaxValue
@@ -220,8 +236,30 @@ class SwarmStatusPane @Inject()(swarmStatus: SwarmStatus) extends LazyLogging:
       style = "-fx-font-style: italic; -fx-padding: 10 0 0 0;"
     }
 
-    val vBox = new scalafx.scene.layout.VBox {
-      children = Seq(grid, helpText)
+    val clearButton = new Button("Clear All Data") {
+      styleClass += "clear-button"
+      onAction = _ => {
+        val alert = new Alert(Alert.AlertType.Confirmation) {
+          title = "Clear Swarm Status"
+          headerText = "Clear all swarm status data?"
+          contentText = "This will remove all discovered nodes and their QSO counts. This cannot be undone."
+        }
+
+        alert.showAndWait() match {
+          case Some(ButtonType.OK) => swarmStatus.clear()
+          case _ =>
+        }
+      }
     }
 
-    container.children = Seq(GridUtils.fieldSet("Swarm Status", vBox))
+    val footer = new scalafx.scene.layout.HBox {
+      spacing = 20
+      alignment = Pos.CenterLeft
+      children = Seq(helpText, new Region { hgrow = Priority.Always }, clearButton)
+    }
+
+    val vBox = new scalafx.scene.layout.VBox {
+      children = Seq(grid, footer)
+    }
+
+    container.children = Seq(GridColumns.fieldSet("Swarm Status", vBox))

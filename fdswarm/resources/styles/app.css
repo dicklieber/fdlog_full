@@ -141,3 +141,13 @@
 .local-node-column {
     -fx-background-color: lightblue;
 }
+
+.fresh{
+    -fx-background-color: lightgreen;
+}
+.recent{
+    -fx-background-color: lightblue;
+}
+.stale{
+    -fx-background-color: lightgray;
+}

@@ -26,7 +26,7 @@ import scalafx.scene.layout.*
 import scalafx.scene.control.Label
 import scalafx.geometry.Insets
 
-object GridUtils:
+object GridColumns:
 
   /**
    * Create a GridPane from a sequence of [[Node]]s arranged by columns first, then rows.
