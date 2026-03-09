@@ -78,8 +78,9 @@ class SwarmStatusPane @Inject()(swarmStatus: SwarmStatus) extends LazyLogging:
     }, 0, 0)
     nodes.zipWithIndex.foreach { case (nodeIdentity, colIdx) =>
       grid.add(new Label(nodeIdentity.instanceId) {
+        val ourNodeLine = if nodeIdentity == ourNode then "Our Node\n" else ""
         tooltip =
-          s"""IP: ${nodeIdentity.host}
+          s"""${ourNodeLine}IP: ${nodeIdentity.host}
              |Port: ${nodeIdentity.port}
              |InstanceId: ${nodeIdentity.instanceId}
              |""".stripMargin
