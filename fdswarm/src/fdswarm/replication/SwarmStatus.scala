@@ -29,7 +29,7 @@ import io.circe.parser.decode
 import jakarta.inject.*
 import javafx.beans.value.ObservableObjectValue
 import scalafx.application.Platform
-import scalafx.beans.property.ObjectProperty
+import scalafx.beans.property.{IntegerProperty, ObjectProperty}
 import scalafx.collections.ObservableMap
 
 import java.time.Instant
@@ -83,6 +83,7 @@ class SwarmStatus @Inject() (
               cell.lhData.value = cellDTO.lhData
               nodeDetails.map.put(cellDTO.fdHour, cell)
             }
+            nodeDetails.recalculateQsoCount()
             nodeMap.put(nodeIdentity, nodeDetails)
           }
           logger.info(s"Loaded swarm status from $statusFile")
@@ -147,6 +148,8 @@ case class FdHourNodeCell(nideIdentity: NodeIdentity, fdHour: FdHour):
 
 class NodeDetails(nodeIdentity: NodeIdentity):
   val map: TrieMap[FdHour, FdHourNodeCell] = new TrieMap[FdHour, FdHourNodeCell]
+  val qsoCount: IntegerProperty = IntegerProperty(0)
+  val lastUpdate: ObjectProperty[Instant] = ObjectProperty[Instant](Instant.EPOCH)
 
   def put(fdHourDigest: FdHourDigest, onUpdate: () => Unit): Unit =
     val cell = map.getOrElseUpdate(
@@ -157,10 +160,17 @@ class NodeDetails(nodeIdentity: NodeIdentity):
     try
       Platform.runLater {
         cell.lhData.value = data
+        recalculateQsoCount()
+        lastUpdate.value = Instant.now()
         onUpdate()
       }
     catch
       case _: IllegalStateException =>
         // Fallback for tests or headless environments where Toolkit is not initialized
         cell.lhData.value = data
+        recalculateQsoCount()
+        lastUpdate.value = Instant.now()
         onUpdate()
+
+  def recalculateQsoCount(): Unit =
+    qsoCount.value = map.values.map(_.lhData.value.fdHourDigest.count).toSeq.sum

@@ -48,6 +48,10 @@ class SwarmStatusTest extends FunSuite:
     // The lhData update should have happened (either via Platform.runLater or fallback)
     assertEquals(cell.lhData.value.fdHourDigest, digest)
     assert(cell.lhData.value.lastSeen != Instant.EPOCH, "lastSeen should be updated")
+    
+    assertEquals(nodeDetails.qsoCount.value, 10, "qsoCount should be updated")
+    assert(nodeDetails.lastUpdate.value != Instant.EPOCH, "lastUpdate should be updated")
+
     testDir.cleanup()
 
   test("SwarmStatus should persist and reload state"):
@@ -70,5 +74,6 @@ class SwarmStatusTest extends FunSuite:
     assert(nodeDetails.map.contains(hour), "nodeDetails should contain fdHour after reload")
     val cell = nodeDetails.map(hour)
     assertEquals(cell.lhData.value.fdHourDigest, digest)
-    
+    assertEquals(nodeDetails.qsoCount.value, 5, "qsoCount should be reloaded/recalculated")
+
     testDir.cleanup()
