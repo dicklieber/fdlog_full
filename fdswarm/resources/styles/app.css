@@ -28,17 +28,17 @@
 }
 
 .grid-row-label {
-    -fx-font-weight: bold;
-    -fx-background-color: lightgray;
+    -fx-font-weight: normal;
+    -fx-background-color: white;
 }
 
 .grid-header {
     -fx-font-weight: bold;
-    -fx-background-color: lightgray;
+    -fx-background-color: white;
 }
 
 .grid-value {
-    -fx-background-color: lightgray;
+    -fx-background-color: white;
 }
 
 .gridNumber {

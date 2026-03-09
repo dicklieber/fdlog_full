@@ -38,8 +38,8 @@ import scala.collection.concurrent.TrieMap
 @Singleton
 class SwarmStatus @Inject() (
     directoryProvider: DirectoryProvider,
-    swarmStatusPane: SwarmStatusPane,
-    nodeIdentityManager: NodeIdentityManager
+    nodeIdentityManager: NodeIdentityManager,
+    swarmStatusPane: SwarmStatusPane = null
 ) extends LazyLogging:
   val nodeMap: TrieMap[NodeIdentity, NodeDetails] = new TrieMap[NodeIdentity, NodeDetails]
   private val statusFile = directoryProvider() / "swarmStatus.json"
@@ -68,7 +68,8 @@ class SwarmStatus @Inject() (
     do
       logger.trace("fdHourDigest: {}", fdHourDigest)
       nodeDetails.put(fdHourDigest, () => ())
-    swarmStatusPane.update(nodeMap.values.toSeq)
+    if (swarmStatusPane != null) then 
+      swarmStatusPane.update(nodeMap.values.toSeq)
     save()
 
   // Load state on startup

@@ -33,6 +33,7 @@ import scalafx.animation.{KeyFrame, Timeline}
 import scalafx.application.Platform
 import scalafx.beans.binding.Bindings
 import scalafx.beans.property.{LongProperty, StringProperty}
+import scalafx.geometry.Insets
 import scalafx.geometry.Pos
 import scalafx.scene.Node
 import scalafx.scene.control.*
@@ -72,11 +73,6 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
   def node: StackPane = container
 
   private def buildGrid(allNodeDetails: Seq[NodeDetails]): Unit =
-    val grid = new GridPane():
-      hgap = 1
-      vgap = 1
-      gridLinesVisible = true
-
     val ourNode = nodeIdentityManager.nodeIdentity
     val nodes = allNodeDetails.map(_.nodeIdentity).distinct.sorted
     val allHours = allNodeDetails.flatMap(_.map.keys).toSet
@@ -86,9 +82,15 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
       container.children = Seq(GridColumns.fieldSet("Swarm Status", new Label("No nodes discovered yet.")))
       return
 
+    val builder = GridBuilder("The Swarm")
+    builder.hgap = 1
+    builder.vgap = 1
+    builder.padding = Insets(0)
+    builder.style = "-fx-background-color: darkgray;"
+
     // Equal column widths
     val columnPercent = 100.0 / (nodes.size + 1)
-    grid.columnConstraints = (0 to nodes.size).map { _ =>
+    builder.columnConstraints = (0 to nodes.size).map { _ =>
       new ColumnConstraints {
         percentWidth = columnPercent
         hgrow = Priority.Always
@@ -101,14 +103,12 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
         styleClass += "local-node-column"
         mouseTransparent = true
       }
-      grid.add(bg, colIdx + 1, 0, 1, hours.size + 2)
+      builder.add(bg, colIdx + 1, 1, 1, hours.size + 2)
     }
 
     // Header row: Nodes
-    grid.add(new Label("Hour \\ Node"), 0, 0)
-    nodes.zipWithIndex.foreach { case (nodeIdentity, colIdx) =>
-      val nodeLabel = new Label(nodeIdentity.instanceId) {
-
+    val nodeLabels = nodes.map { nodeIdentity =>
+      new Label(nodeIdentity.instanceId) {
         private val ageProperty = StringProperty("")
 
         allNodeDetails.find(_.nodeIdentity == nodeIdentity).foreach { nodeDetails =>
@@ -146,39 +146,33 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
         val tt = new Tooltip {
           styleClass += "tooltip"
         }
-        val builder = GridBuilder()
+        val ttBuilder = GridBuilder()
 
         if nodeIdentity == ourNode then
           val ourNodeValue = new Label("Our Node") {
             style = "-fx-font-weight: bold; -fx-text-fill: blue;"
           }
-          builder("", ourNodeValue)
+          ttBuilder("", ourNodeValue)
 
         allNodeDetails.find(_.nodeIdentity == nodeIdentity).foreach { _ =>
-          builder("Age:", ageProperty)
+          ttBuilder("Age:", ageProperty)
         }
 
-        builder("IP:", nodeIdentity.host)
-        builder("Port:", nodeIdentity.port.toString)
-        builder("InstanceId:", nodeIdentity.instanceId)
+        ttBuilder("IP:", nodeIdentity.host)
+        ttBuilder("Port:", nodeIdentity.port.toString)
+        ttBuilder("InstanceId:", nodeIdentity.instanceId)
 
-        tt.graphic = builder.result
+        tt.graphic = ttBuilder.result
         tooltip = tt
 
         maxWidth = Double.MaxValue
         alignment = Pos.Center
       }
-      grid.add(nodeLabel, colIdx + 1, 0)
     }
+    builder("Hour \\ Node", nodeLabels*)
 
     // Row: Total QSOs
-    grid.add(new Label("Total QSOs") {
-      style = "-fx-font-weight: bold;"
-      maxWidth = Double.MaxValue
-      alignment = Pos.Center
-    }, 0, 1)
-
-    nodes.zipWithIndex.foreach { case (nodeId, colIdx) =>
+    val totalQsoLabels = nodes.map { nodeId =>
       val label = new Label() {
         maxWidth = Double.MaxValue
         alignment = Pos.Center
@@ -186,20 +180,14 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
       allNodeDetails.find(_.nodeIdentity == nodeId).foreach { nodeDetails =>
         label.text <== nodeDetails.qsoCount.asString()
       }
-      grid.add(label, colIdx + 1, 1)
+      label
     }
+    builder("Total QSOs", totalQsoLabels*)
 
     // Rows: FdHours
-    hours.zipWithIndex.foreach { case (hour, rowIdx) =>
-      val gridRow = rowIdx + 2
-      grid.add(new Label(hour.display) {
-        style = "-fx-font-weight: bold;"
-        maxWidth = Double.MaxValue
-        alignment = Pos.Center
-      }, 0, gridRow)
-
-      nodes.zipWithIndex.foreach { case (nodeId, colIdx) =>
-        val cell = allNodeDetails.find(_.nodeIdentity == nodeId) match
+    hours.foreach { hour =>
+      val hourCells = nodes.map { nodeId =>
+        allNodeDetails.find(_.nodeIdentity == nodeId) match
           case Some(nodeDetails) =>
             nodeDetails.map.get(hour) match
               case Some(hourNodeCell) =>
@@ -226,10 +214,11 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
               maxWidth = Double.MaxValue
               alignment = Pos.Center
             }
-
-        grid.add(cell, colIdx + 1, gridRow)
       }
+      builder(hour.display, hourCells*)
     }
+
+    val grid = builder.result
 
     val helpText = new Label("TODO: help text below grid") {
       style = "-fx-font-style: italic; -fx-padding: 10 0 0 0;"

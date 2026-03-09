@@ -30,6 +30,8 @@ class GridBuilderTest extends FunSuite:
   test("GridBuilder builds a GridPane with correct rows"):
     JavaFxTestKit.runOnFx {
       val builder = GridBuilder()
+      builder.hgap = 10
+      builder.vgap = 2
       builder("Name:", "John")
       builder("Age:", 1234)
       val nameProperty = StringProperty("Engineer")
@@ -91,12 +93,14 @@ class GridBuilderTest extends FunSuite:
       
       val grid: GridPane = builder.result
       
-      // There should only be one child in this row at col 1
+      // There should be two children in this row: filler at col 0 and value at col 1
       val childrenInRow0 = grid.children.filter(n => GridPane.getRowIndex(n) == 0)
-      assertEquals(childrenInRow0.size, 1)
-      assertEquals(GridPane.getColumnIndex(childrenInRow0.head).toInt, 1)
+      assertEquals(childrenInRow0.size, 2)
       
-      val label = childrenInRow0.head.asInstanceOf[javafx.scene.control.Label]
+      val filler = childrenInRow0.find(n => GridPane.getColumnIndex(n) == 0).get.asInstanceOf[javafx.scene.control.Label]
+      assertEquals(filler.getText, "")
+      
+      val label = childrenInRow0.find(n => GridPane.getColumnIndex(n) == 1).get.asInstanceOf[javafx.scene.control.Label]
       assertEquals(label.getText, "Value Only")
     }
 
@@ -113,6 +117,55 @@ class GridBuilderTest extends FunSuite:
       val headerLabel = headerNode.asInstanceOf[javafx.scene.control.Label]
       assertEquals(headerLabel.getText, "Test Header")
 
-      // Max values is 2 (from Label 1). Column span should be maxValues + 1 = 3.
+      // Max values is 2 (from Label 1). Total columns is 3. Column span should be 3.
       assertEquals(GridPane.getColumnSpan(headerNode).toInt, 3)
+      assertEquals(headerLabel.getMaxWidth, Double.MaxValue)
+      assertEquals(headerLabel.getMaxHeight, Double.MaxValue)
+      assertEquals(headerLabel.getAlignment, javafx.geometry.Pos.CENTER)
+    }
+
+  test("GridBuilder fills empty cells in short rows"):
+    JavaFxTestKit.runOnFx {
+      val builder = GridBuilder()
+      builder("Long Row:", "Val 1", "Val 2")
+      builder("Short Row:", "Only 1")
+      
+      val grid = builder.result
+      
+      // Row 1 should have 3 children: label at 0, value at 1, and filler at 2
+      val childrenInRow1 = grid.children.filter(n => GridPane.getRowIndex(n) == 1)
+      assertEquals(childrenInRow1.size, 3)
+      
+      val filler = childrenInRow1.find(n => GridPane.getColumnIndex(n) == 2).get.asInstanceOf[javafx.scene.control.Label]
+      assertEquals(filler.getText, "")
+      assert(filler.getStyleClass.contains("grid-value"))
+    }
+
+  test("GridBuilder ensures style class for manually created labels"):
+    JavaFxTestKit.runOnFx {
+      val builder = GridBuilder()
+      val manualLabel = new Label("Manual")
+      // manualLabel has no style class by default usually, 
+      // but scalafx Label might have "label"
+      builder("Test:", manualLabel)
+      
+      val grid = builder.result
+      val label = grid.children.find(n => GridPane.getRowIndex(n) == 0 && GridPane.getColumnIndex(n) == 1).get.asInstanceOf[javafx.scene.control.Label]
+      assert(label.getStyleClass.contains("grid-value"))
+    }
+
+  test("GridBuilder header does not have overlapping fillers"):
+    JavaFxTestKit.runOnFx {
+      val builder = new GridBuilder("Overlap Test Header")
+      builder("Row 1:", "Value 1", "Value 2") // maxValues = 2
+
+      val grid: GridPane = builder.result
+      
+      // Header is at row 0. maxValues is 2. 
+      // Total columns 0, 1, 2.
+      // Header starts at col 0 and spans 3.
+      // Filler loop should NOT add any more labels to row 0.
+      val childrenInRow0 = grid.children.filter(n => GridPane.getRowIndex(n) == 0)
+      
+      assertEquals(childrenInRow0.size, 1, s"Row 0 should only have 1 child (header), found: ${childrenInRow0.map(n => s"at ${GridPane.getColumnIndex(n)} span ${GridPane.getColumnSpan(n)}").mkString(", ")}")
     }

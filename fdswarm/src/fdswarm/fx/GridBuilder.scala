@@ -18,11 +18,11 @@
 
 package fdswarm.fx
 
-import fdswarm.fx.GridBuilder.valueToLabel
-import scalafx.geometry.Insets
+import scalafx.Includes.*
+import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.Node
 import scalafx.scene.control.Label
-import scalafx.scene.layout.GridPane
+import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority}
 
 import java.text.NumberFormat
 import java.util.concurrent.atomic.AtomicInteger
@@ -36,14 +36,37 @@ import java.util.Locale
 class GridBuilder(header: Option[String] = None):
   private val headerLabel = new Label() {
     styleClass += "grid-header"
-    // will set col span later 
+    maxWidth = Double.MaxValue
+    maxHeight = Double.MaxValue
+    alignment = Pos.Center
+    // will set col span later
   }
 
-  private val grid = new GridPane {
-    hgap = 10
-    vgap = 2
-    padding = Insets(5)
-  }
+  private val _grid = new GridPane()
+  _grid.hgap = 10
+  _grid.vgap = 2
+  _grid.padding = Insets(5)
+  def gridLinesVisible: Boolean = _grid.gridLinesVisible.value
+  def gridLinesVisible_=(v: Boolean): Unit = _grid.gridLinesVisible = v
+
+  def hgap: Double = _grid.hgap.value
+  def hgap_=(v: Double): Unit = _grid.hgap = v
+
+  def vgap: Double = _grid.vgap.value
+  def vgap_=(v: Double): Unit = _grid.vgap = v
+
+  def style: String = _grid.style.value
+  def style_=(v: String): Unit = _grid.style = v
+
+  def padding: Insets = _grid.padding.value
+  def padding_=(v: Insets): Unit = _grid.padding = v
+
+  def columnConstraints: Seq[ColumnConstraints] = _grid.columnConstraints.toSeq.map(new ColumnConstraints(_))
+  def columnConstraints_=(v: Seq[ColumnConstraints]): Unit =
+    _grid.columnConstraints.setAll(v.map(_.delegate)*)
+
+  def add(child: Node, columnIndex: Int, rowIndex: Int): Unit = _grid.add(child, columnIndex, rowIndex)
+  def add(child: Node, columnIndex: Int, rowIndex: Int, colspan: Int, rowspan: Int): Unit = _grid.add(child, columnIndex, rowIndex, colspan, rowspan)
   private var maxValues = 0
   private val rowIdx = AtomicInteger()
 
@@ -53,8 +76,8 @@ class GridBuilder(header: Option[String] = None):
   header.foreach(h =>
     // Start with grid header, if any.
     headerLabel.text = h
-    headerLabel.styleClass += "grid-row-label"
-    grid.add(headerLabel, 0, rowIdx.getAndIncrement())
+    val row = rowIdx.getAndIncrement()
+    _grid.add(headerLabel, 0, row)
   )
 
   def apply(label: String, value: Any*): GridBuilder =
@@ -63,13 +86,37 @@ class GridBuilder(header: Option[String] = None):
     if (label.nonEmpty) {
       val rowLabel = new Label(label) {
         styleClass += "grid-row-label"
+        maxWidth = Double.MaxValue
+        maxHeight = Double.MaxValue
       }
-      grid.add(rowLabel, 0, row)
+      _grid.add(rowLabel, 0, row)
+    } else {
+      val rowLabelFiller = new Label("") {
+        styleClass += "grid-row-label"
+        maxWidth = Double.MaxValue
+        maxHeight = Double.MaxValue
+      }
+      _grid.add(rowLabelFiller, 0, row)
     }
 
-    value.zipWithIndex.foreach { case (value, idx) =>
-      val valueValue = valueToLabel(value)
-      grid.add(valueValue, idx + 1, row)
+    value.zipWithIndex.foreach { case (v, idx) =>
+      val valueValue = GridBuilder.valueToLabel(v)
+      val delegate = valueValue.delegate
+      delegate match
+        case l: javafx.scene.control.Label =>
+          l.setMaxWidth(Double.MaxValue)
+          l.setMaxHeight(Double.MaxValue)
+          if (!l.getStyleClass.contains("grid-value") && !l.getStyleClass.contains("grid-row-label") && !l.getStyleClass.contains("grid-header")) {
+            l.getStyleClass.add("grid-value")
+          }
+        case r: javafx.scene.layout.Region =>
+          r.setMaxWidth(Double.MaxValue)
+          r.setMaxHeight(Double.MaxValue)
+          if (!r.getStyleClass.contains("grid-value") && !r.getStyleClass.contains("grid-row-label") && !r.getStyleClass.contains("grid-header") && !r.getStyleClass.contains("local-node-column")) {
+            r.getStyleClass.add("grid-value")
+          }
+        case _ =>
+      _grid.add(valueValue, idx + 1, row)
     }
 
     this
@@ -78,26 +125,62 @@ class GridBuilder(header: Option[String] = None):
     if (header.isDefined) {
       GridPane.setColumnSpan(headerLabel, maxValues + 1)
     }
-    grid
+
+    // Fill in any missing cells in rows to ensure they have a background.
+    val rowCount = rowIdx.get()
+    for (r <- 0 until rowCount) {
+      for (c <- 0 to maxValues) {
+        val occupied = _grid.children.exists { n =>
+          val rowIndex = GridPane.getRowIndex(n)
+          val colIndex = GridPane.getColumnIndex(n)
+          val colSpan = Option(GridPane.getColumnSpan(n)).map(_.toInt).getOrElse(1)
+          val rowSpan = Option(GridPane.getRowSpan(n)).map(_.toInt).getOrElse(1)
+          
+          r >= rowIndex && r < rowIndex + rowSpan && c >= colIndex && c < colIndex + colSpan
+        }
+        
+        if (!occupied) {
+          val filler = new Label("") {
+            styleClass += "grid-value"
+            maxWidth = Double.MaxValue
+            maxHeight = Double.MaxValue
+          }
+          _grid.add(filler, c, r)
+        }
+      }
+    }
+    _grid
 
 object GridBuilder:
-  def apply(): GridBuilder = new GridBuilder()
-
   private val numberFormat = NumberFormat.getIntegerInstance(Locale.US)
 
-  def valueToLabel(value: Any, style: String = "grid-value"): Node =
+  def valueToLabel(value: Any, styleClassStr: String = "grid-value"): Node =
     value match
       case node: scalafx.scene.Node =>
         node // already a node, just use it.
       case s: String =>
-        new Label(s)
+        new Label(s) {
+          styleClass += styleClassStr
+          maxWidth = Double.MaxValue
+          maxHeight = Double.MaxValue
+        }
       case prop: scalafx.beans.property.StringProperty =>
         new Label {
           text <== prop
+          styleClass += styleClassStr
+          maxWidth = Double.MaxValue
+          maxHeight = Double.MaxValue
         }
       case i: Int =>
         new Label(numberFormat.format(i)) {
           styleClass += "gridNumber"
+          styleClass += styleClassStr
+          maxWidth = Double.MaxValue
+          maxHeight = Double.MaxValue
         }
       case x =>
-        new Label(x.toString)
+        new Label(x.toString) {
+          styleClass += styleClassStr
+          maxWidth = Double.MaxValue
+          maxHeight = Double.MaxValue
+        }
