@@ -34,7 +34,7 @@ import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import _root_.meters4s.Reporter
 import net.codingwell.scalaguice.ScalaModule
 import com.google.inject.TypeLiteral
-import fdswarm.replication.{NodeStatusHandler, StatusBroadcastService, Transport, MulticastTransport, BroadcastTransport}
+import fdswarm.replication.{BroadcastTransport, MulticastTransport, NodeStatusHandler, StatusBroadcastService, SwarmStatus, SwarmStatusApi, Transport}
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
@@ -69,7 +69,7 @@ class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
     val primaryConfigFromFile = ConfigFactory.parseFile((os.pwd / "config" / "sarasec.conf").toIO)
     val defaultConfigFromFile: Config = ConfigFactory.load()
     val fullConfig: Config = primaryConfigFromFile.withFallback(defaultConfigFromFile)
-
+    bind[SwarmStatusApi].to[SwarmStatus]
     bind[StatusBroadcastService].asEagerSingleton()
     bind[NodeStatusHandler].asEagerSingleton()
     bind[MulticastTransport].asEagerSingleton()

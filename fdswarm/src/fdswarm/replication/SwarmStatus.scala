@@ -24,13 +24,11 @@ import fdswarm.io.DirectoryProvider
 import fdswarm.store.FdHourDigest
 import fdswarm.util.{JavaTimeCirce, NodeIdentity, NodeIdentityManager}
 import io.circe.*
-import io.circe.syntax.*
 import io.circe.parser.decode
+import io.circe.syntax.*
 import jakarta.inject.*
-import javafx.beans.value.ObservableObjectValue
 import scalafx.application.Platform
-import scalafx.beans.property.{IntegerProperty, ObjectProperty}
-import scalafx.collections.ObservableMap
+import scalafx.beans.property.ObjectProperty
 
 import java.time.Instant
 import scala.collection.concurrent.TrieMap
@@ -39,8 +37,8 @@ import scala.collection.concurrent.TrieMap
 class SwarmStatus @Inject() (
     directoryProvider: DirectoryProvider,
     nodeIdentityManager: NodeIdentityManager,
-    swarmStatusPane: SwarmStatusPane = null
-) extends LazyLogging:
+    swarmStatusPane: SwarmStatusPane
+                            ) extends SwarmStatusApi with LazyLogging:
   val nodeMap: TrieMap[NodeIdentity, NodeDetails] = new TrieMap[NodeIdentity, NodeDetails]
   private val statusFile = directoryProvider() / "swarmStatus.json"
 
@@ -68,8 +66,7 @@ class SwarmStatus @Inject() (
     do
       logger.trace("fdHourDigest: {}", fdHourDigest)
       nodeDetails.put(fdHourDigest, () => ())
-    if (swarmStatusPane != null) then 
-      swarmStatusPane.update(nodeMap.values.toSeq)
+    swarmStatusPane.update(nodeMap.values.toSeq)
     save()
 
   // Load state on startup
@@ -122,7 +119,8 @@ class SwarmStatus @Inject() (
   def clear(): Unit =
     nodeMap.clear()
     save()
-    logger.info("Cleared all swarm status data.")
+    swarmStatusPane.update(nodeMap.values.toSeq)
+    logger.debug("Cleared all swarm status data.")
 
   private def save(): Unit =
     try
@@ -152,3 +150,5 @@ case class FdHourNodeCell(nideIdentity: NodeIdentity, fdHour: FdHour):
   val lhData: ObjectProperty[LHData] =
     ObjectProperty[LHData](LHData(FdHourDigest.empty(fdHour)))
 
+trait SwarmStatusApi:
+  def clear(): Unit

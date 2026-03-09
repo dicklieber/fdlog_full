@@ -19,33 +19,21 @@
 package fdswarm.replication
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.qso.FdHour
 import fdswarm.fx.{GridBuilder, GridColumns}
-import fdswarm.util.{
-  AgeStyleService,
-  DurationFormat,
-  NodeIdentity,
-  NodeIdentityManager
-}
+import fdswarm.util.{AgeStyleService, DurationFormat, NodeIdentityManager}
 import jakarta.inject.{Inject, Singleton}
-import scalafx.Includes.*
 import scalafx.animation.{KeyFrame, Timeline}
 import scalafx.application.Platform
 import scalafx.beans.binding.Bindings
 import scalafx.beans.property.{LongProperty, StringProperty}
-import scalafx.geometry.Insets
-import scalafx.geometry.Pos
-import scalafx.scene.Node
+import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control.*
 import scalafx.scene.layout.*
 import scalafx.util.Duration
 
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import scala.collection.concurrent.TrieMap
-
 @Singleton
 class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
+                                swarmStatusApi: SwarmStatusApi,
                                 nodeIdentityManager: NodeIdentityManager) extends LazyLogging:
 
   private val nowProperty = LongProperty(System.currentTimeMillis())
@@ -63,7 +51,7 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
   /**
    * Updates the swarm status pane with the given node map.
    *
-   * @param nodeMap
+   * @param allNodeDetails the whole swarm.
    */
   def update(allNodeDetails: Seq[NodeDetails]): Unit =
     Platform.runLater {
@@ -233,11 +221,10 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
           contentText = "This will remove all discovered nodes and their QSO counts. This cannot be undone."
         }
 
-//todo need to fix this, get back to SwarmStatus
-        //        alert.showAndWait() match {
-//          case Some(ButtonType.OK) => swarmStatus.clear()
-//          case _ =>
-//        }
+        alert.showAndWait() match {
+          case Some(ButtonType.OK) => swarmStatusApi.clear()
+          case _ =>
+        }
       }
     }
 
