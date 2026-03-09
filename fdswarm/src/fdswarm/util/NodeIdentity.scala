@@ -27,6 +27,24 @@ import java.net.{InetAddress, InetSocketAddress, URI}
 import java.util.Base64
 import scala.util.matching.Regex
 
+/**
+ * Represents the identity of a network node, encapsulating details such as host, port, and an instance ID.
+ *
+ * @constructor Creates a new NodeIdentity with a specified host, port, and instance ID.
+ *              Default values for host and port are "44.0.0.1" and 42, respectively.
+ * @param host       The hostname or IP address of the node.
+ * @param port       The port number on which the node is reachable.
+ * @param instanceId A unique identifier for the instance of the node.
+ *
+ *                   Extends the `Ordered` trait to allow comparison of `NodeIdentity` instances based on host and port.
+ *
+ *                   Methods:
+ *                   - `toString`: Returns a string representation of the node in the format `host:port-instanceId`.
+ *                   - `short`: A lazily evaluated property that provides the last segment of the host name.
+ *                   - `toURL`: Converts the node's information into a URL string.
+ *                   - `toURI`: Converts the node's information into a URI instance using the scheme "http".
+ *                   - `compare`: Compares two `NodeIdentity` instances first by host, then by port.
+ */
 case class NodeIdentity(host: String = "44.0.0.1", port: Int = 42, instanceId: Id = "") extends Ordered[NodeIdentity]:
   override val toString: String =
     f"$host:$port%d-$instanceId"

@@ -76,9 +76,15 @@ class SwarmStatusPane @Inject()(swarmStatus: SwarmStatus) extends LazyLogging:
       maxWidth = Double.MaxValue
       alignment = scalafx.geometry.Pos.Center
     }, 0, 0)
-    nodes.zipWithIndex.foreach { case (node, colIdx) =>
-      grid.add(new Label(node.toString) {
-        tooltip = node.toString
+    nodes.zipWithIndex.foreach { case (nodeIdentity, colIdx) =>
+      grid.add(new Label(nodeIdentity.instanceId) {
+        tooltip =
+          s"""IP: ${nodeIdentity.host}
+             |Port: ${nodeIdentity.port}
+             |InstanceId: ${nodeIdentity.instanceId}
+             |""".stripMargin
+
+
         style = "-fx-font-weight: bold;"
         maxWidth = Double.MaxValue
         alignment = scalafx.geometry.Pos.Center
