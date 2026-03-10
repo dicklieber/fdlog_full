@@ -22,7 +22,7 @@ import fdswarm.replication.SwarmStatusPane
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
 import scalafx.scene.Scene
-import scalafx.scene.layout.StackPane
+import scalafx.scene.layout.BorderPane
 import scalafx.stage.Stage
 import scalafx.stage.Window
 
@@ -44,7 +44,7 @@ class SwarmStatusAdmin @Inject()(swarmStatusPane: SwarmStatusPane):
             stylesheets = Seq(getClass.getResource("/styles/app.css").toExternalForm)
 
         s.onCloseRequest = _ =>
-          s.scene().root = new StackPane() // Detach swarmStatusPane.node
+          s.scene().root = new BorderPane() // Detach swarmStatusPane.node
           stage = None
         s.show()
         stage = Some(s)

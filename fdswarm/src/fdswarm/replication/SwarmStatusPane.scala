@@ -46,7 +46,7 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
   }
   timeline.play()
 
-  private val container = new StackPane()
+  private val container = new BorderPane()
 
   /**
    * Updates the swarm status pane with the given node map.
@@ -58,7 +58,7 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
       buildGrid(allNodeDetails)
     }
 
-  def node: StackPane = container
+  def node: BorderPane = container
 
   private def buildGrid(allNodeDetails: Seq[NodeDetails]): Unit =
     val ourNode = nodeIdentityManager.nodeIdentity
@@ -66,8 +66,36 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
     val allHours = allNodeDetails.flatMap(_.map.keys).toSet
     val hours = allHours.toSeq.sorted
 
+    val helpText = new Label("TODO: help text below grid") {
+      style = "-fx-font-style: italic; -fx-padding: 10 0 0 0;"
+    }
+
+    val clearButton = new Button("Clear All Data") {
+      styleClass += "clear-button"
+      onAction = _ => {
+        val alert = new Alert(Alert.AlertType.Confirmation) {
+          title = "Clear Swarm Status"
+          headerText = "Clear all swarm status data?"
+          contentText = "This will remove all discovered nodes and their QSO counts. This cannot be undone."
+        }
+
+        alert.showAndWait() match {
+          case Some(ButtonType.OK) => swarmStatusApi.clear()
+          case _ =>
+        }
+      }
+    }
+
+    val footer = new HBox {
+      spacing = 20
+      alignment = Pos.CenterLeft
+      children = Seq(helpText, new Region { hgrow = Priority.Always }, clearButton)
+      padding = Insets(10, 0, 0, 0)
+    }
+    container.bottom = footer
+
     if nodes.isEmpty then
-      container.children = Seq(GridColumns.fieldSet("Swarm Status", new Label("No nodes discovered yet.")))
+      container.center = GridColumns.fieldSet("Swarm Status", new Label("No nodes discovered yet."))
       return
 
     val builder = GridBuilder()
@@ -206,36 +234,4 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
       builder(hour.display, hourCells*)
     }
 
-    val grid = builder.result
-
-    val helpText = new Label("TODO: help text below grid") {
-      style = "-fx-font-style: italic; -fx-padding: 10 0 0 0;"
-    }
-
-    val clearButton = new Button("Clear All Data") {
-      styleClass += "clear-button"
-      onAction = _ => {
-        val alert = new Alert(Alert.AlertType.Confirmation) {
-          title = "Clear Swarm Status"
-          headerText = "Clear all swarm status data?"
-          contentText = "This will remove all discovered nodes and their QSO counts. This cannot be undone."
-        }
-
-        alert.showAndWait() match {
-          case Some(ButtonType.OK) => swarmStatusApi.clear()
-          case _ =>
-        }
-      }
-    }
-
-    val footer = new scalafx.scene.layout.HBox {
-      spacing = 20
-      alignment = Pos.CenterLeft
-      children = Seq(helpText, new Region { hgrow = Priority.Always }, clearButton)
-    }
-
-    val vBox = new scalafx.scene.layout.VBox {
-      children = Seq(grid, footer)
-    }
-
-    container.children = Seq(vBox)
+    container.center = builder.result
