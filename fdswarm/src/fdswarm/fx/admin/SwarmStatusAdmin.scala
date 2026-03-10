@@ -21,30 +21,30 @@ package fdswarm.fx.admin
 import fdswarm.replication.status.SwarmStatusPane
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
-import scalafx.scene.Scene
+import scalafx.scene.control.{ButtonBar, ButtonType, Dialog}
 import scalafx.scene.layout.BorderPane
-import scalafx.stage.Stage
 import scalafx.stage.Window
 
 @Singleton
 class SwarmStatusAdmin @Inject()(swarmStatusPane: SwarmStatusPane):
 
-  private var stage: Option[Stage] = None
-
   def show(ownerWindow: Window): Unit =
-    stage match
-      case Some(s) =>
-        s.toFront()
-      case None =>
-        val s = new Stage():
-          initOwner(ownerWindow)
-          title = "Swarm Status"
-          scene = new Scene:
-            root = swarmStatusPane.node
-            stylesheets = Seq(getClass.getResource("/styles/app.css").toExternalForm)
+    val dialog = new Dialog[Unit]() {
+      initOwner(ownerWindow)
+      title = "Swarm Status"
+    }
 
-        s.onCloseRequest = _ =>
-          s.scene().root = new BorderPane() // Detach swarmStatusPane.node
-          stage = None
-        s.show()
-        stage = Some(s)
+    val dialogPane = dialog.dialogPane.value
+    dialogPane.stylesheets = Seq(getClass.getResource("/styles/app.css").toExternalForm)
+    dialogPane.content = swarmStatusPane.node
+    val clearButtonType = new ButtonType("Clear All Data", ButtonBar.ButtonData.Help2)
+    dialogPane.buttonTypes = Seq(clearButtonType, ButtonType.Close)
+
+    val clearButton = dialogPane.lookupButton(clearButtonType).asInstanceOf[javafx.scene.control.Button]
+    clearButton.onAction = _ => swarmStatusPane.clearData()
+
+    // Detach node when dialog is closed to allow it to be reused elsewhere if needed,
+    // though DialogPane usually handles its content. In the previous Stage implementation,
+    // it was explicitly detached.
+    dialog.showAndWait()
+    dialogPane.content = new BorderPane() // Detach swarmStatusPane.node

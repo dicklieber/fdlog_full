@@ -44,9 +44,12 @@ class SwarmStatus @Inject() (
   private val statusFile = directoryProvider() / "swarmStatus.json"
 
   def put(nodeStuff: NodeStuff): Unit =
-    logger.debug(
-      s"putting ${nodeStuff.nodeIdentity} ${nodeStuff.status.fdDigests.size} fdDigests"
-    )
+    logger.whenDebugEnabled {
+      val status: StatusMessage = nodeStuff.status
+      logger.debug(
+        s"putting ${nodeStuff.nodeIdentity} ${nodeStuff.status.fdDigests.size} fdDigests"
+      )
+    }
     val nodeIdentity = nodeStuff.nodeIdentity
     val nodeDetails = nodeMap.getOrElseUpdate(
       nodeIdentity, {
@@ -83,6 +86,8 @@ class SwarmStatus @Inject() (
               val cell = FdHourNodeCell(nodeIdentity, cellDTO.fdHour)
               cell.lhData.value = cellDTO.lhData
               nodeDetails.map.put(cellDTO.fdHour, cell)
+              if cellDTO.lhData.lastSeen.isAfter(nodeDetails.lastUpdate.value) then
+                nodeDetails.lastUpdate.value = cellDTO.lhData.lastSeen
             }
             nodeDetails.recalculateQsoCount()
             nodeMap.put(nodeIdentity, nodeDetails)

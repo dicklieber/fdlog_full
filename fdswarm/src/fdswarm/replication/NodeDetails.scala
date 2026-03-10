@@ -32,7 +32,7 @@ class NodeDetails(val nodeIdentity: NodeIdentity) extends Ordered[NodeDetails]:
   override def compare(that: NodeDetails): Int = this.nodeIdentity.compare(that.nodeIdentity)
   val map: TrieMap[FdHour, FdHourNodeCell] = new TrieMap[FdHour, FdHourNodeCell]
   val qsoCount: IntegerProperty = IntegerProperty(0)
-  val lastUpdate: ObjectProperty[Instant] = ObjectProperty[Instant](Instant.EPOCH)
+  val lastUpdate: ObjectProperty[Instant] = ObjectProperty[Instant](Instant.now)
 
   def put(fdHourDigest: FdHourDigest, onUpdate: () => Unit): Unit =
     val cell = map.getOrElseUpdate(

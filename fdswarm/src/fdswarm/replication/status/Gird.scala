@@ -22,9 +22,11 @@ import fdswarm.fx.GridBuilder
 import fdswarm.fx.qso.FdHour
 import fdswarm.fx.utils.IntLabel
 import fdswarm.replication.NodeDetails
+import fdswarm.util.DurationFormat
+import scalafx.beans.property.LongProperty
 import scalafx.scene.layout.GridPane
 
-class Gird(allNodeDetails: Seq[NodeDetails]):
+class Gird(allNodeDetails: Seq[NodeDetails], nowProperty: LongProperty):
 
   val hours: Array[FdHour] = allNodeDetails.flatMap(_.map.keys).distinct.sorted.toArray
 
@@ -37,9 +39,18 @@ class Gird(allNodeDetails: Seq[NodeDetails]):
 
   def populate(builder: GridBuilder, rowStyleCallback: Seq[IntLabel] => String): Unit =
     // Header rows
-    builder("instanceId", allNodeDetails.map(_.nodeIdentity.instanceId)*)
-    builder("hostAndPort", allNodeDetails.map(_.nodeIdentity.hostAndPort)*)
-    builder("age", allNodeDetails.map(_.lastUpdate.value.toString)*)
+    builder("InstanceId", allNodeDetails.map(_.nodeIdentity.instanceId)*)
+    builder("IP", allNodeDetails.map(_.nodeIdentity.host)*)
+    builder("Age", allNodeDetails.map { nd =>
+      val binding = scalafx.beans.binding.Bindings.createStringBinding(
+        () => DurationFormat(nd.lastUpdate.value),
+        nd.lastUpdate,
+        nowProperty
+      )
+      new scalafx.scene.control.Label {
+        text <== binding
+      }
+    }*)
     builder("Qso Count", allNodeDetails.map(_.qsoCount.value.toString)*)
 
     val currentGrid = grid

@@ -61,6 +61,18 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
 
   def node: BorderPane = container
 
+  def clearData(): Unit =
+    val alert = new Alert(Alert.AlertType.Confirmation) {
+      title = "Clear Swarm Status"
+      headerText = "Clear all swarm status data?"
+      contentText = "This will remove all discovered nodes and their QSO counts. This cannot be undone."
+    }
+
+    alert.showAndWait() match {
+      case Some(ButtonType.OK) => swarmStatusApi.clear()
+      case _ =>
+    }
+
   private def buildGrid(allNodeDetails: Seq[NodeDetails]): Unit =
     val ourNode = nodeIdentityManager.nodeIdentity
     val nodes = allNodeDetails.map(_.nodeIdentity).distinct.sorted
@@ -71,26 +83,10 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
       style = "-fx-font-style: italic; -fx-padding: 10 0 0 0;"
     }
 
-    val clearButton = new Button("Clear All Data") {
-      styleClass += "clear-button"
-      onAction = _ => {
-        val alert = new Alert(Alert.AlertType.Confirmation) {
-          title = "Clear Swarm Status"
-          headerText = "Clear all swarm status data?"
-          contentText = "This will remove all discovered nodes and their QSO counts. This cannot be undone."
-        }
-
-        alert.showAndWait() match {
-          case Some(ButtonType.OK) => swarmStatusApi.clear()
-          case _ =>
-        }
-      }
-    }
-
     val footer = new HBox {
       spacing = 20
       alignment = Pos.CenterLeft
-      children = Seq(helpText, new Region { hgrow = Priority.Always }, clearButton)
+      children = Seq(helpText, new Region { hgrow = Priority.Always })
       padding = Insets(10, 0, 0, 0)
     }
     container.bottom = footer
@@ -129,7 +125,7 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
       }
     }
 
-    val gird = Gird(allNodeDetails.sorted)
+    val gird = Gird(allNodeDetails.sorted, nowProperty)
     gird.populate(builder, rowStyleCallback)
 
     container.center = builder.result
