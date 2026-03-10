@@ -169,6 +169,14 @@
     -fx-background-color: lightgray;
 }
 
+.grid-value.ourNode{
+    -fx-background-color: #90eee6;
+    -fx-text-fill: darkred;
+    -fx-font-style: italic;
+    -fx-font-weight: bold;
+    -fx-font-family: "helvetica";
+}
+
 .countGood{
     -fx-background-color: lightgreen;
 }

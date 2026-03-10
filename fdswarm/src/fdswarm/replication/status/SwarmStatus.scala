@@ -77,6 +77,10 @@ class SwarmStatus @Inject() (
     val receivedNodeStatus = ReceivedNodeStatus(statusMessage, nodeIdentity)
     put(receivedNodeStatus)
 
+  def refresh(): Unit =
+    if swarmStatusPane != null then
+      swarmStatusPane.update(nodeMap.values.toSeq)
+
   def ourNodeIdentity: NodeIdentity = nodeIdentityManager.nodeIdentity
   def clear(): Unit =
     nodeMap.clear()
@@ -109,3 +113,4 @@ case class FdHourNodeCell(nideIdentity: NodeIdentity, fdHour: FdHour):
 
 trait SwarmStatusApi:
   def clear(): Unit
+  def refresh(): Unit

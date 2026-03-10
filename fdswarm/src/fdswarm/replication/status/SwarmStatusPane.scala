@@ -26,6 +26,7 @@ import fdswarm.replication.{NodeDetails, ReceivedNodeStatus}
 import fdswarm.store.FdHourDigest
 import fdswarm.util.{AgeStyleService, NodeIdentity, NodeIdentityManager}
 import jakarta.inject.{Inject, Singleton}
+import scalafx.Includes.*
 import scalafx.animation.{KeyFrame, Timeline}
 import scalafx.application.Platform
 import scalafx.beans.property.LongProperty
@@ -39,7 +40,18 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
                                 swarmStatusApi: SwarmStatusApi,
                                 nodeIdentityManager: NodeIdentityManager) extends LazyLogging:
 
-//  private val nowProperty = LongProperty(System.currentTimeMillis())
+  private val nowProperty = LongProperty(System.currentTimeMillis())
+
+  private val timeline = new Timeline {
+    cycleCount = Timeline.Indefinite
+    keyFrames = Seq(
+      KeyFrame(Duration(3000), onFinished = _ => {
+        swarmStatusApi.refresh()
+        nowProperty.value = System.currentTimeMillis()
+      })
+    )
+  }
+  timeline.play()
 
 
   //  private val container = new BorderPane()
@@ -66,23 +78,30 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
 
   private val clearButton = new Button("Clear All Data") {
     onAction = _ => clearData()
+    minWidth = Region.USE_PREF_SIZE
+  }
+
+  private val closeButton = new Button("Close") {
+    onAction = _ => container.scene.value.window.value.hide()
+    minWidth = Region.USE_PREF_SIZE
+    defaultButton = true
   }
 
   private val footer = new HBox {
     spacing = 20
     alignment = Pos.CenterLeft
-    children = Seq(helpText, new Region {
+    children = Seq(clearButton, closeButton, new Region {
       hgrow = Priority.Always
-    }, clearButton)
+    }, helpText)
     padding = Insets(10, 0, 0, 0)
   }
 
   /**
    * This will old the grid pane.
    */
-  val container: StackPane = new StackPane()
+  val container: VBox = new VBox()
 
-  def node: StackPane = container
+  def node: VBox = container
 
   /**
    * Updates the swarm status pane with the given node map.
@@ -116,6 +135,9 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
       }
     }
 
-    val gird: SwarmStatusGrid = SwarmStatusGrid(receivedNodeStatuses)
+    val gird: SwarmStatusGrid = SwarmStatusGrid(receivedNodeStatuses, nowProperty, ageStyleService, nodeIdentityManager.nodeIdentity.instanceId)
     gird.populate(builder, rowStyleCallback)
-    container.children.setAll(builder.result)
+    val gridPane = builder.result
+    VBox.setVgrow(gridPane, Priority.Always)
+    container.children.setAll(gridPane, footer)
+    Option(container.scene.value).foreach(_.window.value.sizeToScene())

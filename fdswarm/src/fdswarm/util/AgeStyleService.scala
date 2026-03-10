@@ -40,8 +40,8 @@ class AgeStyleService @Inject()(config: Config):
     else
       Map.empty
 
-  def calc(ageStyleName: String, instant: Instant): AgeStyle.StyleAndAge =
+  def calc(ageStyleName: String, instant: Instant, now: Instant = Instant.now()): AgeStyle.StyleAndAge =
     ageStyles.get(ageStyleName) match
-      case Some(style) => style.calc(instant)
+      case Some(style) => style.calc(instant, now)
       case None => 
         throw new IllegalArgumentException(s"AgeStyle '$ageStyleName' not found in configuration")

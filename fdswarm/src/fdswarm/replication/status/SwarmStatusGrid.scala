@@ -22,11 +22,16 @@ import fdswarm.fx.GridBuilder
 import fdswarm.fx.qso.FdHour
 import fdswarm.fx.utils.IntLabel
 import fdswarm.replication.{NodeDetails, ReceivedNodeStatus}
-import fdswarm.util.DurationFormat
+import fdswarm.util.{AgeStyleService, DurationFormat, NodeIdentity, NodeIdentityManager}
+import java.time.Instant
 import scalafx.beans.property.LongProperty
+import scalafx.scene.text.{Font, FontPosture, FontWeight}
 import scalafx.scene.layout.GridPane
 
-class SwarmStatusGrid(allNodes: Seq[ReceivedNodeStatus]):
+class SwarmStatusGrid(allNodes: Seq[ReceivedNodeStatus],
+                      nowProperty: LongProperty,
+                      ageStyleService: AgeStyleService,
+                      ourInstanceId: String):
 
   val fdHours: Seq[FdHour] =
     val allFdHours = for
@@ -50,19 +55,31 @@ class SwarmStatusGrid(allNodes: Seq[ReceivedNodeStatus]):
     builder("InstanceId", allNodes.map(_.nodeIdentity.instanceId)*)
     builder("IP", allNodes.map(_.nodeIdentity.host)*)
     builder("Age", allNodes.map { receivedNodeStatus =>
-      val str = DurationFormat(receivedNodeStatus.received)
-      str
+      if (receivedNodeStatus.nodeIdentity.instanceId == ourInstanceId) {
+        new scalafx.scene.control.Label {
+          text = "Our Node"
+          styleClass.addAll("grid-value", "ourNode")
+        }
+      } else {
+        val binding = scalafx.beans.binding.Bindings.createStringBinding(
+          () => {
+            val now = Instant.ofEpochMilli(nowProperty.value)
+            val styleAndAge = ageStyleService.calc("node", receivedNodeStatus.received, now)
+            DurationFormat(styleAndAge.age)
+          },
+          nowProperty
+        )
+        new scalafx.scene.control.Label {
+          text <== binding
+          nowProperty.onChange { (_, _, _) =>
+            val now = Instant.ofEpochMilli(nowProperty.value)
+            val styleAndAge = ageStyleService.calc("node", receivedNodeStatus.received, now)
+            styleClass.removeAll("fresh", "recent", "stale")
+            styleClass.add(styleAndAge.style)
+          }
+        }
+      }
     }*)
-//      
-//      val binding = scalafx.beans.binding.Bindings.createStringBinding(
-//        () => DurationFormat(receivedNodeStatus.lastUpdate.value),
-//        receivedNodeStatus.lastUpdate,
-//        nowProperty
-//      )
-//      new scalafx.scene.control.Label {
-//        text <== binding
-//      }
-//    }*)
     builder("Qso Count", allNodes.map(receivedNodeStatus =>
       receivedNodeStatus.qsoCount.toString)*)
 

@@ -50,7 +50,8 @@ class GirdTest extends FunSuite:
 
     val allNodeDetails = Seq(nd1, nd2)
     val nowProperty = scalafx.beans.property.LongProperty(System.currentTimeMillis())
-    val gird = SwarmStatusGrid(allNodeDetails)
+    val ageStyleService = new fdswarm.util.AgeStyleService(com.typesafe.config.ConfigFactory.empty())
+    val gird = SwarmStatusGrid(allNodeDetails, nowProperty, ageStyleService, "some-id")
 
     // FdHour is sorted, so hour1 then hour2
     assertEquals(gird.fdHours.length, 2)
@@ -76,7 +77,8 @@ class GirdTest extends FunSuite:
 
     val builder = new GridBuilder()
     val nowProperty = scalafx.beans.property.LongProperty(System.currentTimeMillis())
-    val gird = SwarmStatusGrid(Seq(nd1))
+    val ageStyleService = new fdswarm.util.AgeStyleService(com.typesafe.config.ConfigFactory.empty())
+    val gird = SwarmStatusGrid(Seq(nd1), nowProperty, ageStyleService, "some-id")
 
     gird.populate(builder, _ => "test-style")
     
@@ -98,6 +100,23 @@ class GirdTest extends FunSuite:
     
     // Check values in col 1
     assert(findLabelByText("node1").isDefined)
+    // Check "Our Node" when it matches
+    val niOur = NodeIdentity("127.0.0.1", 8080, "our-node")
+    val ndOur = ReceivedNodeStatus(StatusMessage(Nil), niOur)
+    val builder2 = new GridBuilder()
+    val gird2 = SwarmStatusGrid(Seq(ndOur), nowProperty, ageStyleService, "our-node")
+    gird2.populate(builder2, _ => "test-style")
+    val gridPane2 = builder2.result
+    
+    val ourNodeLabel = gridPane2.getChildren.asScala.collectFirst {
+      case l: javafx.scene.control.Label if l.getText == "Our Node" => l
+    }
+    assert(ourNodeLabel.isDefined)
+    assert(ourNodeLabel.get.getStyleClass.contains("ourNode"))
+    
+    // Check font styles (now applied via CSS, so we check if the style class is present)
+    assert(ourNodeLabel.get.getStyleClass.contains("ourNode"))
+
     // Check host
     val allChildren = gridPane.getChildren.asScala.toList
     val labels = allChildren.collect { case l: javafx.scene.control.Label => l.getText }

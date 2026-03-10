@@ -37,9 +37,10 @@ class SwarmStatusAdmin @Inject()(swarmStatusPane: SwarmStatusPane):
         val newStage = new Stage {
           initOwner(ownerWindow)
           title = "Swarm Status"
-          scene = new Scene(swarmStatusPane.node, 800, 600) {
+          scene = new Scene(swarmStatusPane.node) {
             stylesheets = Seq(getClass.getResource("/styles/app.css").toExternalForm)
           }
+          sizeToScene()
         }
         newStage.onCloseRequest = _ =>
           newStage.scene.value.root = new javafx.scene.layout.Region() // Detach swarmStatusPane.node
