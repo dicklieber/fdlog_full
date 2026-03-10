@@ -23,7 +23,8 @@ import cats.syntax.all.*
 import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
 import fdswarm.util.Ids.Id
-import fdswarm.replication.{Transport, SwarmStatus}
+import fdswarm.replication.Transport
+import fdswarm.replication.status.SwarmStatus
 import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.{Inject, Singleton}
 

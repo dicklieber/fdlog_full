@@ -168,3 +168,13 @@
 .stale{
     -fx-background-color: lightgray;
 }
+
+.countGood{
+    -fx-background-color: lightgreen;
+}
+.countOff{
+    -fx-background-color: lightOrange;
+}
+.countBad{
+    -fx-background-color: red;
+}

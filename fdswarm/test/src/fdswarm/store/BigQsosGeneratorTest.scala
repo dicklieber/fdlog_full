@@ -22,7 +22,8 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.TestDirectory
 import fdswarm.fx.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
 import fdswarm.model.BandMode
-import fdswarm.replication.{Transport, SwarmStatus}
+import fdswarm.replication.Transport
+import fdswarm.replication.status.SwarmStatus
 import fdswarm.util.{MetricsDebug, MockNodeIdentityManager, NodeIdentityManager}
 import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry

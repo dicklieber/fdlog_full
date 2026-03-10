@@ -48,6 +48,7 @@ import scala.util.matching.Regex
 case class NodeIdentity(host: String = "44.0.0.1", port: Int = 42, instanceId: Id = "") extends Ordered[NodeIdentity]:
   override val toString: String =
     f"$host:$port%d-$instanceId"
+  val hostAndPort: String = s"$host:$port"
   lazy val short:String =
     host.split('.').last
 

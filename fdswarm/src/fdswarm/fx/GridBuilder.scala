@@ -22,7 +22,7 @@ import scalafx.Includes.*
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.Node
 import scalafx.scene.control.Label
-import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority}
+import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority, Region}
 
 import java.text.NumberFormat
 import java.util.concurrent.atomic.AtomicInteger
@@ -38,6 +38,7 @@ class GridBuilder(header: Option[String] = None):
     styleClass += "grid-header"
     maxWidth = Double.MaxValue
     maxHeight = Double.MaxValue
+    minWidth = Region.USE_PREF_SIZE
     alignment = Pos.Center
     // will set col span later
   }
@@ -88,6 +89,7 @@ class GridBuilder(header: Option[String] = None):
         styleClass += "grid-row-label"
         maxWidth = Double.MaxValue
         maxHeight = Double.MaxValue
+        minWidth = Region.USE_PREF_SIZE
       }
       _grid.add(rowLabel, 0, row)
     } else {
@@ -95,6 +97,7 @@ class GridBuilder(header: Option[String] = None):
         styleClass += "grid-row-label"
         maxWidth = Double.MaxValue
         maxHeight = Double.MaxValue
+        minWidth = Region.USE_PREF_SIZE
       }
       _grid.add(rowLabelFiller, 0, row)
     }
@@ -106,12 +109,14 @@ class GridBuilder(header: Option[String] = None):
         case l: javafx.scene.control.Label =>
           l.setMaxWidth(Double.MaxValue)
           l.setMaxHeight(Double.MaxValue)
+          l.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE)
           if (!l.getStyleClass.contains("grid-value") && !l.getStyleClass.contains("grid-row-label") && !l.getStyleClass.contains("grid-header")) {
             l.getStyleClass.add("grid-value")
           }
         case r: javafx.scene.layout.Region =>
           r.setMaxWidth(Double.MaxValue)
           r.setMaxHeight(Double.MaxValue)
+          r.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE)
           if (!r.getStyleClass.contains("grid-value") && !r.getStyleClass.contains("grid-row-label") && !r.getStyleClass.contains("grid-header") && !r.getStyleClass.contains("local-node-column")) {
             r.getStyleClass.add("grid-value")
           }
@@ -144,6 +149,7 @@ class GridBuilder(header: Option[String] = None):
             styleClass += "grid-value"
             maxWidth = Double.MaxValue
             maxHeight = Double.MaxValue
+            minWidth = Region.USE_PREF_SIZE
           }
           _grid.add(filler, c, r)
         }
@@ -163,6 +169,7 @@ object GridBuilder:
           styleClass += styleClassStr
           maxWidth = Double.MaxValue
           maxHeight = Double.MaxValue
+          minWidth = Region.USE_PREF_SIZE
         }
       case prop: scalafx.beans.property.StringProperty =>
         new Label {
@@ -170,6 +177,7 @@ object GridBuilder:
           styleClass += styleClassStr
           maxWidth = Double.MaxValue
           maxHeight = Double.MaxValue
+          minWidth = Region.USE_PREF_SIZE
         }
       case i: Int =>
         new Label(numberFormat.format(i)) {
@@ -177,10 +185,12 @@ object GridBuilder:
           styleClass += styleClassStr
           maxWidth = Double.MaxValue
           maxHeight = Double.MaxValue
+          minWidth = Region.USE_PREF_SIZE
         }
       case x =>
         new Label(x.toString) {
           styleClass += styleClassStr
           maxWidth = Double.MaxValue
           maxHeight = Double.MaxValue
+          minWidth = Region.USE_PREF_SIZE
         }

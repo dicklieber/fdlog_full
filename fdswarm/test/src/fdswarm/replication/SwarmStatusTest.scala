@@ -20,6 +20,7 @@ package fdswarm.replication
 
 import fdswarm.TestDirectory
 import fdswarm.fx.qso.FdHour
+import fdswarm.replication.status.SwarmStatus
 import fdswarm.store.FdHourDigest
 import fdswarm.util.{MockNodeIdentityManager, NodeIdentity}
 import munit.FunSuite

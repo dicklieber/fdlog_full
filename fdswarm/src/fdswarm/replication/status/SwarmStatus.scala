@@ -16,11 +16,12 @@
  *
  */
 
-package fdswarm.replication
+package fdswarm.replication.status
 
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
+import fdswarm.replication.*
 import fdswarm.store.FdHourDigest
 import fdswarm.util.{JavaTimeCirce, NodeIdentity, NodeIdentityManager}
 import io.circe.*
@@ -37,7 +38,7 @@ import scala.collection.concurrent.TrieMap
 class SwarmStatus @Inject() (
     directoryProvider: DirectoryProvider,
     nodeIdentityManager: NodeIdentityManager,
-    swarmStatusPane: SwarmStatusPane
+    swarmStatusPane: SwarmStatusPane = null
                             ) extends SwarmStatusApi with LazyLogging:
   val nodeMap: TrieMap[NodeIdentity, NodeDetails] = new TrieMap[NodeIdentity, NodeDetails]
   private val statusFile = directoryProvider() / "swarmStatus.json"
@@ -66,7 +67,8 @@ class SwarmStatus @Inject() (
     do
       logger.trace("fdHourDigest: {}", fdHourDigest)
       nodeDetails.put(fdHourDigest, () => ())
-    swarmStatusPane.update(nodeMap.values.toSeq)
+    if swarmStatusPane != null then
+      swarmStatusPane.update(nodeMap.values.toSeq)
     save()
 
   // Load state on startup
@@ -119,7 +121,8 @@ class SwarmStatus @Inject() (
   def clear(): Unit =
     nodeMap.clear()
     save()
-    swarmStatusPane.update(nodeMap.values.toSeq)
+    if swarmStatusPane != null then
+      swarmStatusPane.update(nodeMap.values.toSeq)
     logger.debug("Cleared all swarm status data.")
 
   private def save(): Unit =

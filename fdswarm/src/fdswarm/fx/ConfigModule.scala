@@ -34,7 +34,8 @@ import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import _root_.meters4s.Reporter
 import net.codingwell.scalaguice.ScalaModule
 import com.google.inject.TypeLiteral
-import fdswarm.replication.{BroadcastTransport, MulticastTransport, NodeStatusHandler, StatusBroadcastService, SwarmStatus, SwarmStatusApi, Transport}
+import fdswarm.replication.status.{SwarmStatus, SwarmStatusApi}
+import fdswarm.replication.{BroadcastTransport, MulticastTransport, NodeStatusHandler, StatusBroadcastService, Transport}
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 

@@ -21,7 +21,8 @@ package fdswarm.store
 import fdswarm.TestDirectory
 import fdswarm.model.QsoMetadata.testQsoMetadata
 import fdswarm.model.{BandMode, Callsign, Qso}
-import fdswarm.replication.{Transport, SwarmStatus}
+import fdswarm.replication.Transport
+import fdswarm.replication.status.SwarmStatus
 import fdswarm.util.{NodeIdentityManager, MockNodeIdentityManager}
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import munit.FunSuite

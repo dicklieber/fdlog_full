@@ -27,10 +27,10 @@ import fdswarm.fx.contest.ContestManager
 import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.station.StationEditor
 import fdswarm.fx.tools.*
+import fdswarm.replication.status.SwarmStatusPane
 import fdswarm.replication.{
   NodeStatusHandler,
-  StatusBroadcastService,
-  SwarmStatusPane
+  StatusBroadcastService
 }
 import fdswarm.util.{DurationFormat, NodeIdentityManager}
 import io.circe.parser.decode

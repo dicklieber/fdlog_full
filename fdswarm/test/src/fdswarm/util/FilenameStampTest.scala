@@ -22,10 +22,11 @@ import fdswarm.fx.contest.{ContestCatalog, ContestConfig, ContestManager, Contes
 import fdswarm.fx.sections.{Sections, SectionsProvider}
 import fdswarm.model.Callsign
 import fdswarm.store.QsoStore
-import fdswarm.replication.{Transport, Service, SwarmStatus}
+import fdswarm.replication.{Transport, Service}
 import fdswarm.util.{NodeIdentity, NodeIdentityManager, MockNodeIdentityManager}
 import fdswarm.TestDirectory
 import com.typesafe.config.ConfigFactory
+import fdswarm.replication.status.SwarmStatus
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import java.time.{Instant, ZoneOffset, ZonedDateTime}
 import munit.FunSuite

@@ -19,6 +19,7 @@
 package fdswarm.replication
 
 import fdswarm.fx.qso.FdHour
+import fdswarm.replication.status.{FdHourNodeCell, LHData}
 import fdswarm.store.FdHourDigest
 import fdswarm.util.NodeIdentity
 import scalafx.application.Platform
@@ -27,7 +28,8 @@ import scalafx.beans.property.{IntegerProperty, ObjectProperty}
 import java.time.Instant
 import scala.collection.concurrent.TrieMap
 
-class NodeDetails(val nodeIdentity: NodeIdentity):
+class NodeDetails(val nodeIdentity: NodeIdentity) extends Ordered[NodeDetails]:
+  override def compare(that: NodeDetails): Int = this.nodeIdentity.compare(that.nodeIdentity)
   val map: TrieMap[FdHour, FdHourNodeCell] = new TrieMap[FdHour, FdHourNodeCell]
   val qsoCount: IntegerProperty = IntegerProperty(0)
   val lastUpdate: ObjectProperty[Instant] = ObjectProperty[Instant](Instant.EPOCH)
