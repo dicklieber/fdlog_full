@@ -108,8 +108,9 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider,
       .foreach { line =>
         decode[Qso](line) match
           case Right(qso) =>
-            map.put(qso.uuid, qso)
-            qsoCollection.prepend(qso)
+            if (map.putIfAbsent(qso.uuid, qso).isEmpty) {
+              qsoCollection.prepend(qso)
+            }
           case Left(error) =>
             logger.error(s"Failed to decode Qso from line: $line", error)
       }
@@ -134,30 +135,29 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider,
     val thread = Thread.currentThread().getName
     logger.debug(s"[THREAD:$thread] Adding ${batch.size} QSOs to store")
 
-    val lines = for
-      qso <- batch
-    yield
+    val toAdd = batch.filter { qso =>
       val uuid = qso.uuid
-      val maybeQso = map.putIfAbsent(uuid, qso)
-      maybeQso.foreach(was =>
+      val isNew = map.putIfAbsent(uuid, qso).isEmpty
+      if !isNew then
         logger.error(s"Was already a qso for uuid: $uuid $qso")
-      )
-      qso.asJsonCompact + "\n"
+      isNew
+    }
 
-    if lines.nonEmpty then
-      os.write.append(journalFile, lines.mkString, createFolders = true)
+    if toAdd.nonEmpty then
+      val lines = toAdd.map(_.asJsonCompact + "\n").mkString
+      os.write.append(journalFile, lines, createFolders = true)
       try
-        logger.debug(s"[THREAD:$thread] Scheduling prependAll of ${batch.size} on JavaFX thread")
+        logger.debug(s"[THREAD:$thread] Scheduling prependAll of ${toAdd.size} on JavaFX thread")
         scalafx.application.Platform.runLater {
-          logger.debug(s"[THREAD:${Thread.currentThread().getName}] Prepended ${batch.size} to qsoCollection")
-          qsoCollection.prependAll(batch)
+          logger.debug(s"[THREAD:${Thread.currentThread().getName}] Prepended ${toAdd.size} to qsoCollection")
+          qsoCollection.prependAll(toAdd)
         }
       catch
         case _: IllegalStateException =>
           // Toolkit not initialized (likely in tests)
           logger.debug(s"[THREAD:${Thread.currentThread().getName}] Toolkit not initialized, direct prependAll")
-          qsoCollection.prependAll(batch)
-    buildFdHourDigests()
+          qsoCollection.prependAll(toAdd)
+      buildFdHourDigests()
 
   private def buildFdHourDigests(): Unit =
     logger.debug("Rebuilding FDhour digests")
