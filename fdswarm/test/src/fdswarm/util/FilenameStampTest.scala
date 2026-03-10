@@ -73,7 +73,7 @@ class FilenameStampTest extends FunSuite:
     val sections = new Sections(sectionsProvider)
     val registry = new SimpleMeterRegistry()
     val mockNodeIdentityManager = MockNodeIdentityManager(port = 8080)
-    val swarmStatus = SwarmStatus(testDir, mockNodeIdentityManager)
+    val swarmStatus = SwarmStatus(testDir, mockNodeIdentityManager, null)
     qsoStore = new QsoStore(testDir, registry, mockTransport, swarmStatus)
     contestManager = new ContestManager(testDir, catalog, sections, qsoStore)
     filenameStamp = new FilenameStamp(contestManager)

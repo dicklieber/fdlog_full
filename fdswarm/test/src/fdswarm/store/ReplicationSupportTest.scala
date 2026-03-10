@@ -44,7 +44,7 @@ class ReplicationSupportTest extends FunSuite:
 
   private val mockTransport = new MockTransport()
   private val mockNodeIdentityManager = MockNodeIdentityManager()
-  private lazy val swarmStatus = SwarmStatus(testDirectory, mockNodeIdentityManager)
+  private lazy val swarmStatus = SwarmStatus(testDirectory, mockNodeIdentityManager, null)
 
   override def beforeEach(context: BeforeEach): Unit =
     testDirectory = new TestDirectory()

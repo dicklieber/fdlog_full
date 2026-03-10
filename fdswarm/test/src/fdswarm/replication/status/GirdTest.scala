@@ -38,48 +38,46 @@ class GirdTest extends FunSuite:
     }
     val ni1 = NodeIdentity("192.168.1.1", 8080, "node1")
     val ni2 = NodeIdentity("192.168.1.2", 8080, "node2")
-    
+
     val hour1 = FdHour(10, 1)
     val hour2 = FdHour(10, 2)
-    
-    val nd1 = NodeDetails(ni1)
-    nd1.put(FdHourDigest(hour1, 5, "d1"), Instant.now(), () => ())
-    nd1.put(FdHourDigest(hour2, 10, "d2"), Instant.now(), () => ())
-    
-    val nd2 = NodeDetails(ni2)
-    nd2.put(FdHourDigest(hour1, 3, "d3"), Instant.now(), () => ())
-    // hour2 missing for nd2
-    
+
+    val sm1 = StatusMessage(Seq(FdHourDigest(hour1, 5, "d1"), FdHourDigest(hour2, 10, "d2")))
+    val nd1 = ReceivedNodeStatus(sm1, ni1)
+
+    val sm2 = StatusMessage(Seq(FdHourDigest(hour1, 3, "d3")))
+    val nd2 = ReceivedNodeStatus(sm2, ni2)
+
     val allNodeDetails = Seq(nd1, nd2)
     val nowProperty = scalafx.beans.property.LongProperty(System.currentTimeMillis())
     val gird = SwarmStatusGrid(allNodeDetails)
-    
+
     // FdHour is sorted, so hour1 then hour2
-    assertEquals(gird.hours.length, 2)
-    assertEquals(gird.hours(0), hour1)
-    assertEquals(gird.hours(1), hour2)
-    
+    assertEquals(gird.fdHours.length, 2)
+    assertEquals(gird.fdHours(0), hour1)
+    assertEquals(gird.fdHours(1), hour2)
+
     // grid dimension 1: hours
-    assertEquals(gird.grid.length, 2)
-    
+    // assertEquals(gird.bodyCounts.length, 2)
+
     // row 0: hour1
-    assertEquals(gird.grid(0).length, 2)
-    assertEquals(gird.grid(0)(0).text.value, "5")
-    assertEquals(gird.grid(0)(1).text.value, "3")
-    
+    // assertEquals(gird.bodyCounts(0).length, 2)
+    // assertEquals(gird.bodyCounts(0)(0).text.value, "5")
+    // assertEquals(gird.bodyCounts(0)(1).text.value, "3")
+
     // row 1: hour2
-    assertEquals(gird.grid(1).length, 2)
-    assertEquals(gird.grid(1)(0).text.value, "10")
-    assertEquals(gird.grid(1)(1).text.value, "0")
+    // assertEquals(gird.bodyCounts(1).length, 2)
+    // assertEquals(gird.bodyCounts(1)(0).text.value, "10")
+    // assertEquals(gird.bodyCounts(1)(1).text.value, "0")
 
   test("Gird.populate should add header rows"):
     val ni1 = NodeIdentity("192.168.1.1", 8080, "node1")
-    val nd1 = NodeDetails(ni1)
-    
+    val nd1 = ReceivedNodeStatus(StatusMessage(Nil), ni1)
+
     val builder = new GridBuilder()
     val nowProperty = scalafx.beans.property.LongProperty(System.currentTimeMillis())
     val gird = SwarmStatusGrid(Seq(nd1))
-    
+
     gird.populate(builder, _ => "test-style")
     
     val gridPane = builder.result

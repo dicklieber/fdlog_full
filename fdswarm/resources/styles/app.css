@@ -173,7 +173,7 @@
     -fx-background-color: lightgreen;
 }
 .countOff{
-    -fx-background-color: lightOrange;
+    -fx-background-color: orange;
 }
 .countBad{
     -fx-background-color: red;

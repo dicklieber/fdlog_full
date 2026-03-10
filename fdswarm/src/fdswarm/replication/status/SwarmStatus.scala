@@ -52,41 +52,30 @@ class SwarmStatus @Inject() (
    */
   def put(receivedNodeStatus: ReceivedNodeStatus): Unit =
     nodeMap.put(receivedNodeStatus.nodeIdentity, receivedNodeStatus)
-    swarmStatusPane.update(nodeMap.values.toSeq)
+    if swarmStatusPane != null then
+      swarmStatusPane.update(nodeMap.values.toSeq)
     save()
 
   // Load state on startup
   try
     if os.exists(statusFile) then
       val json = os.read(statusFile)
-      
-//      val valseqReNod:Seq[ReceivedNodeStatus] =
-    throw new NotImplementedError("load swarm status") //todo
-          
+      decode[Seq[ReceivedNodeStatus]](json) match
+        case Right(statuses) =>
+          statuses.foreach { status =>
+            nodeMap.put(status.nodeIdentity, status)
+          }
+        case Left(error) =>
+          logger.error(s"Error decoding swarm status: $error")
   catch
     case e: Exception =>
       logger.error(s"Error loading swarm status: ${e.getMessage}")
 
-//  def updateLocalDigests(digests: Seq[FdHourDigest]): Unit =
-//    val nodeIdentity = ourNodeIdentity
-//    val nodeDetails = nodeMap.getOrElseUpdate(
-//      nodeIdentity, {
-//        val details = NodeDetails(nodeIdentity)
-//        try
-//          Platform.runLater {
-//            nodeMap.put(nodeIdentity, details)
-//          }
-//        catch
-//          case _: IllegalStateException =>
-//            nodeMap.put(nodeIdentity, details)
-//        details
-//      }
-//    )
-
-//    digests.foreach { fdHourDigest =>
-//      nodeDetails.put(fdHourDigest, Instant.now(), () => ())
-//    }
-//    save()
+  def updateLocalDigests(digests: Seq[FdHourDigest]): Unit =
+    val nodeIdentity = ourNodeIdentity
+    val statusMessage = StatusMessage(digests)
+    val receivedNodeStatus = ReceivedNodeStatus(statusMessage, nodeIdentity)
+    put(receivedNodeStatus)
 
   def ourNodeIdentity: NodeIdentity = nodeIdentityManager.nodeIdentity
   def clear(): Unit =

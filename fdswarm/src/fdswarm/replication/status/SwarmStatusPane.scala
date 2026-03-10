@@ -40,13 +40,13 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
                                 nodeIdentityManager: NodeIdentityManager) extends LazyLogging:
 
 //  private val nowProperty = LongProperty(System.currentTimeMillis())
-  
 
-  private val container = new BorderPane()
 
-  val hours = fdHours.toSeq.sorted
-
-  def node: BorderPane = container
+  //  private val container = new BorderPane()
+  //
+  //  val hours = fdHours.toSeq.sorted
+  //
+  //  def node: BorderPane = container
 
   def clearData(): Unit =
     val alert = new Alert(Alert.AlertType.Confirmation) {
@@ -59,22 +59,30 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
       case Some(ButtonType.OK) => swarmStatusApi.clear()
       case _ =>
     }
-  val clearButton = new Button("Clear All Data") {
+
+  private val helpText = new Label("TODO: help text below grid") {
+    style = "-fx-font-style: italic; -fx-padding: 10 0 0 0;"
+  }
+
+  private val clearButton = new Button("Clear All Data") {
     onAction = _ => clearData()
   }
-  val footer = new HBox {
-      spacing = 20
-      alignment = Pos.CenterLeft
+
+  private val footer = new HBox {
+    spacing = 20
+    alignment = Pos.CenterLeft
     children = Seq(helpText, new Region {
       hgrow = Priority.Always
     }, clearButton)
-      padding = Insets(10, 0, 0, 0)
-    }
+    padding = Insets(10, 0, 0, 0)
+  }
 
-    val helpText = new Label("TODO: help text below grid") {
-      style = "-fx-font-style: italic; -fx-padding: 10 0 0 0;"
-    }
-  val gird = SwarmStatusGrid()
+  /**
+   * This will old the grid pane.
+   */
+  val container: StackPane = new StackPane()
+
+  def node: StackPane = container
 
   /**
    * Updates the swarm status pane with the given node map.
@@ -85,26 +93,13 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
     Platform.runLater {
       buildGrid(allNodeDetails)
     }
-    container.bottom = footer
 
-    if nodes.isEmpty then
-      container.center = GridColumns.fieldSet("Swarm Status", new Label("No nodes discovered yet."))
-      return
-
+  private def buildGrid(receivedNodeStatuses: Seq[ReceivedNodeStatus]): Unit =
     val builder = GridBuilder()
     builder.hgap = 1
     builder.vgap = 1
     builder.padding = Insets(0)
     builder.style = "-fx-background-color: darkgray;"
-
-    // Background for local node column
-    nodes.zipWithIndex.find(_._1 == ourNode).foreach { case (_, colIdx) =>
-      val bg = new Region {
-        styleClass += "local-node-column"
-        mouseTransparent = true
-      }
-      builder.add(bg, colIdx + 1, 0, 1, hours.size + 6) // Updated rowspan for 4 header rows
-    }
 
     val rowStyleCallback: Seq[IntLabel] => String = (labels: Seq[IntLabel]) => {
       logger.trace("rowStyleCallback passed IntLabels: {}", labels)
@@ -121,19 +116,6 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
       }
     }
 
-  private def buildGrid(receivedNodeStatuses: Seq[ReceivedNodeStatus]): Unit =
-    val gird = SwarmStatusGrid()
-    
-//    val ourNode: NodeIdentity = nodeIdentityManager.nodeIdentity
-//    val nodes: Seq[NodeIdentity] = receivedNodeStatuses.map(_.nodeIdentity).distinct.sorted
-//    val fdHours: Seq[FdHour] = receivedNodeStatuses.flatMap(receivedNodeStatus =>
-//    val fdHoursSetBuilder = Set.newBuilder[FdHour]
-//      for
-//        receivedStatus: ReceivedNodeStatus <- receivedNodeStatuses
-//        fhd: FdHourDigest <- receivedStatus.statusMessage.fdDigests
-//      do
-//        fdHoursSetBuilder += fhd.fdHour
-//    val fdHours: Seq[FdHour] = fdHoursSetBuilder.result().toSeq
-//    gird.populate(builder, rowStyleCallback)
-
-    container.center = gird
+    val gird: SwarmStatusGrid = SwarmStatusGrid(receivedNodeStatuses)
+    gird.populate(builder, rowStyleCallback)
+    container.children.setAll(builder.result)

@@ -70,7 +70,7 @@ class BigQsosGeneratorTest extends FunSuite with LazyLogging:
   test("generate 100 QSOs using BigQsosGenerator with permissive BandModeBuilder"):
     val registry = new SimpleMeterRegistry()
     val mockNodeIdentityManager = MockNodeIdentityManager(port = 8080)
-    val swarmStatus = SwarmStatus(testDirectory, mockNodeIdentityManager)
+    val swarmStatus = SwarmStatus(testDirectory, mockNodeIdentityManager, null)
     val qsoStore = QsoStore(testDirectory, registry, mockTransport, swarmStatus)
 
     val bandModeBuilder = new AllowAllBandModeBuilder

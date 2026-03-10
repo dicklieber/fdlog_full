@@ -119,6 +119,7 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider,
     logger.error("Removed all Qsos")
     map.clear()
     fdHourDigests = Map.empty
+    swarmStatus.updateLocalDigests(Nil)
     if os.exists(journalFile) then os.remove(journalFile)
     try
       scalafx.application.Platform.runLater {

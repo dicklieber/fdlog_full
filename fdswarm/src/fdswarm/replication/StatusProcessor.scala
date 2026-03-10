@@ -95,6 +95,10 @@ case class ReceivedNodeStatus(statusMessage: StatusMessage,
                               nodeIdentity: NodeIdentity,
                               received: Instant = Instant.now) extends Ordered[ReceivedNodeStatus] derives Codec.AsObject:
   val qsoCount: Int = statusMessage.fdDigests.map(_.count).sum
+  // Allow .l ;p -p09l
+  private lazy val countByFdHourMap: Map[FdHour, Int] = statusMessage.fdDigests.map(fdDigest => fdDigest.fdHour -> fdDigest.count).toMap
+  def getQsoCount(fdHour:FdHour): Int =
+    statusMessage.fdDigests.find(_.fdHour == fdHour).map(_.count).getOrElse(0)
 
   override def compare(that: ReceivedNodeStatus): Int =
     that.nodeIdentity.instanceId.compareTo(that.nodeIdentity.instanceId)

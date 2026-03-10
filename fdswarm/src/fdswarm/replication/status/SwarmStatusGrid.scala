@@ -28,23 +28,31 @@ import scalafx.scene.layout.GridPane
 
 class SwarmStatusGrid(allNodes: Seq[ReceivedNodeStatus]):
 
-  val hours: Array[FdHour] = allNodes.flatMap(_.statusMessage.fdDigests..keys).distinct.sorted.toArray
+  val fdHours: Seq[FdHour] =
+    val allFdHours = for
+      receivedNodeStatus <- allNodes
+      fdDigest <- receivedNodeStatus.statusMessage.fdDigests
+    yield
+      fdDigest.fdHour
+    allFdHours.distinct.sorted
   
 
-  def grid: Array[Array[IntLabel]] = hours.map { hour =>
-    allNodes.map { receivedNodeStatus =>
-      val count = receivedNodeStatus.map.get(hour).map(_.lhData.value.fdHourDigest.count).getOrElse(0)
-      IntLabel(count)
+  def bodyCounts: Array[Array[IntLabel]] =
+    fdHours.map { fdHour =>
+      allNodes.map { nodeStatus =>
+        val count = nodeStatus.statusMessage.fdDigests.find(_.fdHour == fdHour).map(_.count).getOrElse(0)
+        IntLabel(count)
+      }.toArray
     }.toArray
-  }
 
   def populate(builder: GridBuilder, rowStyleCallback: Seq[IntLabel] => String): Unit =
     // Header rows
     builder("InstanceId", allNodes.map(_.nodeIdentity.instanceId)*)
     builder("IP", allNodes.map(_.nodeIdentity.host)*)
     builder("Age", allNodes.map { receivedNodeStatus =>
-      DurationFormat(receivedNodeStatus.received)
-    })
+      val str = DurationFormat(receivedNodeStatus.received)
+      str
+    }*)
 //      
 //      val binding = scalafx.beans.binding.Bindings.createStringBinding(
 //        () => DurationFormat(receivedNodeStatus.lastUpdate.value),
@@ -55,11 +63,11 @@ class SwarmStatusGrid(allNodes: Seq[ReceivedNodeStatus]):
 //        text <== binding
 //      }
 //    }*)
-    builder("Qso Count", allNodes.map(r =>
-      r.statusMessage._.qsoCount.value.toString)*)
+    builder("Qso Count", allNodes.map(receivedNodeStatus =>
+      receivedNodeStatus.qsoCount.toString)*)
 
-    val currentGrid = grid
-    hours.zip(currentGrid).foreach { (hour, rowLabels) =>
+    val currentGrid = bodyCounts
+    fdHours.zip(currentGrid).foreach { (hour, rowLabels) =>
       val styleClass = rowStyleCallback(rowLabels)
       if (styleClass.nonEmpty) {
         rowLabels.foreach(_.styleClass += styleClass)
