@@ -19,10 +19,12 @@
 package fdswarm.replication.status
 
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.fx.qso.FdHour
 import fdswarm.fx.utils.IntLabel
 import fdswarm.fx.{GridBuilder, GridColumns}
-import fdswarm.replication.NodeDetails
-import fdswarm.util.{AgeStyleService, NodeIdentityManager}
+import fdswarm.replication.{NodeDetails, ReceivedNodeStatus}
+import fdswarm.store.FdHourDigest
+import fdswarm.util.{AgeStyleService, NodeIdentity, NodeIdentityManager}
 import jakarta.inject.{Inject, Singleton}
 import scalafx.animation.{KeyFrame, Timeline}
 import scalafx.application.Platform
@@ -37,27 +39,12 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
                                 swarmStatusApi: SwarmStatusApi,
                                 nodeIdentityManager: NodeIdentityManager) extends LazyLogging:
 
-  private val nowProperty = LongProperty(System.currentTimeMillis())
-
-  private val timeline = new Timeline {
-    cycleCount = Timeline.Indefinite
-    keyFrames = Seq(
-      KeyFrame(Duration(1000), onFinished = _ => nowProperty.value = System.currentTimeMillis())
-    )
-  }
-  timeline.play()
+//  private val nowProperty = LongProperty(System.currentTimeMillis())
+  
 
   private val container = new BorderPane()
 
-  /**
-   * Updates the swarm status pane with the given node map.
-   *
-   * @param allNodeDetails the whole swarm.
-   */
-  def update(allNodeDetails: Seq[NodeDetails]): Unit =
-    Platform.runLater {
-      buildGrid(allNodeDetails)
-    }
+  val hours = fdHours.toSeq.sorted
 
   def node: BorderPane = container
 
@@ -72,22 +59,31 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
       case Some(ButtonType.OK) => swarmStatusApi.clear()
       case _ =>
     }
-
-  private def buildGrid(allNodeDetails: Seq[NodeDetails]): Unit =
-    val ourNode = nodeIdentityManager.nodeIdentity
-    val nodes = allNodeDetails.map(_.nodeIdentity).distinct.sorted
-    val allHours = allNodeDetails.flatMap(_.map.keys).toSet
-    val hours = allHours.toSeq.sorted
+  val clearButton = new Button("Clear All Data") {
+    onAction = _ => clearData()
+  }
+  val footer = new HBox {
+      spacing = 20
+      alignment = Pos.CenterLeft
+    children = Seq(helpText, new Region {
+      hgrow = Priority.Always
+    }, clearButton)
+      padding = Insets(10, 0, 0, 0)
+    }
 
     val helpText = new Label("TODO: help text below grid") {
       style = "-fx-font-style: italic; -fx-padding: 10 0 0 0;"
     }
+  val gird = SwarmStatusGrid()
 
-    val footer = new HBox {
-      spacing = 20
-      alignment = Pos.CenterLeft
-      children = Seq(helpText, new Region { hgrow = Priority.Always })
-      padding = Insets(10, 0, 0, 0)
+  /**
+   * Updates the swarm status pane with the given node map.
+   *
+   * @param allNodeDetails the whole swarm.
+   */
+  def update(allNodeDetails: Seq[ReceivedNodeStatus]): Unit =
+    Platform.runLater {
+      buildGrid(allNodeDetails)
     }
     container.bottom = footer
 
@@ -125,7 +121,19 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
       }
     }
 
-    val gird = Gird(allNodeDetails.sorted, nowProperty)
-    gird.populate(builder, rowStyleCallback)
+  private def buildGrid(receivedNodeStatuses: Seq[ReceivedNodeStatus]): Unit =
+    val gird = SwarmStatusGrid()
+    
+//    val ourNode: NodeIdentity = nodeIdentityManager.nodeIdentity
+//    val nodes: Seq[NodeIdentity] = receivedNodeStatuses.map(_.nodeIdentity).distinct.sorted
+//    val fdHours: Seq[FdHour] = receivedNodeStatuses.flatMap(receivedNodeStatus =>
+//    val fdHoursSetBuilder = Set.newBuilder[FdHour]
+//      for
+//        receivedStatus: ReceivedNodeStatus <- receivedNodeStatuses
+//        fhd: FdHourDigest <- receivedStatus.statusMessage.fdDigests
+//      do
+//        fdHoursSetBuilder += fhd.fdHour
+//    val fdHours: Seq[FdHour] = fdHoursSetBuilder.result().toSeq
+//    gird.populate(builder, rowStyleCallback)
 
-    container.center = builder.result
+    container.center = gird

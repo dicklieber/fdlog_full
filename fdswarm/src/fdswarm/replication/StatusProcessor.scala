@@ -24,10 +24,12 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.api.ReplEndpoints
 import fdswarm.fx.qso.FdHour
 import fdswarm.store.{FdHourIds, FdHourRequest, ReplicationSupport}
-import fdswarm.util.NodeIdentity
+import fdswarm.util.{CirceGzip, NodeIdentity}
+import io.circe.Codec
 import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.{Inject, Singleton}
 
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 /**
@@ -46,20 +48,18 @@ class StatusProcessor @Inject()(qsoStore: ReplicationSupport,
    * Process an incoming status message: determine what FdHours are needed
    * and POST them to the remote node.
    *
-   * @param status incoming status from a remote node
-   * @param nodeIdentity the node identity of the remote node hoist, port, instanceId.
    * @return IO completing after the HTTP call finishes
    */
-  def processStatus(nodeStuff: NodeStuff): IO[Unit] =
-    val needed = nodeStuff.status.fdDigests.flatMap(qsoStore.isFdHourNeeded)
+  def processStatus(receivedNodeStatus: ReceivedNodeStatus): IO[Unit] =
+    val needed = receivedNodeStatus.statusMessage.fdDigests.flatMap(qsoStore.isFdHourNeeded)
     if needed.nonEmpty then
       // Record at least one timing sample to indicate processing occurred
       IO(timer.record(1L, TimeUnit.NANOSECONDS)) >>
-        processStatusInternal(nodeStuff, needed).handleError(_ => IO.unit)
+        processStatusInternal(receivedNodeStatus, needed).handleError(_ => IO.unit)
     else
       IO.unit
 
-  private def processStatusInternal(nodeStuff: NodeStuff, needed: Seq[FdHour]): IO[Unit] =
+  private def processStatusInternal(nodeStuff: ReceivedNodeStatus, needed: Seq[FdHour]): IO[Unit] =
     given NodeIdentity = nodeStuff.nodeIdentity
     needed.traverse_ { fdHour =>
       for
@@ -83,5 +83,19 @@ class StatusProcessor @Inject()(qsoStore: ReplicationSupport,
 
       yield ()
     }
-  
-case class NodeStuff(status: StatusMessage, nodeIdentity: NodeIdentity)
+
+/**
+ * This is what we get from a remote node.
+ *
+ * @param statusMessage the actual Node Status as sent by a node.
+ * @param nodeIdentity  the node that sent it.
+ * @param received      when we got it.
+ */
+case class ReceivedNodeStatus(statusMessage: StatusMessage,
+                              nodeIdentity: NodeIdentity,
+                              received: Instant = Instant.now) extends Ordered[ReceivedNodeStatus] derives Codec.AsObject:
+  val qsoCount: Int = statusMessage.fdDigests.map(_.count).sum
+
+  override def compare(that: ReceivedNodeStatus): Int =
+    that.nodeIdentity.instanceId.compareTo(that.nodeIdentity.instanceId)
+

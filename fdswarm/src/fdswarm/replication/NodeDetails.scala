@@ -28,23 +28,28 @@ import scalafx.beans.property.{IntegerProperty, ObjectProperty}
 import java.time.Instant
 import scala.collection.concurrent.TrieMap
 
+/**
+ * Holds details about a node.
+ *
+ * @param nodeIdentity
+ */
 class NodeDetails(val nodeIdentity: NodeIdentity) extends Ordered[NodeDetails]:
   override def compare(that: NodeDetails): Int = this.nodeIdentity.compare(that.nodeIdentity)
   val map: TrieMap[FdHour, FdHourNodeCell] = new TrieMap[FdHour, FdHourNodeCell]
   val qsoCount: IntegerProperty = IntegerProperty(0)
   val lastUpdate: ObjectProperty[Instant] = ObjectProperty[Instant](Instant.now)
 
-  def put(fdHourDigest: FdHourDigest, onUpdate: () => Unit): Unit =
+  def put(fdHourDigest: FdHourDigest, updateTime: Instant, onUpdate: () => Unit): Unit =
     val cell = map.getOrElseUpdate(
       fdHourDigest.fdHour,
       FdHourNodeCell(nodeIdentity, fdHourDigest.fdHour)
     )
-    val data = LHData(fdHourDigest, Instant.now())
+    val data = LHData(fdHourDigest, updateTime)
     try
       Platform.runLater {
         cell.lhData.value = data
         recalculateQsoCount()
-        lastUpdate.value = Instant.now()
+        lastUpdate.value = updateTime
         onUpdate()
       }
     catch
@@ -52,7 +57,7 @@ class NodeDetails(val nodeIdentity: NodeIdentity) extends Ordered[NodeDetails]:
         // Fallback for tests or headless environments where Toolkit is not initialized
         cell.lhData.value = data
         recalculateQsoCount()
-        lastUpdate.value = Instant.now()
+        lastUpdate.value = updateTime
         onUpdate()
 
   def recalculateQsoCount(): Unit =

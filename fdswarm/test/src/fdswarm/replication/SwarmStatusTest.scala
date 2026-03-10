@@ -36,7 +36,7 @@ class SwarmStatusTest extends FunSuite:
     val hour = FdHour(15, 12)
     val digest = FdHourDigest(hour, 10, "abc")
     val statusMessage = StatusMessage(Seq(digest))
-    val nodeStuff = NodeStuff(statusMessage, hp)
+    val nodeStuff = ReceivedNodeStatus(statusMessage, hp)
 
     swarmStatus.put(nodeStuff)
 
@@ -61,7 +61,7 @@ class SwarmStatusTest extends FunSuite:
     val hour = FdHour(16, 13)
     val digest = FdHourDigest(hour, 5, "def")
     val statusMessage = StatusMessage(Seq(digest))
-    val nodeStuff = NodeStuff(statusMessage, hp)
+    val nodeStuff = ReceivedNodeStatus(statusMessage, hp)
 
     // 1. Create SwarmStatus, put data, and it should save
     val swarmStatus1 = new SwarmStatus(testDir, MockNodeIdentityManager())

@@ -21,30 +21,28 @@ package fdswarm.fx.admin
 import fdswarm.replication.status.SwarmStatusPane
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
-import scalafx.scene.control.{ButtonBar, ButtonType, Dialog}
-import scalafx.scene.layout.BorderPane
-import scalafx.stage.Window
+import scalafx.scene.Scene
+import scalafx.stage.{Stage, Window}
 
 @Singleton
 class SwarmStatusAdmin @Inject()(swarmStatusPane: SwarmStatusPane):
 
+  private var stage: Option[Stage] = None
+
   def show(ownerWindow: Window): Unit =
-    val dialog = new Dialog[Unit]() {
-      initOwner(ownerWindow)
-      title = "Swarm Status"
-    }
-
-    val dialogPane = dialog.dialogPane.value
-    dialogPane.stylesheets = Seq(getClass.getResource("/styles/app.css").toExternalForm)
-    dialogPane.content = swarmStatusPane.node
-    val clearButtonType = new ButtonType("Clear All Data", ButtonBar.ButtonData.Help2)
-    dialogPane.buttonTypes = Seq(clearButtonType, ButtonType.Close)
-
-    val clearButton = dialogPane.lookupButton(clearButtonType).asInstanceOf[javafx.scene.control.Button]
-    clearButton.onAction = _ => swarmStatusPane.clearData()
-
-    // Detach node when dialog is closed to allow it to be reused elsewhere if needed,
-    // though DialogPane usually handles its content. In the previous Stage implementation,
-    // it was explicitly detached.
-    dialog.showAndWait()
-    dialogPane.content = new BorderPane() // Detach swarmStatusPane.node
+    stage match
+      case Some(s) =>
+        s.toFront()
+      case None =>
+        val newStage = new Stage {
+          initOwner(ownerWindow)
+          title = "Swarm Status"
+          scene = new Scene(swarmStatusPane.node, 800, 600) {
+            stylesheets = Seq(getClass.getResource("/styles/app.css").toExternalForm)
+          }
+        }
+        newStage.onCloseRequest = _ =>
+          newStage.scene.value.root = new javafx.scene.layout.Region() // Detach swarmStatusPane.node
+          stage = None
+        newStage.show()
+        stage = Some(newStage)

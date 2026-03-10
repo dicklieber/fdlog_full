@@ -21,37 +21,42 @@ package fdswarm.replication.status
 import fdswarm.fx.GridBuilder
 import fdswarm.fx.qso.FdHour
 import fdswarm.fx.utils.IntLabel
-import fdswarm.replication.NodeDetails
+import fdswarm.replication.{NodeDetails, ReceivedNodeStatus}
 import fdswarm.util.DurationFormat
 import scalafx.beans.property.LongProperty
 import scalafx.scene.layout.GridPane
 
-class Gird(allNodeDetails: Seq[NodeDetails], nowProperty: LongProperty):
+class SwarmStatusGrid(allNodes: Seq[ReceivedNodeStatus]):
 
-  val hours: Array[FdHour] = allNodeDetails.flatMap(_.map.keys).distinct.sorted.toArray
+  val hours: Array[FdHour] = allNodes.flatMap(_.statusMessage.fdDigests..keys).distinct.sorted.toArray
+  
 
   def grid: Array[Array[IntLabel]] = hours.map { hour =>
-    allNodeDetails.map { nodeDetails =>
-      val count = nodeDetails.map.get(hour).map(_.lhData.value.fdHourDigest.count).getOrElse(0)
+    allNodes.map { receivedNodeStatus =>
+      val count = receivedNodeStatus.map.get(hour).map(_.lhData.value.fdHourDigest.count).getOrElse(0)
       IntLabel(count)
     }.toArray
   }
 
   def populate(builder: GridBuilder, rowStyleCallback: Seq[IntLabel] => String): Unit =
     // Header rows
-    builder("InstanceId", allNodeDetails.map(_.nodeIdentity.instanceId)*)
-    builder("IP", allNodeDetails.map(_.nodeIdentity.host)*)
-    builder("Age", allNodeDetails.map { nd =>
-      val binding = scalafx.beans.binding.Bindings.createStringBinding(
-        () => DurationFormat(nd.lastUpdate.value),
-        nd.lastUpdate,
-        nowProperty
-      )
-      new scalafx.scene.control.Label {
-        text <== binding
-      }
-    }*)
-    builder("Qso Count", allNodeDetails.map(_.qsoCount.value.toString)*)
+    builder("InstanceId", allNodes.map(_.nodeIdentity.instanceId)*)
+    builder("IP", allNodes.map(_.nodeIdentity.host)*)
+    builder("Age", allNodes.map { receivedNodeStatus =>
+      DurationFormat(receivedNodeStatus.received)
+    })
+//      
+//      val binding = scalafx.beans.binding.Bindings.createStringBinding(
+//        () => DurationFormat(receivedNodeStatus.lastUpdate.value),
+//        receivedNodeStatus.lastUpdate,
+//        nowProperty
+//      )
+//      new scalafx.scene.control.Label {
+//        text <== binding
+//      }
+//    }*)
+    builder("Qso Count", allNodes.map(r =>
+      r.statusMessage._.qsoCount.value.toString)*)
 
     val currentGrid = grid
     hours.zip(currentGrid).foreach { (hour, rowLabels) =>

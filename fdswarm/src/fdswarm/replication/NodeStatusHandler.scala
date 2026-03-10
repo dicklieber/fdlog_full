@@ -56,10 +56,10 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
           case Service.Status =>
             statusCounter.increment()
             val statusMessage = StatusMessage(udpHeader.payload)
-            val nodeStuff = NodeStuff(statusMessage, udpHeader.nodeIdentity)
-            swarmStatus.put(nodeStuff)
+            val receivedNodeStatus = ReceivedNodeStatus(statusMessage, udpHeader.nodeIdentity)
+            swarmStatus.put(receivedNodeStatus)
             logger.trace("StatusHandle: StatusMessage  {}.", statusMessage)
-            statusProcessor.processStatus(nodeStuff).unsafeRunAndForget()
+            statusProcessor.processStatus(receivedNodeStatus).unsafeRunAndForget()
           case Service.QSO =>
             qsoCounter.increment()
             val sJson = new String(udpHeader.payload, "UTF-8")

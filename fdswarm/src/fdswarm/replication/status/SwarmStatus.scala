@@ -34,93 +34,59 @@ import scalafx.beans.property.ObjectProperty
 import java.time.Instant
 import scala.collection.concurrent.TrieMap
 
+/**
+ * Hold 
+ */
 @Singleton
 class SwarmStatus @Inject() (
     directoryProvider: DirectoryProvider,
     nodeIdentityManager: NodeIdentityManager,
-    swarmStatusPane: SwarmStatusPane = null
+    swarmStatusPane: SwarmStatusPane
                             ) extends SwarmStatusApi with LazyLogging:
-  val nodeMap: TrieMap[NodeIdentity, NodeDetails] = new TrieMap[NodeIdentity, NodeDetails]
+  val nodeMap: TrieMap[NodeIdentity, ReceivedNodeStatus] = new TrieMap[NodeIdentity, ReceivedNodeStatus]
   private val statusFile = directoryProvider() / "swarmStatus.json"
 
-  def put(nodeStuff: NodeStuff): Unit =
-    logger.whenDebugEnabled {
-      val status: StatusMessage = nodeStuff.status
-      logger.debug(
-        s"putting ${nodeStuff.nodeIdentity} ${nodeStuff.status.fdDigests.size} fdDigests"
-      )
-    }
-    val nodeIdentity = nodeStuff.nodeIdentity
-    val nodeDetails = nodeMap.getOrElseUpdate(
-      nodeIdentity, {
-        val details = NodeDetails(nodeIdentity)
-        try
-          Platform.runLater {
-            nodeMap.put(nodeIdentity, details)
-          }
-        catch
-          case _: IllegalStateException =>
-            nodeMap.put(nodeIdentity, details)
-        details
-      }
-    )
-
-    for 
-      fdHourDigest <- nodeStuff.status.fdDigests
-    do
-      logger.trace("fdHourDigest: {}", fdHourDigest)
-      nodeDetails.put(fdHourDigest, () => ())
-    if swarmStatusPane != null then
-      swarmStatusPane.update(nodeMap.values.toSeq)
+  /**
+   * 
+   * @param receivedNodeStatus as received from a node
+   */
+  def put(receivedNodeStatus: ReceivedNodeStatus): Unit =
+    nodeMap.put(receivedNodeStatus.nodeIdentity, receivedNodeStatus)
+    swarmStatusPane.update(nodeMap.values.toSeq)
     save()
 
   // Load state on startup
   try
     if os.exists(statusFile) then
       val json = os.read(statusFile)
-      decode[Map[NodeIdentity, NodeDetailsDTO]](json) match
-        case Right(dtoMap: Map[NodeIdentity, NodeDetailsDTO]) =>
-          dtoMap.foreach { (nodeIdentity, dto) =>
-            val nodeDetails = NodeDetails(nodeIdentity)
-            dto.cells.foreach { cellDTO =>
-              val cell = FdHourNodeCell(nodeIdentity, cellDTO.fdHour)
-              cell.lhData.value = cellDTO.lhData
-              nodeDetails.map.put(cellDTO.fdHour, cell)
-              if cellDTO.lhData.lastSeen.isAfter(nodeDetails.lastUpdate.value) then
-                nodeDetails.lastUpdate.value = cellDTO.lhData.lastSeen
-            }
-            nodeDetails.recalculateQsoCount()
-            nodeMap.put(nodeIdentity, nodeDetails)
-          }
-          logger.info(s"Loaded swarm status from $statusFile")
-        case Left(decodeError) =>
-          logger.error(
-            s"Failed to decode swarm status from $statusFile: $decodeError"
-          )
+      
+//      val valseqReNod:Seq[ReceivedNodeStatus] =
+    throw new NotImplementedError("load swarm status") //todo
+          
   catch
     case e: Exception =>
       logger.error(s"Error loading swarm status: ${e.getMessage}")
 
-  def updateLocalDigests(digests: Seq[FdHourDigest]): Unit =
-    val nodeIdentity = ourNodeIdentity
-    val nodeDetails = nodeMap.getOrElseUpdate(
-      nodeIdentity, {
-        val details = NodeDetails(nodeIdentity)
-        try
-          Platform.runLater {
-            nodeMap.put(nodeIdentity, details)
-          }
-        catch
-          case _: IllegalStateException =>
-            nodeMap.put(nodeIdentity, details)
-        details
-      }
-    )
+//  def updateLocalDigests(digests: Seq[FdHourDigest]): Unit =
+//    val nodeIdentity = ourNodeIdentity
+//    val nodeDetails = nodeMap.getOrElseUpdate(
+//      nodeIdentity, {
+//        val details = NodeDetails(nodeIdentity)
+//        try
+//          Platform.runLater {
+//            nodeMap.put(nodeIdentity, details)
+//          }
+//        catch
+//          case _: IllegalStateException =>
+//            nodeMap.put(nodeIdentity, details)
+//        details
+//      }
+//    )
 
-    digests.foreach { fdHourDigest =>
-      nodeDetails.put(fdHourDigest, () => ())
-    }
-    save()
+//    digests.foreach { fdHourDigest =>
+//      nodeDetails.put(fdHourDigest, Instant.now(), () => ())
+//    }
+//    save()
 
   def ourNodeIdentity: NodeIdentity = nodeIdentityManager.nodeIdentity
   def clear(): Unit =
@@ -132,13 +98,7 @@ class SwarmStatus @Inject() (
 
   private def save(): Unit =
     try
-      val dtoMap = nodeMap.map { (id, details) =>
-        val cellDTOs = details.map.values.map { cell =>
-          FdHourNodeCellDTO(cell.fdHour, cell.lhData.value)
-        }.toSeq
-        id -> NodeDetailsDTO(cellDTOs)
-      }.toMap
-      val json = dtoMap.asJson.noSpaces
+      val json = nodeMap.values.asJson.noSpaces
       os.write.over(statusFile, json, createFolders = true)
       logger.trace(s"Saved swarm status to $statusFile")
     catch

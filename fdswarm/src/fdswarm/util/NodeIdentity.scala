@@ -19,12 +19,9 @@ package fdswarm.util
 
 import fdswarm.util.Ids.Id
 import io.circe.*
-import io.circe.KeyEncoder.encodeKeyLong
-import jakarta.inject.*
 import sttp.tapir.Schema
 
-import java.net.{InetAddress, InetSocketAddress, URI}
-import java.util.Base64
+import java.net.URI
 import scala.util.matching.Regex
 
 /**
@@ -45,7 +42,9 @@ import scala.util.matching.Regex
  *                   - `toURI`: Converts the node's information into a URI instance using the scheme "http".
  *                   - `compare`: Compares two `NodeIdentity` instances first by host, then by port.
  */
-case class NodeIdentity(host: String = "44.0.0.1", port: Int = 42, instanceId: Id = "") extends Ordered[NodeIdentity]:
+case class NodeIdentity(host: String = "44.0.0.1",
+                        port: Int = 42,
+                        instanceId: Id = "") extends Ordered[NodeIdentity]:
   override val toString: String =
     f"$host:$port%d-$instanceId"
   val hostAndPort: String = s"$host:$port"
@@ -70,7 +69,6 @@ case class NodeIdentity(host: String = "44.0.0.1", port: Int = 42, instanceId: I
    * Compares this NodeIdentity with another NodeIdentity based on instanceId..
    * Order is arbitrary, but consistent.
    *
-   * @param that
    */
   override def compare(that: NodeIdentity): Int =
     this.instanceId.compareTo(that.instanceId)
