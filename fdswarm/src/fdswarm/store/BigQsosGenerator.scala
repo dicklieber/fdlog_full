@@ -18,7 +18,7 @@
 
 package fdswarm.store
 
-import fdswarm.fx.bands.BandModeBuilder
+import fdswarm.fx.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
 import fdswarm.fx.contest.ContestType.WFD
 import fdswarm.model.*
 import fdswarm.util.NodeIdentityManager
@@ -27,14 +27,15 @@ import jakarta.inject.*
 import java.time.Instant
 
 @Singleton
-final class BigQsosGenerator @Inject()(qsoStore: QsoStore, bandModeBuilder: BandModeBuilder, nodeIdentityManager: NodeIdentityManager):
+final class BigQsosGenerator @Inject()(qsoStore: QsoStore, bandModeBuilder: BandModeBuilder, nodeIdentityManager: NodeIdentityManager, bandCatalog: BandCatalog, modeCatalog: ModeCatalog):
 
   /** Generate synthetic QSOs and *immediately* add them to QsoStore.
    *
    * IMPORTANT: Iterator#map is lazy; we must consume the iterator or nothing happens.
    */
-  private val exchange = Exchange(FdClass())
-  private val bandMode = bandModeBuilder("20M", "PH")
+  private val random = new scala.util.Random()
+  private val operators = Seq("WA9NNN", "N9VTB", "W9SWW", "AA9KK", "W9POL", "KD9BYW", "WB9HWE")
+  private val wfdClasses = Seq('H', 'I', 'O', 'M')
 
   /**
    *
@@ -52,9 +53,22 @@ final class BigQsosGenerator @Inject()(qsoStore: QsoStore, bandModeBuilder: Band
       (callsign, index) <- generatedCallsigns
     yield
       val stamp = now.minusMillis(index * intervalMillis)
-      val qsoMetadata = QsoMetadata(station = Station(), contest = WFD, node = nodeIdentityManager.nodeIdentity)
+      val randomBand = bandCatalog.hamBands(random.nextInt(bandCatalog.hamBands.size)).bandName
+      val randomMode = modeCatalog.modes(random.nextInt(modeCatalog.modes.size))
+      val bandMode = bandModeBuilder(randomBand, randomMode)
+
+      val randomOperator = operators(random.nextInt(operators.size))
+      val randomClassLetter = wfdClasses(random.nextInt(wfdClasses.size))
+      val randomTransmitters = random.nextInt(20) + 1
+      val contestClass = s"$randomTransmitters$randomClassLetter"
+
+      val qsoMetadata = QsoMetadata(
+        station = Station(operator = Callsign(randomOperator)),
+        contest = WFD,
+        node = nodeIdentityManager.nodeIdentity)
+
       Qso(callsign = Callsign(callsign),
-        contestClass = "1H",
+        contestClass = contestClass,
         section = "IL",
         bandMode = bandMode,
         qsoMetadata = qsoMetadata,
