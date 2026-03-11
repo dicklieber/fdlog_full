@@ -45,9 +45,9 @@ class QsoTablePane @Inject()(qsoStore: QsoStore, userConfig: UserConfig, qsoSear
 
   private val filterProperty = scalafx.beans.property.ObjectProperty[Qso => Boolean](_ => true)
   qsoSearchPane.callsignFilter.text.onChange(filterProperty.value = qsoSearchPane.filter)
-  qsoSearchPane.bandFilter.onAction = _ => filterProperty.value = qsoSearchPane.filter
-  qsoSearchPane.modeFilter.onAction = _ => filterProperty.value = qsoSearchPane.filter
-  qsoSearchPane.classFilter.onAction = _ => filterProperty.value = qsoSearchPane.filter
+  qsoSearchPane.bandFilter.value.onChange(filterProperty.value = qsoSearchPane.filter)
+  qsoSearchPane.modeFilter.value.onChange(filterProperty.value = qsoSearchPane.filter)
+  qsoSearchPane.classFilter.value.onChange(filterProperty.value = qsoSearchPane.filter)
   qsoSearchPane.operatorFilter.text.onChange(filterProperty.value = qsoSearchPane.filter)
   qsoSearchPane.expandedProperty.onChange(filterProperty.value = qsoSearchPane.filter)
 

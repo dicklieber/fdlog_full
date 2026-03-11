@@ -18,7 +18,6 @@
 
 package fdswarm.fx.qso
 
-import fdswarm.fx.InputHelper.forceCaps
 import fdswarm.fx.bands.{AvailableModesManager, ModeCatalog}
 import fdswarm.fx.{GridColumns, UserConfig}
 import fdswarm.fx.contest.{ContestCatalog, ContestClassChar, ContestManager}
@@ -50,7 +49,10 @@ class QsoSearchPane @Inject()(
   val callsignFilter = new TextField {
     promptText = "Callsign"
   }
-  forceCaps(callsignFilter)
+  callsignFilter.text.onChange { (_, _, newValue) =>
+    val up = Option(newValue).getOrElse("").toUpperCase
+    if up != newValue then callsignFilter.text = up
+  }
   val bandFilter = new ComboBox[String](ANY +: BandMode.bandFreqMap.keys.toSeq.sorted) { value = ANY }
   val modeFilter = new ComboBox[String](ANY +: modeCatalog.modes) { value = ANY }
   val classFilter = new ComboBox[ContestClassChar]() {
@@ -65,7 +67,10 @@ class QsoSearchPane @Inject()(
   val operatorFilter = new TextField {
     promptText = "Operator"
   }
-  forceCaps(operatorFilter)
+  operatorFilter.text.onChange { (_, _, newValue) =>
+    val up = Option(newValue).getOrElse("").toUpperCase
+    if up != newValue then operatorFilter.text = up
+  }
 
   // Update classFilter when contest changes
   contestManager.configProperty.onChange { (_, _, config) =>
@@ -94,7 +99,7 @@ class QsoSearchPane @Inject()(
     val matches = (cs.isEmpty || qso.callsign.value.contains(cs)) &&
     (band == ANY || qso.bandMode.band == band) &&
     (mode == ANY || qso.bandMode.mode == mode) &&
-    (transmitters == -1) || qso.exchange.fdClass.transmitters == transmitters &&
+    (transmitters == -1 || qso.exchange.fdClass.transmitters == transmitters) &&
     (classLetter == '-' || qso.exchange.fdClass.classLetter == classLetter) &&
     (op.isEmpty || qso.qsoMetadata.station.operator.value.toUpperCase.contains(op))
     matches
