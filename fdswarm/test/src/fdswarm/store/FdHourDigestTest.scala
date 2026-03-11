@@ -35,8 +35,7 @@ class FdHourDigestTest extends FunSuite :
     
     val qso1 = Qso(
       callsign = Callsign("W1AW"),
-      fdClass = "1A",
-      section = "CT",
+      exchange = Exchange(FdClass("1A"), "CT"),
       bandMode = BandMode("20m", "CW"),
       qsoMetadata = metadata,
       uuid = "id-1"
@@ -44,8 +43,7 @@ class FdHourDigestTest extends FunSuite :
     
     val qso2 = Qso(
       callsign = Callsign("W2AW"),
-      fdClass = "2A",
-      section = "NY",
+      exchange = Exchange(FdClass("2A"), "NY"),
       bandMode = BandMode("40m", "SSB"),
       qsoMetadata = metadata,
       uuid = "id-2"
@@ -85,8 +83,8 @@ class FdHourDigestTest extends FunSuite :
     val station = Station("S1", "Home", Callsign("WA9NNN"))
     val metadata = QsoMetadata(station, NodeIdentity(), ContestType.WFD)
     
-    val qso1 = Qso(Callsign("C1"), "1A", "CT", BandMode("20m", "CW"), metadata, uuid = "a")
-    val qso2 = Qso(Callsign("C2"), "1A", "CT", BandMode("20m", "CW"), metadata, uuid = "b")
+    val qso1 = Qso(Callsign("C1"), Exchange(FdClass("1A"), "CT"), BandMode("20m", "CW"), metadata, uuid = "a")
+    val qso2 = Qso(Callsign("C2"), Exchange(FdClass("1A"), "CT"), BandMode("20m", "CW"), metadata, uuid = "b")
     
     val digest1 = FdHourDigest(fdHour, Seq(qso1, qso2))
     val digest2 = FdHourDigest(fdHour, Seq(qso2, qso1))

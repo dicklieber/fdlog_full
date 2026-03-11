@@ -20,7 +20,7 @@ package fdswarm.store
 
 import fdswarm.TestDirectory
 import fdswarm.model.QsoMetadata.testQsoMetadata
-import fdswarm.model.{BandMode, Callsign, Qso}
+import fdswarm.model.{BandMode, Callsign, Exchange, FdClass, Qso}
 import fdswarm.replication.Transport
 import fdswarm.replication.status.SwarmStatus
 import fdswarm.util.{NodeIdentityManager, MockNodeIdentityManager}
@@ -58,21 +58,18 @@ class ReplicationSupportTest extends FunSuite:
     val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus)
 
     val qso1 = Qso(callsign = Callsign("W9NNN"),
-      fdClass = "WFD",
+      exchange = Exchange(FdClass("WFD"), "IL"),
       bandMode = BandMode("20m", "CW"),
-      section = "IL",
       qsoMetadata = testQsoMetadata
     )
     val qso2 = Qso(callsign = Callsign("K9OR"),
-      fdClass = "WFD",
+      exchange = Exchange(FdClass("WFD"), "IL"),
       bandMode = BandMode("40m", "SSB"),
-      section = "IL",
       qsoMetadata = testQsoMetadata
     )
     val qso3 = Qso(callsign = Callsign("N9RE"),
-      fdClass = "WFD",
+      exchange = Exchange(FdClass("WFD"), "IN"),
       bandMode = BandMode("80m", "FT8"),
-      section = "IN",
       qsoMetadata = testQsoMetadata
     )
 
@@ -95,9 +92,8 @@ class ReplicationSupportTest extends FunSuite:
     val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus)
 
     val qso1 = Qso(callsign = Callsign("W9NNN"),
-      fdClass = "WFD",
+      exchange = Exchange(FdClass("WFD"), "IL"),
       bandMode = BandMode("20m", "CW"),
-      section = "IL",
       qsoMetadata = testQsoMetadata
     )
 
@@ -114,9 +110,8 @@ class ReplicationSupportTest extends FunSuite:
     val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus)
 
     val qso1 = Qso(callsign = Callsign("W9NNN"),
-      fdClass = "WFD",
+      exchange = Exchange(FdClass("WFD"), "IL"),
       bandMode = BandMode("20m", "CW"),
-      section = "IL",
       qsoMetadata = testQsoMetadata
     )
 
@@ -131,15 +126,13 @@ class ReplicationSupportTest extends FunSuite:
     val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus)
 
     val qso1 = Qso(callsign = Callsign("W9NNN"),
-      fdClass = "WFD",
+      exchange = Exchange(FdClass("WFD"), "IL"),
       bandMode = BandMode("20m", "CW"),
-      section = "IL",
       qsoMetadata = testQsoMetadata
     )
     val qso2 = Qso(callsign = Callsign("K9OR"),
-      fdClass = "WFD",
+      exchange = Exchange(FdClass("WFD"), "IL"),
       bandMode = BandMode("40m", "SSB"),
-      section = "IL",
       qsoMetadata = testQsoMetadata
     )
     replicationSupport.add(Seq(qso1, qso2))
@@ -154,9 +147,8 @@ class ReplicationSupportTest extends FunSuite:
     val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus)
 
     val qso1 = Qso(callsign = Callsign("W9NNN"),
-      fdClass = "WFD",
+      exchange = Exchange(FdClass("WFD"), "IL"),
       bandMode = BandMode("20m", "CW"),
-      section = "IL",
       qsoMetadata = testQsoMetadata
     )
     replicationSupport.add(qso1)

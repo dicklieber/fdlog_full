@@ -88,7 +88,7 @@ class QsoTablePane @Inject()(qsoStore: QsoStore, userConfig: UserConfig, qsoSear
   private val bandCol = col[String]("Band", _.bandMode.band)
   private val modeCol = col[String]("Mode", _.bandMode.mode)
   private val theirCallCol = col[String]("Their Call", _.callsign.value)
-  private val rcvdCol   = col[String]("Rcvd", q => q.fdClass.toString)
+  private val rcvdCol   = col[String]("Rcvd", q => q.exchange.toString)
   private val opCol = col[String]("Op", _.qsoMetadata.station.operator.value)
 
   table.columns ++= Seq(

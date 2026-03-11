@@ -30,15 +30,14 @@ import java.time.Instant
  * This is what's in the store and journal.log.
  *
  * @param callsign    of the worked station.
- * @param fdClass     e.g. 3H
+ * @param exchange    exchange (class and section).
  * @param bandMode    that was used.
  * @param stamp       when QSO occurred.
  * @param uuid        id unique QSO id in time & space.
  * @param qsoMetadata info about ur station.
  */
 case class Qso(callsign: Callsign,
-               fdClass: FdClass,
-               section:String,
+               exchange: Exchange,
                bandMode: BandMode,
                qsoMetadata: QsoMetadata,
                stamp: Instant = Instant.now(),
@@ -63,7 +62,8 @@ case class Qso(callsign: Callsign,
     Map(
       "Time" -> stamp.toString,
       "Their Call" -> callsign.value,
-      "Class" -> fdClass.toString,
+      "Class" -> exchange.fdClass.toString,
+      "Section" -> exchange.sectionCode,
       "Band" -> bandMode.band,
       "Mode" -> bandMode.mode,
       "Operator" -> qsoMetadata.station.operator.value,
@@ -87,8 +87,7 @@ object Qso:
            )(using qsoMetadata: QsoMetadata): Qso =
 
     Qso(callsign = callSign,
-      fdClass = exchange.fdClass,
-      section = exchange.sectionCode,
+      exchange = exchange,
       bandMode = bandMode,
       qsoMetadata = qsoMetadata)
 

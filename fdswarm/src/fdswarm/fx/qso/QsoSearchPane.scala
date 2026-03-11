@@ -94,8 +94,8 @@ class QsoSearchPane @Inject()(
     val matches = (cs.isEmpty || qso.callsign.value.contains(cs)) &&
     (band == ANY || qso.bandMode.band == band) &&
     (mode == ANY || qso.bandMode.mode == mode) &&
-    (transmitters == -1) || qso.fdClass.transmitters == transmitters &&
-    (classLetter == '-' || qso.fdClass.classLetter == classLetter) &&
+    (transmitters == -1) || qso.exchange.fdClass.transmitters == transmitters &&
+    (classLetter == '-' || qso.exchange.fdClass.classLetter == classLetter) &&
     (op.isEmpty || qso.qsoMetadata.station.operator.value.toUpperCase.contains(op))
     matches
 

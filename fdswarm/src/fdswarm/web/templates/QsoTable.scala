@@ -43,7 +43,7 @@ object QsoTable {
               td(q.callsign.value),
               td(q.bandMode.band),
               td(q.bandMode.mode),
-              td(s"${q.fdClass} ${q.section}"),
+              td(q.exchange.toString),
               td(q.qsoMetadata.station.operator.value)
             )
           }

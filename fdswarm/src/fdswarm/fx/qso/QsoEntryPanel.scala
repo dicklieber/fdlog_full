@@ -126,8 +126,7 @@ class QsoEntryPanel @Inject()(
   def submit(): Unit =
     val qso = Qso(
       callsign = Callsign(callsignField.text.value),
-      fdClass = FdClass(contestClassField.text.value),
-      section = sectionField.text.value,
+      exchange = Exchange(FdClass(contestClassField.text.value), sectionField.text.value),
       bandMode = selectedBandModeStore.selected.value,
       qsoMetadata = qsoMetadata
     )

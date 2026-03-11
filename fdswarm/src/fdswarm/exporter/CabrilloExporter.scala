@@ -90,7 +90,7 @@ object CabrilloExporter:
     val myCls = header.stationClass
 
     val hisCall = qso.callsign.value
-    val hisClass = qso.fdClass.toString
-    val hisSect = qso.section
+    val hisClass = qso.exchange.fdClass.toString
+    val hisSect = qso.exchange.sectionCode
 
     f"QSO: $freq%5s $mode%2s $date $time $myCall%-12s $myCls%-3s $mySect%-3s $hisCall%-12s $hisClass%-3s $hisSect%-3s"

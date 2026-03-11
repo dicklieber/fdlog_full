@@ -26,7 +26,7 @@ import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager, BandModeB
 import fdswarm.fx.contest.ContestManager
 import fdswarm.fx.qso.ContestTimerPanel
 import fdswarm.fx.sections.SectionsProvider
-import fdswarm.model.{Callsign, FdClass, Qso, QsoMetadata}
+import fdswarm.model.{BandMode, Callsign, Exchange, FdClass, Qso, QsoMetadata}
 import fdswarm.replication.{Service, Transport}
 import fdswarm.store.QsoStore
 import fdswarm.web.templates.*
@@ -219,8 +219,7 @@ class WebRoutes @Inject()(
               )
               val qso = Qso(
                 callsign = Callsign(callsign.toUpperCase),
-                fdClass = FdClass(contestClass.toUpperCase),
-                section = section.toUpperCase,
+                exchange = Exchange(FdClass(contestClass.toUpperCase), section.toUpperCase),
                 bandMode = ws.bandMode,
                 qsoMetadata = metadata
               )

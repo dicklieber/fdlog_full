@@ -35,8 +35,7 @@ class QsoCirceTest extends FunSuite:
     val bandMode = BandMode("40M", "CW")
     val qso = Qso(
       callsign = Callsign("K1ABC"),
-      fdClass = "1A",
-      section = "CT",
+      exchange = Exchange(FdClass("1A"), "CT"),
       bandMode = bandMode,
       qsoMetadata = qsoMetadata,
       stamp = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS),

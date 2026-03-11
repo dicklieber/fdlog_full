@@ -35,8 +35,7 @@ class AdifExporterTest extends FunSuite:
     val stamp = Instant.parse("2026-02-25T10:00:00Z")
     val qso = Qso(
       callsign = Callsign("K1ABC"),
-      fdClass = "1A",
-      section = "CT",
+      exchange = Exchange(FdClass("1A"), "CT"),
       bandMode = bandMode,
       qsoMetadata = qsoMetadata,
       stamp = stamp,
@@ -66,9 +65,9 @@ class AdifExporterTest extends FunSuite:
     val qsoMetadata = QsoMetadata(station = station, node = NodeIdentity(), contest = ContestType.WFD)
     val stamp = Instant.parse("2026-02-25T10:00:00Z")
 
-    val qsoPh = Qso(Callsign("K1ABC"), "1A", "CT", BandMode("40M", "PH"), qsoMetadata, stamp, "id-ph")
-    val qsoDigi = Qso(Callsign("K1ABC"), "1A", "CT", BandMode("40M", "DIGI"), qsoMetadata, stamp, "id-digi")
-    val qsoCw = Qso(Callsign("K1ABC"), "1A", "CT", BandMode("40M", "CW"), qsoMetadata, stamp, "id-cw")
+    val qsoPh = Qso(Callsign("K1ABC"), Exchange(FdClass("1A"), "CT"), BandMode("40M", "PH"), qsoMetadata, stamp, "id-ph")
+    val qsoDigi = Qso(Callsign("K1ABC"), Exchange(FdClass("1A"), "CT"), BandMode("40M", "DIGI"), qsoMetadata, stamp, "id-digi")
+    val qsoCw = Qso(Callsign("K1ABC"), Exchange(FdClass("1A"), "CT"), BandMode("40M", "CW"), qsoMetadata, stamp, "id-cw")
 
     val adif = AdifExporter.exportQsos(Seq(qsoPh, qsoDigi, qsoCw))
     

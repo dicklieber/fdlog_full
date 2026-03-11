@@ -19,12 +19,13 @@
 package fdswarm.model
 
 import io.circe.{Decoder, Encoder, Codec}
+import sttp.tapir.Schema
 import BandMode.*
 
 /**
  * Allows storng band and mode in a compact why in a [[Qso]]
  */
-case class BandMode private[fdswarm] (band: Band, mode: Mode) derives Codec.AsObject, sttp.tapir.Schema:
+case class BandMode private[fdswarm] (band: Band, mode: Mode):
   def cabMode: Band =
     mode match
       case "USB" => "PH"
@@ -42,13 +43,6 @@ object BandMode:
   type Band = String
   type Mode = String
 
-  //    implicit val rw: ReadWriter[BandMode] = upickle.readwriter[String].bimap[BandMode](
-//      `x => s"${x.i} ${x.s}",
-//      str => {
-//        val Array(i, s) = str.split(" ", 2)
-//        new BandMode(i.toInt, s)
-//      }
-//    )
   /**
    * Use when we don't have an explicit frequency
    */
@@ -66,7 +60,7 @@ object BandMode:
       "70cm" -> "442000",
     ).toMap
   }
-  private val Parse = """\s*([\d.]+[a-z]+)\s+([A-Z]{2})\s*""".r
+  private val Parse = """\s*([\d.]+[a-zA-Z]+)\s+([A-Z]{1,3})\s*""".r
 
 
   private[fdswarm] def apply(s: String): BandMode =
@@ -77,3 +71,7 @@ object BandMode:
 
   def bandToFreq(band: String): String =
     bandFreqMap.getOrElse(band.toUpperCase(), "")
+
+  given Schema[BandMode] = Schema.string
+  given Encoder[BandMode] = Encoder.encodeString.contramap(_.toString)
+  given Decoder[BandMode] = Decoder.decodeString.map(BandMode.apply)
