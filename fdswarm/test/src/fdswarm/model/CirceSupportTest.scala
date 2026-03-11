@@ -61,8 +61,16 @@ class CirceSupportTest extends FunSuite:
   test("Exchange round trip"):
     val exchange = Exchange(FdClass(2, 'A'), "IL")
     val json = exchange.asJson.noSpaces
+    assertEquals(json, "\"2A IL\"")
     val decoded = decode[Exchange](json).toOption.get
     assertEquals(decoded, exchange)
+
+  test("FdClass round trip"):
+    val fdClass = FdClass(3, 'H')
+    val json = fdClass.asJson.noSpaces
+    assertEquals(json, "\"3H\"")
+    val decoded = decode[FdClass](json).toOption.get
+    assertEquals(decoded, fdClass)
 
   test("StatusMessage round trip"):
     val hostAndPort = NodeIdentity("localhost", 8080)

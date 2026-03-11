@@ -35,7 +35,7 @@ class FdHourDigestTest extends FunSuite :
     
     val qso1 = Qso(
       callsign = Callsign("W1AW"),
-      contestClass = "1A",
+      fdClass = "1A",
       section = "CT",
       bandMode = BandMode("20m", "CW"),
       qsoMetadata = metadata,
@@ -44,7 +44,7 @@ class FdHourDigestTest extends FunSuite :
     
     val qso2 = Qso(
       callsign = Callsign("W2AW"),
-      contestClass = "2A",
+      fdClass = "2A",
       section = "NY",
       bandMode = BandMode("40m", "SSB"),
       qsoMetadata = metadata,

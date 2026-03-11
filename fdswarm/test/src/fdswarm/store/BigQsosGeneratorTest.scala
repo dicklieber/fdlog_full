@@ -59,11 +59,8 @@ class BigQsosGeneratorTest extends FunSuite with LazyLogging:
   /**
     * Mock BandModeBuilder that accepts any band/mode without consulting catalogs.
     */
-  class AllowAllBandModeBuilder
-      extends BandModeBuilder(
-        null.asInstanceOf[BandCatalog],
-        null.asInstanceOf[ModeCatalog]
-      ):
+  class AllowAllBandModeBuilder(bandCatalog: BandCatalog, modeCatalog: ModeCatalog)
+      extends BandModeBuilder(bandCatalog, modeCatalog):
     override def apply(band: BandMode.Band, mode: BandMode.Mode): BandMode =
       new BandMode(band.toLowerCase, mode.toUpperCase)
 
@@ -73,8 +70,20 @@ class BigQsosGeneratorTest extends FunSuite with LazyLogging:
     val swarmStatus = SwarmStatus(testDirectory, mockNodeIdentityManager, null)
     val qsoStore = QsoStore(testDirectory, registry, mockTransport, swarmStatus)
 
-    val bandModeBuilder = new AllowAllBandModeBuilder
-    val generator = new BigQsosGenerator(qsoStore, bandModeBuilder, mockNodeIdentityManager)
+    import com.typesafe.config.ConfigFactory
+    val config = ConfigFactory.parseString(
+      """
+        |fdswarm {
+        |  hamBands = [
+        |    { bandName = "20m", startFrequencyHz = 14000000, endFrequencyHz = 14350000, bandClass = "HF", regions = ["ALL"] }
+        |  ]
+        |  modes = ["CW", "PH", "DIGI"]
+        |}
+        |""".stripMargin)
+    val mockBandCatalog = new BandCatalog(config)
+    val mockModeCatalog = new ModeCatalog(config)
+    val bandModeBuilder = new AllowAllBandModeBuilder(mockBandCatalog, mockModeCatalog)
+    val generator = new BigQsosGenerator(qsoStore, bandModeBuilder, mockNodeIdentityManager, mockBandCatalog, mockModeCatalog)
 
     // Generate 100 QSOs at 20 per hour cadence with prefix "K"
     generator.qsos(howMany = 10000, howManyPerHour = 400, prefix = "K")

@@ -58,19 +58,19 @@ class ReplicationSupportTest extends FunSuite:
     val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus)
 
     val qso1 = Qso(callsign = Callsign("W9NNN"),
-      contestClass = "WFD",
+      fdClass = "WFD",
       bandMode = BandMode("20m", "CW"),
       section = "IL",
       qsoMetadata = testQsoMetadata
     )
     val qso2 = Qso(callsign = Callsign("K9OR"),
-      contestClass = "WFD",
+      fdClass = "WFD",
       bandMode = BandMode("40m", "SSB"),
       section = "IL",
       qsoMetadata = testQsoMetadata
     )
     val qso3 = Qso(callsign = Callsign("N9RE"),
-      contestClass = "WFD",
+      fdClass = "WFD",
       bandMode = BandMode("80m", "FT8"),
       section = "IN",
       qsoMetadata = testQsoMetadata
@@ -95,7 +95,7 @@ class ReplicationSupportTest extends FunSuite:
     val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus)
 
     val qso1 = Qso(callsign = Callsign("W9NNN"),
-      contestClass = "WFD",
+      fdClass = "WFD",
       bandMode = BandMode("20m", "CW"),
       section = "IL",
       qsoMetadata = testQsoMetadata
@@ -114,7 +114,7 @@ class ReplicationSupportTest extends FunSuite:
     val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus)
 
     val qso1 = Qso(callsign = Callsign("W9NNN"),
-      contestClass = "WFD",
+      fdClass = "WFD",
       bandMode = BandMode("20m", "CW"),
       section = "IL",
       qsoMetadata = testQsoMetadata
@@ -131,13 +131,13 @@ class ReplicationSupportTest extends FunSuite:
     val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus)
 
     val qso1 = Qso(callsign = Callsign("W9NNN"),
-      contestClass = "WFD",
+      fdClass = "WFD",
       bandMode = BandMode("20m", "CW"),
       section = "IL",
       qsoMetadata = testQsoMetadata
     )
     val qso2 = Qso(callsign = Callsign("K9OR"),
-      contestClass = "WFD",
+      fdClass = "WFD",
       bandMode = BandMode("40m", "SSB"),
       section = "IL",
       qsoMetadata = testQsoMetadata
@@ -154,7 +154,7 @@ class ReplicationSupportTest extends FunSuite:
     val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus)
 
     val qso1 = Qso(callsign = Callsign("W9NNN"),
-      contestClass = "WFD",
+      fdClass = "WFD",
       bandMode = BandMode("20m", "CW"),
       section = "IL",
       qsoMetadata = testQsoMetadata

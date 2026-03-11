@@ -35,7 +35,7 @@ class AdifExporterTest extends FunSuite:
     val stamp = Instant.parse("2026-02-25T10:00:00Z")
     val qso = Qso(
       callsign = Callsign("K1ABC"),
-      contestClass = "1A",
+      fdClass = "1A",
       section = "CT",
       bandMode = bandMode,
       qsoMetadata = qsoMetadata,

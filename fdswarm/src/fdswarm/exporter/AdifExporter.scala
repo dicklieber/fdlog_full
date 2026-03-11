@@ -43,7 +43,7 @@ object AdifExporter:
     val rstRcvd = "59"
     val date = dateFormatter.format(qso.stamp)
     val time = timeFormatter.format(qso.stamp)
-    val classSent = qso.contestClass
+    val classSent = qso.fdClass.toString
     val section = qso.section
     val ownCall = qso.qsoMetadata.station.operator.value
 

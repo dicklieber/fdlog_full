@@ -60,20 +60,18 @@ final class BigQsosGenerator @Inject()(qsoStore: QsoStore, bandModeBuilder: Band
       val randomOperator = operators(random.nextInt(operators.size))
       val randomClassLetter = wfdClasses(random.nextInt(wfdClasses.size))
       val randomTransmitters = random.nextInt(20) + 1
-      val contestClass = s"$randomTransmitters$randomClassLetter"
 
       val qsoMetadata = QsoMetadata(
         station = Station(operator = Callsign(randomOperator)),
         contest = WFD,
         node = nodeIdentityManager.nodeIdentity)
-
+      val fdClass = FdClass(randomTransmitters,randomClassLetter )
       Qso(callsign = Callsign(callsign),
-        contestClass = contestClass,
+        fdClass = fdClass,
         section = "IL",
         bandMode = bandMode,
         qsoMetadata = qsoMetadata,
         stamp = stamp)
-//      qsoStore.add(qso)
       ).toSeq
     qsoStore.add(batchOfQsos)
 

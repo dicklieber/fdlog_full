@@ -34,7 +34,7 @@ class CabrilloExporterTest extends FunSuite:
     
     val qso1 = Qso(
       callsign = Callsign("K1ABC"),
-      contestClass = "1O",
+      fdClass = "1O",
       section = "CT",
       bandMode = BandMode("20m CW"),
       qsoMetadata = qsoMetadata,

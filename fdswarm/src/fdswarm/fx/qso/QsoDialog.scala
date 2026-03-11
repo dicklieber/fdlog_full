@@ -51,7 +51,7 @@ object QsoDialog:
     addRow("Callsign:", qso.callsign.value, 1)
     addRow("Band:", qso.bandMode.band, 2)
     addRow("Mode:", qso.bandMode.mode, 3)
-    addRow("Class:", qso.contestClass, 4)
+    addRow("Class:", qso.fdClass.toString, 4)
     addRow("Section:", qso.section, 5)
     addRow("Operator:", qso.qsoMetadata.station.operator.value, 6)
     addRow("Node:", qso.qsoMetadata.node.toString, 7)

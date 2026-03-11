@@ -22,28 +22,28 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.qso.FdHour
 import fdswarm.util.Ids
 import fdswarm.util.Ids.Id
-import io.circe.Codec
 import fdswarm.util.JavaTimeCirce.given
+import io.circe.Codec
 
 import java.time.Instant
 /**
  * This is what's in the store and journal.log.
  *
  * @param callsign    of the worked station.
- * @param contestClass    from the worked station.
+ * @param fdClass     e.g. 3H
  * @param bandMode    that was used.
  * @param stamp       when QSO occurred.
  * @param uuid        id unique QSO id in time & space.
  * @param qsoMetadata info about ur station.
  */
 case class Qso(callsign: Callsign,
-               contestClass: String,
+               fdClass: FdClass,
                section:String,
                bandMode: BandMode,
                qsoMetadata: QsoMetadata,
                stamp: Instant = Instant.now(),
                uuid: Id = Ids.generateId()) extends  LazyLogging derives  Codec.AsObject, sttp.tapir.Schema:
-  lazy val display: String = s"$callsign on $bandMode in $fdHour"
+
   lazy val rejectedMsg: String = s"Rejected duplicate Qso: $callsign $bandMode"
   lazy val fdHour: FdHour =
     FdHour(stamp)
@@ -55,16 +55,15 @@ case class Qso(callsign: Callsign,
   val dupCriterion:String = s"$callsign-$bandMode"
 
   def asJsonCompact: String =
-    import io.circe.syntax.*
     import fdswarm.util.JavaTimeCirce.given
+    import io.circe.syntax.*
     this.asJson.noSpaces
 
   def flatten: Map[String, String] =
     Map(
       "Time" -> stamp.toString,
       "Their Call" -> callsign.value,
-      "Class" -> contestClass,
-      "Section" -> section,
+      "Class" -> fdClass.toString,
       "Band" -> bandMode.band,
       "Mode" -> bandMode.mode,
       "Operator" -> qsoMetadata.station.operator.value,
@@ -88,7 +87,7 @@ object Qso:
            )(using qsoMetadata: QsoMetadata): Qso =
 
     Qso(callsign = callSign,
-      contestClass = exchange.fdClass.toString,
+      fdClass = exchange.fdClass,
       section = exchange.sectionCode,
       bandMode = bandMode,
       qsoMetadata = qsoMetadata)

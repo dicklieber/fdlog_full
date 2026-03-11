@@ -87,13 +87,15 @@ class QsoSearchPane @Inject()(
     val cs = callsignFilter.text.value.toUpperCase
     val band = bandFilter.value.value
     val mode = modeFilter.value.value
-    val cls = Option(classFilter.value.value).map(_.ch).getOrElse(ANY)
+    val transmitters = 1 //todo: get a field
+    val classLetter: Char = classFilter.value.value.ch.head //todo use new combo box
     val op = operatorFilter.text.value.toUpperCase
 
     val matches = (cs.isEmpty || qso.callsign.value.contains(cs)) &&
     (band == ANY || qso.bandMode.band == band) &&
     (mode == ANY || qso.bandMode.mode == mode) &&
-    (cls == ANY || qso.contestClass == cls) &&
+    (transmitters == -1) || qso.fdClass.transmitters == transmitters &&
+    (classLetter == '-' || qso.fdClass.classLetter == classLetter) &&
     (op.isEmpty || qso.qsoMetadata.station.operator.value.toUpperCase.contains(op))
     matches
 

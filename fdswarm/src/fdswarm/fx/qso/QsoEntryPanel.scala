@@ -22,9 +22,10 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.StationManager
 import fdswarm.fx.bandmodes.SelectedBandModeStore
 import fdswarm.fx.contest.ContestManager
+import fdswarm.fx.sections.Section
 import fdswarm.fx.{CallSignField, GridColumns}
 import fdswarm.model.*
-import fdswarm.replication.{Transport, Service}
+import fdswarm.replication.{Service, Transport}
 import fdswarm.store.{QsoStore, StyledMessage}
 import fdswarm.util.*
 import jakarta.inject.{Inject, Singleton}
@@ -124,11 +125,11 @@ class QsoEntryPanel @Inject()(
 
   def submit(): Unit =
     val qso = Qso(
-      Callsign(callsignField.text.value),
-      contestClassField.text.value,
-      sectionField.text.value,
-      selectedBandModeStore.selected.value,
-      qsoMetadata
+      callsign = Callsign(callsignField.text.value),
+      fdClass = FdClass(contestClassField.text.value),
+      section = sectionField.text.value,
+      bandMode = selectedBandModeStore.selected.value,
+      qsoMetadata = qsoMetadata
     )
 
     val styledMessage: StyledMessage = qsoStore.add(qso)
