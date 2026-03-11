@@ -60,7 +60,7 @@ object BandMode:
       "70cm" -> "442000",
     ).toMap
   }
-  private val Parse = """\s*([\d.]+[a-zA-Z]+)\s+([A-Z]{1,3})\s*""".r
+  private val Parse = """\s*([\d.]+[a-zA-Z]+)\s+([A-Z]{1,5})\s*""".r
 
 
   private[fdswarm] def apply(s: String): BandMode =
