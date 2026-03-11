@@ -27,33 +27,41 @@ class ExchangeTest extends FunSuite:
 
   test("Exchange toString should format correctly"):
     assertEquals(Exchange(FdClass(1, 'A'), "IL").toString, "1A IL")
-    assertEquals(Exchange(FdClass(2, 'H'), "CT").toString, "2H CT")
+    assertEquals(Exchange(FdClass(10, 'F'), "WI").toString, "10F WI")
+    assertEquals(Exchange(FdClass(2, 'H'), "EPA").toString, "2H EPA")
 
   test("Exchange apply(String) should parse correctly"):
     assertEquals(Exchange("1A IL"), Exchange(FdClass(1, 'A'), "IL"))
-    assertEquals(Exchange("2H CT"), Exchange(FdClass(2, 'H'), "CT"))
+    assertEquals(Exchange("10F WI"), Exchange(FdClass(10, 'F'), "WI"))
+    assertEquals(Exchange("2H EPA"), Exchange(FdClass(2, 'H'), "EPA"))
 
   test("Exchange apply(String) should throw IllegalArgumentException for invalid input"):
     intercept[IllegalArgumentException] {
       Exchange("1AIL")
     }
     intercept[IllegalArgumentException] {
-      Exchange("1A")
+      Exchange("1A  IL") // only single space is supported by Parse regex
     }
     intercept[IllegalArgumentException] {
-      Exchange(" IL")
+      Exchange("1A")
     }
     intercept[IllegalArgumentException] {
       Exchange("")
     }
 
   test("Exchange Circe round trip"):
-    val exchange = Exchange(FdClass(1, 'A'), "IL")
+    val exchange = Exchange(FdClass(2, 'B'), "IL")
     val json = exchange.asJson.noSpaces
-    assertEquals(json, "\"1A IL\"")
+    assertEquals(json, "\"2B IL\"")
     val decoded = decode[Exchange](json).getOrElse(fail("failed to decode"))
     assertEquals(decoded, exchange)
 
   test("Exchange Tapir schema should be a string"):
     val schema = summon[Schema[Exchange]]
     assertEquals(schema, Schema.string)
+
+  test("Exchange default constructor should work"):
+    val exchange = Exchange()
+    assertEquals(exchange.fdClass, FdClass(1, 'I'))
+    assertEquals(exchange.sectionCode, "IL")
+    assertEquals(exchange.toString, "1I IL")

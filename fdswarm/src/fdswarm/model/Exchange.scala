@@ -50,6 +50,11 @@ object FdClass:
       transmitters = transmitters,
       classLetter = stationClass.letter)
 
+/**
+ * Echange class and section in common ham contest jargon.
+ * @param fdClass
+ * @param sectionCode
+ */
 case class Exchange(fdClass: FdClass = FdClass(),
                     sectionCode: String = "IL"):
 
