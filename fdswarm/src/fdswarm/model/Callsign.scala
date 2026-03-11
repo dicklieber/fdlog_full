@@ -25,7 +25,7 @@ import io.circe.{Decoder, Encoder}
  *
  * @param value the actual callsign.
  */
-final class Callsign private(val value: String) extends AnyRef:
+final class Callsign private(val value: String) extends AnyRef with Ordered[Callsign]:
   def startsWith(startofCallsign: String): Boolean = value.startsWith(startofCallsign)
 
   override def toString: String = value
@@ -34,6 +34,38 @@ final class Callsign private(val value: String) extends AnyRef:
     other match
       case c: Callsign => this.value == c.value
       case _ => false
+
+  override def compare(that: Callsign): Int =
+    val thisParts = splitCallsign(this.value)
+    val thatParts = splitCallsign(that.value)
+
+    // order is number, followed be prefix, then suffix.
+    val numComp = thisParts._2.compareTo(thatParts._2)
+    if numComp != 0 then numComp
+    else
+      val prefixComp = thisParts._1.compareTo(thatParts._1)
+      if prefixComp != 0 then prefixComp
+      else thisParts._3.compareTo(thatParts._3)
+
+  private def splitCallsign(cs: String): (String, String, String) =
+    // Standard format: [A-Z0-9]{1,3}[0-9][A-Z0-9]{1,4}
+    // Optional suffix: /[A-Z0-9]{1,4}
+    val parts = cs.split('/')
+    val base = parts(0)
+    val suffix = if parts.length > 1 then parts(1) else ""
+
+    // Find the first digit in the base callsign which is usually the area number
+    val digitIndex = base.indexWhere(_.isDigit)
+    if digitIndex == -1 then
+      (base, "", suffix)
+    else
+      val prefix = base.substring(0, digitIndex)
+      val number = base.substring(digitIndex, digitIndex + 1)
+      val rest = base.substring(digitIndex + 1)
+      // If we want "prefix" to be everything before the number, and "suffix" to be everything after /
+      // The requirement says: "order is number, followed be prefix, then suffix."
+      // I'll treat "prefix" as the part before the number.
+      (prefix, number, suffix)
 
 object Callsign:
   /**

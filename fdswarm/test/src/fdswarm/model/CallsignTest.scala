@@ -70,3 +70,27 @@ class CallsignTest extends FunSuite:
 
     assert(Callsign.isValid("K1A")) // 3 chars - min
   }
+
+  test("Ordering") {
+    val c1 = Callsign("A1A")
+    val c2 = Callsign("B1A")
+    val c3 = Callsign("A2A")
+    val c4 = Callsign("A1A/B")
+    
+    val list = List(c2, c3, c1, c4)
+    val sorted = list.sorted
+    
+    // Order: number, then prefix, then suffix
+    // c1: prefix A, number 1, suffix ""
+    // c2: prefix B, number 1, suffix ""
+    // c3: prefix A, number 2, suffix ""
+    // c4: prefix A, number 1, suffix "B"
+    
+    // Sorted:
+    // 1. number 1: c1 (prefix A, no suffix), c4 (prefix A, suffix B), c2 (prefix B, no suffix)
+    //    c1 vs c4: number same, prefix same, suffix "" < "B" -> c1, c4
+    //    c1/c4 vs c2: number same, prefix A < B -> c1, c4, c2
+    // 2. number 2: c3
+    
+    assertEquals(sorted, List(c1, c4, c2, c3))
+  }

@@ -82,6 +82,7 @@ final class FdLogUi @Inject() (
     ipAddressDialogService: IpAddressDialogService,
     discoveryDialogService: DiscoveryDialogService,
     swarmStatusAdmin: fdswarm.fx.admin.SwarmStatusAdmin,
+    summaryDialog: fdswarm.fx.tools.SummaryDialog,
     apiServer: fdswarm.api.ApiServer
 ) extends LazyLogging:
 
@@ -217,9 +218,19 @@ final class FdLogUi @Inject() (
   )
 
   devMenu.visible <== developerModeMenuItem.selected
+  private val reportsMenu: Menu =
+    new Menu("Reports"):
+      items = Seq(
+        new MenuItem("Summary"):
+          onAction = _ =>
+            Option(ownerWindow) match
+              case Some(w) => summaryDialog.show(w)
+              case None    => ()
+      )
   private val menuBar = new MenuBar:
     useSystemMenuBar = isMac
     menus = Seq(
+      reportsMenu,
       fileMenu,
       configMenu,
       adminMenu,
