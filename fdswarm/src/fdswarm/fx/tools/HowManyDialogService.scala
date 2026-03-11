@@ -18,6 +18,7 @@
 
 package fdswarm.fx.tools
 
+import fdswarm.fx.InputHelper.forceCaps
 import fdswarm.fx.utils.IconButton
 import fdswarm.store.BigQsosGenerator
 import jakarta.inject.{Inject, Singleton}
@@ -55,6 +56,7 @@ final class HowManyDialogService @Inject() (
       text = defaultPrefix
       promptText = "e.g. WA9"
     }
+    forceCaps(prefixField)
 
     val removeAllButton = IconButton("trash3-fill", 24, "Remove all Qsos loggers", Color.Red)
     removeAllButton.onAction = _ => {

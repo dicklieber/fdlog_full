@@ -49,6 +49,7 @@ class QsoTablePane @Inject()(qsoStore: QsoStore, userConfig: UserConfig, qsoSear
   qsoSearchPane.modeFilter.onAction = _ => filterProperty.value = qsoSearchPane.filter
   qsoSearchPane.classFilter.onAction = _ => filterProperty.value = qsoSearchPane.filter
   qsoSearchPane.operatorFilter.text.onChange(filterProperty.value = qsoSearchPane.filter)
+  qsoSearchPane.expandedProperty.onChange(filterProperty.value = qsoSearchPane.filter)
 
   filterProperty.onChange { (_, _, f) =>
     filteredQsos.setPredicate(q => f(q))

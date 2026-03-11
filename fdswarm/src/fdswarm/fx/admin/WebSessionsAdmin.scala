@@ -18,6 +18,7 @@
 
 package fdswarm.fx.admin
 
+import fdswarm.fx.InputHelper.forceCaps
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.web.{WebSession, WebSessionStore}
 import jakarta.inject.{Inject, Singleton}
@@ -50,6 +51,7 @@ class WebSessionsAdmin @Inject()(store: WebSessionStore) extends LazyLogging:
     val rigField = new TextField()
     val antennaField = new TextField()
     val opField = new TextField()
+    forceCaps(opField)
     val qsoLinesField = new Spinner[Int](1, 200, 10)
     val qsosEnteredLabel = new Label("0")
     val lastTouchedLabel = new Label("")

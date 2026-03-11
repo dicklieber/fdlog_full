@@ -18,6 +18,7 @@
 
 package fdswarm.fx.tools
 
+import fdswarm.fx.InputHelper.forceCaps
 import fdswarm.exporter.*
 import fdswarm.fx.contest.ContestManager
 import fdswarm.fx.station.StationStore
@@ -61,6 +62,7 @@ final class CabrilloHeaderDialog @Inject()(
 
     val clubField = new TextField { text = currentHeader.club }
     val operatorsField = new TextField { text = currentHeader.operators }
+    forceCaps(operatorsField)
     val nameField = new TextField { text = currentHeader.name }
     val addressField = new TextField { text = currentHeader.address }
     val cityField = new TextField { text = currentHeader.addressCity }

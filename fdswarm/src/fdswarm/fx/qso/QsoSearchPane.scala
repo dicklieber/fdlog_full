@@ -18,6 +18,8 @@
 
 package fdswarm.fx.qso
 
+import fdswarm.fx.InputHelper.forceCaps
+import fdswarm.fx.bands.{AvailableModesManager, ModeCatalog}
 import fdswarm.fx.{GridColumns, UserConfig}
 import fdswarm.fx.contest.{ContestCatalog, ContestManager}
 import fdswarm.model.{BandMode, Qso}
@@ -29,6 +31,7 @@ import scalafx.scene.Node
 import scalafx.scene.control.*
 import scalafx.scene.layout.{HBox, Priority, VBox}
 import scalafx.stage.FileChooser
+
 import java.io.PrintWriter
 import io.circe.syntax.*
 import fdswarm.util.JavaTimeCirce.given
@@ -37,15 +40,23 @@ import fdswarm.util.JavaTimeCirce.given
 class QsoSearchPane @Inject()(
     contestManager: ContestManager,
     contestCatalog: ContestCatalog,
+    modeCatalog: ModeCatalog,
+    modesManager: AvailableModesManager,
     userConfig: UserConfig
 ):
   private val ANY = "Any"
 
-  val callsignFilter = new TextField { promptText = "Callsign" }
+  val callsignFilter = new TextField {
+    promptText = "Callsign"
+  }
+  forceCaps(callsignFilter)
   val bandFilter = new ComboBox[String](ANY +: BandMode.bandFreqMap.keys.toSeq.sorted) { value = ANY }
-  val modeFilter = new ComboBox[String](Seq(ANY, "CW", "USB", "LSB", "SSB", "AM", "FM", "RTTY", "PSK")) { value = ANY }
+  val modeFilter = new ComboBox[String](ANY +: modeCatalog.modes) { value = ANY }
   val classFilter = new ComboBox[String]() { value = ANY }
-  val operatorFilter = new TextField { promptText = "Operator" }
+  val operatorFilter = new TextField {
+    promptText = "Operator"
+  }
+  forceCaps(operatorFilter)
 
   // Update classFilter when contest changes
   contestManager.configProperty.onChange { (_, _, config) =>
@@ -60,7 +71,10 @@ class QsoSearchPane @Inject()(
   classFilter.items = ObservableBuffer.from(ANY +: initialClasses)
   classFilter.value = ANY
 
+  val expandedProperty = scalafx.beans.property.BooleanProperty(true)
+
   def filter(qso: Qso): Boolean =
+    if !expandedProperty.value then return true
     val cs = callsignFilter.text.value.toUpperCase
     val band = bandFilter.value.value
     val mode = modeFilter.value.value
@@ -123,23 +137,30 @@ class QsoSearchPane @Inject()(
 
   var filteredQsosSupplier: () => Seq[Qso] = () => Seq.empty
 
-  val node: Node = GridColumns.fieldSet("Search", new VBox {
-    spacing = 10
-    children = Seq(
-      new HBox {
+  val node: Node = 
+    val titledPane = new TitledPane {
+      text = "Search"
+      content = new VBox {
         spacing = 10
-        alignment = scalafx.geometry.Pos.CenterLeft
         children = Seq(
-          new VBox { children = Seq(new Label("Callsign"), callsignFilter) },
-          new VBox { children = Seq(new Label("Band"), bandFilter) },
-          new VBox { children = Seq(new Label("Mode"), modeFilter) },
-          new VBox { children = Seq(new Label("Class"), classFilter) },
-          new VBox { children = Seq(new Label("Operator"), operatorFilter) },
-          new VBox { 
-            alignment = scalafx.geometry.Pos.BottomLeft
-            children = Seq(exportButton) 
+          new HBox {
+            spacing = 10
+            alignment = scalafx.geometry.Pos.CenterLeft
+            children = Seq(
+              new VBox { children = Seq(new Label("Callsign"), callsignFilter) },
+              new VBox { children = Seq(new Label("Band"), bandFilter) },
+              new VBox { children = Seq(new Label("Mode"), modeFilter) },
+              new VBox { children = Seq(new Label("Class"), classFilter) },
+              new VBox { children = Seq(new Label("Operator"), operatorFilter) },
+              new VBox { 
+                alignment = scalafx.geometry.Pos.BottomLeft
+                children = Seq(exportButton) 
+              }
+            )
           }
         )
       }
-    )
-  })
+      expanded <==> expandedProperty
+      collapsible = true
+    }
+    titledPane
