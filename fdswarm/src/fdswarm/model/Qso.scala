@@ -59,8 +59,26 @@ case class Qso(callsign: Callsign,
     import fdswarm.util.JavaTimeCirce.given
     this.asJson.noSpaces
 
+  def flatten: Map[String, String] =
+    Map(
+      "Time" -> stamp.toString,
+      "Their Call" -> callsign.value,
+      "Class" -> contestClass,
+      "Section" -> section,
+      "Band" -> bandMode.band,
+      "Mode" -> bandMode.mode,
+      "Operator" -> qsoMetadata.station.operator.value,
+      "Rig" -> qsoMetadata.station.rig,
+      "Antenna" -> qsoMetadata.station.antenna,
+      "Node" -> qsoMetadata.node.toString,
+      "Version" -> qsoMetadata.v
+    )
 
 object Qso:
+  val csvHeader: String =
+    Seq("Time", "Their Call", "Class", "Section", "Band", "Mode", "Operator", "Rig", "Antenna", "Node", "Version")
+      .mkString(",")
+
   given Ordering[Qso] =
     Ordering.by(_.stamp)
 

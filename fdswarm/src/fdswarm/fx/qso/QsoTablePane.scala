@@ -38,8 +38,26 @@ import java.time.{Instant, ZoneId}
  * @param qsoStore where qsos live [[QsoStore.qsoCollection]]
  */
 @Singleton
-class QsoTablePane @Inject(qsoStore: QsoStore, userConfig: UserConfig):
+class QsoTablePane @Inject()(qsoStore: QsoStore, userConfig: UserConfig, qsoSearchPane: QsoSearchPane):
   private val qsoCollection: ObservableBuffer[Qso] = qsoStore.qsoCollection
+
+  private val filteredQsos = new javafx.collections.transformation.FilteredList[Qso](qsoCollection.delegate)
+
+  private val filterProperty = scalafx.beans.property.ObjectProperty[Qso => Boolean](_ => true)
+  qsoSearchPane.callsignFilter.text.onChange(filterProperty.value = qsoSearchPane.filter)
+  qsoSearchPane.bandFilter.onAction = _ => filterProperty.value = qsoSearchPane.filter
+  qsoSearchPane.modeFilter.onAction = _ => filterProperty.value = qsoSearchPane.filter
+  qsoSearchPane.classFilter.onAction = _ => filterProperty.value = qsoSearchPane.filter
+  qsoSearchPane.operatorFilter.text.onChange(filterProperty.value = qsoSearchPane.filter)
+
+  filterProperty.onChange { (_, _, f) =>
+    filteredQsos.setPredicate(q => f(q))
+  }
+
+  qsoSearchPane.filteredQsosSupplier = () => {
+    import scala.jdk.CollectionConverters.*
+    filteredQsos.asScala.toSeq
+  }
 
   private val timeFmt =
     DateTimeFormatter.ofPattern("MMM dd, h:mm a z")
@@ -52,10 +70,12 @@ class QsoTablePane @Inject(qsoStore: QsoStore, userConfig: UserConfig):
     // show kHz with 1 decimal if you like; tweak as desired
     f"${hz.toDouble / 1000.0}%.1f kHz"
 
-  private val table = new TableView[Qso](qsoCollection):
+  private val table = new TableView[Qso] {
+    items = new scalafx.collections.ObservableBuffer(filteredQsos)
     columnResizePolicy = javafx.scene.control.TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN
     placeholder = new Label("No QSOs yet")
     prefHeight <== userConfig.getProperty[IntegerProperty]("qsoListLines") * 25 // Roughly 25 pixels per row
+  }
 
   private def col[S](title: String, value: Qso => S): TableColumn[Qso, S] =
     new TableColumn[Qso, S](title):
@@ -87,13 +107,15 @@ class QsoTablePane @Inject(qsoStore: QsoStore, userConfig: UserConfig):
 
   private val countLabel = new Label:
     text <== scalafx.beans.binding.Bindings.createStringBinding(
-      () => f"${qsoCollection.size}%,d QSOs",
-      qsoCollection
+      () => f"${filteredQsos.size}%,d QSOs",
+      qsoCollection,
+      filterProperty
     )
 
   val node: Node =
     GridColumns.fieldSet("QSOs", new VBox {
       children = Seq(
+        qsoSearchPane.node,
         countLabel,
         table
       )

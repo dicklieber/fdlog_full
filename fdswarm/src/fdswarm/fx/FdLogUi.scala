@@ -75,6 +75,7 @@ final class FdLogUi @Inject() (
     userConfigEditor: UserConfigEditor,
     meterRegistry: MeterRegistry,
     qsoStore: fdswarm.store.QsoStore,
+    qsoSearchPane: fdswarm.fx.qso.QsoSearchPane,
     exportDialog: fdswarm.fx.tools.ExportDialog,
     webSessionsAdmin: fdswarm.fx.admin.WebSessionsAdmin,
     sectionsProvider: fdswarm.fx.sections.SectionsProvider,
@@ -218,6 +219,15 @@ final class FdLogUi @Inject() (
   )
 
   devMenu.visible <== developerModeMenuItem.selected
+  private val logMenu: Menu =
+    new Menu("Log"):
+      items = Seq(
+        new MenuItem("Search QSOs"):
+          onAction = _ => qsoSearchPane.focusSearch()
+        ,
+        new MenuItem("Export QSOs"):
+          onAction = _ => qsoSearchPane.showExportMenu()
+      )
   private val reportsMenu: Menu =
     new Menu("Reports"):
       items = Seq(
@@ -230,6 +240,7 @@ final class FdLogUi @Inject() (
   private val menuBar = new MenuBar:
     useSystemMenuBar = isMac
     menus = Seq(
+      logMenu,
       reportsMenu,
       fileMenu,
       configMenu,
