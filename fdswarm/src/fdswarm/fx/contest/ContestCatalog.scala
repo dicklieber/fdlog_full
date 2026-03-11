@@ -19,6 +19,7 @@
 package fdswarm.fx.contest
 
 import com.typesafe.config.{Config, ConfigRenderOptions, ConfigValue}
+import fdswarm.model.Selectable
 import io.circe.Codec
 import jakarta.inject.{Inject, Singleton}
 import io.circe.parser.decode
@@ -26,7 +27,9 @@ import io.circe.parser.decode
 case class ContestClassChar(
                             ch: String,
                             description: String
-                          ) derives Codec.AsObject
+                          ) extends Selectable[String] derives Codec.AsObject:
+  override val value: String = ch
+  override val label: String = description
 
 case class Contest(
                     name: ContestType,

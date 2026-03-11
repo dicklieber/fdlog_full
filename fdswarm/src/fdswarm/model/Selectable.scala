@@ -17,9 +17,8 @@
  */
 
 package fdswarm.model
-import io.circe.Codec
 
-case class StationClass(value:Char, label:String)
-  extends Selectable[Char] derives Codec.AsObject
-
+trait Selectable[T]:
+  val value: T
+  val label: String
 

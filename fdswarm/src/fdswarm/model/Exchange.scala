@@ -48,7 +48,7 @@ object FdClass:
   def apply(transmitters: Int, stationClass: StationClass): FdClass =
     FdClass(
       transmitters = transmitters,
-      classLetter = stationClass.letter)
+      classLetter = stationClass.value)
 
 /**
  * Echange class and section in common ham contest jargon.

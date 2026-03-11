@@ -18,6 +18,7 @@
 
 package fdswarm.fx.qso
 
+import fdswarm.fx.components.AnyComboBox
 import fdswarm.fx.bands.{AvailableModesManager, ModeCatalog}
 import fdswarm.fx.{GridColumns, UserConfig}
 import fdswarm.fx.contest.{ContestCatalog, ContestClassChar, ContestManager}
@@ -44,8 +45,6 @@ class QsoSearchPane @Inject()(
     userConfig: UserConfig
 ):
   private val ANY = "Any"
-  private val ANY_CLASS = ContestClassChar(ANY, "")
-
   val callsignFilter = new TextField {
     promptText = "Callsign"
   }
@@ -55,15 +54,6 @@ class QsoSearchPane @Inject()(
   }
   val bandFilter = new ComboBox[String](ANY +: BandMode.bandFreqMap.keys.toSeq.sorted) { value = ANY }
   val modeFilter = new ComboBox[String](ANY +: modeCatalog.modes) { value = ANY }
-  val classFilter = new ComboBox[ContestClassChar]() {
-    converter = new scalafx.util.StringConverter[ContestClassChar] {
-      def toString(ccc: ContestClassChar): String =
-        if ccc == null || ccc.ch == ANY then ANY
-        else if ccc.description.nonEmpty then s"${ccc.ch} - ${ccc.description}"
-        else ccc.ch
-      def fromString(s: String): ContestClassChar = ??? // Not needed for non-editable ComboBox
-    }
-  }
   val operatorFilter = new TextField {
     promptText = "Operator"
   }
@@ -72,18 +62,33 @@ class QsoSearchPane @Inject()(
     if up != newValue then operatorFilter.text = up
   }
 
+  val classFilter = new AnyComboBox[String]()
+
   // Update classFilter when contest changes
   contestManager.configProperty.onChange { (_, _, config) =>
     val classes = contestCatalog.getContest(config.contest).map(_.classChars).getOrElse(Seq.empty)
-    val currentCh = Option(classFilter.value.value).map(_.ch).getOrElse(ANY)
-    classFilter.items = ObservableBuffer.from(ANY_CLASS +: classes)
-    val nextValue = classes.find(_.ch == currentCh).getOrElse(ANY_CLASS)
+    val currentCh = classFilter.value.value.getOrElse(ANY)
+    
+    val newFilter = new AnyComboBox[String](classes*)
+    
+    classFilter.items = newFilter.items.value
+    classFilter.cellFactory = newFilter.cellFactory.value
+    classFilter.buttonCell = newFilter.buttonCell.value
+    classFilter.converter = newFilter.converter.value
+
+    val nextValue = classes.find(_.ch == currentCh).map(_.ch)
     classFilter.value = nextValue
   }
   // Trigger initial population
   private val initialClasses = contestCatalog.getContest(contestManager.config.contest).map(_.classChars).getOrElse(Seq.empty)
-  classFilter.items = ObservableBuffer.from(ANY_CLASS +: initialClasses)
-  classFilter.value = ANY_CLASS
+  {
+    val initialFilter = new AnyComboBox[String](initialClasses*)
+    classFilter.items = initialFilter.items.value
+    classFilter.cellFactory = initialFilter.cellFactory.value
+    classFilter.buttonCell = initialFilter.buttonCell.value
+    classFilter.converter = initialFilter.converter.value
+    classFilter.value = None
+  }
 
   val expandedProperty = scalafx.beans.property.BooleanProperty(true)
 
@@ -93,7 +98,7 @@ class QsoSearchPane @Inject()(
     val band = bandFilter.value.value
     val mode = modeFilter.value.value
     val transmitters = 1 //todo: get a field
-    val classLetter: Char = classFilter.value.value.ch.head //todo use new combo box
+    val classLetter: Char = classFilter.value.value.map(_.head).getOrElse('-')
     val op = operatorFilter.text.value.toUpperCase
 
     val matches = (cs.isEmpty || qso.callsign.value.contains(cs)) &&

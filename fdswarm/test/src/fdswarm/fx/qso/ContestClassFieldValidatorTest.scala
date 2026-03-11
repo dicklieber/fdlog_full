@@ -26,7 +26,7 @@ class ContestClassFieldValidatorTest extends FunSuite:
     val pattern = "^[0-9]{1,2}[" + classChars.toUpperCase + "]$"
     str.matches(pattern)
 
-  test("isValid validates WFD classes (1-2 digits + letter)") {
+  test("isValid validates WFD classes (1-2 digits + value)") {
     val classChars = "HOI" // Typical WFD classes
     assert(isValid("1H", classChars))
     assert(isValid("2O", classChars))
@@ -34,7 +34,7 @@ class ContestClassFieldValidatorTest extends FunSuite:
     assert(isValid("5H", classChars))
   }
 
-  test("isValid validates ARRL classes (1-2 digits + letter)") {
+  test("isValid validates ARRL classes (1-2 digits + value)") {
     val classChars = "ABCDEFT" // Typical ARRL classes
     assert(isValid("1A", classChars))
     assert(isValid("2B", classChars))

@@ -108,7 +108,7 @@ trait NextField extends TextInputControl with WithDisposition with LazyLogging:
           // We can't easily map back from char to KeyCode reliably for all keys,
           // but for letters and digits, we can check if they are considered transition keys.
           val isActualTransition = if (char.head.isLetter) {
-            isTransitionKey(javafx.scene.input.KeyCode.A) // Proxy for any letter key
+            isTransitionKey(javafx.scene.input.KeyCode.A) // Proxy for any value key
           } else if (char.head.isDigit) {
             isTransitionKey(javafx.scene.input.KeyCode.DIGIT0) // Proxy for any digit key
           } else {
