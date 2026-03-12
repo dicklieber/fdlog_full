@@ -17,11 +17,11 @@
  */
 
 package fdswarm.fx.bands
-
 import com.typesafe.config.{Config, ConfigRenderOptions}
-import jakarta.inject.{Inject, Singleton}
+import fdswarm.model.BandMode.Band
+import fdswarm.model.{Choice, ChoiceItem}
 import io.circe.parser.decode
-
+import jakarta.inject.{Inject, Singleton}
 /**
  * This is loaded from application.conf, defines all known radio bands.
  */
@@ -41,3 +41,4 @@ final class BandCatalog @Inject()(config: Config):
 
 
 
+  

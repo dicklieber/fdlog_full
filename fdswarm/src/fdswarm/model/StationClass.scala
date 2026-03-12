@@ -20,6 +20,6 @@ package fdswarm.model
 import io.circe.Codec
 
 case class StationClass(value:Char, label:String)
-  extends Selectable[Char] derives Codec.AsObject
+  extends Choice[Char] derives Codec.AsObject
 
 

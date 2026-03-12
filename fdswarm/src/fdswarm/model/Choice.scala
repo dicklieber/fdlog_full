@@ -18,7 +18,11 @@
 
 package fdswarm.model
 
-trait Selectable[T]:
+trait Choice[T]:
   val value: T
   val label: String
-
+  
+case class ChoiceItem(valueAndLabel: String) extends Choice[String]:
+  override val value: String = valueAndLabel
+  override val label: String = valueAndLabel
+  

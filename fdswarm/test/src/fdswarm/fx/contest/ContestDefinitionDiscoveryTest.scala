@@ -20,16 +20,17 @@ package fdswarm.fx.contest
 
 import fdswarm.TestDirectory
 import fdswarm.model.Callsign
-import fdswarm.replication.{Transport, Service, UDPHeaderData}
+import fdswarm.replication.{Service, Transport, UDPHeaderData}
 import fdswarm.util.{MockNodeIdentityManager, NodeIdentity, NodeIdentityManager}
 import io.circe.syntax.*
 import munit.FunSuite
 import fdswarm.util.JavaTimeCirce.given
 
 import java.time.*
+import scala.compiletime.uninitialized
 
-class ContestDiscoveryTest extends FunSuite:
-  private var testDirectory: TestDirectory = _
+class ContestDefinitionDiscoveryTest extends FunSuite:
+  private var testDirectory: TestDirectory = uninitialized
 
   override def beforeEach(context: BeforeEach): Unit =
     testDirectory = new TestDirectory()

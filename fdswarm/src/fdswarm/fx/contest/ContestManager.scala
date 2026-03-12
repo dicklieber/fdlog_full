@@ -62,7 +62,7 @@ final class ContestManager @Inject()(
     configProperty.value = newConfig
 
   def classChars: String =
-    contestCatalog.getContest(config.contest).map(_.classCharsString).getOrElse("")
+    contestCatalog.getContest(config.contestType).map(_.classCharsString).getOrElse("")
 
   private case class ContestConfigProxy(
       contest: ContestType,
@@ -75,10 +75,10 @@ final class ContestManager @Inject()(
   )
 
   def show(ownerWindow: Window): Unit =
-    def getClasses(contestType: ContestType): Seq[ContestClassChar] =
-      contestCatalog.contests.find(_.name == contestType).map(_.classChars).getOrElse(Seq.empty)
+    def getClasses(contestType: ContestType): Seq[ClassChoice] =
+      contestCatalog.contests.find(_.contestType == contestType).map(_.classChoices).getOrElse(Seq.empty)
 
-    var currentContestType: ContestType = config.contest
+    var currentContestType: ContestType = config.contestType
 
     val sectionsList = sections.all.sortBy(_.code)
 
@@ -132,7 +132,7 @@ final class ContestManager @Inject()(
       )
 
     val proxy = ContestConfigProxy(
-      config.contest,
+      config.contestType,
       config.start,
       config.end,
       config.ourCallsign,
@@ -149,7 +149,7 @@ final class ContestManager @Inject()(
     val classCombo   = myCaseForm.control[ComboBox[String]]("ourClass")
 
     // Initialize classCombo items
-    classCombo.items = ObservableBuffer.from(getClasses(config.contest).map(_.ch))
+    classCombo.items = ObservableBuffer.from(getClasses(config.contestType).map(_.ch))
 
     contestCombo.onAction = _ =>
       val newType = contestCombo.value.value

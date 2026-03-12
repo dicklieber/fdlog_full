@@ -57,7 +57,7 @@ final class DiscoveryDialogService @Inject() (
       },
       new TableColumn[DiscoveryResult, String] {
         text = "Contest"
-        cellValueFactory = { cellData => ReadOnlyStringWrapper(cellData.value.config.contest.name) }
+        cellValueFactory = { cellData => ReadOnlyStringWrapper(cellData.value.config.contestType.name) }
         prefWidth = 150
       },
       new TableColumn[DiscoveryResult, String] {

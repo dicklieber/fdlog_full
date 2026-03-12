@@ -47,7 +47,7 @@ final class CabrilloHeaderDialog @Inject()(
       editable = false
     }
     val contestField = new TextField {
-      text = contest.contest.toString
+      text = contest.contestType.toString
       editable = false
     }
     
@@ -152,7 +152,7 @@ final class CabrilloHeaderDialog @Inject()(
     if result.contains(saveButtonType) then
       val newHeader = CabrilloHeader(
         callsign = contest.ourCallsign.toString,
-        contest = contest.contest.toString,
+        contest = contest.contestType.toString,
         categoryOperator = categoryOperatorCombo.value.value,
         categoryAssisted = categoryAssistedCombo.value.value,
         categoryBand = categoryBandCombo.value.value,

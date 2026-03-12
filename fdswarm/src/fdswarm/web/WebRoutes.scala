@@ -173,11 +173,11 @@ class WebRoutes @Inject()(
           val now = ZonedDateTime.now()
           val config = contestManager.config
           val (msg, style) = if now.isBefore(config.start) then
-            (s"${config.contest.name} ${config.start.getYear} starts in ${DurationFormat(JDuration.between(now, config.start))}", "contest-before")
+            (s"${config.contestType.name} ${config.start.getYear} starts in ${DurationFormat(JDuration.between(now, config.start))}", "contest-before")
           else if now.isAfter(config.end) then
-            (s"${config.contest.name} ${config.start.getYear} ended ${DurationFormat(JDuration.between(config.end, now))} ago.", "contest-after")
+            (s"${config.contestType.name} ${config.start.getYear} ended ${DurationFormat(JDuration.between(config.end, now))} ago.", "contest-after")
           else
-            (s"${config.contest.name} ${config.start.getYear} ends in ${DurationFormat(JDuration.between(now, config.end))}", "contest-during")
+            (s"${config.contestType.name} ${config.start.getYear} ends in ${DurationFormat(JDuration.between(now, config.end))}", "contest-during")
 
           val html = IndexPage(
             qsos, bands, modes, selected, groups, msg, style, errorMsg
@@ -215,7 +215,7 @@ class WebRoutes @Inject()(
               val metadata = QsoMetadata(
                 station = ws.station,
                 node = nodeIdentityManager.nodeIdentity,
-                contest = contestManager.config.contest
+                contest = contestManager.config.contestType
               )
               val qso = Qso(
                 callsign = Callsign(callsign.toUpperCase),

@@ -18,11 +18,14 @@
 
 package fdswarm.fx.qso
 
-import fdswarm.fx.components.AnyComboBox
-import fdswarm.fx.bands.{AvailableModesManager, ModeCatalog}
+import fdswarm.fx.bands.{AvailableModesManager, BandCatalog, ModeCatalog}
+import fdswarm.fx.components.{AnyComboBox, OptionTextField}
+import fdswarm.fx.contest.{ContestDefinition, ContestCatalog, ClassChoice, ContestConfig, ContestManager, ContestType}
 import fdswarm.fx.{GridColumns, UserConfig}
-import fdswarm.fx.contest.{ContestCatalog, ContestClassChar, ContestManager}
+import fdswarm.model.BandMode.*
 import fdswarm.model.{BandMode, Qso}
+import fdswarm.util.JavaTimeCirce.given
+import io.circe.syntax.*
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
 import scalafx.collections.ObservableBuffer
@@ -33,8 +36,6 @@ import scalafx.scene.layout.{HBox, Priority, VBox}
 import scalafx.stage.FileChooser
 
 import java.io.PrintWriter
-import io.circe.syntax.*
-import fdswarm.util.JavaTimeCirce.given
 
 @Singleton
 class QsoSearchPane @Inject()(
@@ -42,18 +43,28 @@ class QsoSearchPane @Inject()(
     contestCatalog: ContestCatalog,
     modeCatalog: ModeCatalog,
     modesManager: AvailableModesManager,
+    bandCatalog:BandCatalog,
     userConfig: UserConfig
 ):
-  private val ANY = "Any"
-  val callsignFilter = new TextField {
+  val callsignFilter = new OptionTextField {
     promptText = "Callsign"
   }
+  val currentContest: ContestType = contestManager.config.contestType
+  contestManager.config
+  val items = contestDefinition.classChoices.map(contestClassChar => (contestClassChar.ch, contestClassChar.description))
+
   callsignFilter.text.onChange { (_, _, newValue) =>
     val up = Option(newValue).getOrElse("").toUpperCase
     if up != newValue then callsignFilter.text = up
   }
-  val bandFilter = new ComboBox[String](ANY +: BandMode.bandFreqMap.keys.toSeq.sorted) { value = ANY }
-  val modeFilter = new ComboBox[String](ANY +: modeCatalog.modes) { value = ANY }
+
+  val bandFilter = new AnyComboBox[Band](bandCatalog.hamBands) 
+  val modeFilter = new AnyComboBox[Mode](modeCatalog.choices)
+  val contestConfig: ContestConfig = contestManager.config
+  val contestDefinition: ContestDefinition = contestCatalog.getContest(contestConfig.contestType).get
+
+  private val classChoices: Seq[ClassChoice] = contestDefinition.classChoices
+  val classFilter = new AnyComboBox[Char](classChoices)
   val operatorFilter = new TextField {
     promptText = "Operator"
   }
@@ -62,53 +73,19 @@ class QsoSearchPane @Inject()(
     if up != newValue then operatorFilter.text = up
   }
 
-  val classFilter = new AnyComboBox[String]()
 
-  // Update classFilter when contest changes
-  contestManager.configProperty.onChange { (_, _, config) =>
-    val classes = contestCatalog.getContest(config.contest).map(_.classChars).getOrElse(Seq.empty)
-    val currentCh = classFilter.value.value.getOrElse(ANY)
-    
-    val newFilter = new AnyComboBox[String](classes*)
-    
-    classFilter.items = newFilter.items.value
-    classFilter.cellFactory = newFilter.cellFactory.value
-    classFilter.buttonCell = newFilter.buttonCell.value
-    classFilter.converter = newFilter.converter.value
-
-    val nextValue = classes.find(_.ch == currentCh).map(_.ch)
-    classFilter.value = nextValue
-  }
-  // Trigger initial population
-  private val initialClasses = contestCatalog.getContest(contestManager.config.contest).map(_.classChars).getOrElse(Seq.empty)
-  {
-    val initialFilter = new AnyComboBox[String](initialClasses*)
-    classFilter.items = initialFilter.items.value
-    classFilter.cellFactory = initialFilter.cellFactory.value
-    classFilter.buttonCell = initialFilter.buttonCell.value
-    classFilter.converter = initialFilter.converter.value
-    classFilter.value = None
-  }
-
+  /**
+   * is the pane expanded?
+   */
   val expandedProperty = scalafx.beans.property.BooleanProperty(true)
 
   def filter(qso: Qso): Boolean =
-    if !expandedProperty.value then return true
-    val cs = callsignFilter.text.value.toUpperCase
-    val band = bandFilter.value.value
-    val mode = modeFilter.value.value
-    val transmitters = 1 //todo: get a field
-    val classLetter: Char = classFilter.value.value.map(_.head).getOrElse('-')
-    val op = operatorFilter.text.value.toUpperCase
-
-    val matches = (cs.isEmpty || qso.callsign.value.contains(cs)) &&
-    (band == ANY || qso.bandMode.band == band) &&
-    (mode == ANY || qso.bandMode.mode == mode) &&
-    (transmitters == -1 || qso.exchange.fdClass.transmitters == transmitters) &&
-    (classLetter == '-' || qso.exchange.fdClass.classLetter == classLetter) &&
-    (op.isEmpty || qso.qsoMetadata.station.operator.value.toUpperCase.contains(op))
-    matches
-
+//    if !expandedProperty.value then return true
+    val callSign: Option[String] = callsignFilter.value
+    val band: Option[Band] = bandFilter.value.value
+    val mode: Option[Mode] = modeFilter.value.value
+    val transmitters:Int = 0 //todo: get a field
+    throw new NotImplementedError("") //todo
   private val exportButton = new Button("Export..."):
     onAction = _ => showExportMenu()
 

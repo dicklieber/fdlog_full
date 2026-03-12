@@ -18,7 +18,7 @@
 
 package fdswarm.fx.components
 
-import fdswarm.model.Selectable
+import fdswarm.model.Choice
 import scalafx.Includes.*
 import scalafx.collections.ObservableBuffer
 import scalafx.scene.control.{ComboBox, ListCell, ListView}
@@ -28,16 +28,23 @@ import scalafx.util.StringConverter
  * A ComboBox that includes an "-any-" option as None, and formats other options as "value - label".
  * It is sized based on the rendered value (T or "-any-"), while the dropdown can be wider.
  *
- * @param choices A vararg of Selectable[T] instances.
+ * @param initialChoices A vararg of Selectable[T] instances.
  * @tparam T The type of the value.
  */
-class AnyComboBox[T](choices: Selectable[T]*) extends ComboBox[Option[T]] {
+class AnyComboBox[T](initialChoices: Seq[Choice[T]]) extends ComboBox[Option[T]] {
 
   private val anyText = "-any-"
-  private val data = (None -> anyText) +: choices.map { s => Some(s.value) -> s"${s.value} - ${s.label}" }
-  private val map = data.toMap
+  private var mapInternal = Map.empty[Option[T], String]
+  private var choicesInternal = Seq.empty[Choice[T]]
 
-  items = ObservableBuffer.from(data.map(_._1))
+  def setChoices(newChoices: Choice[T]*): Unit = {
+    choicesInternal = newChoices.toSeq
+    val data = (None -> anyText) +: choicesInternal.map { s => Some(s.value) -> s.label }
+    mapInternal = data.toMap
+    items = ObservableBuffer.from(data.map(_._1))
+  }
+
+  setChoices(initialChoices*)
   value = None
 
   // The requirement says: "The combox as rendered should be sized based on the T or -any-
@@ -47,7 +54,7 @@ class AnyComboBox[T](choices: Selectable[T]*) extends ComboBox[Option[T]] {
   cellFactory = (lv: ListView[Option[T]]) =>
     new ListCell[Option[T]] {
       item.onChange { (_, _, it) =>
-        text = map.getOrElse(it, "")
+        text = mapInternal.getOrElse(it, "")
       }
     }
 
@@ -58,7 +65,7 @@ class AnyComboBox[T](choices: Selectable[T]*) extends ComboBox[Option[T]] {
     }
     override def fromString(s: String): Option[T] =
       if (s == anyText) None
-      else choices.find(_.value.toString == s).map(c => Some(c.value)).getOrElse(None)
+      else choicesInternal.find(_.value.toString == s).map(c => Some(c.value)).flatten
   }
 
   // buttonCell is used for rendering the ComboBox itself (the button part).

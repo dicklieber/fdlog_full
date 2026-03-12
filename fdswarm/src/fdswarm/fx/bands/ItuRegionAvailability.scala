@@ -19,7 +19,8 @@
 package fdswarm.fx.bands
 
 import io.circe.{Codec, Decoder, Encoder}
-
+import fdswarm.model.Choice
+import fdswarm.model.BandMode.*
 enum BandClass:
   case LF, VLF, MF, HF, VHF, UHF, SHF, EHF
 
@@ -60,7 +61,9 @@ final case class HamBand(
                           endFrequencyHz: Long,
                           bandClass: BandClass,
                           regions: Set[ItuRegion] = Set(ItuRegion.ALL)
-                        )
+                        ) extends Choice[Band]:
+  override val value: Band = bandName
+  override val label: String = bandName
 
 object HamBand:
   given Codec[HamBand] = Codec.from(

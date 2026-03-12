@@ -43,11 +43,11 @@ object ContestType:
 
 /**
  * What a user can choose in a dialog.
- * @param contest WFD or ARRL
+ * @param contestType WFD or ARRL
  * @param start 1st day/time of contest
  * @param end last day/time of contest
  */
-case class ContestConfig(contest: ContestType,
+case class ContestConfig(contestType: ContestType,
                          start: ZonedDateTime,
                          end: ZonedDateTime,
                          ourCallsign: Callsign,

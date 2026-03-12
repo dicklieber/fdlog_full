@@ -34,10 +34,10 @@ class ContestClassField @Inject() (
   logger.trace("ctor")
 
   private def showHelp(): Unit =
-    val currentContest = contestManager.config.contest
-    val contest = contestCatalog.contests.find(_.name == currentContest)
-    contest.foreach { c =>
-      val items = c.classChars.map(cc => (cc.ch, cc.description))
+    val currentContest = contestManager.config.contestType
+    val contest = contestCatalog.contests.find(_.contestType == currentContest)
+    contest.foreach { contest =>
+      val items = contest.classChoices.map(contestClassChar => (contestClassChar.ch, contestClassChar.description))
       dupPanel.show(s"$currentContest Classes", items)
     }
 

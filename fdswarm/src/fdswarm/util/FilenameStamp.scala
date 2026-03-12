@@ -54,7 +54,7 @@ class FilenameStamp @Inject()(contestManager: ContestManager):
   def build(
              instant: Instant = Instant.now()
            ): String =
-    val contestType = contestManager.config.contest
+    val contestType = contestManager.config.contestType
     val parts =
       List(com.organization.BuildInfo.name, contestType.toString, com.organization.BuildInfo.dataVersion)
         .map(sanitize)

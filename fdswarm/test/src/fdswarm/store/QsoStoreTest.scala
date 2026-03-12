@@ -66,7 +66,7 @@ class QsoStoreTest extends FunSuite:
     val qsoStore = QsoStore(testDirectory, registry, mockTransport, swarmStatus)
 
     val qso = Qso(callsign = Callsign("W9NNN"),
-      exchange = Exchange("WFD", "IL"),
+      exchange = Exchange("1A", "IL"),
       bandMode = BandMode("20m", "CW"),
       qsoMetadata = testQsoMetadata
     )
@@ -92,12 +92,12 @@ class QsoStoreTest extends FunSuite:
     val registry = new SimpleMeterRegistry()
     val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus)
     val qso1 = Qso(callsign = Callsign("W9NNN"),
-      exchange = Exchange("WFD", "IL"),
+      exchange = Exchange("1A", "IL"),
       bandMode = BandMode("20m", "CW"),
       qsoMetadata = testQsoMetadata
     )
     val qso2 = Qso(callsign = Callsign("K9OR"),
-      exchange = Exchange("WFD", "IL"),
+      exchange = Exchange("1A", "IL"),
       bandMode = BandMode("40m", "SSB"),
       qsoMetadata = testQsoMetadata
     )
@@ -113,12 +113,12 @@ class QsoStoreTest extends FunSuite:
     val registry = new SimpleMeterRegistry()
     val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus)
     val qso1 = Qso(callsign = Callsign("W9NNN"),
-      exchange = Exchange("WFD", "IL"),
+      exchange = Exchange("1A", "IL"),
       bandMode = BandMode("20m", "CW"),
       qsoMetadata = testQsoMetadata
     )
     val qso2 = Qso(callsign = Callsign("K9OR"),
-      exchange = Exchange("WFD", "IL"),
+      exchange = Exchange("1A", "IL"),
       bandMode = BandMode("40m", "SSB"),
       qsoMetadata = testQsoMetadata
     )
@@ -133,7 +133,7 @@ class QsoStoreTest extends FunSuite:
     val registry = new SimpleMeterRegistry()
     val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus)
     val qso1 = Qso(callsign = Callsign("W9NNN"),
-      exchange = Exchange("WFD", "IL"),
+      exchange = Exchange("1A", "IL"),
       bandMode = BandMode("20m", "CW"),
       qsoMetadata = testQsoMetadata
     )
@@ -141,7 +141,7 @@ class QsoStoreTest extends FunSuite:
 
     // Remote has an extra QSO in the same hour, so digest will differ
     val qso2 = Qso(callsign = Callsign("K9OR"),
-      exchange = Exchange("WFD", "IL"),
+      exchange = Exchange("1A", "IL"),
       bandMode = BandMode("40m", "SSB"),
       qsoMetadata = testQsoMetadata
     )
@@ -158,7 +158,7 @@ class QsoStoreTest extends FunSuite:
     val registry = new SimpleMeterRegistry()
     val qsoStore = QsoStore(testDirectory, registry, mockTransport, swarmStatus)
     val qso = Qso(callsign = Callsign("W9NNN"),
-      exchange = Exchange("WFD", "IL"),
+      exchange = Exchange("1A", "IL"),
       bandMode = BandMode("20m", "CW"),
       qsoMetadata = testQsoMetadata
     )
@@ -182,7 +182,7 @@ class QsoStoreTest extends FunSuite:
     
     val qsos = (1 to 100).map { i =>
       Qso(callsign = Callsign(s"W9NN$i"),
-        exchange = Exchange("WFD", "IL"),
+        exchange = Exchange("1A", "IL"),
         bandMode = bandMode,
         qsoMetadata = testQsoMetadata
       )

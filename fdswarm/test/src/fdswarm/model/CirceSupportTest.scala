@@ -46,8 +46,8 @@ class CirceSupportTest extends FunSuite:
     val json = config.asJson.noSpaces
     val decoded = decode[ContestConfig](json).toOption.get
     // ZonedDateTime might lose some precision or change format slightly, but should be equivalent
-    assertEquals(decoded.contest, config.contest)
-    assertEquals(decoded.contest.name, "Winter Field Day")
+    assertEquals(decoded.contestType, config.contestType)
+    assertEquals(decoded.contestType.name, "Winter Field Day")
     assert(decoded.start.isEqual(config.start))
     assertEquals(decoded.ourCallsign, config.ourCallsign)
     assertEquals(decoded.transmitters, config.transmitters)

@@ -19,25 +19,30 @@
 package fdswarm.fx.contest
 
 import com.typesafe.config.{Config, ConfigRenderOptions, ConfigValue}
-import fdswarm.model.Selectable
+import fdswarm.model.Choice
 import io.circe.Codec
 import jakarta.inject.{Inject, Singleton}
 import io.circe.parser.decode
 
-case class ContestClassChar(
+case class ClassChoice(
                             ch: String,
                             description: String
-                          ) extends Selectable[String] derives Codec.AsObject:
-  override val value: String = ch
+                          ) extends Choice[Char] derives Codec.AsObject:
+  override val value: Char = ch.head
   override val label: String = description
 
-case class Contest(
-                    name: ContestType,
-                    classChars: Seq[ContestClassChar]
+/**
+ * As defined in [[application.conf]]
+ * @param contestType [[WFD]] or [[ARRL]]
+ * @param classChoices what classes are allowed in this contest
+ */
+case class ContestDefinition(
+                              contestType: ContestType,
+                              classChoices: Seq[ClassChoice]
                   ) derives Codec.AsObject:
   def isValidClass(classChar: String): Boolean =
-    classChars.exists(_.ch == classChar)
-  def classCharsString: String = classChars.map(_.ch).mkString
+    classChoices.exists(_.ch == classChar)
+  def classCharsString: String = classChoices.map(_.ch).mkString
 
 @Singleton
 final class ContestCatalog @Inject()(config: Config):
@@ -49,8 +54,8 @@ final class ContestCatalog @Inject()(config: Config):
       .setComments(false)
       .setOriginComments(false)
   private val configValue: ConfigValue = config.getValue(key)
-  val contests: Seq[Contest] =
-    decode[Seq[Contest]](configValue.render(renderOpts)).toTry.get
+  val contests: Seq[ContestDefinition] =
+    decode[Seq[ContestDefinition]](configValue.render(renderOpts)).toTry.get
 
-  def getContest(contestType: ContestType): Option[Contest] =
-    contests.find(_.name == contestType)
+  def getContest(contestType: ContestType): Option[ContestDefinition] =
+    contests.find(_.contestType == contestType)

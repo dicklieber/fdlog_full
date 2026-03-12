@@ -20,7 +20,7 @@ package fdswarm.fx.qso
 
 import munit.FunSuite
 
-class ContestClassFieldValidatorTest extends FunSuite:
+class ContestDefinitionClassFieldValidatorTest extends FunSuite:
 
   def isValid(str: String, classChars: String): Boolean =
     val pattern = "^[0-9]{1,2}[" + classChars.toUpperCase + "]$"

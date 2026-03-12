@@ -21,7 +21,7 @@ package fdswarm
 import fdswarm.fx.contest.ContestType
 import munit.FunSuite
 
-class ContestDateCalculatorTest extends FunSuite:
+class ContestDefinitionDateCalculatorTest extends FunSuite:
 
   test("WFD last full weekend Jan 2026"):
     val dates = ContestDateCalculator.lastFull(2026)

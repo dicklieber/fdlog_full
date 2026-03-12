@@ -21,7 +21,7 @@ package fdswarm.fx.contest
 import com.typesafe.config.ConfigFactory
 import munit.FunSuite
 
-class ContestCatalogTest extends FunSuite:
+class ContestDefinitionCatalogTest extends FunSuite:
 
   test("ContestCatalog"):
     val config = ConfigFactory.load()
