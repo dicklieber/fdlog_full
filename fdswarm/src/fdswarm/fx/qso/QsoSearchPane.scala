@@ -21,9 +21,9 @@ package fdswarm.fx.qso
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.UserConfig
 import fdswarm.fx.bands.{AvailableModesManager, BandCatalog, ModeCatalog}
-import fdswarm.fx.components.{AnyComboBox, OptionTextField}
+import fdswarm.fx.components.{AnyComboBox, CountComboBox, OptionTextField}
 import fdswarm.fx.contest.*
-import fdswarm.fx.utils.MultiChangeWatcher
+import fdswarm.fx.utils.{BootstrapIcons, IconButton, MultiChangeWatcher}
 import fdswarm.model.BandMode.*
 import fdswarm.model.Qso
 import fdswarm.store.QsoStore
@@ -34,6 +34,7 @@ import scalafx.beans.property.BooleanProperty
 import scalafx.scene.Node
 import scalafx.scene.control.*
 import scalafx.scene.layout.{HBox, VBox}
+import scalafx.scene.paint.Color
 import scalafx.stage.FileChooser
 
 import java.io.PrintWriter
@@ -60,9 +61,11 @@ class QsoSearchPane @Inject()(
   val operatorFilter = new OptionTextField() {
     promptText = "Operator"
   }
+  val transmittersFilter = new CountComboBox()
   val anyChange: BooleanProperty = MultiChangeWatcher(callsignFilter.optionValueProperty,
     bandFilter.value,
     modeFilter.value,
+    transmittersFilter.value,
     classFilter.value,
     operatorFilter.optionValueProperty)
 
@@ -77,6 +80,7 @@ class QsoSearchPane @Inject()(
     val isSearching = callsignFilter.value.isDefined ||
       bandFilter.value.value.isDefined ||
       modeFilter.value.value.isDefined ||
+      transmittersFilter.value.value.isDefined ||
       classFilter.value.value.isDefined ||
       operatorFilter.optionValueProperty.value.isDefined
 
@@ -103,12 +107,25 @@ class QsoSearchPane @Inject()(
     val matchesBand = bandFilterVal.isEmpty || qso.bandMode.band.toUpperCase == bandFilterVal.get.toString.toUpperCase
     val matchesMode = modeFilterVal.isEmpty || qso.bandMode.mode.toUpperCase == modeFilterVal.get.toString.toUpperCase
     val matchesClass = classFilterVal.isEmpty || qso.exchange.fdClass.classLetter.toString.toUpperCase == classFilterVal.get.toString.toUpperCase
+    val matchesTransmitters = transmittersFilter.check(qso.exchange.fdClass.transmitters)
     val matchesOperator = operatorFilterVal.isEmpty || qso.qsoMetadata.station.operator.value.toUpperCase.contains(operatorFilterVal)
 
-    matchesCallsign && matchesBand && matchesMode && matchesClass && matchesOperator
+    matchesCallsign && matchesBand && matchesMode && matchesClass && matchesTransmitters && matchesOperator
   }
   private val exportButton = new Button("Export..."):
     onAction = _ => showExportMenu()
+
+  private val resetButton = {
+    val btn = IconButton("x-octagon", size = 20, tooltipText = "Reset Filters", color = Color.Red)
+    btn.onAction = _ =>
+      callsignFilter.text = ""
+      bandFilter.value = None
+      modeFilter.value = None
+      classFilter.value = None
+      transmittersFilter.value = None
+      operatorFilter.text = ""
+    btn
+  }
 
   def showExportMenu(): Unit =
     val menu = new ContextMenu()
@@ -170,10 +187,17 @@ class QsoSearchPane @Inject()(
               new VBox { children = Seq(new Label("Band"), bandFilter) },
               new VBox { children = Seq(new Label("Mode"), modeFilter) },
               new VBox { children = Seq(new Label("Class"), classFilter) },
+              new VBox { children = Seq(new Label("Transmitters"), transmittersFilter) },
               new VBox { children = Seq(new Label("Operator"), operatorFilter) },
               new VBox { 
                 alignment = scalafx.geometry.Pos.BottomLeft
-                children = Seq(exportButton) 
+                spacing = 10
+                children = Seq(
+                  new HBox {
+                    spacing = 10
+                    children = Seq(resetButton, exportButton)
+                  }
+                ) 
               }
             )
           }
