@@ -32,6 +32,7 @@ import GridColumns.*
 @Singleton
 class ContestEntry @Inject()(qsoEntryPanel: QsoEntryPanel,
                              qsoTablePane: QsoTablePane,
+                             qsoSearchPane: QsoSearchPane,
                              bandModeMatrixPane: BandModeMatrixPane,
                              sectionPanel: SectionPanel,
                              contestTimerPanel: ContestTimerPanel
@@ -42,18 +43,21 @@ class ContestEntry @Inject()(qsoEntryPanel: QsoEntryPanel,
       padding = Insets(10)
       hgap = 10
       vgap = 10
-      // Row 0: Table spans both columns
-      add(child = qsoTablePane.node, columnIndex = 0, rowIndex = 0, colspan = 2, rowspan = 1)
-      
-      // Row 1: Entry panel and Section panel
-      add(qsoEntryPanel.node, 0, 1)
-      add(sectionPanel.node, 1, 1, 1, 3) // Section panel spans 3 rows to match others
-      
-      // Row 2: Timer
-      add(contestTimerPanel.node, 0, 2)
-      
-      // Row 3: Band/Mode matrix
-      add(bandModeMatrixPane.node, 0, 3)
+      // Row 0: Search pane above table
+      add(child = qsoSearchPane.node, columnIndex = 0, rowIndex = 0, colspan = 2, rowspan = 1)
+
+      // Row 1: Table spans both columns
+      add(child = qsoTablePane.node, columnIndex = 0, rowIndex = 1, colspan = 2, rowspan = 1)
+
+      // Row 2: Entry panel and Section panel
+      add(qsoEntryPanel.node, 0, 2)
+      add(sectionPanel.node, 1, 2, 1, 3) // Section panel spans 3 rows to match others
+
+      // Row 3: Timer
+      add(contestTimerPanel.node, 0, 3)
+
+      // Row 4: Band/Mode matrix
+      add(bandModeMatrixPane.node, 0, 4)
 
       columnConstraints = Seq(
         new ColumnConstraints() { hgrow = Priority.Always },

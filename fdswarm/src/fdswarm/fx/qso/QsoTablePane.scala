@@ -24,7 +24,6 @@ import fdswarm.store.QsoStore
 import jakarta.inject.*
 import scalafx.Includes.*
 import scalafx.beans.property.IntegerProperty
-import scalafx.beans.binding.Bindings
 import scalafx.collections.ObservableBuffer
 import scalafx.scene.Node
 import scalafx.scene.control.*
@@ -38,12 +37,30 @@ import java.time.{Instant, ZoneId}
  * @param qsoStore where qsos live [[QsoStore.qsoCollection]]
  */
 @Singleton
-class QsoTablePane @Inject()(qsoStore: QsoStore,
-                             userConfig: UserConfig,
-                             qsoSearchPane: QsoSearchPane):
+class QsoTablePane @Inject()(qsoStore: QsoStore, userConfig: UserConfig):
   private val qsoCollection: ObservableBuffer[Qso] = qsoStore.qsoCollection
 
   private val filteredQsos = new javafx.collections.transformation.FilteredList[Qso](qsoCollection.delegate)
+
+  private val currentQsos = new scalafx.collections.ObservableBuffer[Qso]()
+
+  private var isSearching = false
+
+  // Sync currentQsos with filteredQsos whenever it changes, if not searching
+  filteredQsos.addListener((_: javafx.collections.ListChangeListener.Change[? <: Qso]) =>
+    if !isSearching then
+      currentQsos.setAll(filteredQsos)
+  )
+
+  def showSearchResults(searchResult: ObservableBuffer[Qso]): Unit =
+    isSearching = true
+    currentQsos.setAll(searchResult)
+
+  def restoreQsoCollection(): Unit =
+    isSearching = false
+    currentQsos.setAll(filteredQsos)
+
+  currentQsos.setAll(filteredQsos)
 
 
   private val timeFmt =
@@ -58,7 +75,7 @@ class QsoTablePane @Inject()(qsoStore: QsoStore,
     f"${hz.toDouble / 1000.0}%.1f kHz"
 
   private val table = new TableView[Qso] {
-    items = new scalafx.collections.ObservableBuffer(filteredQsos)
+    items = currentQsos
     columnResizePolicy = javafx.scene.control.TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN
     placeholder = new Label("No QSOs yet")
     prefHeight <== userConfig.getProperty[IntegerProperty]("qsoListLines") * 25 // Roughly 25 pixels per row
@@ -94,14 +111,13 @@ class QsoTablePane @Inject()(qsoStore: QsoStore,
 
   private val countLabel = new Label:
     text <== scalafx.beans.binding.Bindings.createStringBinding(
-      () => f"${filteredQsos.size}%,d QSOs",
-      qsoCollection
+      () => f"${currentQsos.size}%,d QSOs",
+      currentQsos
     )
 
   val node: Node =
     GridColumns.fieldSet("QSOs", new VBox {
       children = Seq(
-        qsoSearchPane.node,
         countLabel,
         table
       )

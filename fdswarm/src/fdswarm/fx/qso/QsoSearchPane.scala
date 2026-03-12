@@ -45,7 +45,8 @@ class QsoSearchPane @Inject()(
                                modesManager: AvailableModesManager,
                                bandCatalog:BandCatalog,
                                userConfig: UserConfig,
-                               qsoStore: QsoStore
+                               qsoStore: QsoStore,
+                               qsoTablePane: QsoTablePane
 ) extends LazyLogging:
   val callsignFilter = new OptionTextField {
     promptText = "Callsign"
@@ -68,10 +69,21 @@ class QsoSearchPane @Inject()(
   anyChange.onChange((_, _, newVal) =>
     logger.debug("anyChange: {}", newVal)
 
-    val filteredQsos = qsoStore.qsoCollection.filter (qso => 
+    val searchResult = qsoStore.qsoCollection.filter (qso =>
       filter(qso)
     )
-    logger.debug("filteredQsos: {} of {}", filteredQsos.size, qsoStore.qsoCollection.size)
+    logger.debug("filteredQsos: {} of {}", searchResult.size, qsoStore.qsoCollection.size)
+
+    val isSearching = callsignFilter.value.isDefined ||
+      bandFilter.value.value.isDefined ||
+      modeFilter.value.value.isDefined ||
+      classFilter.value.value.isDefined ||
+      operatorFilter.optionValueProperty.value.isDefined
+
+    if isSearching then
+      qsoTablePane.showSearchResults(searchResult)
+    else
+      qsoTablePane.restoreQsoCollection()
   )
 
 
