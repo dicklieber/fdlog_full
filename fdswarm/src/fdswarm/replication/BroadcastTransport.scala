@@ -121,6 +121,9 @@ class BroadcastTransport @Inject() (
       )
       stop()
 
+  private val sentCounter = new java.util.concurrent.atomic.LongAdder()
+  override def sentCount: Long = sentCounter.sum()
+
   def send(data: Array[Byte]): Unit =
     send(Service.QSO, data)
 
@@ -130,6 +133,7 @@ class BroadcastTransport @Inject() (
     val packet =
       new DatagramPacket(packetBytes, packetBytes.length, broadcastAddr, port)
     socket.send(packet)
+    sentCounter.increment()
 
   def stop(): Unit =
     logger.debug("Stopping BroadcastTransport")

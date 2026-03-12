@@ -90,6 +90,8 @@ class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
     val reporter = Reporter.fromRegistry[IO](prometheusRegistry).unsafeRunSync()
     bind(new TypeLiteral[Reporter[IO]](){}).toInstance(reporter)
 
+    bind[fdswarm.fx.tools.MetricsDialog].asEagerSingleton()
+
     val entries = fullConfig.entrySet().asScala.toSeq
     for (entry <- entries) {
       val key = entry.getKey

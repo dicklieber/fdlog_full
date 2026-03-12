@@ -84,6 +84,7 @@ final class FdLogUi @Inject() (
     discoveryDialogService: DiscoveryDialogService,
     swarmStatusAdmin: fdswarm.fx.admin.SwarmStatusAdmin,
     summaryDialog: fdswarm.fx.tools.SummaryDialog,
+    metricsDialog: fdswarm.fx.tools.MetricsDialog,
     apiServer: fdswarm.api.ApiServer
 ) extends LazyLogging:
 
@@ -235,6 +236,12 @@ final class FdLogUi @Inject() (
           onAction = _ =>
             Option(ownerWindow) match
               case Some(w) => summaryDialog.show(w)
+              case None    => ()
+        ,
+        new MenuItem("Metrics"):
+          onAction = _ =>
+            Option(ownerWindow) match
+              case Some(w) => metricsDialog.show(w)
               case None    => ()
       )
   private val menuBar = new MenuBar:

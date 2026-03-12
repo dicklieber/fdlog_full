@@ -32,4 +32,5 @@ trait Transport:
   def removeListener(listener: UDPHeaderData => Unit): Unit
   def send(data: Array[Byte]): Unit
   def send(service: Service, data: Array[Byte]): Unit
+  def sentCount: Long
   def stop(): Unit
