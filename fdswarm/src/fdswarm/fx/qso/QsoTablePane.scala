@@ -23,7 +23,7 @@ import fdswarm.model.Qso
 import fdswarm.store.QsoStore
 import jakarta.inject.*
 import scalafx.Includes.*
-import scalafx.beans.property.IntegerProperty
+import scalafx.beans.property.{BooleanProperty, IntegerProperty}
 import scalafx.collections.ObservableBuffer
 import scalafx.scene.Node
 import scalafx.scene.control.*
@@ -44,20 +44,20 @@ class QsoTablePane @Inject()(qsoStore: QsoStore, userConfig: UserConfig):
 
   private val currentQsos = new scalafx.collections.ObservableBuffer[Qso]()
 
-  private var isSearching = false
+  private val isSearching = BooleanProperty(false)
 
   // Sync currentQsos with filteredQsos whenever it changes, if not searching
   filteredQsos.addListener((_: javafx.collections.ListChangeListener.Change[? <: Qso]) =>
-    if !isSearching then
+    if !isSearching.value then
       currentQsos.setAll(filteredQsos)
   )
 
   def showSearchResults(searchResult: ObservableBuffer[Qso]): Unit =
-    isSearching = true
+    isSearching.value = true
     currentQsos.setAll(searchResult)
 
   def restoreQsoCollection(): Unit =
-    isSearching = false
+    isSearching.value = false
     currentQsos.setAll(filteredQsos)
 
   currentQsos.setAll(filteredQsos)
@@ -111,8 +111,14 @@ class QsoTablePane @Inject()(qsoStore: QsoStore, userConfig: UserConfig):
 
   private val countLabel = new Label:
     text <== scalafx.beans.binding.Bindings.createStringBinding(
-      () => f"${currentQsos.size}%,d QSOs",
-      currentQsos
+      () =>
+        if isSearching.value then
+          f"${currentQsos.size}%,d of ${qsoCollection.size}%,d QSOs"
+        else
+          f"${currentQsos.size}%,d QSOs",
+      currentQsos,
+      qsoCollection,
+      isSearching
     )
 
   val node: Node =

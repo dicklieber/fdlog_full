@@ -62,12 +62,18 @@ class QsoSearchPane @Inject()(
     promptText = "Operator"
   }
   val transmittersFilter = new CountComboBox()
+  /**
+   * is the pane expanded?
+   */
+  val expandedProperty = scalafx.beans.property.BooleanProperty(true)
+
   val anyChange: BooleanProperty = MultiChangeWatcher(callsignFilter.optionValueProperty,
     bandFilter.value,
     modeFilter.value,
     transmittersFilter.value,
     classFilter.value,
-    operatorFilter.optionValueProperty)
+    operatorFilter.optionValueProperty,
+    expandedProperty)
 
   anyChange.onChange((_, _, newVal) =>
     logger.debug("anyChange: {}", newVal)
@@ -77,24 +83,18 @@ class QsoSearchPane @Inject()(
     )
     logger.debug("filteredQsos: {} of {}", searchResult.size, qsoStore.qsoCollection.size)
 
-    val isSearching = callsignFilter.value.isDefined ||
+    val isSearching = expandedProperty.value && (callsignFilter.value.isDefined ||
       bandFilter.value.value.isDefined ||
       modeFilter.value.value.isDefined ||
       transmittersFilter.value.value.isDefined ||
       classFilter.value.value.isDefined ||
-      operatorFilter.optionValueProperty.value.isDefined
+      operatorFilter.optionValueProperty.value.isDefined)
 
     if isSearching then
       qsoTablePane.showSearchResults(searchResult)
     else
       qsoTablePane.restoreQsoCollection()
   )
-
-
-  /**
-   * is the pane expanded?
-   */
-  val expandedProperty = scalafx.beans.property.BooleanProperty(true)
 
   def filter(qso: Qso): Boolean = {
     val callSignFilterVal = callsignFilter.value.getOrElse("").toUpperCase
