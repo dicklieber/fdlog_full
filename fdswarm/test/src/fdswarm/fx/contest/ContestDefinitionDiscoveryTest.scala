@@ -69,7 +69,7 @@ class ContestDefinitionDiscoveryTest extends FunSuite:
     override def addListener(l: UDPHeaderData => Unit): Unit = testListeners.add(l)
     override def removeListener(l: UDPHeaderData => Unit): Unit = testListeners.remove(l)
     def triggerListeners(h: UDPHeaderData): Unit = testListeners.forEach(_.apply(h))
-
+    override def sentCount: Long = if lastSentService.isDefined then 1 else 0
     override def stop(): Unit = ()
 
   test("discoverContest should send request and collect responses"):

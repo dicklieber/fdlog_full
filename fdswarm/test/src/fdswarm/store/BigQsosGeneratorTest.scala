@@ -46,6 +46,7 @@ class BigQsosGeneratorTest extends FunSuite with LazyLogging:
     override def removeListener(listener: fdswarm.replication.UDPHeaderData => Unit): Unit = ()
     override def send(data: Array[Byte]): Unit = ()
     override def send(service: fdswarm.replication.Service, data: Array[Byte]): Unit = ()
+    override def sentCount: Long = 0
     override def stop(): Unit = ()
 
   private val mockTransport = new MockTransport()

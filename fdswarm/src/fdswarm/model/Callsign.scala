@@ -35,6 +35,8 @@ final class Callsign private(val value: String) extends AnyRef with Ordered[Call
       case c: Callsign => this.value == c.value
       case _ => false
 
+  override def hashCode(): Int = value.hashCode()
+
   override def compare(that: Callsign): Int =
     val thisParts = splitCallsign(this.value)
     val thatParts = splitCallsign(that.value)

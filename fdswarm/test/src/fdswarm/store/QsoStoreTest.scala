@@ -42,6 +42,7 @@ class QsoStoreTest extends FunSuite:
     override def send(data: Array[Byte]): Unit = ()
     override def send(service: Service, data: Array[Byte]): Unit =
       sentData = sentData :+ (service, data)
+    override def sentCount: Long = sentData.size
     override def stop(): Unit = ()
 
   private val mockTransport = new MockTransport()
