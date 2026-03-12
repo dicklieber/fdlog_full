@@ -19,34 +19,33 @@
 package fdswarm.fx.qso
 
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.fx.UserConfig
 import fdswarm.fx.bands.{AvailableModesManager, BandCatalog, ModeCatalog}
 import fdswarm.fx.components.{AnyComboBox, OptionTextField}
-import fdswarm.fx.contest.{ClassChoice, ContestCatalog, ContestConfig, ContestDefinition, ContestManager, ContestType}
+import fdswarm.fx.contest.*
 import fdswarm.fx.utils.MultiChangeWatcher
-import fdswarm.fx.{GridColumns, UserConfig}
 import fdswarm.model.BandMode.*
-import fdswarm.model.{BandMode, Qso}
-import fdswarm.util.JavaTimeCirce.given
+import fdswarm.model.Qso
+import fdswarm.store.QsoStore
 import io.circe.syntax.*
-import jakarta.inject.{Inject, Singleton}
+import jakarta.inject.Inject
 import scalafx.Includes.*
 import scalafx.beans.property.BooleanProperty
-import scalafx.collections.ObservableBuffer
-import scalafx.geometry.Insets
 import scalafx.scene.Node
 import scalafx.scene.control.*
-import scalafx.scene.layout.{HBox, Priority, VBox}
+import scalafx.scene.layout.{HBox, VBox}
 import scalafx.stage.FileChooser
 
 import java.io.PrintWriter
 
 class QsoSearchPane @Inject()(
-    contestManager: ContestManager,
-    contestCatalog: ContestCatalog,
-    modeCatalog: ModeCatalog,
-    modesManager: AvailableModesManager,
-    bandCatalog:BandCatalog,
-    userConfig: UserConfig
+                               contestManager: ContestManager,
+                               contestCatalog: ContestCatalog,
+                               modeCatalog: ModeCatalog,
+                               modesManager: AvailableModesManager,
+                               bandCatalog:BandCatalog,
+                               userConfig: UserConfig,
+                               qsoStore: QsoStore
 ) extends LazyLogging:
   val callsignFilter = new OptionTextField {
     promptText = "Callsign"
@@ -67,7 +66,12 @@ class QsoSearchPane @Inject()(
     operatorFilter.optionValueProperty)
 
   anyChange.onChange((_, _, newVal) =>
-    logger.info("anyChange: {}", newVal)
+    logger.debug("anyChange: {}", newVal)
+
+    val filteredQsos = qsoStore.qsoCollection.filter (qso => 
+      filter(qso)
+    )
+    logger.debug("filteredQsos: {} of {}", filteredQsos.size, qsoStore.qsoCollection.size)
   )
 
 

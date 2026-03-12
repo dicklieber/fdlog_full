@@ -38,23 +38,13 @@ import java.time.{Instant, ZoneId}
  * @param qsoStore where qsos live [[QsoStore.qsoCollection]]
  */
 @Singleton
-class QsoTablePane @Inject()(qsoStore: QsoStore, userConfig: UserConfig, qsoSearchPane: QsoSearchPane):
+class QsoTablePane @Inject()(qsoStore: QsoStore,
+                             userConfig: UserConfig,
+                             qsoSearchPane: QsoSearchPane):
   private val qsoCollection: ObservableBuffer[Qso] = qsoStore.qsoCollection
 
   private val filteredQsos = new javafx.collections.transformation.FilteredList[Qso](qsoCollection.delegate)
 
-  private val filterProperty = scalafx.beans.property.ObjectProperty[Qso => Boolean](_ => true)
-  qsoSearchPane.anyChange.onChange(filterProperty.value = q => qsoSearchPane.filter(q))
-  qsoSearchPane.expandedProperty.onChange(filterProperty.value = q => qsoSearchPane.filter(q))
-
-  filterProperty.onChange { (_, _, f) =>
-    filteredQsos.setPredicate(q => f(q))
-  }
-
-  qsoSearchPane.filteredQsosSupplier = () => {
-    import scala.jdk.CollectionConverters.*
-    filteredQsos.asScala.toSeq
-  }
 
   private val timeFmt =
     DateTimeFormatter.ofPattern("MMM dd, h:mm a z")
@@ -105,8 +95,7 @@ class QsoTablePane @Inject()(qsoStore: QsoStore, userConfig: UserConfig, qsoSear
   private val countLabel = new Label:
     text <== scalafx.beans.binding.Bindings.createStringBinding(
       () => f"${filteredQsos.size}%,d QSOs",
-      qsoCollection,
-      filterProperty
+      qsoCollection
     )
 
   val node: Node =
