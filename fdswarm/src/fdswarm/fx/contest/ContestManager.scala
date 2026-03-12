@@ -93,18 +93,39 @@ final class ContestManager @Inject()(
             editable = false
             currentVal.foreach(v => value = v)
             converter = new StringConverter[String] {
-              override def toString(ch: String): String =
-                if ch == null then ""
-                else
-                  getClasses(currentContestType)
-                    .find(_.ch == ch)
-                    .map(c => s"${c.ch} - ${c.description}")
-                    .getOrElse(ch)
-              override def fromString(s: String): String =
-                if s == null then ""
-                else if s.contains(" - ") then s.split(" - ").head
-                else s
+              override def toString(ch: String): String = if (ch == null) "" else ch
+              override def fromString(s: String): String = if (s == null) "" else s
             }
+            cellFactory = (lv: ListView[String]) =>
+              new ListCell[String] {
+                item.onChange { (_, _, it) =>
+                  text = if (it == null) ""
+                  else
+                    getClasses(currentContestType)
+                      .find(_.ch == it)
+                      .map(c => s"${c.ch} - ${c.description}")
+                      .getOrElse(it)
+                }
+              }
+            buttonCell = new ListCell[String] {
+              item.onChange { (_, _, it) =>
+                text = if (it == null) "" else it
+              }
+            }
+            prefWidth <== scalafx.beans.binding.Bindings.createDoubleBinding(
+              () => {
+                val strings = getClasses(currentContestType).map(_.ch)
+                val textObj = new scalafx.scene.text.Text()
+                val maxW = strings.map { s =>
+                  textObj.text = s
+                  textObj.getLayoutBounds.getWidth
+                }.maxOption.getOrElse(0.0)
+                maxW + 60.0
+              },
+              items
+            )
+            maxWidth = Region.USE_PREF_SIZE
+            minWidth = Region.USE_PREF_SIZE
           }
       )
 
@@ -116,18 +137,39 @@ final class ContestManager @Inject()(
             editable = false
             currentVal.foreach(v => value = v)
             converter = new StringConverter[String] {
-              override def toString(code: String): String =
-                if code == null then ""
-                else
-                  sectionsList
-                    .find(_.code == code)
-                    .map(s => s"${s.code} - ${s.name}")
-                    .getOrElse(code)
-              override def fromString(s: String): String =
-                if s == null then ""
-                else if s.contains(" - ") then s.split(" - ").head
-                else s
+              override def toString(code: String): String = if (code == null) "" else code
+              override def fromString(s: String): String = if (s == null) "" else s
             }
+            cellFactory = (lv: ListView[String]) =>
+              new ListCell[String] {
+                item.onChange { (_, _, it) =>
+                  text = if (it == null) ""
+                  else
+                    sectionsList
+                      .find(_.code == it)
+                      .map(s => s"${s.code} - ${s.name}")
+                      .getOrElse(it)
+                }
+              }
+            buttonCell = new ListCell[String] {
+              item.onChange { (_, _, it) =>
+                text = if (it == null) "" else it
+              }
+            }
+            prefWidth <== scalafx.beans.binding.Bindings.createDoubleBinding(
+              () => {
+                val strings = sectionsList.map(_.code)
+                val textObj = new scalafx.scene.text.Text()
+                val maxW = strings.map { s =>
+                  textObj.text = s
+                  textObj.getLayoutBounds.getWidth
+                }.maxOption.getOrElse(0.0)
+                maxW + 60.0
+              },
+              items
+            )
+            maxWidth = Region.USE_PREF_SIZE
+            minWidth = Region.USE_PREF_SIZE
           }
       )
 

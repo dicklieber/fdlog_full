@@ -22,6 +22,7 @@ import fdswarm.model.Choice
 import scalafx.Includes.*
 import scalafx.collections.ObservableBuffer
 import scalafx.scene.control.{ComboBox, ListCell, ListView}
+import scalafx.scene.layout.Region
 import scalafx.util.StringConverter
 
 /**
@@ -81,4 +82,27 @@ class AnyComboBox[T](initialChoices: Seq[Choice[T]]) extends ComboBox[Option[T]]
       }
     }
   }
+
+  // JavaFX ComboBox's default sizing logic (ComboBoxListViewSkin) often iterates
+  // through all items using the cellFactory to determine the preferred width.
+  // To avoid sizing the ComboBox based on the long labels used in the dropdown,
+  // we set its preferred width to be calculated based on the short values.
+  prefWidth <== scalafx.beans.binding.Bindings.createDoubleBinding(
+    () => {
+      val strings = anyText +: choicesInternal.map(_.value.toString)
+      val textObj = new scalafx.scene.text.Text()
+      val maxW = strings.map { s =>
+        textObj.text = s
+        textObj.getLayoutBounds.getWidth
+      }.maxOption.getOrElse(0.0)
+      // Add padding for the ComboBox arrow and internal cell padding.
+      // A typical arrow button + padding is around 20-30 pixels.
+      // Increased to 60.0 to ensure "-any-" and "T" never show "..."
+      maxW + 60.0
+    },
+    items
+  )
+
+  maxWidth = Region.USE_PREF_SIZE
+  minWidth = Region.USE_PREF_SIZE
 }
