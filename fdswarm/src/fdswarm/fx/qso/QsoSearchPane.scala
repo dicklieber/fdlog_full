@@ -27,7 +27,9 @@ import fdswarm.fx.utils.{BootstrapIcons, IconButton, MultiChangeWatcher}
 import fdswarm.model.BandMode.*
 import fdswarm.model.Qso
 import fdswarm.store.QsoStore
+import fdswarm.util.{DurationFormat, MetricsHelpers}
 import io.circe.syntax.*
+import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.Inject
 import scalafx.Includes.*
 import scalafx.beans.property.BooleanProperty
@@ -38,6 +40,7 @@ import scalafx.scene.paint.Color
 import scalafx.stage.FileChooser
 
 import java.io.PrintWriter
+import java.time.Duration
 
 class QsoSearchPane @Inject()(
                                contestManager: ContestManager,
@@ -46,6 +49,7 @@ class QsoSearchPane @Inject()(
                                modesManager: AvailableModesManager,
                                bandCatalog:BandCatalog,
                                userConfig: UserConfig,
+                               meterRegistry: MeterRegistry,
                                qsoStore: QsoStore,
                                qsoTablePane: QsoTablePane
 ) extends LazyLogging:
@@ -78,10 +82,15 @@ class QsoSearchPane @Inject()(
   anyChange.onChange((_, _, newVal) =>
     logger.debug("anyChange: {}", newVal)
 
+    val startTime = System.nanoTime()
     val searchResult = qsoStore.qsoCollection.filter (qso =>
       filter(qso)
     )
-    logger.debug("filteredQsos: {} of {}", searchResult.size, qsoStore.qsoCollection.size)
+    val durationNanos = System.nanoTime() - startTime
+    val sDuration: String = DurationFormat(Duration.ofNanos(durationNanos))
+    logger.debug("filteredQsos: {} of {} in {}", searchResult.size, qsoStore.qsoCollection.size, sDuration)
+    MetricsHelpers.recordTimerNanos(meterRegistry, "fdswarm_qso_filter_duration", durationNanos)
+
 
     val isSearching = expandedProperty.value && (callsignFilter.value.isDefined ||
       bandFilter.value.value.isDefined ||
