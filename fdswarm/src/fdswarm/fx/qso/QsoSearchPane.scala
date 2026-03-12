@@ -37,7 +37,6 @@ import scalafx.stage.FileChooser
 
 import java.io.PrintWriter
 
-@Singleton
 class QsoSearchPane @Inject()(
     contestManager: ContestManager,
     contestCatalog: ContestCatalog,
@@ -49,9 +48,10 @@ class QsoSearchPane @Inject()(
   val callsignFilter = new OptionTextField {
     promptText = "Callsign"
   }
-  val currentContest: ContestType = contestManager.config.contestType
-  contestManager.config
-  val items = contestDefinition.classChoices.map(contestClassChar => (contestClassChar.ch, contestClassChar.description))
+  val contestConfig: ContestConfig = contestManager.config
+  val contestDefinition: ContestDefinition = contestCatalog.getContest(contestConfig.contestType).get
+
+  val items = contestDefinition.classChars.map(contestClassChar => (contestClassChar.ch, contestClassChar.description))
 
   callsignFilter.text.onChange { (_, _, newValue) =>
     val up = Option(newValue).getOrElse("").toUpperCase
@@ -60,10 +60,7 @@ class QsoSearchPane @Inject()(
 
   val bandFilter = new AnyComboBox[Band](bandCatalog.hamBands) 
   val modeFilter = new AnyComboBox[Mode](modeCatalog.choices)
-  val contestConfig: ContestConfig = contestManager.config
-  val contestDefinition: ContestDefinition = contestCatalog.getContest(contestConfig.contestType).get
-
-  private val classChoices: Seq[ClassChoice] = contestDefinition.classChoices
+  private val classChoices: Seq[ClassChoice] = contestDefinition.classChars
   val classFilter = new AnyComboBox[Char](classChoices)
   val operatorFilter = new TextField {
     promptText = "Operator"

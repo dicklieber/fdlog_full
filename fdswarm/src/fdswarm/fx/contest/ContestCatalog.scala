@@ -29,7 +29,7 @@ case class ClassChoice(
                             description: String
                           ) extends Choice[Char] derives Codec.AsObject:
   override val value: Char = ch.head
-  override val label: String = description
+  override val label: String = s"$ch - $description"
 
 /**
  * As defined in [[application.conf]]
@@ -37,12 +37,12 @@ case class ClassChoice(
  * @param classChoices what classes are allowed in this contest
  */
 case class ContestDefinition(
-                              contestType: ContestType,
-                              classChoices: Seq[ClassChoice]
+                              name: ContestType,
+                              classChars: Seq[ClassChoice]
                   ) derives Codec.AsObject:
   def isValidClass(classChar: String): Boolean =
-    classChoices.exists(_.ch == classChar)
-  def classCharsString: String = classChoices.map(_.ch).mkString
+    classChars.exists(_.ch == classChar)
+  def classCharsString: String = classChars.map(_.ch).mkString
 
 @Singleton
 final class ContestCatalog @Inject()(config: Config):
@@ -58,4 +58,4 @@ final class ContestCatalog @Inject()(config: Config):
     decode[Seq[ContestDefinition]](configValue.render(renderOpts)).toTry.get
 
   def getContest(contestType: ContestType): Option[ContestDefinition] =
-    contests.find(_.contestType == contestType)
+    contests.find(_.name == contestType)

@@ -76,7 +76,7 @@ final class ContestManager @Inject()(
 
   def show(ownerWindow: Window): Unit =
     def getClasses(contestType: ContestType): Seq[ClassChoice] =
-      contestCatalog.contests.find(_.contestType == contestType).map(_.classChoices).getOrElse(Seq.empty)
+      contestCatalog.contests.find(_.name == contestType).map(_.classChars).getOrElse(Seq.empty)
 
     var currentContestType: ContestType = config.contestType
 
