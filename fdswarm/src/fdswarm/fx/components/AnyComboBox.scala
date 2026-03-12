@@ -55,7 +55,7 @@ class AnyComboBox[T](initialChoices: Seq[Choice[T]]) extends ComboBox[Option[T]]
   cellFactory = (lv: ListView[Option[T]]) =>
     new ListCell[Option[T]] {
       item.onChange { (_, _, it) =>
-        text = mapInternal.getOrElse(it, "")
+        text = if (it == null) "" else mapInternal.getOrElse(it, "")
       }
     }
 
@@ -77,6 +77,7 @@ class AnyComboBox[T](initialChoices: Seq[Choice[T]]) extends ComboBox[Option[T]]
   buttonCell = new ListCell[Option[T]] {
     item.onChange { (_, _, it) =>
       text = it match {
+        case null => ""
         case None => anyText
         case Some(v) => v.toString
       }

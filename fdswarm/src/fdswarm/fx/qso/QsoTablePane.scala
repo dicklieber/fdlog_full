@@ -44,12 +44,8 @@ class QsoTablePane @Inject()(qsoStore: QsoStore, userConfig: UserConfig, qsoSear
   private val filteredQsos = new javafx.collections.transformation.FilteredList[Qso](qsoCollection.delegate)
 
   private val filterProperty = scalafx.beans.property.ObjectProperty[Qso => Boolean](_ => true)
-  qsoSearchPane.callsignFilter.text.onChange(filterProperty.value = qsoSearchPane.filter)
-  qsoSearchPane.bandFilter.value.onChange(filterProperty.value = qsoSearchPane.filter)
-  qsoSearchPane.modeFilter.value.onChange(filterProperty.value = qsoSearchPane.filter)
-//  qsoSearchPane.classFilter.value.onChange(filterProperty.value = qsoSearchPane.filter)
-  qsoSearchPane.operatorFilter.text.onChange(filterProperty.value = qsoSearchPane.filter)
-  qsoSearchPane.expandedProperty.onChange(filterProperty.value = qsoSearchPane.filter)
+  qsoSearchPane.anyChange.onChange(filterProperty.value = q => qsoSearchPane.filter(q))
+  qsoSearchPane.expandedProperty.onChange(filterProperty.value = q => qsoSearchPane.filter(q))
 
   filterProperty.onChange { (_, _, f) =>
     filteredQsos.setPredicate(q => f(q))

@@ -18,9 +18,11 @@
 
 package fdswarm.fx.qso
 
+import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.bands.{AvailableModesManager, BandCatalog, ModeCatalog}
 import fdswarm.fx.components.{AnyComboBox, OptionTextField}
-import fdswarm.fx.contest.{ContestDefinition, ContestCatalog, ClassChoice, ContestConfig, ContestManager, ContestType}
+import fdswarm.fx.contest.{ClassChoice, ContestCatalog, ContestConfig, ContestDefinition, ContestManager, ContestType}
+import fdswarm.fx.utils.MultiChangeWatcher
 import fdswarm.fx.{GridColumns, UserConfig}
 import fdswarm.model.BandMode.*
 import fdswarm.model.{BandMode, Qso}
@@ -28,6 +30,7 @@ import fdswarm.util.JavaTimeCirce.given
 import io.circe.syntax.*
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
+import scalafx.beans.property.BooleanProperty
 import scalafx.collections.ObservableBuffer
 import scalafx.geometry.Insets
 import scalafx.scene.Node
@@ -44,31 +47,28 @@ class QsoSearchPane @Inject()(
     modesManager: AvailableModesManager,
     bandCatalog:BandCatalog,
     userConfig: UserConfig
-):
+) extends LazyLogging:
   val callsignFilter = new OptionTextField {
     promptText = "Callsign"
   }
   val contestConfig: ContestConfig = contestManager.config
   val contestDefinition: ContestDefinition = contestCatalog.getContest(contestConfig.contestType).get
-
-  val items = contestDefinition.classChars.map(contestClassChar => (contestClassChar.ch, contestClassChar.description))
-
-  callsignFilter.text.onChange { (_, _, newValue) =>
-    val up = Option(newValue).getOrElse("").toUpperCase
-    if up != newValue then callsignFilter.text = up
-  }
-
-  val bandFilter = new AnyComboBox[Band](bandCatalog.hamBands) 
+  val bandFilter = new AnyComboBox[Band](bandCatalog.hamBands)
   val modeFilter = new AnyComboBox[Mode](modeCatalog.choices)
-  private val classChoices: Seq[ClassChoice] = contestDefinition.classChars
+  val classChoices: Seq[ClassChoice] = contestDefinition.classChars
   val classFilter = new AnyComboBox[Char](classChoices)
-  val operatorFilter = new TextField {
+  val operatorFilter = new OptionTextField() {
     promptText = "Operator"
   }
-  operatorFilter.text.onChange { (_, _, newValue) =>
-    val up = Option(newValue).getOrElse("").toUpperCase
-    if up != newValue then operatorFilter.text = up
-  }
+  val anyChange: BooleanProperty = MultiChangeWatcher(callsignFilter.optionValueProperty,
+    bandFilter.value,
+    modeFilter.value,
+    classFilter.value,
+    operatorFilter.optionValueProperty)
+
+  anyChange.onChange((_, _, newVal) =>
+    logger.info("anyChange: {}", newVal)
+  )
 
 
   /**
@@ -76,13 +76,21 @@ class QsoSearchPane @Inject()(
    */
   val expandedProperty = scalafx.beans.property.BooleanProperty(true)
 
-  def filter(qso: Qso): Boolean =
-//    if !expandedProperty.value then return true
-    val callSign: Option[String] = callsignFilter.value
-    val band: Option[Band] = bandFilter.value.value
-    val mode: Option[Mode] = modeFilter.value.value
-    val transmitters:Int = 0 //todo: get a field
-    throw new NotImplementedError("") //todo
+  def filter(qso: Qso): Boolean = {
+    val callSignFilterVal = callsignFilter.value.getOrElse("").toUpperCase
+    val bandFilterVal = bandFilter.value.value
+    val modeFilterVal = modeFilter.value.value
+    val classFilterVal = classFilter.value.value
+    val operatorFilterVal = Option(operatorFilter.text.value).getOrElse("").toUpperCase
+
+    val matchesCallsign = callSignFilterVal.isEmpty || qso.callsign.value.toUpperCase.contains(callSignFilterVal)
+    val matchesBand = bandFilterVal.isEmpty || qso.bandMode.band.toUpperCase == bandFilterVal.get.toString.toUpperCase
+    val matchesMode = modeFilterVal.isEmpty || qso.bandMode.mode.toUpperCase == modeFilterVal.get.toString.toUpperCase
+    val matchesClass = classFilterVal.isEmpty || qso.exchange.fdClass.classLetter.toString.toUpperCase == classFilterVal.get.toString.toUpperCase
+    val matchesOperator = operatorFilterVal.isEmpty || qso.qsoMetadata.station.operator.value.toUpperCase.contains(operatorFilterVal)
+
+    matchesCallsign && matchesBand && matchesMode && matchesClass && matchesOperator
+  }
   private val exportButton = new Button("Export..."):
     onAction = _ => showExportMenu()
 
