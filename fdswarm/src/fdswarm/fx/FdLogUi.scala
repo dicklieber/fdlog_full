@@ -220,15 +220,6 @@ final class FdLogUi @Inject() (
   )
 
   devMenu.visible <== developerModeMenuItem.selected
-  private val logMenu: Menu =
-    new Menu("Log"):
-      items = Seq(
-        new MenuItem("Search QSOs"):
-          onAction = _ => qsoSearchPane.focusSearch()
-        ,
-        new MenuItem("Export QSOs"):
-          onAction = _ => qsoSearchPane.showExportMenu()
-      )
   private val reportsMenu: Menu =
     new Menu("Reports"):
       items = Seq(
@@ -247,9 +238,8 @@ final class FdLogUi @Inject() (
   private val menuBar = new MenuBar:
     useSystemMenuBar = isMac
     menus = Seq(
-      logMenu,
-      reportsMenu,
       fileMenu,
+      reportsMenu,
       configMenu,
       adminMenu,
       devMenu,
