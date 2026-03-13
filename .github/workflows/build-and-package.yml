@@ -15,7 +15,7 @@ jobs:
   package-assembly:
     name: Build Assembly JAR
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4
@@ -27,12 +27,53 @@ jobs:
           distribution: 'liberica'
           java-package: jdk+fx
           cache: sbt
+          cache-dependency-path: |
+            build.mill
+            **/*.mill
+            .mill-version
 
       - name: Make mill executable
         run: chmod +x ./mill
 
       - name: Run tests
         run: xvfb-run -a ./mill --no-daemon fdswarm.test
+
+      - name: Generate JUnit XML test report
+        if: always()
+        run: |
+          mkdir -p test-reports
+
+          curl -fsSL https://raw.githubusercontent.com/vic/mill-test-junit-report/master/generate-junit-report.sc -o generate-junit-report.sc
+          curl -fsSL https://github.com/com-lihaoyi/Ammonite/releases/download/3.0.0/2.13-3.0.0 -o amm
+          chmod +x amm
+
+          if [ -f out/fdswarm/test/test/dest/out.json ]; then
+            ./amm generate-junit-report.sc \
+              "fdswarm.test" \
+              "fdswarm tests" \
+              "test-reports/fdswarm.xml" \
+              "out/fdswarm/test/test/dest/out.json"
+          else
+            echo "Mill test output JSON not found: out/fdswarm/test/test/dest/out.json"
+            exit 1
+          fi
+
+      - name: Upload test report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: test-reports/*.xml
+          if-no-files-found: warn
+
+      - name: Publish test results
+        if: always()
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: 'test-reports/*.xml'
+          detailed_summary: true
+          include_passed: true
+          fail_on_failure: false
 
       - name: Build assembly
         run: ./mill --no-daemon fdswarm.assembly
@@ -60,6 +101,10 @@ jobs:
           distribution: 'liberica'
           java-package: jdk+fx
           cache: sbt
+          cache-dependency-path: |
+            build.mill
+            **/*.mill
+            .mill-version
 
       - name: Download JAR artifact
         uses: actions/download-artifact@v4
@@ -95,6 +140,10 @@ jobs:
           distribution: 'liberica'
           java-package: jdk+fx
           cache: sbt
+          cache-dependency-path: |
+            build.mill
+            **/*.mill
+            .mill-version
 
       - name: Download JAR artifact
         uses: actions/download-artifact@v4
