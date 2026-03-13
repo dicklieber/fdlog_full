@@ -18,6 +18,7 @@
 
 package fdswarm.fx.contest
 
+import com.google.inject.name.Named
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.caseForm.{ChoiceField, MyCaseForm, SpinnerField}
 import fdswarm.fx.tools.ZonedDateTimeEditor
@@ -46,8 +47,15 @@ final class ContestManager @Inject()(
                                       sections: Sections,
                                       qsoStore: fdswarm.store.QsoStore,
                                       filenameStamp: fdswarm.util.FilenameStamp,
-                                      transport: fdswarm.replication.Transport
+                                      transport: fdswarm.replication.Transport,
+                                      @Named("fdswarm.contestChangeIgnoreStatusSec") ignoreStatusSec: Int
                                     ) extends LazyLogging:
+
+  private var lastRestartTime: Long = 0L
+
+  def shouldIgnoreStatus: Boolean =
+    val now = System.currentTimeMillis()
+    (now - lastRestartTime) < (ignoreStatusSec * 1000L)
 
   private val file: os.Path =
     productionDirectory() / "contest.json"
@@ -232,42 +240,36 @@ final class ContestManager @Inject()(
         case _             => null
 
     if hasQsos then
-      val warningLabel = new Label("Logged QSOs exist. Some changes are not allowed.") {
+      val warningLabel = new Label("QSOs exist, this will delete any existing QSOs, do not do this once contest has begun.") {
         style = "-fx-text-fill: red; -fx-font-weight: bold;"
         minWidth = Region.USE_PREF_SIZE
-      }
-      val updateAnywayButton = new Button("Update Anyway") {
-        style = "-fx-base: #ff9999;"
-        onAction = (e: javafx.event.ActionEvent) => {
-          val p = myCaseForm.result
-          val newConfig = ContestConfig(p.contest, p.ourCallsign, p.transmitters.value, p.ourClass.value, p.ourSection.value)
-          
-          // Local change
-          handleRestartContest(newConfig)
-          
-          // Swarm change
-          val configBytes = newConfig.asJson.noSpaces.getBytes("UTF-8")
-          transport.send(Service.RestartContest, configBytes)
-          
-          d.close()
-        }
+        wrapText = true
       }
       dialogContent.children.add(0, warningLabel)
-      dialogContent.children.add(updateAnywayButton)
-      
-      // Lock specific fields if QSOs exist
-      myCaseForm.control[Control]("contest").disable = true
-      myCaseForm.control[Control]("transmitters").disable = true
-      myCaseForm.control[Control]("ourClass").disable = true
-      myCaseForm.control[Control]("ourSection").disable = true
 
     val result = d.showAndWait()
     result match
       case Some(p: ContestConfigProxy) =>
         val newConfig = ContestConfig(p.contest, p.ourCallsign, p.transmitters.value, p.ourClass.value, p.ourSection.value)
-        setConfig(newConfig)
-        val configBytes = newConfig.asJson.noSpaces.getBytes("UTF-8")
-        transport.send(Service.RestartContest, configBytes)
+        val changed = newConfig != config
+
+        if hasQsos && changed then
+          val confirm = new Alert(Alert.AlertType.Confirmation) {
+            initOwner(ownerWindow)
+            title = "Confirm Changes"
+            headerText = "QSOs exist"
+            contentText = "Changing contest configuration will delete all existing QSOs. Are you sure?"
+          }
+          val res = confirm.showAndWait()
+          if (res.contains(ButtonType.OK)) {
+            handleRestartContest(newConfig)
+            val configBytes = newConfig.asJson.noSpaces.getBytes("UTF-8")
+            transport.send(Service.RestartContest, configBytes)
+          }
+        else if changed then
+          handleRestartContest(newConfig)
+          val configBytes = newConfig.asJson.noSpaces.getBytes("UTF-8")
+          transport.send(Service.RestartContest, configBytes)
       case _ => ()
 
   def handleRestartContest(newConfig: ContestConfig): Unit =
@@ -275,6 +277,7 @@ final class ContestManager @Inject()(
     // 2. Clear memory stores
     // 3. Save new config to contest.json and timestamped file
     // 4. Update the local property
+    lastRestartTime = System.currentTimeMillis()
     archiveAndClear()
     setConfig(newConfig)
 

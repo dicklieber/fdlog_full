@@ -59,14 +59,18 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
         val udpHeader: UDPHeaderData = transport.queue.take()
         udpHeader.service match
           case Service.Status =>
-            statusCounter.increment()
-            lastStatusMessagePayloadSize = udpHeader.payload.length.toDouble
-            val statusMessage = StatusMessage(udpHeader.payload)
-            lastStatusMessageDigestCount = statusMessage.fdDigests.size
-            val receivedNodeStatus = ReceivedNodeStatus(statusMessage, udpHeader.nodeIdentity)
-            swarmStatus.put(receivedNodeStatus)
-            logger.trace("StatusHandle: StatusMessage  {}.", statusMessage)
-            statusProcessor.processStatus(receivedNodeStatus).unsafeRunAndForget()
+            if (contestManager.shouldIgnoreStatus) {
+              logger.debug(s"Ignoring status message from ${udpHeader.nodeIdentity} because of recent contest change")
+            } else {
+              statusCounter.increment()
+              lastStatusMessagePayloadSize = udpHeader.payload.length.toDouble
+              val statusMessage = StatusMessage(udpHeader.payload)
+              lastStatusMessageDigestCount = statusMessage.fdDigests.size
+              val receivedNodeStatus = ReceivedNodeStatus(statusMessage, udpHeader.nodeIdentity)
+              swarmStatus.put(receivedNodeStatus)
+              logger.trace("StatusHandle: StatusMessage  {}.", statusMessage)
+              statusProcessor.processStatus(receivedNodeStatus).unsafeRunAndForget()
+            }
           case Service.QSO =>
             qsoCounter.increment()
             val sJson = new String(udpHeader.payload, "UTF-8")

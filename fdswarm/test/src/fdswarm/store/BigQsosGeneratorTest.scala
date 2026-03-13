@@ -81,7 +81,7 @@ class BigQsosGeneratorTest extends FunSuite with LazyLogging:
       override def get(): fdswarm.fx.contest.ContestManager = contestManager
     })
     qsoStore = new QsoStore(testDirectory, registry, mockTransport, swarmStatus, filenameStamp)
-    contestManager = new fdswarm.fx.contest.ContestManager(testDirectory, contestCatalog, sections, qsoStore, filenameStamp, mockTransport)
+    contestManager = new fdswarm.fx.contest.ContestManager(testDirectory, contestCatalog, sections, qsoStore, filenameStamp, mockTransport, 7)
 
   override def afterEach(context: AfterEach): Unit =
     testDirectory.cleanup()
