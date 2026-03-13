@@ -180,7 +180,7 @@ class QsoStoreTest extends FunSuite:
     assertEquals(qsoStore.qsoCollection.size, 1)
     assertEquals(qsoStore.digests().size, 1)
     val journalFile = testDirectory() / "qsosJournal.json"
-    assert(os.exists(journalFile))
+    assert(os.exist s(journalFile))
 
     qsoStore.archiveAndClear()
 
