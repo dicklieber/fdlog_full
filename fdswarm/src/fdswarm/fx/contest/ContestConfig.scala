@@ -20,6 +20,8 @@ package fdswarm.fx.contest
 
 import fdswarm.{ContestDateCalculator, ContestDates}
 import fdswarm.model.Callsign
+import fdswarm.util.Ids
+import fdswarm.util.Ids.Id
 import io.circe.Codec
 import fdswarm.util.JavaTimeCirce.given
 
@@ -54,4 +56,5 @@ case class ContestConfig(contestType: ContestType,
                          transmitters: Int,
                          ourClass: String,
                          ourSection: String,
+                         id:Id = Ids.generateId(),
                          stamp: Instant = Instant.now()) derives Codec.AsObject
