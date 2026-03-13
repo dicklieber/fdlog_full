@@ -68,7 +68,7 @@ final class HowManyDialogService @Inject() (
       }
       val result = confirm.showAndWait()
       if (result.contains(ButtonType.OK)) {
-        qsoStore.removeAll()
+        qsoStore.archiveAndClear()
       }
     }
 

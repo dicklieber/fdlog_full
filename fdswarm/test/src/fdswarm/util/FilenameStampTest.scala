@@ -75,9 +75,14 @@ class FilenameStampTest extends FunSuite:
     val registry = new SimpleMeterRegistry()
     val mockNodeIdentityManager = MockNodeIdentityManager(port = 8080)
     val swarmStatus = SwarmStatus(testDir, mockNodeIdentityManager, null)
-    qsoStore = new QsoStore(testDir, registry, mockTransport, swarmStatus)
-    contestManager = new ContestManager(testDir, catalog, sections, qsoStore)
-    filenameStamp = new FilenameStamp(contestManager)
+    
+    // Create filenameStamp with a provider to handle the circular dependency
+    filenameStamp = new FilenameStamp(new jakarta.inject.Provider[ContestManager] {
+      override def get(): ContestManager = contestManager
+    })
+    
+    qsoStore = new QsoStore(testDir, registry, mockTransport, swarmStatus, filenameStamp)
+    contestManager = new ContestManager(testDir, catalog, sections, qsoStore, filenameStamp, mockTransport)
  
   override def afterEach(context: AfterEach): Unit =
     testDir.cleanup()

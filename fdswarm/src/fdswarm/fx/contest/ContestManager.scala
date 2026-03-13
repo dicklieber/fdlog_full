@@ -32,6 +32,7 @@ import scalafx.scene.control.*
 import scalafx.scene.layout.*
 import scalafx.stage.Window
 import io.circe.parser.*
+import fdswarm.replication.{Transport, Service}
 import io.circe.syntax.*
 import fdswarm.util.JavaTimeCirce.given
 import javafx.util.StringConverter
@@ -42,7 +43,9 @@ final class ContestManager @Inject()(
                                       productionDirectory: DirectoryProvider,
                                       contestCatalog: ContestCatalog,
                                       sections: Sections,
-                                      qsoStore: fdswarm.store.QsoStore
+                                      qsoStore: fdswarm.store.QsoStore,
+                                      filenameStamp: fdswarm.util.FilenameStamp,
+                                      transport: fdswarm.replication.Transport
                                     ) extends LazyLogging:
 
   private val file: os.Path =
@@ -53,7 +56,7 @@ final class ContestManager @Inject()(
 
   // Keep persist in sync with config
   configProperty.onChange { (_, _, _) =>
-    persist()
+    archiveAndPersist()
   }
 
   def config: ContestConfig = configProperty.value
@@ -217,20 +220,9 @@ final class ContestManager @Inject()(
 
     val hasQsos = qsoStore.all.nonEmpty
 
-    val dialogContent = new VBox(10):
+    val dialogContent: VBox = new VBox(10):
       padding = Insets(10)
       children = Seq(pane, recalculateButton)
-      if hasQsos then
-        val warningLabel = new Label("Logged QSOs exist. Some changes are not allowed.") {
-          style = "-fx-text-fill: red; -fx-font-weight: bold;"
-        }
-        children.add(0, warningLabel)
-        
-        // Lock specific fields if QSOs exist
-        myCaseForm.control[Control]("contest").disable = true
-        myCaseForm.control[Control]("transmitters").disable = true
-        myCaseForm.control[Control]("ourClass").disable = true
-        myCaseForm.control[Control]("ourSection").disable = true
 
     val d = new Dialog[ContestConfigProxy]():
       initOwner(ownerWindow)
@@ -245,13 +237,51 @@ final class ContestManager @Inject()(
         case ButtonType.OK => myCaseForm.result
         case _             => null
 
+    if hasQsos then
+      val warningLabel = new Label("Logged QSOs exist. Some changes are not allowed.") {
+        style = "-fx-text-fill: red; -fx-font-weight: bold;"
+      }
+      val updateAnywayButton = new Button("Update Anyway") {
+        style = "-fx-base: #ff9999;"
+        onAction = (e: javafx.event.ActionEvent) => {
+          val p = myCaseForm.result
+          val newConfig = ContestConfig(p.contest, p.start, p.end, p.ourCallsign, p.transmitters.value, p.ourClass.value, p.ourSection.value)
+          
+          // Local change
+          handleRestartContest(newConfig)
+          
+          // Swarm change
+          val configBytes = newConfig.asJson.noSpaces.getBytes("UTF-8")
+          transport.send(Service.RestartContest, configBytes)
+          
+          d.close()
+        }
+      }
+      dialogContent.children.add(0, warningLabel)
+      dialogContent.children.add(updateAnywayButton)
+      
+      // Lock specific fields if QSOs exist
+      myCaseForm.control[Control]("contest").disable = true
+      myCaseForm.control[Control]("transmitters").disable = true
+      myCaseForm.control[Control]("ourClass").disable = true
+      myCaseForm.control[Control]("ourSection").disable = true
+
     val result = d.showAndWait()
     result match
       case Some(p: ContestConfigProxy) =>
-        setConfig(
-          ContestConfig(p.contest, p.start, p.end, p.ourCallsign, p.transmitters.value, p.ourClass.value, p.ourSection.value)
-        )
+        val newConfig = ContestConfig(p.contest, p.start, p.end, p.ourCallsign, p.transmitters.value, p.ourClass.value, p.ourSection.value)
+        setConfig(newConfig)
+        val configBytes = newConfig.asJson.noSpaces.getBytes("UTF-8")
+        transport.send(Service.RestartContest, configBytes)
       case _ => ()
+
+  def handleRestartContest(newConfig: ContestConfig): Unit =
+    // 1. Rename qsosJournal.json
+    // 2. Clear memory stores
+    // 3. Save new config to contest.json and timestamped file
+    // 4. Update the local property
+    archiveAndClear()
+    setConfig(newConfig)
 
   private def promptForYear(ownerWindow: Window): Option[Int] =
     val d = new TextInputDialog(LocalDate.now().getYear.toString):
@@ -276,12 +306,19 @@ final class ContestManager @Inject()(
 
   // ---- persistence ----------------------------------------------------------
 
-  private def persist(): Unit =
+  private def archiveAndPersist(): Unit =
     try
+      val timestampedFile = productionDirectory() / s"${filenameStamp.build()}.contest.json"
       val json = configProperty.value.asJson.spaces2
       os.write.over(file, json, createFolders = true)
+      os.copy.over(file, timestampedFile)
+      logger.info(s"Persisted contest config to $file and archived to $timestampedFile")
     catch
       case e: Throwable => logger.error(s"Failed to persist contest config to $file", e)
+
+  def archiveAndClear(): Unit =
+    qsoStore.archiveAndClear()
+    archiveAndPersist()
 
   private def load(): ContestConfig =
     try

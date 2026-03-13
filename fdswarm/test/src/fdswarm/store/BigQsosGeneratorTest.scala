@@ -51,8 +51,37 @@ class BigQsosGeneratorTest extends FunSuite with LazyLogging:
 
   private val mockTransport = new MockTransport()
 
+  private var mockNodeIdentityManager: MockNodeIdentityManager = uninitialized
+  private var swarmStatus: SwarmStatus = uninitialized
+  private var contestCatalog: fdswarm.fx.contest.ContestCatalog = uninitialized
+  private var sections: fdswarm.fx.sections.Sections = uninitialized
+  private var filenameStamp: fdswarm.util.FilenameStamp = uninitialized
+  private var contestManager: fdswarm.fx.contest.ContestManager = uninitialized
+  private var qsoStore: QsoStore = uninitialized
+  private var registry: SimpleMeterRegistry = uninitialized
+
   override def beforeEach(context: BeforeEach): Unit =
     testDirectory = new TestDirectory()
+    registry = new SimpleMeterRegistry()
+    mockNodeIdentityManager = MockNodeIdentityManager(port = 8080)
+    swarmStatus = SwarmStatus(testDirectory, mockNodeIdentityManager, null)
+    contestCatalog = {
+      val config = com.typesafe.config.ConfigFactory.parseString(
+        """
+          |fdswarm.contests = []
+          |fdswarm.sections = []
+          |""".stripMargin)
+      new fdswarm.fx.contest.ContestCatalog(config)
+    }
+    sections = new fdswarm.fx.sections.Sections(new fdswarm.fx.sections.SectionsProvider(com.typesafe.config.ConfigFactory.parseString(
+      """
+        |fdswarm.sections = []
+        |""".stripMargin)))
+    filenameStamp = new fdswarm.util.FilenameStamp(new jakarta.inject.Provider[fdswarm.fx.contest.ContestManager] {
+      override def get(): fdswarm.fx.contest.ContestManager = contestManager
+    })
+    qsoStore = new QsoStore(testDirectory, registry, mockTransport, swarmStatus, filenameStamp)
+    contestManager = new fdswarm.fx.contest.ContestManager(testDirectory, contestCatalog, sections, qsoStore, filenameStamp, mockTransport)
 
   override def afterEach(context: AfterEach): Unit =
     testDirectory.cleanup()
@@ -66,11 +95,6 @@ class BigQsosGeneratorTest extends FunSuite with LazyLogging:
       new BandMode(band.toLowerCase, mode.toUpperCase)
 
   test("generate 100 QSOs using BigQsosGenerator with permissive BandModeBuilder"):
-    val registry = new SimpleMeterRegistry()
-    val mockNodeIdentityManager = MockNodeIdentityManager(port = 8080)
-    val swarmStatus = SwarmStatus(testDirectory, mockNodeIdentityManager, null)
-    val qsoStore = QsoStore(testDirectory, registry, mockTransport, swarmStatus)
-
     import com.typesafe.config.ConfigFactory
     val config = ConfigFactory.parseString(
       """

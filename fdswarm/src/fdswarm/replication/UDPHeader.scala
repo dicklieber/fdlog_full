@@ -94,5 +94,5 @@ object UDPHeader:
     }.get
 
 enum Service:
-  case Status, QSO, DiscReq, DiscResponse, InstanceQuery, InstanceResponse
+  case Status, QSO, DiscReq, DiscResponse, InstanceQuery, InstanceResponse, RestartContest
   

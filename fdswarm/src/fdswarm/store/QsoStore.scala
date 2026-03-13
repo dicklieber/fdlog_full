@@ -38,7 +38,8 @@ import scala.collection.concurrent.TrieMap
 class QsoStore @Inject()(directoryProvider: DirectoryProvider,
                          registry: MeterRegistry,
                          transport: Transport,
-                         swarmStatus: SwarmStatus) extends LazyLogging:
+                         swarmStatus: SwarmStatus,
+                         filenameStamp: fdswarm.util.FilenameStamp) extends LazyLogging:
   val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()
   protected val map: TrieMap[Id, Qso] = new TrieMap
   private val journalFile = directoryProvider() / "qsosJournal.json"
@@ -116,12 +117,15 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider,
       }
     buildFdHourDigests()
 
-  def removeAll(): Unit =
-    logger.error("Removed all Qsos")
+  def archiveAndClear(): Unit =
+    val timestampedFile = directoryProvider() / s"${filenameStamp.build()}.qsosJournal.json"
+    if os.exists(journalFile) then
+      os.move(journalFile, timestampedFile)
+      logger.info(s"Archived QSOs to $timestampedFile")
+    
     map.clear()
     fdHourDigests = Map.empty
     swarmStatus.updateLocalDigests(Nil)
-    if os.exists(journalFile) then os.remove(journalFile)
     try
       scalafx.application.Platform.runLater {
         qsoCollection.clear()

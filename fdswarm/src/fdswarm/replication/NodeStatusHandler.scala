@@ -83,6 +83,14 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
           case Service.DiscResponse =>
             // Handled by listeners in ContestDiscovery, ignore here
             logger.trace(s"Received ContestDiscoveryResponse from ${udpHeader.nodeIdentity} (ignoring in NodeStatusHandler)")
+          case Service.RestartContest =>
+            logger.info(s"Received RestartContest from ${udpHeader.nodeIdentity}")
+            val sJson = new String(udpHeader.payload, "UTF-8")
+            decode[ContestConfig](sJson) match
+              case Right(newConfig) =>
+                contestManager.handleRestartContest(newConfig)
+              case Left(error) =>
+                logger.error(s"Failed to decode ContestConfig from RestartContest: $sJson", error)
           case Service.InstanceQuery =>
             val requestedInstanceId = new String(udpHeader.payload, "UTF-8")
             if requestedInstanceId == nodeIdentityManager.portAndInstance.instanceId then

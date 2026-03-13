@@ -46,28 +46,46 @@ class QsoStoreTest extends FunSuite:
     override def stop(): Unit = ()
 
   private val mockTransport = new MockTransport()
-  private val mockNodeIdentityManager = MockNodeIdentityManager()
-  private lazy val swarmStatus = SwarmStatus(testDirectory, mockNodeIdentityManager, null)
+  private var mockNodeIdentityManager: MockNodeIdentityManager = uninitialized
+  private var swarmStatus: SwarmStatus = uninitialized
+  private var contestCatalog: fdswarm.fx.contest.ContestCatalog = uninitialized
+  private var sections: fdswarm.fx.sections.Sections = uninitialized
+  private var filenameStamp: fdswarm.util.FilenameStamp = uninitialized
+  private var contestManager: fdswarm.fx.contest.ContestManager = uninitialized
+  private var qsoStore: QsoStore = uninitialized
 
   override def beforeEach(context: BeforeEach): Unit =
     testDirectory = new TestDirectory()
+    mockNodeIdentityManager = MockNodeIdentityManager()
+    swarmStatus = SwarmStatus(testDirectory, mockNodeIdentityManager, null)
+    contestCatalog = {
+      val config = com.typesafe.config.ConfigFactory.parseString(
+        """
+          |fdswarm.contests = []
+          |fdswarm.sections = []
+          |""".stripMargin)
+      new fdswarm.fx.contest.ContestCatalog(config)
+    }
+    sections = new fdswarm.fx.sections.Sections(new fdswarm.fx.sections.SectionsProvider(com.typesafe.config.ConfigFactory.parseString(
+      """
+        |fdswarm.sections = []
+        |""".stripMargin)))
+    filenameStamp = new fdswarm.util.FilenameStamp(new jakarta.inject.Provider[fdswarm.fx.contest.ContestManager] {
+      override def get(): fdswarm.fx.contest.ContestManager = contestManager
+    })
+    qsoStore = new QsoStore(testDirectory, new SimpleMeterRegistry(), mockTransport, swarmStatus, filenameStamp)
+    contestManager = new fdswarm.fx.contest.ContestManager(testDirectory, contestCatalog, sections, qsoStore, filenameStamp, mockTransport)
 
   override def afterEach(context: AfterEach): Unit =
     testDirectory.cleanup()
 
   test("FdHour initially empty"):
-    val registry = new SimpleMeterRegistry()
-    val qsoStore = QsoStore(testDirectory, registry, mockTransport, swarmStatus)
-
     assertEquals(qsoStore.digests().isEmpty, true)
     assertEquals(qsoStore.qsoCollection.isEmpty, true)
 
   test("add 1st QSO"):
-    val registry = new SimpleMeterRegistry()
-    val qsoStore = QsoStore(testDirectory, registry, mockTransport, swarmStatus)
-
     val qso = Qso(callsign = Callsign("W9NNN"),
-      exchange = Exchange("1A", "IL"),
+      exchange = Exchange(fdswarm.model.FdClass("1A"), "IL"),
       bandMode = BandMode("20m", "CW"),
       qsoMetadata = testQsoMetadata
     )
@@ -78,27 +96,26 @@ class QsoStoreTest extends FunSuite:
     assertEquals(backAgain.get, qso)
 
   test("handle corrupt journal line"):
-    val registry = new SimpleMeterRegistry()
     val journalFile = testDirectory() / "qsosJournal.json"
     os.write(journalFile, "this is not json\n", createFolders = true)
     
     // This should not throw an exception because of the new error handling
-    val qsoStore = QsoStore(testDirectory, registry, mockTransport, swarmStatus)
+    // Re-instantiating with corrupt file
+    val qs = new QsoStore(testDirectory, new SimpleMeterRegistry(), mockTransport, swarmStatus, filenameStamp)
     
-    assertEquals(qsoStore.qsoCollection.isEmpty, true)
-    assertEquals(qsoStore.digests().isEmpty, true)
+    assertEquals(qs.qsoCollection.isEmpty, true)
+    assertEquals(qs.digests().isEmpty, true)
 
   test("qsosForIds should return all qsos for hour if specificQsos is empty"):
     import cats.effect.unsafe.implicits.global
-    val registry = new SimpleMeterRegistry()
-    val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus)
+    val replicationSupport = ReplicationSupport(testDirectory, new SimpleMeterRegistry(), mockTransport, swarmStatus, filenameStamp)
     val qso1 = Qso(callsign = Callsign("W9NNN"),
-      exchange = Exchange("1A", "IL"),
+      exchange = Exchange(fdswarm.model.FdClass("1A"), "IL"),
       bandMode = BandMode("20m", "CW"),
       qsoMetadata = testQsoMetadata
     )
     val qso2 = Qso(callsign = Callsign("K9OR"),
-      exchange = Exchange("1A", "IL"),
+      exchange = Exchange(fdswarm.model.FdClass("1A"), "IL"),
       bandMode = BandMode("40m", "SSB"),
       qsoMetadata = testQsoMetadata
     )
@@ -111,15 +128,14 @@ class QsoStoreTest extends FunSuite:
 
   test("qsosForIds should return only requested qsos"):
     import cats.effect.unsafe.implicits.global
-    val registry = new SimpleMeterRegistry()
-    val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus)
+    val replicationSupport = ReplicationSupport(testDirectory, new SimpleMeterRegistry(), mockTransport, swarmStatus, filenameStamp)
     val qso1 = Qso(callsign = Callsign("W9NNN"),
-      exchange = Exchange("1A", "IL"),
+      exchange = Exchange(fdswarm.model.FdClass("1A"), "IL"),
       bandMode = BandMode("20m", "CW"),
       qsoMetadata = testQsoMetadata
     )
     val qso2 = Qso(callsign = Callsign("K9OR"),
-      exchange = Exchange("1A", "IL"),
+      exchange = Exchange(fdswarm.model.FdClass("1A"), "IL"),
       bandMode = BandMode("40m", "SSB"),
       qsoMetadata = testQsoMetadata
     )
@@ -131,8 +147,7 @@ class QsoStoreTest extends FunSuite:
 
   test("determineNeeded should return needed FdHourIds"):
     import cats.effect.unsafe.implicits.global
-    val registry = new SimpleMeterRegistry()
-    val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus)
+    val replicationSupport = ReplicationSupport(testDirectory, new SimpleMeterRegistry(), mockTransport, swarmStatus, filenameStamp)
     val qso1 = Qso(callsign = Callsign("W9NNN"),
       exchange = Exchange("1A", "IL"),
       bandMode = BandMode("20m", "CW"),
@@ -156,10 +171,8 @@ class QsoStoreTest extends FunSuite:
     assertEquals(needed.get, qso1.fdHour)
 
   test("removeAll should clear all state and delete journal file"):
-    val registry = new SimpleMeterRegistry()
-    val qsoStore = QsoStore(testDirectory, registry, mockTransport, swarmStatus)
     val qso = Qso(callsign = Callsign("W9NNN"),
-      exchange = Exchange("1A", "IL"),
+      exchange = Exchange(fdswarm.model.FdClass("1A"), "IL"),
       bandMode = BandMode("20m", "CW"),
       qsoMetadata = testQsoMetadata
     )
@@ -169,7 +182,7 @@ class QsoStoreTest extends FunSuite:
     val journalFile = testDirectory() / "qsosJournal.json"
     assert(os.exists(journalFile))
 
-    qsoStore.removeAll()
+    qsoStore.archiveAndClear()
 
     assertEquals(qsoStore.qsoCollection.size, 0)
     assertEquals(qsoStore.digests().size, 0)
@@ -177,13 +190,11 @@ class QsoStoreTest extends FunSuite:
     assert(!os.exists(journalFile))
 
   test("potentialDups should limit results and return total count"):
-    val registry = new SimpleMeterRegistry()
-    val qsoStore = QsoStore(testDirectory, registry, mockTransport, swarmStatus)
     val bandMode = BandMode("20m", "CW")
     
     val qsos = (1 to 100).map { i =>
       Qso(callsign = Callsign(s"W9NN$i"),
-        exchange = Exchange("1A", "IL"),
+        exchange = Exchange(fdswarm.model.FdClass("1A"), "IL"),
         bandMode = bandMode,
         qsoMetadata = testQsoMetadata
       )

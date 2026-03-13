@@ -33,7 +33,12 @@ import jakarta.inject.{Inject, Singleton}
  * Having them here keeps [[QsoStore]] clean.
  */
 @Singleton
-class ReplicationSupport @Inject()(directoryProvider: DirectoryProvider, registry: MeterRegistry, transport: Transport, swarmStatus: SwarmStatus) extends QsoStore(directoryProvider, registry, transport, swarmStatus):
+class ReplicationSupport @Inject()(directoryProvider: DirectoryProvider,
+                         registry: MeterRegistry,
+                         transport: Transport,
+                         swarmStatus: SwarmStatus,
+                         filenameStamp: fdswarm.util.FilenameStamp)
+  extends QsoStore(directoryProvider, registry, transport, swarmStatus, filenameStamp):
   /**
    * 
    * @param fdHourDigest from a remote node

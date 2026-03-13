@@ -19,7 +19,7 @@
 package fdswarm.util
  
 import fdswarm.fx.contest.ContestManager
-import jakarta.inject.{Inject, Singleton}
+import jakarta.inject.{Inject, Provider, Singleton}
 import java.time.*
 import java.time.format.DateTimeFormatter
  
@@ -37,7 +37,7 @@ import java.time.format.DateTimeFormatter
  * Example: `fdswarm-WFD-1.0.0_20260225T173742Z`
  */
 @Singleton
-class FilenameStamp @Inject()(contestManager: ContestManager):
+class FilenameStamp @Inject()(contestManagerProvider: Provider[ContestManager]):
  
   // ─────────────────────────────────────────────────────────────
   // Canonical UTC timestamp formatter (20260225T173742Z)
@@ -54,7 +54,7 @@ class FilenameStamp @Inject()(contestManager: ContestManager):
   def build(
              instant: Instant = Instant.now()
            ): String =
-    val contestType = contestManager.config.contestType
+    val contestType = contestManagerProvider.get().config.contestType
     val parts =
       List(com.organization.BuildInfo.name, contestType.toString, com.organization.BuildInfo.dataVersion)
         .map(sanitize)
