@@ -126,14 +126,7 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider,
     map.clear()
     fdHourDigests = Map.empty
     swarmStatus.updateLocalDigests(Nil)
-    try
-      scalafx.application.Platform.runLater {
-        qsoCollection.clear()
-      }
-    catch
-      case _: IllegalStateException =>
-        logger.warn("Toolkit not initialized, direct clear")
-        qsoCollection.clear()
+    qsoCollection.clear()
 
   private def doAdd(batch: Seq[Qso]): Unit =
     val thread = Thread.currentThread().getName
@@ -150,17 +143,7 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider,
     if toAdd.nonEmpty then
       val lines = toAdd.map(_.asJsonCompact + "\n").mkString
       os.write.append(journalFile, lines, createFolders = true)
-      try
-        logger.debug(s"[THREAD:$thread] Scheduling prependAll of ${toAdd.size} on JavaFX thread")
-        scalafx.application.Platform.runLater {
-          logger.debug(s"[THREAD:${Thread.currentThread().getName}] Prepended ${toAdd.size} to qsoCollection")
-          qsoCollection.prependAll(toAdd)
-        }
-      catch
-        case _: IllegalStateException =>
-          // Toolkit not initialized (likely in tests)
-          logger.debug(s"[THREAD:${Thread.currentThread().getName}] Toolkit not initialized, direct prependAll")
-          qsoCollection.prependAll(toAdd)
+      qsoCollection.prependAll(toAdd)
       buildFdHourDigests()
 
   private def buildFdHourDigests(): Unit =
