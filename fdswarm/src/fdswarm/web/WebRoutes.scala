@@ -172,12 +172,13 @@ class WebRoutes @Inject()(
 
           val now = ZonedDateTime.now()
           val config = contestManager.config
-          val (msg, style) = if now.isBefore(config.start) then
-            (s"${config.contestType.name} ${config.start.getYear} starts in ${DurationFormat(JDuration.between(now, config.start))}", "contest-before")
-          else if now.isAfter(config.end) then
-            (s"${config.contestType.name} ${config.start.getYear} ended ${DurationFormat(JDuration.between(config.end, now))} ago.", "contest-after")
+          val times = contestManager.contestTimesProperty.value
+          val (msg, style) = if now.isBefore(times.start) then
+            (s"${config.contestType.name} ${times.start.getYear} starts in ${DurationFormat(JDuration.between(now, times.start))}", "contest-before")
+          else if now.isAfter(times.end) then
+            (s"${config.contestType.name} ${times.start.getYear} ended ${DurationFormat(JDuration.between(times.end, now))} ago.", "contest-after")
           else
-            (s"${config.contestType.name} ${config.start.getYear} ends in ${DurationFormat(JDuration.between(now, config.end))}", "contest-during")
+            (s"${config.contestType.name} ${times.start.getYear} ends in ${DurationFormat(JDuration.between(now, times.end))}", "contest-during")
 
           val html = IndexPage(
             qsos, bands, modes, selected, groups, msg, style, errorMsg

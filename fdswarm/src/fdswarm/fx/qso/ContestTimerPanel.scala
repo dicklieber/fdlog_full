@@ -39,38 +39,40 @@ class ContestTimerPanel @Inject()(
 
   private val contestTimerLabel = new Label:
     styleClass += "contest-timer"
+    minWidth = scalafx.scene.layout.Region.USE_PREF_SIZE
 
   enum TimeMode:
     case Before, During, After
 
   val timeModeProperty = ObjectProperty[TimeMode](this, "timeMode", TimeMode.Before)
 
-  private var useFixedTime: Boolean = false
-  private var fixedTime: ZonedDateTime = ZonedDateTime.now()
+  private var useMockTime: Boolean = false
+  private var mockTime: ZonedDateTime = ZonedDateTime.now()
 
-  def setFixedTime(useFixed: Boolean, time: ZonedDateTime): Unit =
-    useFixedTime = useFixed
-    fixedTime = time
+  def setMockTime(useFixed: Boolean, time: ZonedDateTime): Unit =
+    useMockTime = useFixed
+    mockTime = time
     updateContestTimer()
 
   private def updateContestTimer(): Unit =
-    val now = if useFixedTime then fixedTime else ZonedDateTime.now()
+    val now = if useMockTime then mockTime else ZonedDateTime.now()
     val config = contestManager.config
+    val times = contestManager.contestTimesProperty.value
 
     val mode =
-      if now.isBefore(config.start) then TimeMode.Before
-      else if now.isAfter(config.end) then TimeMode.After
+      if now.isBefore(times.start) then TimeMode.Before
+      else if now.isAfter(times.end) then TimeMode.After
       else TimeMode.During
 
     timeModeProperty.value = mode
 
     val (msg, style) = mode match
       case TimeMode.Before =>
-        (s"${config.contestType.name} ${config.start.getYear} starts in ${DurationFormat(JDuration.between(now, config.start))}", "contest-before")
+        (s"${config.contestType.name} ${times.start.getYear} starts in ${DurationFormat(JDuration.between(now, times.start))}", "contest-before")
       case TimeMode.After =>
-        (s"${config.contestType.name} ${config.start.getYear} ended ${DurationFormat(JDuration.between(config.end, now))} ago.", "contest-after")
+        (s"${config.contestType.name} ${times.start.getYear} ended ${DurationFormat(JDuration.between(times.end, now))} ago.", "contest-after")
       case TimeMode.During =>
-        (s"${config.contestType.name} ${config.start.getYear} ends in ${DurationFormat(JDuration.between(now, config.end))}", "contest-during")
+        (s"${config.contestType.name} ${times.start.getYear} ends in ${DurationFormat(JDuration.between(now, times.end))}", "contest-during")
 
     contestTimerLabel.text = msg
     contestTimerLabel.styleClass.removeAll("contest-before", "contest-during", "contest-after")
@@ -86,4 +88,5 @@ class ContestTimerPanel @Inject()(
 
   def node: Node =
     val config = contestManager.config
-    GridColumns.fieldSet(s"${config.contestType.name} ${config.start.getYear}", contestTimerLabel)
+    val times = contestManager.contestTimesProperty.value
+    GridColumns.fieldSet(s"${config.contestType.name} ${times.start.getYear}", contestTimerLabel)

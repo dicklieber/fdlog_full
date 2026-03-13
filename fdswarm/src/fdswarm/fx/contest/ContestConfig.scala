@@ -43,15 +43,13 @@ object ContestType:
     Encoder.encodeString.contramap(_.toString)
   )
 
+case class ContestTimes(start: ZonedDateTime, end: ZonedDateTime)
+
 /**
  * What a user can choose in a dialog.
  * @param contestType WFD or ARRL
- * @param start 1st day/time of contest
- * @param end last day/time of contest
  */
 case class ContestConfig(contestType: ContestType,
-                         start: ZonedDateTime,
-                         end: ZonedDateTime,
                          ourCallsign: Callsign,
                          transmitters: Int,
                          ourClass: String,

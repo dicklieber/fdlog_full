@@ -26,10 +26,11 @@ import scalafx.collections.ObservableBuffer
 import scalafx.geometry.Insets
 import scalafx.scene.Node
 import scalafx.scene.control.*
-import scalafx.scene.layout.{GridPane, HBox, Pane}
+import scalafx.scene.layout.{GridPane, HBox, Pane, Region}
 import scalafx.util.StringConverter
 
 import java.time.{Instant, LocalTime, ZoneId, ZonedDateTime}
+import fdswarm.fx.tools.ZonedDateTimeEditor
 import scala.deriving.Mirror
 
 /**
@@ -97,13 +98,9 @@ class MyCaseForm[T <: Product](initial: T)(using m: Mirror.ProductOf[T]):
       val (control, getter): (Node, () => Any) =
         fieldValue match
           case zdt: ZonedDateTime =>
-            val datePicker = new DatePicker(zdt.toLocalDate)
-            val hourSpinner = new Spinner[Int](0, 23, zdt.getHour)
-            hourSpinner.prefWidth = 60
-            val minSpinner = new Spinner[Int](0, 59, zdt.getMinute)
-            minSpinner.prefWidth = 60
-            val hb = new HBox(5, datePicker, new Label("H:"), hourSpinner, new Label("M:"), minSpinner)
-            (hb, () => ZonedDateTime.of(datePicker.value.value, LocalTime.of(hourSpinner.value.value, minSpinner.value.value), zdt.getZone))
+            val name = initial.productElementName(i)
+            val editor = new ZonedDateTimeEditor(zdt, name)
+            (editor, () => editor.value)
 
           // ---- Provided-choice support (e.g. HamBand from AvailableBandsStore) ----
           case cf: ChoiceField[?] =>
@@ -198,7 +195,7 @@ class MyCaseForm[T <: Product](initial: T)(using m: Mirror.ProductOf[T]):
                     )
 
       val name = initial.productElementName(i)
-      Field(name, control, new Label(name), getter)
+      Field(name, control, new Label(name) { minWidth = Region.USE_PREF_SIZE }, getter)
 
   def pane(): Pane =
     val grid = new GridPane:
@@ -207,7 +204,7 @@ class MyCaseForm[T <: Product](initial: T)(using m: Mirror.ProductOf[T]):
       padding = Insets(10)
 
     fields.zipWithIndex.foreach { case (field, index) =>
-      grid.add(new Label(field.name), 0, index)
+      grid.add(new Label(field.name) { minWidth = Region.USE_PREF_SIZE }, 0, index)
       grid.add(field.control, 1, index)
     }
 

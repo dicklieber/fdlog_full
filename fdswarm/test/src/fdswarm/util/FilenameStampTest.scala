@@ -90,7 +90,7 @@ class FilenameStampTest extends FunSuite:
   test("build() creates a filename using current contest"):
     val now = ZonedDateTime.now(ZoneOffset.UTC)
     contestManager.setConfig(
-      ContestConfig(ContestType.ARRL, now, now.plusHours(24), Callsign("W1AW"), 1, "O", "CT")
+      ContestConfig(ContestType.ARRL, Callsign("W1AW"), 1, "O", "CT")
     )
     
     val instant = Instant.parse("2026-02-25T12:00:00Z")

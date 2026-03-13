@@ -20,6 +20,7 @@ package fdswarm.fx.contest
 
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.caseForm.{ChoiceField, MyCaseForm, SpinnerField}
+import fdswarm.fx.tools.ZonedDateTimeEditor
 import fdswarm.fx.sections.{Section, Sections}
 import fdswarm.model.Callsign
 import fdswarm.io.DirectoryProvider
@@ -52,10 +53,21 @@ final class ContestManager @Inject()(
     productionDirectory() / "contest.json"
 
   val configProperty: ObjectProperty[ContestConfig] =
-    ObjectProperty(load())
+    val loaded = load()
+    ObjectProperty(loaded)
+
+  val contestTimesProperty: ObjectProperty[ContestTimes] =
+    val now = ZonedDateTime.now()
+    val initialDates = configProperty.value.contestType.dates(now.getYear)
+    ObjectProperty(ContestTimes(initialDates.startUtc, initialDates.endUtc))
 
   // Keep persist in sync with config
-  configProperty.onChange { (_, _, _) =>
+  configProperty.onChange { (prop, oldConfig, newConfig) =>
+    if (oldConfig == null || oldConfig.contestType != newConfig.contestType) {
+      val now = ZonedDateTime.now()
+      val newDates = newConfig.contestType.dates(now.getYear)
+      contestTimesProperty.value = ContestTimes(newDates.startUtc, newDates.endUtc)
+    }
     archiveAndPersist()
   }
 
@@ -69,8 +81,6 @@ final class ContestManager @Inject()(
 
   private case class ContestConfigProxy(
       contest: ContestType,
-      start: ZonedDateTime,
-      end: ZonedDateTime,
       ourCallsign: Callsign,
       transmitters: SpinnerField,
       ourClass: ChoiceField[String],
@@ -178,8 +188,6 @@ final class ContestManager @Inject()(
 
     val proxy = ContestConfigProxy(
       config.contestType,
-      config.start,
-      config.end,
       config.ourCallsign,
       transmittersSpinnerField(config.transmitters),
       classChoiceField(config.ourClass),
@@ -199,30 +207,16 @@ final class ContestManager @Inject()(
     contestCombo.onAction = _ =>
       val newType = contestCombo.value.value
       currentContestType = newType
-      promptForYear(ownerWindow).foreach { year =>
-        val newDates = newType.dates(year)
-        updateZonedDateTimeControl(myCaseForm, "start", newDates.startUtc)
-        updateZonedDateTimeControl(myCaseForm, "end", newDates.endUtc)
-      }
       val newClasses = getClasses(newType)
       classCombo.items = ObservableBuffer.from(newClasses.map(_.ch))
       // fully reset selection to the first valid option for the new contest (if any)
       if newClasses.nonEmpty then classCombo.value = newClasses.head.ch else classCombo.value = null
 
-    val recalculateButton = new Button("Recalculate Dates"):
-      onAction = (e: javafx.event.ActionEvent) =>
-        val currentType = contestCombo.value.value
-        promptForYear(ownerWindow).foreach { year =>
-          val newDates = currentType.dates(year)
-          updateZonedDateTimeControl(myCaseForm, "start", newDates.startUtc)
-          updateZonedDateTimeControl(myCaseForm, "end", newDates.endUtc)
-        }
-
     val hasQsos = qsoStore.all.nonEmpty
 
     val dialogContent: VBox = new VBox(10):
       padding = Insets(10)
-      children = Seq(pane, recalculateButton)
+      children = Seq(pane)
 
     val d = new Dialog[ContestConfigProxy]():
       initOwner(ownerWindow)
@@ -240,12 +234,13 @@ final class ContestManager @Inject()(
     if hasQsos then
       val warningLabel = new Label("Logged QSOs exist. Some changes are not allowed.") {
         style = "-fx-text-fill: red; -fx-font-weight: bold;"
+        minWidth = Region.USE_PREF_SIZE
       }
       val updateAnywayButton = new Button("Update Anyway") {
         style = "-fx-base: #ff9999;"
         onAction = (e: javafx.event.ActionEvent) => {
           val p = myCaseForm.result
-          val newConfig = ContestConfig(p.contest, p.start, p.end, p.ourCallsign, p.transmitters.value, p.ourClass.value, p.ourSection.value)
+          val newConfig = ContestConfig(p.contest, p.ourCallsign, p.transmitters.value, p.ourClass.value, p.ourSection.value)
           
           // Local change
           handleRestartContest(newConfig)
@@ -269,7 +264,7 @@ final class ContestManager @Inject()(
     val result = d.showAndWait()
     result match
       case Some(p: ContestConfigProxy) =>
-        val newConfig = ContestConfig(p.contest, p.start, p.end, p.ourCallsign, p.transmitters.value, p.ourClass.value, p.ourSection.value)
+        val newConfig = ContestConfig(p.contest, p.ourCallsign, p.transmitters.value, p.ourClass.value, p.ourSection.value)
         setConfig(newConfig)
         val configBytes = newConfig.asJson.noSpaces.getBytes("UTF-8")
         transport.send(Service.RestartContest, configBytes)
@@ -293,16 +288,13 @@ final class ContestManager @Inject()(
     d.showAndWait().flatMap(_.toIntOption)
 
   private def updateZonedDateTimeControl(form: MyCaseForm[?], fieldName: String, zdt: ZonedDateTime): Unit =
-    // MyCaseForm uses an HBox for ZonedDateTime with DatePicker and two Spinners
     val field = form.fields.find(_.name == fieldName).get
-    val hb = field.control.asInstanceOf[scalafx.scene.layout.HBox]
-    val datePicker = hb.children(0).asInstanceOf[javafx.scene.control.DatePicker]
-    val hourSpinner = hb.children(2).asInstanceOf[javafx.scene.control.Spinner[Int]]
-    val minSpinner = hb.children(4).asInstanceOf[javafx.scene.control.Spinner[Int]]
-
-    datePicker.value = zdt.toLocalDate
-    hourSpinner.getValueFactory.setValue(zdt.getHour)
-    minSpinner.getValueFactory.setValue(zdt.getMinute)
+    field.control match {
+      case editor: ZonedDateTimeEditor => editor.value = zdt
+      case _ =>
+        // Fallback for any other control types if necessary, though currently it should be ZonedDateTimeEditor
+        logger.warn(s"Control for $fieldName is not a ZonedDateTimeEditor")
+    }
 
   // ---- persistence ----------------------------------------------------------
 
@@ -333,5 +325,4 @@ final class ContestManager @Inject()(
         defaultConfig()
 
   private def defaultConfig(): ContestConfig =
-    val now = ZonedDateTime.now(ZoneOffset.UTC)
-    ContestConfig(ContestType.WFD, now, now.plusHours(24), Callsign("W1AW"), 1, "O", "CT")
+    ContestConfig(ContestType.WFD, Callsign("W1AW"), 1, "O", "CT")

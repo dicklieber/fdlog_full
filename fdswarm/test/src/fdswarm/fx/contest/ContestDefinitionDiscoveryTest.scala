@@ -51,8 +51,6 @@ class ContestDefinitionDiscoveryTest extends FunSuite:
         val otherNode = NodeIdentity("10.0.0.1", 8081, "other-instance")
         val config = ContestConfig(
           ContestType.WFD,
-          ZonedDateTime.now(ZoneOffset.UTC),
-          ZonedDateTime.now(ZoneOffset.UTC).plusDays(1),
           Callsign("W1AW"),
           2,
           "I",

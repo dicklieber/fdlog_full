@@ -18,18 +18,19 @@
 
 package fdswarm.fx.tools
 
+import fdswarm.fx.contest.{ContestManager, ContestTimes}
 import fdswarm.fx.qso.ContestTimerPanel
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
 import scalafx.geometry.Insets
 import scalafx.scene.Scene
 import scalafx.scene.control.*
-import scalafx.scene.layout.{GridPane, HBox}
+import scalafx.scene.layout.{GridPane, HBox, Region}
 import scalafx.stage.{Stage, Window}
 import java.time.{LocalTime, ZonedDateTime}
 
 @Singleton
-class ContestTimeDialog @Inject()(contestTimerPanel: ContestTimerPanel) {
+class ContestTimeDialog @Inject()(contestManager: ContestManager, contestTimerPanel: ContestTimerPanel) {
 
   private var stage: Option[Stage] = None
 
@@ -43,37 +44,50 @@ class ContestTimeDialog @Inject()(contestTimerPanel: ContestTimerPanel) {
           resizable = false
         }
 
-        val useFixedTimeCheckBox = new CheckBox("Use Fixed time") {
+        val useMockTimeCheckBox = new CheckBox("Use Mock time") {
           selected = false
+          minWidth = Region.USE_PREF_SIZE
         }
 
         val now = ZonedDateTime.now()
-        val datePicker = new DatePicker(now.toLocalDate)
-        val hourSpinner = new Spinner[Int](0, 23, now.getHour) { prefWidth = 60 }
-        val minSpinner = new Spinner[Int](0, 59, now.getMinute) { prefWidth = 60 }
-
-        def currentSelectedTime: ZonedDateTime =
-          ZonedDateTime.of(datePicker.value.value, LocalTime.of(hourSpinner.value.value, minSpinner.value.value), now.getZone)
+        val mockTimeEditor = new ZonedDateTimeEditor(now, "Mock Time")
 
         def updatePanel(): Unit = {
-          contestTimerPanel.setFixedTime(useFixedTimeCheckBox.selected.value, currentSelectedTime)
+          contestTimerPanel.setMockTime(useMockTimeCheckBox.selected.value, mockTimeEditor.value)
         }
 
-        useFixedTimeCheckBox.onAction = _ => updatePanel()
-        datePicker.onAction = _ => updatePanel()
-        hourSpinner.value.onChange { (_, _, _) => updatePanel() }
-        minSpinner.value.onChange { (_, _, _) => updatePanel() }
+        useMockTimeCheckBox.onAction = _ => updatePanel()
+        mockTimeEditor.setOnAction(updatePanel())
 
-        val timeBox = new HBox(5, datePicker, new Label("H:"), hourSpinner, new Label("M:"), minSpinner)
-        timeBox.disable <== useFixedTimeCheckBox.selected.not()
+        val mockTimeBox = new HBox(5, mockTimeEditor)
+        mockTimeBox.disable <== useMockTimeCheckBox.selected.not()
+
+        // --- Contest Times ---
+        val times = contestManager.contestTimesProperty.value
+        val startEditor = new ZonedDateTimeEditor(times.start, "Contest Start")
+        val endEditor = new ZonedDateTimeEditor(times.end, "Contest End")
+
+        def updateContestTimes(): Unit = {
+          contestManager.contestTimesProperty.value = ContestTimes(startEditor.value, endEditor.value)
+        }
+
+        startEditor.setOnAction(updateContestTimes())
+        endEditor.setOnAction(updateContestTimes())
 
         val root = new GridPane {
           hgap = 10
           vgap = 10
           padding = Insets(10)
-          add(useFixedTimeCheckBox, 0, 0, 2, 1)
-          add(new Label("Fixed Time:"), 0, 1)
-          add(timeBox, 1, 1)
+          add(useMockTimeCheckBox, 0, 0, 2, 1)
+          add(new Label("Mock Time:") { minWidth = Region.USE_PREF_SIZE }, 0, 1)
+          add(mockTimeBox, 1, 1)
+
+          add(new Separator(), 0, 2, 2, 1)
+
+          add(new Label("Contest Start:") { minWidth = Region.USE_PREF_SIZE }, 0, 3)
+          add(startEditor, 1, 3)
+          add(new Label("Contest End:") { minWidth = Region.USE_PREF_SIZE }, 0, 4)
+          add(endEditor, 1, 4)
         }
 
         newStage.scene = new Scene(root)
