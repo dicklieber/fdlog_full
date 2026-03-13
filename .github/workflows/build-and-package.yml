@@ -2,15 +2,21 @@ name: Build and Package
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
   workflow_dispatch:
+
+concurrency:
+  group: build-and-package-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   package-assembly:
     name: Build Assembly JAR
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
     steps:
       - uses: actions/checkout@v4
 
@@ -20,9 +26,13 @@ jobs:
           java-version: '21'
           distribution: 'liberica'
           java-package: jdk+fx
+          cache: sbt
+
+      - name: Make mill executable
+        run: chmod +x ./mill
 
       - name: Run tests
-        run: ./mill --no-daemon fdswarm.test
+        run: xvfb-run -a ./mill --no-daemon fdswarm.test
 
       - name: Build assembly
         run: ./mill --no-daemon fdswarm.assembly
@@ -35,8 +45,11 @@ jobs:
 
   package-windows:
     name: Package Windows (MSI)
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     runs-on: windows-latest
+    timeout-minutes: 20
     needs: package-assembly
+
     steps:
       - uses: actions/checkout@v4
 
@@ -46,6 +59,7 @@ jobs:
           java-version: '21'
           distribution: 'liberica'
           java-package: jdk+fx
+          cache: sbt
 
       - name: Download JAR artifact
         uses: actions/download-artifact@v4
@@ -64,11 +78,13 @@ jobs:
           name: FdSwarm-Windows-MSI
           path: out/fdswarm/winMsi.dest/jpackage-win-*/*.msi
 
-
   package-macos:
     name: Package macOS (PKG)
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     runs-on: macos-latest
+    timeout-minutes: 20
     needs: package-assembly
+
     steps:
       - uses: actions/checkout@v4
 
@@ -78,6 +94,7 @@ jobs:
           java-version: '21'
           distribution: 'liberica'
           java-package: jdk+fx
+          cache: sbt
 
       - name: Download JAR artifact
         uses: actions/download-artifact@v4
