@@ -14,11 +14,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 21
+      - name: Set up JDK 21 (Full)
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'liberica'
+          java-package: jdk+fx
 
       - name: Build winMsi
         run: .\mill.bat --no-daemon fdswarm.winMsi
@@ -36,11 +37,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 21
+      - name: Set up JDK 21 (Full)
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'liberica'
+          java-package: jdk+fx
 
       - name: Build macPkg
         run: ./mill --no-daemon fdswarm.macPkg
@@ -58,11 +60,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 21
+      - name: Set up JDK 21 (Full)
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'liberica'
+          java-package: jdk+fx
 
       - name: Build assembly
         run: ./mill --no-daemon fdswarm.assembly
