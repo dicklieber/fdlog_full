@@ -21,6 +21,9 @@ jobs:
           distribution: 'liberica'
           java-package: jdk+fx
 
+      - name: Run tests
+        run: ./mill --no-daemon fdswarm.test
+
       - name: Build assembly
         run: ./mill --no-daemon fdswarm.assembly
 
