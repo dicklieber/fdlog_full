@@ -43,6 +43,11 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
   logger.debug("Starting NodeStatusHandler")
   private val statusCounter = meterRegistry.counter("fdswarm_received_status_total")
   private val qsoCounter = meterRegistry.counter("fdswarm_received_qso_total")
+  private var lastStatusMessagePayloadSize: Double = 0.0
+  private var lastStatusMessageDigestCount: Int = 0
+
+  meterRegistry.gauge("fdswarm_received_status_payload_bytes", this, (handler: NodeStatusHandler) => handler.lastStatusMessagePayloadSize)
+  meterRegistry.gauge("fdswarm_received_status_digest_count", this, (handler: NodeStatusHandler) => handler.lastStatusMessageDigestCount.toDouble)
 
   private val httpClient = HttpClient.newBuilder()
     .followRedirects(HttpClient.Redirect.NORMAL)
@@ -55,7 +60,9 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
         udpHeader.service match
           case Service.Status =>
             statusCounter.increment()
+            lastStatusMessagePayloadSize = udpHeader.payload.length.toDouble
             val statusMessage = StatusMessage(udpHeader.payload)
+            lastStatusMessageDigestCount = statusMessage.fdDigests.size
             val receivedNodeStatus = ReceivedNodeStatus(statusMessage, udpHeader.nodeIdentity)
             swarmStatus.put(receivedNodeStatus)
             logger.trace("StatusHandle: StatusMessage  {}.", statusMessage)

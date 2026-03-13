@@ -21,6 +21,7 @@ package fdswarm.replication
 import com.google.inject.name.Named
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.util.NodeIdentityManager
+import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.{Inject, Singleton}
 
 import java.net.{
@@ -38,6 +39,7 @@ import scala.jdk.CollectionConverters.*
 class BroadcastTransport @Inject() (
                                      @Named("fdswarm.UDP.port") port: Int,
                                      val nodeIdentityManager: NodeIdentityManager,
+                                     meterRegistry: MeterRegistry
                                    ) extends Transport with LazyLogging:
 
   logger.debug("Starting BroadcastTransport on port {}", port)
@@ -45,6 +47,10 @@ class BroadcastTransport @Inject() (
   override val mode: String = "Broadcast"
   val queue = new LinkedBlockingQueue[UDPHeaderData]()
   private val listeners = new java.util.concurrent.CopyOnWriteArrayList[UDPHeaderData => Unit]()
+
+  private val sendCounter = meterRegistry.counter("fdswarm_sent_packets_total", "mode", mode)
+  private var lastPacketBytes: Int = 0
+  meterRegistry.gauge("fdswarm_sent_packet_bytes", this, (bt: BroadcastTransport) => bt.lastPacketBytes.toDouble)
 
   def addListener(listener: UDPHeaderData => Unit): Unit = listeners.add(listener)
   def removeListener(listener: UDPHeaderData => Unit): Unit = listeners.remove(listener)
@@ -128,12 +134,19 @@ class BroadcastTransport @Inject() (
     send(Service.QSO, data)
 
   def send(service: Service, data: Array[Byte]): Unit =
-    val packetBytes = UDPHeader(service, nodeIdentityManager.portAndInstance, data)
-    val broadcastAddr = InetAddress.getByName("255.255.255.255")
-    val packet =
-      new DatagramPacket(packetBytes, packetBytes.length, broadcastAddr, port)
-    socket.send(packet)
-    sentCounter.increment()
+    try
+      logger.trace("Sending UDP packet to 255.255.255.255:{} bytes: {}", service, data.length)
+      val packetBytes = UDPHeader(service, nodeIdentityManager.portAndInstance, data)
+      lastPacketBytes = packetBytes.length
+      val broadcastAddr = InetAddress.getByName("255.255.255.255")
+      val packet =
+        new DatagramPacket(packetBytes, packetBytes.length, broadcastAddr, port)
+      socket.send(packet)
+      sentCounter.increment()
+      sendCounter.increment()
+    catch
+      case e: Exception  =>
+        logger.error("Send", e)
 
   def stop(): Unit =
     logger.debug("Stopping BroadcastTransport")

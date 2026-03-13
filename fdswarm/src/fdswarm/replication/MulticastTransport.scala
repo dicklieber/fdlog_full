@@ -3,6 +3,7 @@ package fdswarm.replication
 import com.google.inject.name.Named
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.util.NodeIdentityManager
+import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.{Inject, Singleton}
 
 import java.net.*
@@ -14,7 +15,8 @@ import scala.jdk.CollectionConverters.*
 class MulticastTransport @Inject() (
                                      @Named("fdswarm.UDP.port") port: Int,
                                      @Named("fdswarm.UDP.groupAddr") groupAddr: String,
-                                     val nodeIdentityManager: NodeIdentityManager
+                                     val nodeIdentityManager: NodeIdentityManager,
+                                     meterRegistry: MeterRegistry
                                    ) extends Transport with LazyLogging:
 
   logger.debug("Starting MulticastTransport on {}:{}", groupAddr, port)
@@ -22,6 +24,10 @@ class MulticastTransport @Inject() (
   override val mode: String = "Multicast"
   val queue = new LinkedBlockingQueue[UDPHeaderData]()
   private val listeners = new java.util.concurrent.CopyOnWriteArrayList[UDPHeaderData => Unit]()
+
+  private val sendCounter = meterRegistry.counter("fdswarm_sent_packets_total", "mode", mode)
+  private var lastPacketBytes: Int = 0
+  meterRegistry.gauge("fdswarm_sent_packet_bytes", this, (mt: MulticastTransport) => mt.lastPacketBytes.toDouble)
 
   def addListener(listener: UDPHeaderData => Unit): Unit = listeners.add(listener)
   def removeListener(listener: UDPHeaderData => Unit): Unit = listeners.remove(listener)
@@ -167,10 +173,12 @@ class MulticastTransport @Inject() (
 
   def send(service: Service, data: Array[Byte]): Unit =
     val packetBytes = UDPHeader(service, nodeIdentityManager.portAndInstance, data)
+    lastPacketBytes = packetBytes.length
     val packet =
       new DatagramPacket(packetBytes, packetBytes.length, group, port)
     socket.send(packet)
     sentCounter.increment()
+    sendCounter.increment()
 
   def stop(): Unit =
     logger.debug("Stopping MulticastTransport")
