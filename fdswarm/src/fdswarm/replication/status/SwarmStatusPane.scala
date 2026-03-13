@@ -63,8 +63,8 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
   def clearData(): Unit =
     val alert = new Alert(Alert.AlertType.Confirmation) {
       title = "Clear Swarm Status"
-      headerText = "Clear all swarm status data?"
-      contentText = "This will remove all discovered nodes and their QSO counts. This cannot be undone."
+      headerText = "Clear remote swarm status?"
+      contentText = "This will remove all discovered remote nodes and their QSOcounts. The local node status and all QSOs will remain."
     }
 
     alert.showAndWait() match {
@@ -76,7 +76,7 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
     style = "-fx-font-style: italic; -fx-padding: 10 0 0 0;"
   }
 
-  private val clearButton = new Button("Clear All Data") {
+  private val clearButton = new Button("Clear Remote Data") {
     onAction = _ => clearData()
     minWidth = Region.USE_PREF_SIZE
   }
@@ -135,7 +135,7 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
       }
     }
 
-    val gird: SwarmStatusGrid = SwarmStatusGrid(receivedNodeStatuses, nowProperty, ageStyleService, nodeIdentityManager.nodeIdentity.instanceId)
+    val gird: SwarmStatusGrid = SwarmStatusGrid(receivedNodeStatuses, nowProperty, ageStyleService, nodeIdentityManager.nodeIdentity.instanceId, swarmStatusApi)
     gird.populate(builder, rowStyleCallback)
     val gridPane = builder.result
     VBox.setVgrow(gridPane, Priority.Always)

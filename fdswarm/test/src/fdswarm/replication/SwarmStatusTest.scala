@@ -46,6 +46,43 @@ class SwarmStatusTest extends FunSuite:
 
     testDir.cleanup()
 
+  test("SwarmStatus.clear should retain local node data"):
+    val testDir = new TestDirectory
+    val localNi = NodeIdentity("127.0.0.1", 8080, "local-instance")
+    val remoteNi = NodeIdentity("192.168.1.100", 8080, "remote-instance")
+    val mockNodeIdentityManager = new MockNodeIdentityManager(localNi)
+    val swarmStatus = new SwarmStatus(testDir, mockNodeIdentityManager, null)
+
+    val hour = FdHour(15, 12)
+    val digest = FdHourDigest(hour, 10, "abc")
+    val statusMessage = StatusMessage(Seq(digest))
+
+    // Put local node data
+    swarmStatus.put(ReceivedNodeStatus(statusMessage, localNi))
+    // Put remote node data
+    swarmStatus.put(ReceivedNodeStatus(statusMessage, remoteNi))
+
+    assertEquals(swarmStatus.nodeMap.size, 2)
+
+    swarmStatus.clear()
+    assertEquals(swarmStatus.nodeMap.size, 1, "nodeMap should have 1 node after clear")
+
+    // Test remove
+    swarmStatus.put(ReceivedNodeStatus(statusMessage, remoteNi))
+    assertEquals(swarmStatus.nodeMap.size, 2)
+    swarmStatus.remove(remoteNi)
+    assertEquals(swarmStatus.nodeMap.size, 1)
+    assert(!swarmStatus.nodeMap.contains(remoteNi))
+
+    // Test remove local node (should do nothing)
+    swarmStatus.remove(localNi)
+    assertEquals(swarmStatus.nodeMap.size, 1)
+    assert(swarmStatus.nodeMap.contains(localNi))
+    assert(swarmStatus.nodeMap.contains(localNi), "nodeMap should still contain local node")
+    assert(!swarmStatus.nodeMap.contains(remoteNi), "nodeMap should NOT contain remote node")
+
+    testDir.cleanup()
+
   test("SwarmStatus should persist state"):
     val testDir = new TestDirectory
     val hp = NodeIdentity("192.168.1.101", 9090, "test-instance-2")

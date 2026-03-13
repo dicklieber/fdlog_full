@@ -50,8 +50,25 @@ class GirdTest extends FunSuite:
 
     val allNodeDetails = Seq(nd1, nd2)
     val nowProperty = scalafx.beans.property.LongProperty(System.currentTimeMillis())
-    val ageStyleService = new fdswarm.util.AgeStyleService(com.typesafe.config.ConfigFactory.empty())
-    val gird = SwarmStatusGrid(allNodeDetails, nowProperty, ageStyleService, "some-id")
+    val config = com.typesafe.config.ConfigFactory.parseString(
+      """
+        |fdswarm.ageStyles = [
+        |  {
+        |    name = "node"
+        |    thresholds = [
+        |      { duration = "12s", style = "fresh" }
+        |    ]
+        |    olderStyle = "stale"
+        |  }
+        |]
+      """.stripMargin)
+    val ageStyleService = new fdswarm.util.AgeStyleService(config)
+    val swarmStatusApi = new SwarmStatusApi {
+      override def clear(): Unit = ()
+      override def refresh(): Unit = ()
+      override def remove(nodeIdentity: NodeIdentity): Unit = ()
+    }
+    val gird = SwarmStatusGrid(allNodeDetails, nowProperty, ageStyleService, "some-id", swarmStatusApi)
 
     // FdHour is sorted, so hour1 then hour2
     assertEquals(gird.fdHours.length, 2)
@@ -77,8 +94,25 @@ class GirdTest extends FunSuite:
 
     val builder = new GridBuilder()
     val nowProperty = scalafx.beans.property.LongProperty(System.currentTimeMillis())
-    val ageStyleService = new fdswarm.util.AgeStyleService(com.typesafe.config.ConfigFactory.empty())
-    val gird = SwarmStatusGrid(Seq(nd1), nowProperty, ageStyleService, "some-id")
+    val config = com.typesafe.config.ConfigFactory.parseString(
+      """
+        |fdswarm.ageStyles = [
+        |  {
+        |    name = "node"
+        |    thresholds = [
+        |      { duration = "12s", style = "fresh" }
+        |    ]
+        |    olderStyle = "stale"
+        |  }
+        |]
+      """.stripMargin)
+    val ageStyleService = new fdswarm.util.AgeStyleService(config)
+    val swarmStatusApi = new SwarmStatusApi {
+      override def clear(): Unit = ()
+      override def refresh(): Unit = ()
+      override def remove(nodeIdentity: NodeIdentity): Unit = ()
+    }
+    val gird = SwarmStatusGrid(Seq(nd1), nowProperty, ageStyleService, "some-id", swarmStatusApi)
 
     gird.populate(builder, _ => "test-style")
     
@@ -99,12 +133,20 @@ class GirdTest extends FunSuite:
     assert(findLabelByText("Qso Count").isDefined)
     
     // Check values in col 1
-    assert(findLabelByText("node1").isDefined)
+    // assert(findLabelByText("node1").isDefined) // Commented out because it's now in an HBox
+    assert(gridPane.getChildren.asScala.exists {
+      case l: javafx.scene.control.Label if l.getText == "node1" => true
+      case h: javafx.scene.layout.HBox => h.getChildren.asScala.exists {
+        case l: javafx.scene.control.Label if l.getText == "node1" => true
+        case _ => false
+      }
+      case _ => false
+    })
     // Check "Our Node" when it matches
     val niOur = NodeIdentity("127.0.0.1", 8080, "our-node")
     val ndOur = ReceivedNodeStatus(StatusMessage(Nil), niOur)
     val builder2 = new GridBuilder()
-    val gird2 = SwarmStatusGrid(Seq(ndOur), nowProperty, ageStyleService, "our-node")
+    val gird2 = SwarmStatusGrid(Seq(ndOur), nowProperty, ageStyleService, "our-node", swarmStatusApi)
     gird2.populate(builder2, _ => "test-style")
     val gridPane2 = builder2.result
     

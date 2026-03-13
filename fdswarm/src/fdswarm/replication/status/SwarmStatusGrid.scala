@@ -20,18 +20,22 @@ package fdswarm.replication.status
 
 import fdswarm.fx.GridBuilder
 import fdswarm.fx.qso.FdHour
-import fdswarm.fx.utils.IntLabel
+import fdswarm.fx.utils.{BootstrapIcons, IntLabel}
 import fdswarm.replication.{NodeDetails, ReceivedNodeStatus}
 import fdswarm.util.{AgeStyleService, DurationFormat, NodeIdentity, NodeIdentityManager}
-import java.time.Instant
+import scalafx.Includes.*
 import scalafx.beans.property.LongProperty
+import scalafx.scene.control.{Button, Label, Tooltip}
+import scalafx.scene.layout.{GridPane, HBox, Priority}
 import scalafx.scene.text.{Font, FontPosture, FontWeight}
-import scalafx.scene.layout.GridPane
+
+import java.time.Instant
 
 class SwarmStatusGrid(allNodes: Seq[ReceivedNodeStatus],
                       nowProperty: LongProperty,
                       ageStyleService: AgeStyleService,
-                      ourInstanceId: String):
+                      ourInstanceId: String,
+                      swarmStatusApi: SwarmStatusApi):
 
   val fdHours: Seq[FdHour] =
     val allFdHours = for
@@ -52,7 +56,23 @@ class SwarmStatusGrid(allNodes: Seq[ReceivedNodeStatus],
 
   def populate(builder: GridBuilder, rowStyleCallback: Seq[IntLabel] => String): Unit =
     // Header rows
-    builder("InstanceId", allNodes.map(_.nodeIdentity.instanceId)*)
+    builder("InstanceId", allNodes.map { node =>
+      val label = new Label(node.nodeIdentity.instanceId)
+      if (node.nodeIdentity.instanceId == ourInstanceId) {
+        label
+      } else {
+        val removeButton = new Button {
+          graphic = BootstrapIcons.svgPath("trash-fill", size = 12, color = scalafx.scene.paint.Color.White)
+          tooltip = Tooltip("Remove")
+          styleClass += "delete-button"
+          onAction = _ => swarmStatusApi.remove(node.nodeIdentity)
+        }
+        new HBox {
+          spacing = 5
+          children = Seq(label, removeButton)
+        }
+      }
+    }*)
     builder("IP", allNodes.map(_.nodeIdentity.host)*)
     builder("Age", allNodes.map { receivedNodeStatus =>
       if (receivedNodeStatus.nodeIdentity.instanceId == ourInstanceId) {
@@ -71,11 +91,16 @@ class SwarmStatusGrid(allNodes: Seq[ReceivedNodeStatus],
         )
         new scalafx.scene.control.Label {
           text <== binding
-          nowProperty.onChange { (_, _, _) =>
+          styleClass.addAll("grid-value")
+          val updateStyle: Unit = {
             val now = Instant.ofEpochMilli(nowProperty.value)
             val styleAndAge = ageStyleService.calc("node", receivedNodeStatus.received, now)
             styleClass.removeAll("fresh", "recent", "stale")
             styleClass.add(styleAndAge.style)
+          }
+          updateStyle
+          nowProperty.onChange { (_, _, _) =>
+            updateStyle
           }
         }
       }

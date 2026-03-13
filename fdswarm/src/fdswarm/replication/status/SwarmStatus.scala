@@ -83,11 +83,21 @@ class SwarmStatus @Inject() (
 
   def ourNodeIdentity: NodeIdentity = nodeIdentityManager.nodeIdentity
   def clear(): Unit =
+    val localStatus = nodeMap.get(ourNodeIdentity)
     nodeMap.clear()
+    localStatus.foreach(status => nodeMap.put(status.nodeIdentity, status))
     save()
     if swarmStatusPane != null then
       swarmStatusPane.update(nodeMap.values.toSeq)
-    logger.debug("Cleared all swarm status data.")
+    logger.debug("Cleared swarm status data, retaining local node.")
+
+  def remove(nodeIdentity: NodeIdentity): Unit =
+    if nodeIdentity != ourNodeIdentity then
+      nodeMap.remove(nodeIdentity)
+      save()
+      if swarmStatusPane != null then
+        swarmStatusPane.update(nodeMap.values.toSeq)
+      logger.debug(s"Removed node status for $nodeIdentity")
 
   private def save(): Unit =
     try
@@ -114,3 +124,4 @@ case class FdHourNodeCell(nideIdentity: NodeIdentity, fdHour: FdHour):
 trait SwarmStatusApi:
   def clear(): Unit
   def refresh(): Unit
+  def remove(nodeIdentity: NodeIdentity): Unit

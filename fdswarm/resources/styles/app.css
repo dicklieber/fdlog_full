@@ -65,6 +65,17 @@
 
 }
 
+.delete-button {
+    -fx-background-color: red;
+    -fx-padding: 2;
+    -fx-cursor: hand;
+    -fx-background-radius: 4;
+}
+
+.delete-button:hover {
+    -fx-background-color: darkred;
+}
+
 .dupCallsign {
     -fx-text-fill: red;
 }
@@ -166,7 +177,7 @@
     -fx-background-color: lightblue;
 }
 .stale{
-    -fx-background-color: lightgray;
+    -fx-background-color: red;
 }
 
 .grid-value.ourNode{
