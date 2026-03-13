@@ -69,7 +69,7 @@ class QsoSearchPane @Inject()(
   /**
    * is the pane expanded?
    */
-  val expandedProperty = scalafx.beans.property.BooleanProperty(true)
+  val expandedProperty = scalafx.beans.property.BooleanProperty(false)
 
   val anyChange: BooleanProperty = MultiChangeWatcher(callsignFilter.optionValueProperty,
     bandFilter.value,
