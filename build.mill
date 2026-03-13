@@ -92,6 +92,21 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
       Seq.empty
   }
 
+  private def getJpackageInput(cp: Seq[PathRef]): (os.Path, String) = {
+    val jarFromEnv = sys.env.get("FDSWARM_ASSEMBLY_JAR").map(os.Path(_, os.pwd))
+    val inputDir = Task.dest / "jpackage-input"
+    os.makeDir.all(inputDir)
+
+    jarFromEnv match {
+      case Some(jarPath) if os.exists(jarPath) =>
+        os.copy.over(jarPath, inputDir / jarPath.last, createFolders = true)
+        (inputDir, jarPath.last)
+      case _ =>
+        val mainJarName = stageJpackageInput(inputDir, cp)
+        (inputDir, mainJarName)
+    }
+  }
+
   /** Build a macOS .dmg using the JDK's `jpackage` tool. */
   def macDmg = Task {
     if (!isMac)
@@ -100,11 +115,8 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
     val dest = Task.dest / "jpackage"
     os.makeDir.all(dest)
 
-    val inputDir = Task.dest / "jpackage-input"
-    os.makeDir.all(inputDir)
     val cp = jpackageRunClasspath()
-
-    val mainJarName = stageJpackageInput(inputDir, cp)
+    val (inputDir, mainJarName) = getJpackageInput(cp)
 
     val baseArgs = Seq(
       "jpackage",
@@ -146,11 +158,8 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
     val dest = Task.dest / "jpackage-app-image"
     os.makeDir.all(dest)
 
-    val inputDir = Task.dest / "jpackage-input"
-    os.makeDir.all(inputDir)
     val cp = jpackageRunClasspath()
-
-    val mainJarName = stageJpackageInput(inputDir, cp)
+    val (inputDir, mainJarName) = getJpackageInput(cp)
 
     val baseArgs = Seq(
       "jpackage",
@@ -191,11 +200,8 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
     val dest = Task.dest / "jpackage"
     os.makeDir.all(dest)
 
-    val inputDir = Task.dest / "jpackage-input"
-    os.makeDir.all(inputDir)
     val cp = jpackageRunClasspath()
-
-    val mainJarName = stageJpackageInput(inputDir, cp)
+    val (inputDir, mainJarName) = getJpackageInput(cp)
 
     val baseArgs = Seq(
       "jpackage",
@@ -244,11 +250,8 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
     val dest = Task.dest / s"jpackage-win-$arch"
     os.makeDir.all(dest)
 
-    val inputDir = Task.dest / "jpackage-input"
-    os.makeDir.all(inputDir)
     val cp = jpackageRunClasspath()
-
-    val mainJarName = stageJpackageInput(inputDir, cp)
+    val (inputDir, mainJarName) = getJpackageInput(cp)
 
     val baseArgs = Seq(
       "jpackage",

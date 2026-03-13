@@ -8,52 +8,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  package-windows:
-    name: Package Windows (MSI)
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK 21 (Full)
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'liberica'
-          java-package: jdk+fx
-
-      - name: Build winMsi
-        run: .\mill.bat --no-daemon fdswarm.winMsi
-
-      - name: Upload MSI artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: FdSwarm-Windows-MSI
-          path: out/fdswarm/winMsi.dest/jpackage-win-*/*.msi
-
-
-  package-macos:
-    name: Package macOS (PKG)
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK 21 (Full)
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'liberica'
-          java-package: jdk+fx
-
-      - name: Build macPkg
-        run: ./mill --no-daemon fdswarm.macPkg
-
-      - name: Upload PKG artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: FdSwarm-macOS-PKG
-          path: out/fdswarm/macPkg.dest/jpackage/*.pkg
-
-
   package-assembly:
     name: Build Assembly JAR
     runs-on: ubuntu-latest
@@ -74,4 +28,67 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: FdSwarm-Assembly-JAR
-          path: out/fdswarm/assembly.dest/*.jar
+          path: out/fdswarm/assembly.dest/fdswarm-all.jar
+
+  package-windows:
+    name: Package Windows (MSI)
+    runs-on: windows-latest
+    needs: package-assembly
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (Full)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'liberica'
+          java-package: jdk+fx
+
+      - name: Download JAR artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: FdSwarm-Assembly-JAR
+          path: out/fdswarm/assembly.dest
+
+      - name: Build winMsi
+        run: .\mill.bat --no-daemon fdswarm.winMsi
+        env:
+          FDSWARM_ASSEMBLY_JAR: out/fdswarm/assembly.dest/fdswarm-all.jar
+
+      - name: Upload MSI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FdSwarm-Windows-MSI
+          path: out/fdswarm/winMsi.dest/jpackage-win-*/*.msi
+
+
+  package-macos:
+    name: Package macOS (PKG)
+    runs-on: macos-latest
+    needs: package-assembly
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (Full)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'liberica'
+          java-package: jdk+fx
+
+      - name: Download JAR artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: FdSwarm-Assembly-JAR
+          path: out/fdswarm/assembly.dest
+
+      - name: Build macPkg
+        run: ./mill --no-daemon fdswarm.macPkg
+        env:
+          FDSWARM_ASSEMBLY_JAR: out/fdswarm/assembly.dest/fdswarm-all.jar
+
+      - name: Upload PKG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FdSwarm-macOS-PKG
+          path: out/fdswarm/macPkg.dest/jpackage/*.pkg
