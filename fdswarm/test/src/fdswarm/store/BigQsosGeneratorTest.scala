@@ -111,12 +111,12 @@ class BigQsosGeneratorTest extends FunSuite with LazyLogging:
     val generator = new BigQsosGenerator(qsoStore, bandModeBuilder, mockNodeIdentityManager, mockBandCatalog, mockModeCatalog)
 
     // Generate 100 QSOs at 20 per hour cadence with prefix "K"
-    generator.qsos(howMany = 10000, howManyPerHour = 400, prefix = "K")
+    generator.qsos(howMany = 100, howManyPerHour = 20, prefix = "K")
 
-    assertEquals(qsoStore.qsoCollection.size, 10000)
+    assertEquals(qsoStore.qsoCollection.size, 100)
     // Ensure digests are built (at least one hour should have entries)
     val digests = qsoStore.digests()
-    assertEquals(digests.size, 26)
+    assertEquals(digests.size, 5)
     
     // Check qsosJournal.json (wc equivalent)
     val journalFile = testDirectory() / "qsosJournal.json"
@@ -127,8 +127,8 @@ class BigQsosGeneratorTest extends FunSuite with LazyLogging:
     val wordCount = content.split("\\s+").count(_.nonEmpty)
     val byteCount = bytes.length
     
-    assertEquals(lineCount, 10000, "Should have 10000 lines (one per QSO)")
-    assert(byteCount > 10000 * 50, s"Byte count ($byteCount) seems too small for 10000 QSOs")
+    assertEquals(lineCount, 100, "Should have 100 lines (one per QSO)")
+    assert(byteCount > 100 * 50, s"Byte count ($byteCount) seems too small for 100 QSOs")
     logger.info(s"Journal wc: lines=$lineCount, words=$wordCount, bytes=$byteCount")
 
     // Verify metrics

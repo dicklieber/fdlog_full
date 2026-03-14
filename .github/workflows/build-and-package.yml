@@ -160,4 +160,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: FdSwarm-macOS-PKG
-          path: out/fdswarm/macPkg.dest/jpackage/*.pkg
+          path: out/fdswarm/macPkg.dest/jpackage/*.pkg o o
