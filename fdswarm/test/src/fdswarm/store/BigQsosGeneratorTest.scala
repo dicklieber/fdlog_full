@@ -29,6 +29,7 @@ import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import munit.FunSuite
 
+import java.time.Instant
 import java.util
 import scala.compiletime.uninitialized
 
@@ -110,8 +111,11 @@ class BigQsosGeneratorTest extends FunSuite with LazyLogging:
     val bandModeBuilder = new AllowAllBandModeBuilder(mockBandCatalog, mockModeCatalog)
     val generator = new BigQsosGenerator(qsoStore, bandModeBuilder, mockNodeIdentityManager, mockBandCatalog, mockModeCatalog)
 
+    // Set 'now' to a fixed point at the beginning of an hour to ensure we only span 5 hours.
+    // 2026-03-14T00:59:59Z would also work, but let's be safe.
+    val now = Instant.parse("2026-03-14T05:59:59Z")
     // Generate 100 QSOs at 20 per hour cadence with prefix "K"
-    generator.qsos(howMany = 100, howManyPerHour = 20, prefix = "K")
+    generator.qsos(howMany = 100, howManyPerHour = 20, prefix = "K", now = now)
 
     assertEquals(qsoStore.qsoCollection.size, 100)
     // Ensure digests are built (at least one hour should have entries)
