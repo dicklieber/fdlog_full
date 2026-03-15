@@ -5,12 +5,11 @@
 
 package build
 
-import mill._
-import mill.scalalib._
+import mill.*
 import mill.contrib.buildinfo.BuildInfo
-import mill.contrib.scoverage._
-import mill.scalalib.JpackageModule
+import mill.contrib.scoverage.*
 import mill.javalib.Assembly.*
+import mill.scalalib.*
 
 object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with JpackageModule {
   val majorVersion = "0"
@@ -37,16 +36,18 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
 
   override def manifest = Task {
     super.manifest().add(
-      "Implementation-Title"   -> "FdSwarm",
+      "Implementation-Title" -> "FdSwarm",
       "Implementation-Version" -> version,
-      "Bundle-Name"            -> "FdSwarm",
-      "Bundle-SymbolicName"    -> "fdswarm",
-      "Bundle-Version"         -> version
+      "Bundle-Name" -> "FdSwarm",
+      "Bundle-SymbolicName" -> "fdswarm",
+      "Bundle-Version" -> version
     )
   }
 
   // ---- jpackage (Mill 1.0.6 supports these knobs) ----
-  override def jpackageName = Task { "FdSwarm" }
+  override def jpackageName = Task {
+    "FdSwarm"
+  }
 
   /** macOS DMG/PKG require app-version to start at 1+ (not 0.x.y). */
   def jpackageAppVersion = Task {
@@ -58,11 +59,12 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
   }
 
   private def isMac: Boolean = sys.props("os.name").toLowerCase.contains("mac")
+
   private def repoPath(rel: String): os.Path = os.Path(rel, os.pwd)
 
   // Repo-relative icons (works on other machines/CI)
   private val macIconIcns = repoPath("fdswarm/resources/icons/icon.icns")
-  private val winIconIco  = repoPath("fdswarm/resources/icons/icon.ico")
+  private val winIconIco = repoPath("fdswarm/resources/icons/icon.ico")
 
   // Match build-macos-app.sh: nicer macOS app integration
   private val macJavaOptions = Seq(
@@ -72,6 +74,7 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
   )
 
   private def stageJpackageInput(inputDir: os.Path, cp: Seq[PathRef]): String = {
+
     if (cp.isEmpty) throw new RuntimeException("jpackageRunClasspath was empty")
 
     cp.foreach { p =>
@@ -83,8 +86,9 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
   }
 
   private def macSignArgs: Seq[String] = {
+
     val signEnabled = sys.env.get("JPACKAGE_MAC_SIGN").exists(_.trim.nonEmpty)
-    val signingKey  = sys.env.get("JPACKAGE_MAC_SIGNING_KEY_USER_NAME").map(_.trim).filter(_.nonEmpty)
+    val signingKey = sys.env.get("JPACKAGE_MAC_SIGNING_KEY_USER_NAME").map(_.trim).filter(_.nonEmpty)
 
     if (signEnabled && signingKey.nonEmpty)
       Seq("--mac-sign", "--mac-signing-key-user-name", signingKey.get)
@@ -93,6 +97,7 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
   }
 
   private def getJpackageInput(cp: Seq[PathRef], dest: os.Path): (os.Path, String) = {
+
     val jarFromEnv = sys.env.get("FDSWARM_ASSEMBLY_JAR").map(os.Path(_, os.pwd))
     val inputDir = dest / "jpackage-input"
     os.makeDir.all(inputDir)
@@ -324,7 +329,7 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
   def parallelsShareDir: os.Path =
     sys.env.get("FDSWARM_PARALLELS_SHARE") match {
       case Some(p) if p.trim.nonEmpty => os.Path(p.trim, os.pwd)
-      case _                          => os.home / "ParallelsShare"
+      case _ => os.home / "ParallelsShare"
     }
 
   def copyFatJarToParallels = Task {
@@ -419,6 +424,10 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
     )
 
     def scalaVersion = scalaV
+
     def munitVersion = munitV
+
+    override def testReportXml = Some("test-report.xml")
+
   }
 }

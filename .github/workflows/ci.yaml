@@ -19,6 +19,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Set up JDK 21 (Full)
         uses: actions/setup-java@v4
@@ -33,59 +35,37 @@ jobs:
           path: |
             ~/.cache/coursier
             ~/.mill
-          key: ${{ runner.os }}-mill-${{ hashFiles('build.mill', '.mill-version', '.mill-jvm-version', '**/*.mill') }}
+          key: ${{ runner.os }}-mill-${{ hashFiles('build.mill', '.mill-version', '.mill-jvm-version') }}
           restore-keys: |
             ${{ runner.os }}-mill-
 
       - name: Make mill executable
         run: chmod +x ./mill
 
-      - name: Run tests
-        run: xvfb-run -a ./mill --no-daemon fdswarm.test
-
-      - name: Generate JUnit XML test report
-        if: always()
-        run: |
-          mkdir -p test-reports
-          curl -fsSL https://raw.githubusercontent.com/vic/mill-test-junit-report/master/generate-junit-report.sc -o generate-junit-report.sc
-          curl -fsSL https://github.com/com-lihaoyi/Ammonite/releases/download/3.0.0/2.13-3.0.0 -o amm
-          chmod +x amm
-          if [ -f out/fdswarm/test/test/dest/out.json ]; then
-            ./amm generate-junit-report.sc \
-              "fdswarm.test" \
-              "fdswarm tests" \
-              "test-reports/fdswarm.xml" \
-              "out/fdswarm/test/test/dest/out.json"
-          else
-            echo "Mill test output JSON not found: out/fdswarm/test/test/dest/out.json"
-            exit 1
-          fi
-
-      - name: Upload test report artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-reports
-          path: test-reports/*.xml
-          if-no-files-found: warn
+      - name: Run tests and generate JUnit XML
+        continue-on-error: true
+        run: xvfb-run -a ./mill --no-daemon fdswarm.test.testReportXml
 
       - name: Publish test results
         if: always()
         uses: mikepenz/action-junit-report@v5
         with:
-          report_paths: 'test-reports/*.xml'
+          report_paths: 'out/fdswarm/test/testForked.dest/test-report.xml'
           detailed_summary: true
           include_passed: true
-          fail_on_failure: false
+          fail_on_failure: true
 
       - name: Build assembly
+        if: success()
         run: ./mill --no-daemon fdswarm.assembly
 
       - name: Upload JAR artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: FdSwarm-Assembly-JAR
           path: out/fdswarm/assembly.dest/fdswarm-all.jar
+          if-no-files-found: error
 
   package-windows:
     name: Package Windows (MSI)
@@ -96,6 +76,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Set up JDK 21 (Full)
         uses: actions/setup-java@v4
@@ -110,7 +92,7 @@ jobs:
           path: |
             ~\.cache\coursier
             ~\.mill
-          key: ${{ runner.os }}-mill-${{ hashFiles('build.mill', '.mill-version', '.mill-jvm-version', '**/*.mill') }}
+          key: ${{ runner.os }}-mill-${{ hashFiles('build.mill', '.mill-version', '.mill-jvm-version') }}
           restore-keys: |
             ${{ runner.os }}-mill-
 
@@ -130,6 +112,7 @@ jobs:
         with:
           name: FdSwarm-Windows-MSI
           path: out/fdswarm/winMsi.dest/jpackage-win-*/*.msi
+          if-no-files-found: error
 
   package-macos:
     name: Package macOS (PKG)
@@ -140,6 +123,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Set up JDK 21 (Full)
         uses: actions/setup-java@v4
@@ -154,7 +139,7 @@ jobs:
           path: |
             ~/.cache/coursier
             ~/.mill
-          key: ${{ runner.os }}-mill-${{ hashFiles('build.mill', '.mill-version', '.mill-jvm-version', '**/*.mill') }}
+          key: ${{ runner.os }}-mill-${{ hashFiles('build.mill', '.mill-version', '.mill-jvm-version') }}
           restore-keys: |
             ${{ runner.os }}-mill-
 
@@ -163,6 +148,9 @@ jobs:
         with:
           name: FdSwarm-Assembly-JAR
           path: out/fdswarm/assembly.dest
+
+      - name: Make mill executable
+        run: chmod +x ./mill
 
       - name: Build macPkg
         run: ./mill --no-daemon fdswarm.macPkg
@@ -174,3 +162,4 @@ jobs:
         with:
           name: FdSwarm-macOS-PKG
           path: out/fdswarm/macPkg.dest/jpackage/*.pkg
+          if-no-files-found: error
