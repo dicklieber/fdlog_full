@@ -46,15 +46,9 @@ jobs:
       - name: Make mill executable
         run: chmod +x ./mill
 
-      - name: Run tests and generate JUnit XML
+      - name: Run tests
         continue-on-error: true
         run: xvfb-run -a ./mill --no-daemon fdswarm.test
-
-      - name: Generate Scoverage reports
-        if: always()
-        run: |
-          ./mill --no-daemon fdswarm.scoverage.htmlReport
-          ./mill --no-daemon fdswarm.scoverage.xmlReport
 
       - name: Publish test results
         if: always()
@@ -65,12 +59,39 @@ jobs:
           include_passed: true
           fail_on_failure: true
 
+      - name: Generate HTML test report
+        if: always()
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip junit2html
+          mkdir -p out/reports
+          xml_file="$(find out/fdswarm/test -name 'test-report.xml' | head -n 1)"
+          test -n "$xml_file"
+          junit2html "$xml_file" out/reports/test-report.html
+
+      - name: Upload HTML test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Test-Report-HTML
+          path: out/reports/test-report.html
+          if-no-files-found: error
+          retention-days: 5
+
+      - name: Generate Scoverage reports
+        if: always()
+        run: |
+          ./mill --no-daemon fdswarm.scoverage.htmlReport
+          ./mill --no-daemon fdswarm.scoverage.xmlReport
+
       - name: Upload Scoverage HTML report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: Coverage-Report-HTML
           path: out/fdswarm/scoverage/htmlReport.dest/
+          if-no-files-found: error
+          retention-days: 5
 
       - name: Build assembly
         if: success()
@@ -83,6 +104,7 @@ jobs:
           name: FdSwarm-Assembly-JAR
           path: out/fdswarm/assembly.dest/fdswarm-all.jar
           if-no-files-found: error
+          retention-days: 7
 
   package-windows:
     name: Package Windows (MSI)
@@ -130,6 +152,7 @@ jobs:
           name: FdSwarm-Windows-MSI
           path: out/fdswarm/winMsi.dest/jpackage-win-*/*.msi
           if-no-files-found: error
+          retention-days: 7
 
   package-macos:
     name: Package macOS (PKG)
@@ -180,3 +203,4 @@ jobs:
           name: FdSwarm-macOS-PKG
           path: out/fdswarm/macPkg.dest/jpackage/*.pkg
           if-no-files-found: error
+          retention-days: 7
