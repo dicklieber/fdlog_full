@@ -38,6 +38,13 @@ import fdswarm.replication.{Transport, Service}
 import io.circe.syntax.*
 import fdswarm.util.JavaTimeCirce.given
 import javafx.util.StringConverter
+import fdswarm.fx.utils.{BootstrapIcons, IconButton}
+import fdswarm.util.NodeIdentity
+import scalafx.animation.{KeyFrame, Timeline}
+import scalafx.application.Platform
+import scalafx.beans.property.ReadOnlyStringWrapper
+import scalafx.event.ActionEvent
+import scalafx.util.Duration
 import java.time.*
 
 @Singleton
@@ -48,6 +55,7 @@ final class ContestManager @Inject()(
                                       qsoStore: fdswarm.store.QsoStore,
                                       filenameStamp: fdswarm.util.FilenameStamp,
                                       transport: fdswarm.replication.Transport,
+                                      contestDiscovery: ContestDiscovery,
                                       @Named("fdswarm.contestChangeIgnoreStatusSec") ignoreStatusSec: Int
                                     ) extends LazyLogging:
 
@@ -94,6 +102,8 @@ final class ContestManager @Inject()(
       ourClass: ChoiceField[String],
       ourSection: ChoiceField[String]
   )
+
+  private case class DiscoveryResult(node: NodeIdentity, config: ContestConfig)
 
   def show(ownerWindow: Window): Unit =
     def getClasses(contestType: ContestType): Seq[ClassChoice] =
@@ -222,9 +232,128 @@ final class ContestManager @Inject()(
 
     val hasQsos = qsoStore.all.nonEmpty
 
+    // --- Discovery Table ---
+    val resultsBuffer = ObservableBuffer.empty[DiscoveryResult]
+    val table = new TableView[DiscoveryResult](resultsBuffer) {
+      columns ++= List(
+        new TableColumn[DiscoveryResult, String] {
+          text = "Node"
+          cellValueFactory = { cellData => ReadOnlyStringWrapper(cellData.value.node.toString) }
+          prefWidth = 120
+        },
+        new TableColumn[DiscoveryResult, String] {
+          text = "Callsign"
+          cellValueFactory = { cellData => ReadOnlyStringWrapper(cellData.value.config.ourCallsign.toString) }
+          prefWidth = 80
+        },
+        new TableColumn[DiscoveryResult, String] {
+          text = "Contest"
+          cellValueFactory = { cellData => ReadOnlyStringWrapper(cellData.value.config.contestType.name) }
+          prefWidth = 120
+        },
+        new TableColumn[DiscoveryResult, String] {
+          text = "Class"
+          cellValueFactory = { cellData => ReadOnlyStringWrapper(cellData.value.config.ourClass) }
+          prefWidth = 40
+        },
+        new TableColumn[DiscoveryResult, String] {
+          text = "Section"
+          cellValueFactory = { cellData => ReadOnlyStringWrapper(cellData.value.config.ourSection) }
+          prefWidth = 60
+        },
+        new TableColumn[DiscoveryResult, String] {
+          text = "Tx"
+          cellValueFactory = { cellData => ReadOnlyStringWrapper(cellData.value.config.transmitters.toString) }
+          prefWidth = 40
+        }
+      )
+      prefHeight = 200
+      
+      selectionModel.value.selectedItem.onChange { (_, _, result) =>
+        if (result != null) {
+          val selected = result.config
+          contestCombo.value = selected.contestType
+          myCaseForm.control[TextField]("ourCallsign").text = selected.ourCallsign.value
+          myCaseForm.control[Spinner[Int]]("transmitters").valueFactory.value.value = selected.transmitters
+          classCombo.value = selected.ourClass
+          myCaseForm.control[ComboBox[String]]("ourSection").value = selected.ourSection
+        }
+      }
+    }
+
+    val progressBar = new ProgressBar {
+      prefWidth = 150
+      progress = 0
+      visible = false
+      managed = false
+    }
+
+    val statusLabel = new Label {
+      visible = false
+      managed = false
+    }
+
+    val discoverButton = IconButton("search", 16, "Search for other nodes")
+    discoverButton.text = "Discover"
+    discoverButton.minWidth = Region.USE_PREF_SIZE
+    val doDiscover: () => Unit = () => {
+        discoverButton.disable = true
+        resultsBuffer.clear()
+        progressBar.visible = true
+        progressBar.managed = true
+        progressBar.progress = 0
+        statusLabel.visible = true
+        statusLabel.managed = true
+        statusLabel.text = "Searching..."
+
+        val totalMs = contestDiscovery.timeoutSec * 1000.0
+        val updateIntervalMs = 50.0
+
+        val timeline = new Timeline {
+          cycleCount = (totalMs / updateIntervalMs).toInt
+          keyFrames = Seq(
+            KeyFrame(
+              Duration(updateIntervalMs),
+              onFinished = (_: ActionEvent) => {
+                progressBar.progress.value =
+                  progressBar.progress.value + (updateIntervalMs / totalMs)
+              }
+            )
+          )
+        }
+        timeline.play()
+
+        new Thread(() => {
+          val results = contestDiscovery.discoverContest((_, _) => {
+            Platform.runLater {
+              statusLabel.text = s"Received ${resultsBuffer.size + 1} responses"
+            }
+          })
+          Platform.runLater {
+            resultsBuffer.setAll(results.map { case (node, config) =>
+              DiscoveryResult(node, config)
+            }.toSeq*)
+            discoverButton.disable = false
+            progressBar.visible = false
+            progressBar.managed = false
+            timeline.stop()
+            statusLabel.text = if (results.nonEmpty) s"Discovered ${results.size} nodes" else "No nodes discovered"
+          }
+        }).start()
+    }
+
+    discoverButton.onAction = _ => doDiscover()
+
+    val discoveryHeader = new HBox(10) {
+      alignment = scalafx.geometry.Pos.CenterLeft
+      children = Seq(new Label("Discovery Results:"), discoverButton, progressBar, statusLabel)
+    }
+
     val dialogContent: VBox = new VBox(10):
       padding = Insets(10)
-      children = Seq(pane)
+      children = Seq(pane, new Separator(), discoveryHeader, table)
+      prefWidth = 600
+      prefHeight = 500
 
     val d = new Dialog[ContestConfigProxy]():
       initOwner(ownerWindow)
@@ -232,6 +361,7 @@ final class ContestManager @Inject()(
       headerText = "Edit Contest Configuration"
       dialogPane().content = dialogContent
       dialogPane().buttonTypes = Seq(ButtonType.OK, ButtonType.Cancel)
+      resizable = true
       
       val okButton = dialogPane().lookupButton(ButtonType.OK)
       
@@ -246,6 +376,9 @@ final class ContestManager @Inject()(
         wrapText = true
       }
       dialogContent.children.add(0, warningLabel)
+
+    // Start discovery automatically when the dialog opens
+    doDiscover()
 
     val result = d.showAndWait()
     result match

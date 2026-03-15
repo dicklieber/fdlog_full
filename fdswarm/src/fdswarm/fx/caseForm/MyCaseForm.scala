@@ -204,8 +204,8 @@ class MyCaseForm[T <: Product](initial: T)(using m: Mirror.ProductOf[T]):
       padding = Insets(10)
 
     fields.zipWithIndex.foreach { case (field, index) =>
-      grid.add(new Label(field.name) { minWidth = Region.USE_PREF_SIZE }, 0, index)
-      grid.add(field.control, 1, index)
+      grid.add(new Label(field.name) { minWidth = Region.USE_PREF_SIZE }, index, 0)
+      grid.add(field.control, index, 1)
     }
 
     grid

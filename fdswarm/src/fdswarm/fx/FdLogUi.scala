@@ -81,7 +81,6 @@ final class FdLogUi @Inject() (
     sectionsProvider: fdswarm.fx.sections.SectionsProvider,
     sectionPanel: fdswarm.fx.sections.SectionPanel,
     ipAddressDialogService: IpAddressDialogService,
-    discoveryDialogService: DiscoveryDialogService,
     swarmStatusAdmin: fdswarm.fx.admin.SwarmStatusAdmin,
     summaryDialog: fdswarm.fx.tools.SummaryDialog,
     metricsDialog: fdswarm.fx.tools.MetricsDialog,
@@ -179,12 +178,6 @@ final class FdLogUi @Inject() (
           onAction = _ =>
             Option(ownerWindow) match
               case Some(w) => contestTimeDialog.show(w)
-              case None    => ()
-        ,
-        new MenuItem("Discovery"):
-          onAction = _ =>
-            Option(ownerWindow) match
-              case Some(w) => discoveryDialogService.show(w)
               case None    => ()
         ,
         new MenuItem("Set IP Address"):
