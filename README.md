@@ -31,6 +31,14 @@ To generate an HTML coverage report:
 ```
 The report will be available at: `out/fdswarm/scoverage/htmlReport.dest/index.html`
 
+## Releases and Artifacts
+
+To create a new release with downloadable artifacts (JAR, Windows MSI, macOS PKG):
+1. Push a tag to the repository matching the pattern `v*` (e.g., `v1.0.0`).
+2. The GitHub Action will automatically build the project, run tests, and create a GitHub Release with the artifacts.
+
+Artifacts are also available as GitHub Action run artifacts for every build on the `main` branch.
+
 ## Logging
 For information on how to configure and change log levels, see [docs/logging.md](docs/logging.md).
 
