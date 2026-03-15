@@ -4,7 +4,7 @@
 ![Tests](https://img.shields.io/badge/tests-passed-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen)
 ![Release](https://img.shields.io/github/v/release/dicklieber/fdlog_full)
-![License](https://img.shields.io/github/license/dicklieber/fdlog_full)
+![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 
 This project uses [Mill](https://mill-build.com/) as the build tool.
 
