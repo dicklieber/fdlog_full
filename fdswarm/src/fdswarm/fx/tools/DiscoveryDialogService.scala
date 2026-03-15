@@ -51,6 +51,11 @@ final class DiscoveryDialogService @Inject() (
         prefWidth = 150
       },
       new TableColumn[DiscoveryResult, String] {
+        text = "ID"
+        cellValueFactory = { cellData => ReadOnlyStringWrapper(cellData.value.config.id) }
+        prefWidth = 150
+      },
+      new TableColumn[DiscoveryResult, String] {
         text = "Callsign"
         cellValueFactory = { cellData => ReadOnlyStringWrapper(cellData.value.config.ourCallsign.toString) }
         prefWidth = 100
@@ -76,7 +81,7 @@ final class DiscoveryDialogService @Inject() (
         prefWidth = 50
       },
       new TableColumn[DiscoveryResult, String] {
-        text = "Last Update"
+        text = "Stamp"
         cellValueFactory = { cellData =>
           ReadOnlyStringWrapper(
             cellData.value.config.stamp.toString
