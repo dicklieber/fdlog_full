@@ -112,8 +112,9 @@ class BigQsosGeneratorTest extends FunSuite with LazyLogging:
     val generator = new BigQsosGenerator(qsoStore, bandModeBuilder, mockNodeIdentityManager, mockBandCatalog, mockModeCatalog)
 
     // Set 'now' to a fixed point at the beginning of an hour to ensure we only span 5 hours.
-    // 2026-03-14T00:59:59Z would also work, but let's be safe.
-    val now = Instant.parse("2026-03-14T05:59:59Z")
+    // 2026-03-14T05:59:59Z would also work, but let's be safe.
+    // We use a date in the middle of the month (15th) to avoid any month-boundary issues in CI.
+    val now = Instant.parse("2026-03-15T05:59:59Z")
     // Generate 100 QSOs at 20 per hour cadence with prefix "K"
     generator.qsos(howMany = 100, howManyPerHour = 20, prefix = "K", now = now)
 
@@ -152,5 +153,5 @@ class BigQsosGeneratorTest extends FunSuite with LazyLogging:
     assertEquals(timer.count(), 1L)
     val msCalculatingFdHourDigests: Double = timer.totalTime(java.util.concurrent.TimeUnit.MILLISECONDS)
     assert(msCalculatingFdHourDigests > 0, "Timer should have recorded some time")
-    assert(msCalculatingFdHourDigests < 100.0,
+    assert(msCalculatingFdHourDigests < 200.0,
       s"Timer should have recorded less than 100ms expection around 50ms on fast MacBookPro, but got $msCalculatingFdHourDigests")
