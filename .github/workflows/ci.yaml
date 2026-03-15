@@ -50,6 +50,12 @@ jobs:
         continue-on-error: true
         run: xvfb-run -a ./mill --no-daemon fdswarm.test
 
+      - name: Generate Scoverage reports
+        if: always()
+        run: |
+          ./mill --no-daemon fdswarm.scoverage.htmlReport
+          ./mill --no-daemon fdswarm.scoverage.xmlReport
+
       - name: Publish test results
         if: always()
         uses: mikepenz/action-junit-report@v5
@@ -58,6 +64,13 @@ jobs:
           detailed_summary: true
           include_passed: true
           fail_on_failure: true
+
+      - name: Upload Scoverage HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Coverage-Report-HTML
+          path: out/fdswarm/scoverage/htmlReport.dest/
 
       - name: Build assembly
         if: success()
