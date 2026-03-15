@@ -1,5 +1,11 @@
 # FDLog Swarm
 
+![Build](https://github.com/dicklieber/fdlog_full/actions/workflows/ci.yaml/badge.svg)
+![Tests](https://img.shields.io/badge/tests-passed-brightgreen)
+![Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen)
+![Release](https://img.shields.io/github/v/release/dicklieber/fdlog_full)
+![License](https://img.shields.io/github/license/dicklieber/fdlog_full)
+
 This project uses [Mill](https://mill-build.com/) as the build tool.
 
 ## Build and Development Commands
