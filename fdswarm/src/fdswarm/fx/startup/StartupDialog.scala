@@ -38,80 +38,22 @@ import scalafx.stage.Window
 import scalafx.util.Duration
 import scala.compiletime.uninitialized
 
-trait StartupCondition:
-  def name: String
-  val problems = ObservableBuffer[String]()
-  def ok: Boolean = problems.isEmpty
-  val details = StringProperty("")
-  def editButton(ownerWindow: Window): Unit
-  def update(discovered: Map[NodeIdentity, ContestStation]): Unit
-
-class ContestCondition(
-    private val contestManager: ContestManager,
-    private val contestDiscovery: ContestDiscovery
-) extends StartupCondition:
-  override def name: String = "Contest"
-
-  override def editButton(ownerWindow: Window): Unit =
-    contestManager.show(ownerWindow)
-
-  override def update(discovered: Map[NodeIdentity, ContestStation]): Unit =
-    val config = contestManager.config
-    val currentDetails =
-      s"Callsign: ${config.ourCallsign}, Contest: ${config.contestType.name}, Class: ${config.ourClass}, Section: ${config.ourSection}"
-    
-    val localConfigExists = contestManager.configExists
-    val discoveryConsistent =
-      discovered.isEmpty || discovered.values.forall(_ == contestManager.config)
-
-    val newProblems = scala.collection.mutable.ListBuffer[String]()
-    if !localConfigExists then newProblems += "No local configuration found"
-    if !discoveryConsistent then newProblems += "Inconsistent with other nodes"
-    
-    problems.clear()
-    problems ++= newProblems
-    details.value = if discovered.nonEmpty then
-      s"$currentDetails (Found ${discovered.size} other nodes)"
-    else currentDetails
-
-class StationCondition(
-    private val stationStore: StationStore,
-    private val stationEditor: StationEditor
-) extends StartupCondition:
-  override def name: String = "Station"
-
-  override def editButton(ownerWindow: Window): Unit =
-    stationEditor.show(ownerWindow)
-
-  override def update(discovered: Map[NodeIdentity, ContestStation]): Unit =
-    val station = stationStore.station.value
-    val ourOperator = station.operator
-    val duplicateOperator = discovered.values.exists(_.station.operator == ourOperator)
-
-    val newProblems = scala.collection.mutable.ListBuffer[String]()
-    if duplicateOperator then
-      newProblems += s"Operator $ourOperator is already in use on another node!"
-    if !fdswarm.model.Callsign.isValid(station.operator.value) then
-      newProblems += s"Invalid Operator callsign: ${station.operator.value}"
-    
-    problems.clear()
-    problems ++= newProblems
-    details.value = s"Operator: ${station.operator.value}, Rig: ${station.rig}, Antenna: ${station.antenna}"
-
 @Singleton
 class StartupDialog @Inject() (
     config: Config,
     contestManager: ContestManager,
     contestDiscovery: ContestDiscovery,
     stationStore: StationStore,
-    stationEditor: StationEditor
+    bandsManager: fdswarm.fx.bands.AvailableBandsManager,
+    modesManager: fdswarm.fx.bands.AvailableModesManager,
+    contestCond: ContestCondition,
+    stationCond: StationCondition,
+    bandModeCond: BandModeCondition
 ) extends LazyLogging:
 
   private val startupSeconds: Int = config.getInt("fdswarm.autoStartSeconds")
 
-  private val contestCond = ContestCondition(contestManager, contestDiscovery)
-  private val stationCond = StationCondition(stationStore, stationEditor)
-  private val conditions = Seq(contestCond, stationCond)
+  private val conditions = Seq(contestCond, stationCond, bandModeCond)
 
   private val allOk = BooleanProperty(false)
   private val isDiscovering = BooleanProperty(false)
@@ -169,19 +111,63 @@ class StartupDialog @Inject() (
       visible <== autoStartActive
       managed <== autoStartActive
 
-    val rows = conditions.map(cond => createRow(cond, ownerWindow))
+    val grid = new GridPane:
+      hgap = 10
+      vgap = 10
+      padding = Insets(10)
 
-    val mainView = new VBox(5):
-      padding = Insets(5)
-      children = rows ++ Seq(autoStartLabel)
-      prefWidth = 500
+    val col1 = new ColumnConstraints()
+    val col2 = new ColumnConstraints { hgrow = Priority.Always }
+    val col3 = new ColumnConstraints()
+    grid.columnConstraints = Seq(col1, col2, col3)
+
+    conditions.zipWithIndex.foreach { (cond, i) =>
+      val label = new Label(cond.name):
+        style = "-fx-font-size: 1.0em; -fx-font-weight: bold;"
+        minWidth = Region.USE_PREF_SIZE
+
+      val statusIndicator = new Label:
+        text <== scalafx.beans.binding.Bindings.createStringBinding(
+          () => if cond.ok then "Ok" else cond.problems.mkString(", "),
+          cond.problems,
+          cond.details
+        )
+        maxWidth = 400
+        wrapText = true
+        padding = Insets(0, 5, 0, 5)
+
+      cond.problems.onChange { (_, _) =>
+        statusIndicator.styleClass.clear()
+        if cond.ok then statusIndicator.styleClass.add("status-ok")
+        else statusIndicator.styleClass.add("status-needs-work")
+      }
+      // Initial state
+      if cond.ok then statusIndicator.styleClass.add("status-ok")
+      else statusIndicator.styleClass.add("status-needs-work")
+
+      val configBtn = new Button("Configure"):
+        onAction = _ => 
+          autoStartActive.value = false
+          timer.stop()
+          cond.editButton(ownerWindow)
+        minWidth = Region.USE_PREF_SIZE
+
+      grid.add(label, 0, i)
+      grid.add(statusIndicator, 1, i)
+      grid.add(configBtn, 2, i)
+    }
+
+    val mainView = new VBox(10):
+      padding = Insets(15)
+      children = Seq(grid, autoStartLabel)
+      prefWidth = 650
       visible <== !isDiscovering
       managed <== !isDiscovering
 
     val discoveryView = new VBox:
       alignment = Pos.Center
       padding = Insets(10)
-      prefWidth = 500
+      prefWidth = 650
       children = Seq(
         new ProgressIndicator:
           maxWidth = 40
@@ -196,6 +182,7 @@ class StartupDialog @Inject() (
       managed <== isDiscovering
 
     dialog.dialogPane().content = new StackPane:
+      padding = Insets(0, 0, 10, 0)
       children = Seq(mainView, discoveryView)
 
     // Initial checks and discovery
@@ -210,6 +197,8 @@ class StartupDialog @Inject() (
     // Listen for changes
     val contestListener = contestManager.configProperty.onChange((_, _, _) => runChecks())
     val stationListener = stationStore.station.onChange((_, _, _) => runChecks())
+    val bandsListener = bandsManager.bands.onChange((_, _) => runChecks())
+    val modesListener = modesManager.modes.onChange((_, _) => runChecks())
 
     dialog.resultConverter = {
       case `startBtnType` => true
@@ -224,47 +213,8 @@ class StartupDialog @Inject() (
       timer.stop()
       contestListener.cancel()
       stationListener.cancel()
-
-  private def createRow(
-      condition: StartupCondition,
-      ownerWindow: Window
-  ): Node =
-    val statusIndicator = new Label:
-      text <== scalafx.beans.binding.Bindings.createStringBinding(
-        () => if condition.ok then "Ok" else s"Needs Work (${condition.problems.mkString(", ")})",
-        condition.problems,
-        condition.details
-      )
-      maxWidth = 400
-      wrapText = true
-      padding = Insets(0, 5, 0, 5)
-
-    condition.problems.onChange { (_, _) =>
-      statusIndicator.styleClass.clear()
-      if condition.ok then statusIndicator.styleClass.add("status-ok")
-      else statusIndicator.styleClass.add("status-needs-work")
-    }
-    // Initial state
-    if condition.ok then statusIndicator.styleClass.add("status-ok")
-    else statusIndicator.styleClass.add("status-needs-work")
-
-    val configBtn = new Button("Configure"):
-      onAction = _ => 
-        autoStartActive.value = false
-        timer.stop()
-        condition.editButton(ownerWindow)
-
-    new HBox(10):
-      alignment = Pos.CenterLeft
-      children = Seq(
-        new Label(condition.name):
-          style = "-fx-font-size: 1.0em; -fx-font-weight: bold;"
-          minWidth = 60
-        ,
-        statusIndicator,
-        new Region { hgrow = Priority.Always },
-        configBtn
-      )
+      bandsListener.cancel()
+      modesListener.cancel()
 
   private var discoveredStations: Map[NodeIdentity, ContestStation] = Map.empty
 

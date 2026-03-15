@@ -19,7 +19,7 @@
 
 package fdswarm.fx
 
-import com.google.inject.AbstractModule
+import com.google.inject.{AbstractModule, Provides}
 import com.google.inject.name.Names
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.LazyLogging
@@ -99,6 +99,10 @@ class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
     bind[fdswarm.fx.tools.MetricsDialog].asEagerSingleton()
     bind[fdswarm.fx.startup.StartupDialog].asEagerSingleton()
 
+    bind[fdswarm.fx.startup.ContestCondition].asEagerSingleton()
+    bind[fdswarm.fx.startup.StationCondition].asEagerSingleton()
+    bind[fdswarm.fx.startup.BandModeCondition].asEagerSingleton()
+
     val entries = fullConfig.entrySet().asScala.toSeq
     for (entry <- entries) {
       val key = entry.getKey
@@ -138,7 +142,6 @@ class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
 
     // Optionally bind the entire config too
     bind[Config].toInstance(fullConfig)
-
 
 object ConfigModule:
   given Conversion[String, os.Path] = (in: String) => os.Path(in)
