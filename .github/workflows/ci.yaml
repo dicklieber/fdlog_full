@@ -48,13 +48,13 @@ jobs:
 
       - name: Run tests and generate JUnit XML
         continue-on-error: true
-        run: xvfb-run -a ./mill --no-daemon fdswarm.test.testReportXml
+        run: xvfb-run -a ./mill --no-daemon fdswarm.test
 
       - name: Publish test results
         if: always()
         uses: mikepenz/action-junit-report@v5
         with:
-          report_paths: 'out/fdswarm/test/testForked.dest/test-report.xml'
+          report_paths: 'out/fdswarm/test/**/*.xml'
           detailed_summary: true
           include_passed: true
           fail_on_failure: true
