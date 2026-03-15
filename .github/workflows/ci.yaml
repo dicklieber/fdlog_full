@@ -23,14 +23,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
-      contents: read
+      contents: write
       checks: write
       pull-requests: write
 
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Set up JDK 21 (Full)
         uses: actions/setup-java@v4
@@ -98,6 +98,20 @@ jobs:
           path: out/fdswarm/scoverage/htmlReport.dest/
           if-no-files-found: error
           retention-days: 5
+
+      - name: Update Coverage Badge
+        if: github.ref == 'refs/heads/main'
+        run: |
+          chmod +x scripts/update-coverage-badge.sh
+          ./scripts/update-coverage-badge.sh
+
+      - name: Commit and push badge update
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add README.md
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update coverage badge [skip ci]" --trailer "Co-authored-by: Junie <junie@jetbrains.com>" && git push)
 
       - name: Build assembly
         if: success()
