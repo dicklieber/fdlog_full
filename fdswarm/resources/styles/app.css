@@ -207,3 +207,8 @@
     -fx-text-fill: red;
     -fx-font-weight: bold;
 }
+
+.parenthetic {
+    -fx-text-fill: gray;
+    -fx-font-style: italic;
+}

@@ -103,6 +103,7 @@ final class FdLogUi @Inject() (
         ,
         stationMenuItem,
         contestMenuItem,
+        startupMenuItem,
         new SeparatorMenuItem(),
         arrlSectionsMapMenuItem,
         labelArrlRegionsMenuItem,
@@ -140,6 +141,13 @@ final class FdLogUi @Inject() (
       onAction = _ =>
         Option(ownerWindow) match
           case Some(w) => stationEditor.show(w)
+          case None    => ()
+
+  private val startupMenuItem: MenuItem =
+    new MenuItem("Startup"):
+      onAction = _ =>
+        Option(ownerWindow) match
+          case Some(w) => startupDialog.show(w, autoStart = false)
           case None    => ()
   private val devMenu: Menu =
     new Menu("Dev"):

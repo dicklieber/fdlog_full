@@ -74,7 +74,8 @@ class QsoStoreTest extends FunSuite:
       override def get(): fdswarm.fx.contest.ContestManager = contestManager
     })
     qsoStore = new QsoStore(testDirectory, new SimpleMeterRegistry(), mockTransport, swarmStatus, filenameStamp)
-    contestManager = new fdswarm.fx.contest.ContestManager(testDirectory, contestCatalog, sections, qsoStore, filenameStamp, mockTransport, 7)
+    val discovery = new fdswarm.fx.contest.ContestDiscovery(mockTransport, 1)
+    contestManager = new fdswarm.fx.contest.ContestManager(testDirectory, contestCatalog, sections, qsoStore, filenameStamp, mockTransport, discovery, 7)
 
   override def afterEach(context: AfterEach): Unit =
     testDirectory.cleanup()

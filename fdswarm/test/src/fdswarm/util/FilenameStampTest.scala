@@ -18,7 +18,7 @@
 
 package fdswarm.util
  
-import fdswarm.fx.contest.{ContestCatalog, ContestConfig, ContestManager, ContestType}
+import fdswarm.fx.contest.{ContestCatalog, ContestConfig, ContestManager, ContestType, ContestDiscovery}
 import fdswarm.fx.sections.{Sections, SectionsProvider}
 import fdswarm.model.Callsign
 import fdswarm.store.QsoStore
@@ -82,7 +82,8 @@ class FilenameStampTest extends FunSuite:
     })
     
     qsoStore = new QsoStore(testDir, registry, mockTransport, swarmStatus, filenameStamp)
-    contestManager = new ContestManager(testDir, catalog, sections, qsoStore, filenameStamp, mockTransport, 7)
+    val discovery = new ContestDiscovery(mockTransport, 1)
+    contestManager = new ContestManager(testDir, catalog, sections, qsoStore, filenameStamp, mockTransport, discovery, 7)
  
   override def afterEach(context: AfterEach): Unit =
     testDir.cleanup()
