@@ -56,3 +56,5 @@ case class ContestConfig(contestType: ContestType,
                          ourSection: String,
                          id:Id = Ids.generateId(),
                          stamp: Instant = Instant.now()) derives Codec.AsObject
+
+case class ContestStation(config: ContestConfig, station: fdswarm.model.Station) derives Codec.AsObject

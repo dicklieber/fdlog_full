@@ -89,6 +89,8 @@ final class ContestManager @Inject()(
 
   def config: ContestConfig = configProperty.value
 
+  def configExists: Boolean = os.exists(file)
+
   def setConfig(newConfig: ContestConfig): Unit =
     configProperty.value = newConfig
 
@@ -103,7 +105,7 @@ final class ContestManager @Inject()(
       ourSection: ChoiceField[String]
   )
 
-  private case class DiscoveryResult(node: NodeIdentity, config: ContestConfig)
+  private case class DiscoveryResult(node: NodeIdentity, contestStation: ContestStation)
 
   def show(ownerWindow: Window): Unit =
     def getClasses(contestType: ContestType): Seq[ClassChoice] =
@@ -243,27 +245,27 @@ final class ContestManager @Inject()(
         },
         new TableColumn[DiscoveryResult, String] {
           text = "Callsign"
-          cellValueFactory = { cellData => ReadOnlyStringWrapper(cellData.value.config.ourCallsign.toString) }
+          cellValueFactory = { cellData => ReadOnlyStringWrapper(cellData.value.contestStation.config.ourCallsign.toString) }
           prefWidth = 80
         },
         new TableColumn[DiscoveryResult, String] {
           text = "Contest"
-          cellValueFactory = { cellData => ReadOnlyStringWrapper(cellData.value.config.contestType.name) }
+          cellValueFactory = { cellData => ReadOnlyStringWrapper(cellData.value.contestStation.config.contestType.name) }
           prefWidth = 120
         },
         new TableColumn[DiscoveryResult, String] {
           text = "Class"
-          cellValueFactory = { cellData => ReadOnlyStringWrapper(cellData.value.config.ourClass) }
+          cellValueFactory = { cellData => ReadOnlyStringWrapper(cellData.value.contestStation.config.ourClass) }
           prefWidth = 40
         },
         new TableColumn[DiscoveryResult, String] {
           text = "Section"
-          cellValueFactory = { cellData => ReadOnlyStringWrapper(cellData.value.config.ourSection) }
+          cellValueFactory = { cellData => ReadOnlyStringWrapper(cellData.value.contestStation.config.ourSection) }
           prefWidth = 60
         },
         new TableColumn[DiscoveryResult, String] {
           text = "Tx"
-          cellValueFactory = { cellData => ReadOnlyStringWrapper(cellData.value.config.transmitters.toString) }
+          cellValueFactory = { cellData => ReadOnlyStringWrapper(cellData.value.contestStation.config.transmitters.toString) }
           prefWidth = 40
         }
       )
@@ -271,7 +273,7 @@ final class ContestManager @Inject()(
       
       selectionModel.value.selectedItem.onChange { (_, _, result) =>
         if (result != null) {
-          val selected = result.config
+          val selected = result.contestStation.config
           contestCombo.value = selected.contestType
           myCaseForm.control[TextField]("ourCallsign").text = selected.ourCallsign.value
           myCaseForm.control[Spinner[Int]]("transmitters").valueFactory.value.value = selected.transmitters
@@ -330,8 +332,8 @@ final class ContestManager @Inject()(
             }
           })
           Platform.runLater {
-            resultsBuffer.setAll(results.map { case (node, config) =>
-              DiscoveryResult(node, config)
+            resultsBuffer.setAll(results.map { case (node, contestStation) =>
+              DiscoveryResult(node, contestStation)
             }.toSeq*)
             discoverButton.disable = false
             progressBar.visible = false
@@ -448,7 +450,7 @@ final class ContestManager @Inject()(
     qsoStore.archiveAndClear()
     archiveAndPersist()
 
-  private def load(): ContestConfig =
+  def load(): ContestConfig =
     try
       if os.exists(file) then
         val json = os.read(file)
@@ -460,5 +462,6 @@ final class ContestManager @Inject()(
         logger.warn(s"Failed to load contest config from $file: ${e.getMessage}. Using default.")
         defaultConfig()
 
-  private def defaultConfig(): ContestConfig =
-    ContestConfig(ContestType.WFD, Callsign("W1AW"), 1, "O", "CT")
+  def defaultConfig(): ContestConfig =
+    val sectionCode = sections.all.headOption.map(_.code).getOrElse("CT")
+    ContestConfig(ContestType.WFD, Callsign("W1AW"), 1, "O", sectionCode)

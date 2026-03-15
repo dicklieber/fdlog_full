@@ -35,25 +35,25 @@ class ContestDiscovery @Inject() (
 ) extends LazyLogging:
 
   def discoverContest(
-      onResponse: (NodeIdentity, ContestConfig) => Unit = (_, _) => ()
-  ): Map[NodeIdentity, ContestConfig] =
+      onResponse: (NodeIdentity, ContestStation) => Unit = (_, _) => ()
+  ): Map[NodeIdentity, ContestStation] =
     val latch = new CountDownLatch(1)
     logger.info(s"Starting contest discovery (timeout: ${timeoutSec}s)")
-    val responses = new ConcurrentHashMap[NodeIdentity, ContestConfig]()
+    val responses = new ConcurrentHashMap[NodeIdentity, ContestStation]()
 
     val handler: UDPHeaderData => Unit = (udpHeader: UDPHeaderData) =>
       if udpHeader.service == Service.DiscResponse then
         val sJson = new String(udpHeader.payload, "UTF-8")
-        decode[ContestConfig](sJson) match
-          case Right(config) =>
+        decode[ContestStation](sJson) match
+          case Right(contestStation) =>
             logger.debug(
-              s"Received ContestConfig from ${udpHeader.nodeIdentity}"
+              s"Received ContestStation from ${udpHeader.nodeIdentity}"
             )
-            responses.put(udpHeader.nodeIdentity, config)
-            onResponse(udpHeader.nodeIdentity, config)
+            responses.put(udpHeader.nodeIdentity, contestStation)
+            onResponse(udpHeader.nodeIdentity, contestStation)
           case Left(error) =>
             logger.error(
-              s"Failed to decode ContestConfig from ${udpHeader.nodeIdentity}: $sJson",
+              s"Failed to decode ContestStation from ${udpHeader.nodeIdentity}: $sJson",
               error
             )
 

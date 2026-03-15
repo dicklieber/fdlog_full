@@ -20,12 +20,13 @@ package fdswarm.replication
 
 import cats.effect.unsafe.implicits.global
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.contest.{ContestConfig, ContestManager}
+import fdswarm.fx.contest.{ContestConfig, ContestManager, ContestStation}
 import fdswarm.model.Qso
 import fdswarm.replication.status.SwarmStatus
 import fdswarm.store.ReplicationSupport
 import fdswarm.util.JavaTimeCirce.given
 import fdswarm.util.{NodeIdentity, NodeIdentityManager}
+import fdswarm.StationManager
 import io.circe.parser.decode
 import io.circe.syntax.*
 import io.micrometer.core.instrument.MeterRegistry
@@ -39,6 +40,7 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
                                   nodeIdentityManager: NodeIdentityManager,
                                   swarmStatus: SwarmStatus,
                                   contestManager: ContestManager,
+                                  stationManager: StationManager,
                                   meterRegistry: MeterRegistry) extends LazyLogging:
   logger.debug("Starting NodeStatusHandler")
   private val statusCounter = meterRegistry.counter("fdswarm_received_status_total")
@@ -82,7 +84,8 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
                 logger.error(s"Failed to decode QSO from multicast: $sJson", error)
           case Service.DiscReq =>
             logger.debug(s"Received ContestDiscoveryRequest from ${udpHeader.nodeIdentity}")
-            val configBytes = contestManager.config.asJson.noSpaces.getBytes("UTF-8")
+            val contestStation = ContestStation(contestManager.config, stationManager.station)
+            val configBytes = contestStation.asJson.noSpaces.getBytes("UTF-8")
             transport.send(Service.DiscResponse, configBytes)
           case Service.DiscResponse =>
             // Handled by listeners in ContestDiscovery, ignore here

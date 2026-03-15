@@ -84,7 +84,8 @@ final class FdLogUi @Inject() (
     swarmStatusAdmin: fdswarm.fx.admin.SwarmStatusAdmin,
     summaryDialog: fdswarm.fx.tools.SummaryDialog,
     metricsDialog: fdswarm.fx.tools.MetricsDialog,
-    apiServer: fdswarm.api.ApiServer
+    apiServer: fdswarm.api.ApiServer,
+    startupDialog: fdswarm.fx.startup.StartupDialog
 ) extends LazyLogging:
 
   // --- ARRL Sections Map (SVG) -------------------------------------------------
@@ -287,6 +288,11 @@ final class FdLogUi @Inject() (
     stage.scene = new Scene(root, 1100, 800):
       stylesheets = Seq(getClass.getResource("/styles/app.css").toExternalForm)
     stage.show()
+
+    val result = startupDialog.show(stage)
+    logger.debug(s"StartupDialog result: $result")
+    if !result then
+      Platform.exit()
 
     Platform.runLater {
       val duration = FdLogApp.startupDuration

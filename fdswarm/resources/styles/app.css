@@ -197,3 +197,13 @@
 .countBad{
     -fx-background-color: red;
 }
+
+.status-ok {
+    -fx-text-fill: green;
+    -fx-font-weight: bold;
+}
+
+.status-needs-work {
+    -fx-text-fill: red;
+    -fx-font-weight: bold;
+}

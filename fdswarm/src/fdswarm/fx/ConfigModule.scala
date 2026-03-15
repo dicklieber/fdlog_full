@@ -55,6 +55,7 @@ class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
 
     val pkgs = Seq("fdswarm.api", "fdswarm.grafana", "fdswarm.web")
     val allPkgs = Seq("fdswarm")
+    val fxPkgs = Seq("fdswarm.fx")
 
     // unnamed set (inject with java.util.Set[ApiEndpoints])
     AutoBind.bindAllImplementationsOf[ApiEndpoints](
@@ -63,6 +64,11 @@ class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
       named = None,
       asSingleton = true
     )
+
+    // Bind FX components from fdswarm.fx
+    // We don't have a common trait for all FX components, so we can either list them or bind classes directly
+    // but here we just ensure they are discoverable if they have @Inject or no-arg constructor.
+    // However, Guice often does JIT bindings for concrete classes.
 
     val discoveredLoggers = AutoBind.discoverImplementationsOf[LazyLogging](allPkgs)
     bind[Seq[String]].annotatedWith(Names.named("discoveredLoggerNames")).toInstance(discoveredLoggers)
@@ -91,6 +97,7 @@ class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
     bind(new TypeLiteral[Reporter[IO]](){}).toInstance(reporter)
 
     bind[fdswarm.fx.tools.MetricsDialog].asEagerSingleton()
+    bind[fdswarm.fx.startup.StartupDialog].asEagerSingleton()
 
     val entries = fullConfig.entrySet().asScala.toSeq
     for (entry <- entries) {
