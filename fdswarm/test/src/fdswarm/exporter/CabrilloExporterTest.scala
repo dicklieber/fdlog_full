@@ -29,7 +29,7 @@ import fdswarm.util.NodeIdentity
 class CabrilloExporterTest extends FunSuite:
 
   test("exportQsos creates a valid Cabrillo format"):
-    val station = Station(rig = "1A", antenna = "Wire", operator = Callsign("W1AW"))
+    val station = Station(operator = Callsign("W1AW"), rig = "1A", antenna = "Wire")
     val qsoMetadata = QsoMetadata(station = station, node = NodeIdentity(), contest = ContestType.WFD)
     
     val qso1 = Qso(

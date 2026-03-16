@@ -61,18 +61,18 @@ final class StationManager @Inject()(
 
   private def load(): Station =
     try {
-      if !os.exists(file) then return Station("", "", Callsign(""))
+      if !os.exists(file) then return Station(Callsign(""), "", "")
       val sJson = os.read(file)
       decode[Station](sJson) match
         case Right(st) => st
         case Left(error) =>
           logger.error(s"Failed to decode Station from $file: ${error.getMessage}")
-          Station("", "", Callsign(""))
+          Station(Callsign(""), "", "")
     }
     catch
       case e: Throwable =>
         logger.warn(s"Failed to load station from $file: ${e.getMessage}")
-        Station("", "", Callsign(""))
+        Station(Callsign(""), "", "")
 
 /*
   def pane(): Pane =

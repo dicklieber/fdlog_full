@@ -95,11 +95,7 @@ final class StationEditor @Inject() (stationStore: StationStore) {
 
     val opt = dialog.delegate.showAndWait()
     if opt.isPresent && opt.get == saveBtnType then {
-      val newStation = Station(
-        rig = rigField.text.value.trim,
-        antenna = antennaField.text.value.trim,
-        operator = Callsign(operatorField.text.value.trim)
-      )
+      val newStation = Station(operator = Callsign(operatorField.text.value.trim), rig = rigField.text.value.trim, antenna = antennaField.text.value.trim)
       stationStore.update(newStation)
     }
   }

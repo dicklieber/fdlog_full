@@ -26,11 +26,7 @@ import io.circe.Codec
  * Details about this station.
  *
  */
-final case class Station(
-                          rig:      String = "",
-                          antenna:  String = "",
-                          operator: Callsign = Callsign(""),
-                        ) derives  Codec.AsObject, sttp.tapir.Schema
+final case class Station(operator: Callsign = Callsign(""), rig: String = "", antenna: String = "") derives  Codec.AsObject, sttp.tapir.Schema
 //
 //object Station:
 //

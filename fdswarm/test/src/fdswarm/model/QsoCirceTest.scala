@@ -30,7 +30,7 @@ import fdswarm.util.NodeIdentity
 class QsoCirceTest extends FunSuite:
 
   test("Qso round trip via Circe"):
-    val station = Station(rig = "FT-891", antenna = "End Fed", operator = Callsign("WA9NNN"))
+    val station = Station(operator = Callsign("WA9NNN"), rig = "FT-891", antenna = "End Fed")
     val qsoMetadata = QsoMetadata(station = station, node = NodeIdentity(), contest = ContestType.WFD)
     val bandMode = BandMode("40M", "CW")
     val qso = Qso(
@@ -78,7 +78,7 @@ class QsoCirceTest extends FunSuite:
     assertEquals(decoded, bandMode)
 
   test("QsoMetadata Circe round trip"):
-    val station = Station(rig = "IC-7300", antenna = "Dipole", operator = Callsign("N9VTB"))
+    val station = Station(operator = Callsign("N9VTB"), rig = "IC-7300", antenna = "Dipole")
     val metadata = QsoMetadata(station = station, node = NodeIdentity(), contest = ContestType.ARRL)
     val json = metadata.asJson.noSpaces
     val decoded = decode[QsoMetadata](json).getOrElse(fail("failed to decode"))

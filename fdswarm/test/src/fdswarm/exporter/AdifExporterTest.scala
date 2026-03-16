@@ -29,7 +29,7 @@ import fdswarm.util.NodeIdentity
 class AdifExporterTest extends FunSuite:
 
   test("AdifExporter should generate correct ADIF"):
-    val station = Station(rig = "FT-891", antenna = "End Fed", operator = Callsign("WA9NNN"))
+    val station = Station(operator = Callsign("WA9NNN"), rig = "FT-891", antenna = "End Fed")
     val qsoMetadata = QsoMetadata(station = station, node = NodeIdentity(), contest = ContestType.WFD)
     val bandMode = BandMode("40M", "CW")
     val stamp = Instant.parse("2026-02-25T10:00:00Z")
@@ -61,7 +61,7 @@ class AdifExporterTest extends FunSuite:
     assert(adif.contains("<EOR>"))
 
   test("AdifExporter should map internal modes to ADIF modes"):
-    val station = Station(rig = "FT-891", antenna = "End Fed", operator = Callsign("WA9NNN"))
+    val station = Station(operator = Callsign("WA9NNN"), rig = "FT-891", antenna = "End Fed")
     val qsoMetadata = QsoMetadata(station = station, node = NodeIdentity(), contest = ContestType.WFD)
     val stamp = Instant.parse("2026-02-25T10:00:00Z")
 

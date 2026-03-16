@@ -67,19 +67,29 @@ class StartupDialog @Inject() (
           autoStartSeconds.value = autoStartSeconds.value - 1
           if autoStartSeconds.value <= 0 then
             Platform.runLater {
-              // This will be set in show()
               if startBtnInternal != null && !startBtnInternal.isDisabled then
                 startBtnInternal.fire()
             }
       )
     )
-    cycleCount = startupSeconds
+    cycleCount = Timeline.Indefinite
 
   private var startBtnInternal: javafx.scene.control.Button = uninitialized
+  private var shouldAutoStart: Boolean = false
 
-  allOk.value = conditions.forall(_.ok) && !isDiscovering.value
+  // Set up the listener ONCE since this is a singleton
+  allOk.onChange { (_, _, ok) =>
+    if ok && shouldAutoStart then
+      autoStartSeconds.value = startupSeconds
+      autoStartActive.value = true
+      timer.playFromStart()
+    else
+      timer.stop()
+      autoStartActive.value = false
+  }
 
   def show(ownerWindow: Window, autoStart: Boolean = true): Boolean =
+    shouldAutoStart = autoStart
     val dialog = new Dialog[Boolean]:
       title = "Startup Checks"
       initOwner(ownerWindow)
@@ -89,20 +99,6 @@ class StartupDialog @Inject() (
     val startBtn = dialog.dialogPane().lookupButton(startBtnType).asInstanceOf[javafx.scene.control.Button]
     startBtnInternal = startBtn
     startBtn.disable <== !allOk
-
-    allOk.onChange { (_, _, ok) =>
-      if ok && autoStart then
-        autoStartSeconds.value = startupSeconds
-        autoStartActive.value = true
-        timer.playFromStart()
-      else
-        timer.stop()
-        autoStartActive.value = false
-    }
-
-    // Handle the case where allOk is already true after initial checks
-    // This is problematic because allOk is false until initialChecks() finishes
-    // But we should ONLY start it if autoStart is true.
 
     val autoStartLabel = new Label:
       text <== autoStartSeconds.map(s => s"Auto-starting in $s seconds...")
@@ -186,12 +182,6 @@ class StartupDialog @Inject() (
 
     // Initial checks and discovery
     initialChecks()
-
-    autoStartActive.value = false // Ensure it's false before potentially setting it true
-    if allOk.value && autoStart then
-      autoStartSeconds.value = startupSeconds
-      autoStartActive.value = true
-      timer.playFromStart()
 
     // Listen for changes
     val contestListener = contestManager.configProperty.onChange((_, _, _) => runChecks())

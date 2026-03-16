@@ -105,7 +105,7 @@ class WebSessionsAdmin @Inject()(store: WebSessionStore) extends LazyLogging:
         val ws = listView.getSelectionModel.getSelectedItem
         if ws != null then
           val updated = ws.copy(
-            station = ws.station.copy(rig = rigField.text.value, antenna = antennaField.text.value, operator = fdswarm.model.Callsign(opField.text.value.toUpperCase)),
+            station = ws.station.copy(operator = fdswarm.model.Callsign(opField.text.value.toUpperCase), rig = rigField.text.value, antenna = antennaField.text.value),
             qsoLines = qsoLinesField.getValue
           )
           store.saveSession(updated)

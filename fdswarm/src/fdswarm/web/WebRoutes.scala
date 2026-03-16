@@ -112,7 +112,7 @@ class WebRoutes @Inject()(
         val defaultBm = selectedBandModeStore.selected.value
         val id = fdswarm.util.Ids.generateId()
         val ws = WebSession(
-          station = fdswarm.model.Station(rig, antenna, fdswarm.model.Callsign(operator.toUpperCase)),
+          station = fdswarm.model.Station(fdswarm.model.Callsign(operator.toUpperCase), rig, antenna),
           bandMode = defaultBm,
           qsoLines = qsoLines,
           sessionId = id
@@ -150,7 +150,7 @@ class WebRoutes @Inject()(
             val antenna = form.getFirstOrElse("antenna", ws.station.antenna)
             val operator = form.getFirstOrElse("operator", ws.station.operator.value)
             val qsoLines = form.getFirstOrElse("qsoLines", ws.qsoLines.toString).toIntOption.getOrElse(ws.qsoLines)
-            val updated = ws.copy(station = ws.station.copy(rig = rig, antenna = antenna, operator = fdswarm.model.Callsign(operator.toUpperCase)), qsoLines = qsoLines)
+            val updated = ws.copy(station = ws.station.copy(operator = fdswarm.model.Callsign(operator.toUpperCase), rig = rig, antenna = antenna), qsoLines = qsoLines)
             webSessionStore.saveSession(updated)
             SeeOther(Location(Uri.unsafeFromString("/web/session/edit")))
           case None => BadRequest("Session not found")
