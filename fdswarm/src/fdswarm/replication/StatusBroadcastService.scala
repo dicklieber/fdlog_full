@@ -20,7 +20,10 @@ package fdswarm.replication
 
 import com.google.inject.name.Named
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.StationManager
+import fdswarm.fx.bandmodes.SelectedBandModeStore
 import fdswarm.io.DirectoryProvider
+import fdswarm.model.BandModeOperator
 import fdswarm.store.QsoStore
 import fdswarm.util.NodeIdentityManager
 import io.circe.Codec
@@ -38,6 +41,8 @@ final case class StatusBroadcastSettings(
 class StatusBroadcastService @Inject()(
                                         qsoStore: QsoStore,
                                         transport: Transport,
+                                        stationManager: StationManager,
+                                        selectedBandModeStore:SelectedBandModeStore,
                                         nodeIdentityManager: NodeIdentityManager,
                                         dirProvider: DirectoryProvider,
                                         @Named("fdswarm.broadcastPeriodSec") val defaultBroadcastPeriodSec: Int
@@ -139,7 +144,10 @@ class StatusBroadcastService @Inject()(
 
   def broadcastStatus(): Unit =
     try
-      val statusMessage = StatusMessage( fdDigests = qsoStore.digests())
+      val operator = stationManager.station.operator
+      val bandMode = selectedBandModeStore.selected.value
+      val bandModeOperator = BandModeOperator(operator,bandMode )
+      val statusMessage = StatusMessage( fdDigests = qsoStore.digests(), bandModeOperator)
       val gzipBytes = statusMessage.toPacket
       logger.trace("Broadcasting status: {} bytes: {}", statusMessage, gzipBytes.length)
       transport.send(Service.Status, gzipBytes)

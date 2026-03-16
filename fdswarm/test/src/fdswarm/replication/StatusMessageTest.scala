@@ -18,19 +18,23 @@
 
 package fdswarm.replication
 
+import fdswarm.model.{BandMode, BandModeOperator, Callsign}
 import fdswarm.store.FdHourDigest
 import fdswarm.util.NodeIdentity
 import fdswarm.fx.qso.FdHour
 import io.circe.parser.decode
 import munit.FunSuite
 import java.io.ByteArrayInputStream
+import java.time.Instant
 import java.util.zip.GZIPInputStream
 
 class StatusMessageTest extends FunSuite:
+  private val dummyBno = BandModeOperator(Callsign("WA9NNN"), BandMode("40M", "CW"), Instant.parse("2026-03-16T20:11:04Z"))
+
   test("toPacket should serialize to JSON and gzip") {
     val hp = NodeIdentity("localhost", 8080)
     val digests = Seq(FdHourDigest(FdHour(15, 12), 10, "digest-abc"))
-    val sm = StatusMessage(digests)
+    val sm = StatusMessage(digests, dummyBno)
     
     val packet = sm.toPacket
     
@@ -50,7 +54,7 @@ class StatusMessageTest extends FunSuite:
   test("fromPacket should deserialize from gzipped packet") {
     val hp = NodeIdentity("localhost", 8080)
     val digests = Seq(FdHourDigest(FdHour(15, 12), 10, "digest-abc"))
-    val sm = StatusMessage(digests)
+    val sm = StatusMessage(digests, dummyBno)
     
     val packet = sm.toPacket
     val readSm = StatusMessage.apply(packet)

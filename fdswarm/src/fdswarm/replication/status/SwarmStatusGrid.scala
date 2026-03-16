@@ -92,21 +92,25 @@ class SwarmStatusGrid(allNodes: Seq[ReceivedNodeStatus],
         new scalafx.scene.control.Label {
           text <== binding
           styleClass.addAll("grid-value")
-          val updateStyle: Unit = {
+          def updateStyle(): Unit = {
             val now = Instant.ofEpochMilli(nowProperty.value)
             val styleAndAge = ageStyleService.calc("node", receivedNodeStatus.received, now)
             styleClass.removeAll("fresh", "recent", "stale")
             styleClass.add(styleAndAge.style)
           }
-          updateStyle
+          updateStyle()
           nowProperty.onChange { (_, _, _) =>
-            updateStyle
+            updateStyle()
           }
         }
       }
     }*)
     builder("Qso Count", allNodes.map(receivedNodeStatus =>
       receivedNodeStatus.qsoCount.toString)*)
+    builder("Operator", allNodes.map(receivedNodeStatus =>
+      receivedNodeStatus.statusMessage.bandNodeOperator.operator.toString)*)
+    builder("Band/Mode", allNodes.map(receivedNodeStatus =>
+      receivedNodeStatus.statusMessage.bandNodeOperator.bandMode.toString)*)
 
     val currentGrid = bodyCounts
     fdHours.zip(currentGrid).foreach { (hour, rowLabels) =>

@@ -20,6 +20,7 @@ package fdswarm.replication.status
 
 import fdswarm.fx.GridBuilder
 import fdswarm.fx.qso.FdHour
+import fdswarm.model.{BandMode, BandModeOperator, Callsign}
 import fdswarm.replication.{NodeDetails, ReceivedNodeStatus, StatusMessage}
 import fdswarm.store.FdHourDigest
 import fdswarm.util.NodeIdentity
@@ -28,6 +29,7 @@ import java.time.Instant
 import scala.jdk.CollectionConverters.*
 
 class GirdTest extends FunSuite:
+  private val dummyBno = BandModeOperator(Callsign("WA9NNN"), BandMode("40M", "CW"), Instant.parse("2026-03-16T20:11:04Z"))
 
   test("Gird should create a 2D array of IntLabels"):
     // Mock JavaFX Toolkit if not already initialized
@@ -42,10 +44,10 @@ class GirdTest extends FunSuite:
     val hour1 = FdHour(10, 1)
     val hour2 = FdHour(10, 2)
 
-    val sm1 = StatusMessage(Seq(FdHourDigest(hour1, 5, "d1"), FdHourDigest(hour2, 10, "d2")))
+    val sm1 = StatusMessage(Seq(FdHourDigest(hour1, 5, "d1"), FdHourDigest(hour2, 10, "d2")), dummyBno)
     val nd1 = ReceivedNodeStatus(sm1, ni1)
 
-    val sm2 = StatusMessage(Seq(FdHourDigest(hour1, 3, "d3")))
+    val sm2 = StatusMessage(Seq(FdHourDigest(hour1, 3, "d3")), dummyBno)
     val nd2 = ReceivedNodeStatus(sm2, ni2)
 
     val allNodeDetails = Seq(nd1, nd2)
@@ -90,7 +92,7 @@ class GirdTest extends FunSuite:
 
   test("Gird.populate should add header rows"):
     val ni1 = NodeIdentity("192.168.1.1", 8080, "node1")
-    val nd1 = ReceivedNodeStatus(StatusMessage(Nil), ni1)
+    val nd1 = ReceivedNodeStatus(StatusMessage(Nil, dummyBno), ni1)
 
     val builder = new GridBuilder()
     val nowProperty = scalafx.beans.property.LongProperty(System.currentTimeMillis())
@@ -144,7 +146,7 @@ class GirdTest extends FunSuite:
     })
     // Check "Our Node" when it matches
     val niOur = NodeIdentity("127.0.0.1", 8080, "our-node")
-    val ndOur = ReceivedNodeStatus(StatusMessage(Nil), niOur)
+    val ndOur = ReceivedNodeStatus(StatusMessage(Nil, dummyBno), niOur)
     val builder2 = new GridBuilder()
     val gird2 = SwarmStatusGrid(Seq(ndOur), nowProperty, ageStyleService, "our-node", swarmStatusApi)
     gird2.populate(builder2, _ => "test-style")

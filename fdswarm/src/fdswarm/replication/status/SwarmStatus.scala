@@ -18,9 +18,12 @@
 
 package fdswarm.replication.status
 
+import fdswarm.StationManager
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.fx.bandmodes.SelectedBandModeStore
 import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
+import fdswarm.model.BandModeOperator
 import fdswarm.replication.*
 import fdswarm.store.FdHourDigest
 import fdswarm.util.{JavaTimeCirce, NodeIdentity, NodeIdentityManager}
@@ -41,6 +44,8 @@ import scala.collection.concurrent.TrieMap
 class SwarmStatus @Inject() (
     directoryProvider: DirectoryProvider,
     nodeIdentityManager: NodeIdentityManager,
+    stationManager: StationManager,
+    selectedBandModeStore: SelectedBandModeStore,
     swarmStatusPane: SwarmStatusPane
                             ) extends SwarmStatusApi with LazyLogging:
   val nodeMap: TrieMap[NodeIdentity, ReceivedNodeStatus] = new TrieMap[NodeIdentity, ReceivedNodeStatus]
@@ -73,7 +78,9 @@ class SwarmStatus @Inject() (
 
   def updateLocalDigests(digests: Seq[FdHourDigest]): Unit =
     val nodeIdentity = ourNodeIdentity
-    val statusMessage = StatusMessage(digests)
+    val operator = stationManager.station.operator
+    val bandMode = selectedBandModeStore.selected.value
+    val statusMessage = StatusMessage(digests, BandModeOperator(operator, bandMode))
     val receivedNodeStatus = ReceivedNodeStatus(statusMessage, nodeIdentity)
     put(receivedNodeStatus)
 

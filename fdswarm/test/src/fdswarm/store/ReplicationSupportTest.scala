@@ -18,6 +18,9 @@
 
 package fdswarm.store
 
+import fdswarm.fx.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
+import fdswarm.fx.bandmodes.SelectedBandModeStore
+import fdswarm.StationManager
 import fdswarm.TestDirectory
 import fdswarm.model.QsoMetadata.testQsoMetadata
 import fdswarm.model.{BandMode, Callsign, Exchange, FdClass, Qso}
@@ -46,6 +49,8 @@ class ReplicationSupportTest extends FunSuite:
   private val mockTransport = new MockTransport()
 
   private var mockNodeIdentityManager: fdswarm.util.MockNodeIdentityManager = uninitialized
+  private var stationManager: StationManager = uninitialized
+  private var selectedBandModeStore: SelectedBandModeStore = uninitialized
   private var swarmStatus: fdswarm.replication.status.SwarmStatus = uninitialized
   private var contestCatalog: fdswarm.fx.contest.ContestCatalog = uninitialized
   private var sections: fdswarm.fx.sections.Sections = uninitialized
@@ -58,7 +63,21 @@ class ReplicationSupportTest extends FunSuite:
     testDirectory = new TestDirectory()
     registry = new SimpleMeterRegistry()
     mockNodeIdentityManager = fdswarm.util.MockNodeIdentityManager(port = 8080)
-    swarmStatus = fdswarm.replication.status.SwarmStatus(testDirectory, mockNodeIdentityManager, null)
+    stationManager = new StationManager(testDirectory)
+    val config = com.typesafe.config.ConfigFactory.parseString(
+      """
+        |fdswarm {
+        |  hamBands = [
+        |    { bandName = "20m", startFrequencyHz = 14000000, endFrequencyHz = 14350000, bandClass = "HF", regions = ["ALL"] }
+        |  ]
+        |  modes = ["CW", "PH", "DIGI"]
+        |}
+        |""".stripMargin)
+    val bandCatalog = new BandCatalog(config)
+    val modeCatalog = new ModeCatalog(config)
+    val bandModeBuilder = new BandModeBuilder(bandCatalog, modeCatalog)
+    selectedBandModeStore = new SelectedBandModeStore(testDirectory, bandModeBuilder)
+    swarmStatus = fdswarm.replication.status.SwarmStatus(testDirectory, mockNodeIdentityManager, stationManager, selectedBandModeStore, null)
     contestCatalog = {
       val config = com.typesafe.config.ConfigFactory.parseString(
         """

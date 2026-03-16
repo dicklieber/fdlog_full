@@ -18,6 +18,9 @@
 
 package fdswarm.util
  
+import fdswarm.fx.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
+import fdswarm.fx.bandmodes.SelectedBandModeStore
+import fdswarm.StationManager
 import fdswarm.fx.contest.{ContestCatalog, ContestConfig, ContestManager, ContestType, ContestDiscovery}
 import fdswarm.fx.sections.{Sections, SectionsProvider}
 import fdswarm.model.Callsign
@@ -37,6 +40,8 @@ class FilenameStampTest extends FunSuite:
   private var testDir: TestDirectory = uninitialized
   private var filenameStamp: FilenameStamp = uninitialized
   private var contestManager: ContestManager = uninitialized
+  private var stationManager: StationManager = uninitialized
+  private var selectedBandModeStore: SelectedBandModeStore = uninitialized
   private var qsoStore: QsoStore = uninitialized
 
   class MockTransport extends Transport:
@@ -58,6 +63,12 @@ class FilenameStampTest extends FunSuite:
     testDir = new TestDirectory()
     val config = ConfigFactory.parseString(
       """
+        |fdswarm {
+        |  hamBands = [
+        |    { bandName = "20m", startFrequencyHz = 14000000, endFrequencyHz = 14350000, bandClass = "HF", regions = ["ALL"] }
+        |  ]
+        |  modes = ["CW", "PH", "DIGI"]
+        |}
         |fdswarm.contests = [
         |  {
         |    name = "WFD",
@@ -74,7 +85,12 @@ class FilenameStampTest extends FunSuite:
     val sections = new Sections(sectionsProvider)
     val registry = new SimpleMeterRegistry()
     val mockNodeIdentityManager = MockNodeIdentityManager(port = 8080)
-    val swarmStatus = SwarmStatus(testDir, mockNodeIdentityManager, null)
+    stationManager = new StationManager(testDir)
+    val bandCatalog = new BandCatalog(config)
+    val modeCatalog = new ModeCatalog(config)
+    val bandModeBuilder = new BandModeBuilder(bandCatalog, modeCatalog)
+    selectedBandModeStore = new SelectedBandModeStore(testDir, bandModeBuilder)
+    val swarmStatus = SwarmStatus(testDir, mockNodeIdentityManager, stationManager, selectedBandModeStore, null)
     
     // Create filenameStamp with a provider to handle the circular dependency
     filenameStamp = new FilenameStamp(new jakarta.inject.Provider[ContestManager] {

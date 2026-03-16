@@ -18,6 +18,9 @@
 
 package fdswarm.store
 
+import fdswarm.fx.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
+import fdswarm.fx.bandmodes.SelectedBandModeStore
+import fdswarm.StationManager
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.TestDirectory
 import fdswarm.fx.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
@@ -54,6 +57,8 @@ class BigQsosGeneratorTest extends FunSuite with LazyLogging:
 
   private var mockNodeIdentityManager: MockNodeIdentityManager = uninitialized
   private var swarmStatus: SwarmStatus = uninitialized
+  private var stationManager: StationManager = uninitialized
+  private var selectedBandModeStore: SelectedBandModeStore = uninitialized
   private var contestCatalog: fdswarm.fx.contest.ContestCatalog = uninitialized
   private var sections: fdswarm.fx.sections.Sections = uninitialized
   private var filenameStamp: fdswarm.util.FilenameStamp = uninitialized
@@ -65,7 +70,21 @@ class BigQsosGeneratorTest extends FunSuite with LazyLogging:
     testDirectory = new TestDirectory()
     registry = new SimpleMeterRegistry()
     mockNodeIdentityManager = MockNodeIdentityManager(port = 8080)
-    swarmStatus = SwarmStatus(testDirectory, mockNodeIdentityManager, null)
+    stationManager = new StationManager(testDirectory)
+    val config = com.typesafe.config.ConfigFactory.parseString(
+      """
+        |fdswarm {
+        |  hamBands = [
+        |    { bandName = "20m", startFrequencyHz = 14000000, endFrequencyHz = 14350000, bandClass = "HF", regions = ["ALL"] }
+        |  ]
+        |  modes = ["CW", "PH", "DIGI"]
+        |}
+        |""".stripMargin)
+    val bandCatalog = new BandCatalog(config)
+    val modeCatalog = new ModeCatalog(config)
+    val bandModeBuilder = new BandModeBuilder(bandCatalog, modeCatalog)
+    selectedBandModeStore = new SelectedBandModeStore(testDirectory, bandModeBuilder)
+    swarmStatus = SwarmStatus(testDirectory, mockNodeIdentityManager, stationManager, selectedBandModeStore, null)
     contestCatalog = {
       val config = com.typesafe.config.ConfigFactory.parseString(
         """

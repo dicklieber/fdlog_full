@@ -18,6 +18,7 @@
 
 package fdswarm.replication
 
+import fdswarm.model.BandModeOperator
 import fdswarm.store.FdHourDigest
 import fdswarm.util.Ids.Id
 import fdswarm.util.{CirceGzip, Ids, NodeIdentity}
@@ -25,11 +26,11 @@ import io.circe.Codec
 
 import java.time.Instant
 
-case class StatusMessage( fdDigests: Seq[FdHourDigest], id:Id = Ids.generateId()) derives Codec.AsObject:
+case class StatusMessage(fdDigests: Seq[FdHourDigest], bandNodeOperator: BandModeOperator, id:Id = Ids.generateId()) derives Codec.AsObject:
   def toPacket: Array[Byte] = CirceGzip.encode(this)
 
   override def toString: String =
-    s"StatusMessage( fdDigests:${fdDigests.size} gzipSize: ${toPacket.length} bytes.)"
+    s"StatusMessage( $bandNodeOperator fdDigests:${fdDigests.size} gzipSize: ${toPacket.length} bytes.)"
 
 object StatusMessage:
   def apply(gzipped: Array[Byte]): StatusMessage =
