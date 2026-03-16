@@ -140,8 +140,8 @@ class StatusBroadcastService @Inject()(
   def broadcastStatus(): Unit =
     try
       val statusMessage = StatusMessage( fdDigests = qsoStore.digests())
-      logger.trace(s"Broadcasting status: $statusMessage")
       val gzipBytes = statusMessage.toPacket
+      logger.trace("Broadcasting status: {} bytes: {}", statusMessage, gzipBytes.length)
       transport.send(Service.Status, gzipBytes)
     catch
       case e: Exception =>
