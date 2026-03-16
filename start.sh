@@ -70,7 +70,8 @@ for ((i=0; i<NUM_NODES; i++)); do
   echo "Starting node $i on port $PORT"
   echo "Logs: $LOG_DIR/stdout.log"
 
-  PORT="$PORT" java -jar "$JAR" \
+
+  PORT="$PORT" SHOW_STARTUP="false" java -jar "$JAR" \
       >"$LOG_DIR/stdout.log" \
       2>&1 &
 
