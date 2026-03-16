@@ -47,13 +47,12 @@ class StartupDialog @Inject() (
     bandsManager: fdswarm.fx.bands.AvailableBandsManager,
     modesManager: fdswarm.fx.bands.AvailableModesManager,
     contestCond: ContestCondition,
-    stationCond: StationCondition,
-    bandModeCond: BandModeCondition
+    stationCond: StationCondition
 ) extends LazyLogging:
 
   private val startupSeconds: Int = config.getInt("fdswarm.autoStartSeconds")
 
-  private val conditions = Seq(contestCond, stationCond, bandModeCond)
+  private val conditions = Seq(contestCond, stationCond)
 
   private val allOk = BooleanProperty(false)
   private val isDiscovering = BooleanProperty(false)

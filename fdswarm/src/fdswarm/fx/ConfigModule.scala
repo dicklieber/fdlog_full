@@ -101,7 +101,6 @@ class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
 
     bind[fdswarm.fx.startup.ContestCondition].asEagerSingleton()
     bind[fdswarm.fx.startup.StationCondition].asEagerSingleton()
-    bind[fdswarm.fx.startup.BandModeCondition].asEagerSingleton()
 
     val entries = fullConfig.entrySet().asScala.toSeq
     for (entry <- entries) {

@@ -297,10 +297,8 @@ final class FdLogUi @Inject() (
       stylesheets = Seq(getClass.getResource("/styles/app.css").toExternalForm)
     stage.show()
 
-    val result = startupDialog.show(stage)
-    logger.debug(s"StartupDialog result: $result")
-    if !result then
-      Platform.exit()
+    if sys.env.getOrElse("SHOW_STARTUP", "true") == "true" then
+      startupDialog.show(stage)
 
     Platform.runLater {
       val duration = FdLogApp.startupDuration
