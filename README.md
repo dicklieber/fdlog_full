@@ -15,6 +15,11 @@ To clean the project build artifacts:
 ```bash
 ./mill clean
 ```
+### Building
+To compile all the modules:
+```
+./mill __.compile
+```
 
 ### Running Tests
 To run the project tests:
