@@ -1,0 +1,36 @@
+/*
+ * Copyright (c) 2026. Dick Lieber, WA9NNN
+ *
+ * This program is free software: you can redistribute it and/or modify 
+ * it under the terms of the GNU General Public License as published by 
+ * the Free Software Foundation, either version 3 of the License, or    
+ * (at your option) any later version.                                  
+ *                                                                      
+ * This program is distributed in the hope that it will be useful,      
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of       
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the        
+ * GNU General Public License for more details.                         
+ *                                                                      
+ * You should have received a copy of the GNU General Public License    
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+package fdswarm.fx.bands
+
+import com.typesafe.config.{Config, ConfigRenderOptions}
+import fdswarm.model.BandMode.Mode
+import jakarta.inject.{Inject, Singleton}
+import fdswarm.model.Choice
+import java.util
+import fdswarm.model.ChoiceItem
+import scala.jdk.CollectionConverters.*
+
+/**
+ * This is loaded from application.conf.
+ */
+@Singleton
+final class ModeCatalog @Inject()(config: Config):
+  val modes: Seq[Mode] = config.getStringList("fdswarm.modes").asScala.toSeq
+  val choices: Seq[Choice[Mode]] = modes.map((p: Mode) => ChoiceItem(p))
+  
