@@ -13,7 +13,6 @@ Configuration:
     Logger:
       - name: "fdlog.store.QsoStore"
         level: info
-        additivity: true
 #        AppenderRef:
 #          - ref: TestList
 #          - ref: TestConsole

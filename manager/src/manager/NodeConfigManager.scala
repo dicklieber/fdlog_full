@@ -20,47 +20,49 @@ package manager
 
 import fdswarm.DebugConfig
 import fdswarm.util.Ids.Id
-import io.circe.Printer
-import io.circe.generic.auto.*
-import io.circe.parser.decode
-import io.circe.syntax.*
+import _root_.io.circe.Printer
+import _root_.io.circe.generic.auto.*
+import _root_.io.circe.parser.decode
+import _root_.io.circe.syntax.*
+import com.typesafe.scalalogging.LazyLogging
 import jakarta.inject.{Inject, Singleton}
 import scalafx.collections.ObservableBuffer
 
 @Singleton
-class NodeConfigManager @Inject()():
+class NodeConfigManager @Inject()() extends LazyLogging:
   private val file = os.home / "fdswarm" / "nodes.json"
   private val printer = Printer.spaces2.copy(dropNullValues = true)
 
   val observableBuffer: ObservableBuffer[DebugConfig] =
     val initial = load()
     val buffer = ObservableBuffer.from(initial)
-    buffer.onChange { (_, _) =>
-      persist()
-    }
     buffer
 
   def add(debugConfig: DebugConfig): Unit =
+    logger.trace(s"Adding NodeConfig: $debugConfig")
     observableBuffer += debugConfig
 
   def delete(id: Id): Unit =
+    logger.trace(s"Deleting NodeConfig with id: $id")
     observableBuffer.removeIf(_.id == id)
 
   def persist(): Unit =
+    logger.trace(s"Persisting NodeConfigs to $file")
     val json = printer.print(observableBuffer.toList.asJson)
     os.write.over(file, json, createFolders = true)
 
   private def load(): List[DebugConfig] =
+    logger.trace(s"Loading NodeConfigs from $file")
     try
       if os.exists(file) then
         val json = os.read(file)
         decode[List[DebugConfig]](json) match
           case Right(list) => list
           case Left(err) =>
-            System.err.println(s"Failed to decode NodeConfigs from $file: $err")
+            logger.error(s"Failed to decode NodeConfigs from $file: $err")
             Nil
       else Nil
     catch
       case e: Exception =>
-        System.err.println(s"Failed to load NodeConfigs from $file: ${e.getMessage}")
+        logger.error(s"Failed to load NodeConfigs from $file: ${e.getMessage}")
         Nil
