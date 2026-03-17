@@ -19,6 +19,12 @@
 package fdswarm
 
 import fdswarm.model.{BandMode, Callsign}
+import fdswarm.util.Ids
+import fdswarm.util.Ids.Id
 
 
-case class DebugConfig (operator: Callsign, bandMode:BandMode)
+case class DebugConfig (operator: Callsign,
+                        bandMode:BandMode,
+                        showStartupConfig: Boolean = false,
+                        clearQsos: Boolean = false,
+                        id:Id = Ids.generateInstanceId())

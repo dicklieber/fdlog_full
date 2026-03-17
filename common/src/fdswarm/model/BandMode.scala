@@ -63,7 +63,7 @@ object BandMode:
   private val Parse = """\s*([\d.]+[a-zA-Z]+)\s+([A-Z]{1,5})\s*""".r
 
 
-  private[fdswarm] def apply(s: String): BandMode =
+  def apply(s: String): BandMode =
     s match
       case Parse(band, mode) =>
         new BandMode(band, mode)
