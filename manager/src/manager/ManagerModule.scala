@@ -29,6 +29,7 @@ import net.codingwell.scalaguice.ScalaModule
 class ManagerModule extends AbstractModule with ScalaModule {
   override def configure(): Unit = {
     bind[NodeConfigManager].asEagerSingleton()
+    bind[Runner].asEagerSingleton()
     bind[DirectoryProvider].toInstance(new ManagerDirectory)
     bind[Config].toInstance(ConfigFactory.load())
     
