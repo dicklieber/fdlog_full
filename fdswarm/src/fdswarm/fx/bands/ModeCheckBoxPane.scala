@@ -20,6 +20,7 @@ package fdswarm.fx.bands
 
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.GridColumns
+import fdswarm.fx.bands.*
 import fdswarm.model.BandMode.Band
 import jakarta.inject.{Inject, Singleton}
 import scalafx.geometry.Insets

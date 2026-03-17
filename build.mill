@@ -36,14 +36,19 @@ trait CommonSettings extends ScalaModule:
 object common extends CommonSettings:
   def mvnDeps = Seq(
     mvn"io.circe::circe-core:0.14.10",
+    mvn"io.circe::circe-generic:0.14.10",
+    mvn"io.circe::circe-parser:0.14.10",
     mvn"com.softwaremill.sttp.tapir:tapir-core_3:$tapirV",
     mvn"org.apache.logging.log4j:log4j-api:$log4jV",
     mvn"org.apache.logging.log4j:log4j-core:$log4jV",
     mvn"org.apache.logging.log4j:log4j-slf4j2-impl:$log4jV",
     mvn"org.apache.commons:commons-text:1.10.0",
     mvn"com.lihaoyi::os-lib:0.11.6",
-
-
+    mvn"org.scalafx:scalafx_3:21.0.0-R32",
+    mvn"com.typesafe.scala-logging::scala-logging:3.9.5",
+    mvn"jakarta.inject:jakarta.inject-api:2.0.1",
+    mvn"com.typesafe:config:1.4.3",
+    mvn"org.scala-lang.modules::scala-xml:2.2.0",
   )
 
 object fdswarm extends CommonSettings with ScoverageModule with BuildInfo with JpackageModule {

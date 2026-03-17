@@ -23,7 +23,8 @@ import fdswarm.StationManager
 import fdswarm.fx.bandmodes.SelectedBandModeStore
 import fdswarm.fx.contest.ContestManager
 import fdswarm.fx.sections.Section
-import fdswarm.fx.{CallSignField, GridColumns}
+import fdswarm.fx.CallSignField
+import fdswarm.fx.GridColumns
 import fdswarm.model.*
 import fdswarm.replication.{Service, Transport}
 import fdswarm.store.{QsoStore, StyledMessage}
