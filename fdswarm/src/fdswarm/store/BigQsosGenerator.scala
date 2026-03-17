@@ -21,7 +21,7 @@ package fdswarm.store
 import fdswarm.fx.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
 import fdswarm.fx.contest.ContestType.WFD
 import fdswarm.model.*
-import fdswarm.util.NodeIdentityManager
+import fdswarm.util.{CallsignGenerator, NodeIdentityManager}
 import jakarta.inject.*
 
 import java.time.Instant
@@ -46,7 +46,7 @@ final class BigQsosGenerator @Inject()(qsoStore: QsoStore, bandModeBuilder: Band
    */
   def qsos(howMany: Int, howManyPerHour: Int, prefix: String, now: Instant = java.time.Instant.now()): Unit =
     val intervalMillis = (3600L * 1000L) / howManyPerHour
-    val generatedCallsigns = callsignIterator(prefix)
+    val generatedCallsigns = CallsignGenerator.callsignIterator(prefix)
       .take(howMany)
       .zipWithIndex
     val batchOfQsos: Seq[Qso] = (for
@@ -75,10 +75,3 @@ final class BigQsosGenerator @Inject()(qsoStore: QsoStore, bandModeBuilder: Band
     qsoStore.add(batchOfQsos)
 
 
-  private def callsignIterator(prefix: String): Iterator[String] =
-    val alphabet = 'A' to 'Z'
-    for
-      a <- alphabet.iterator
-      b <- alphabet.iterator
-      c <- alphabet.iterator
-    yield s"$prefix$a$b$c"
