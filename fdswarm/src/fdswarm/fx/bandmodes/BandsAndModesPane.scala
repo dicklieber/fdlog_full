@@ -46,7 +46,7 @@ final class BandsAndModesPane @Inject()(
                                       ) extends GridPane:
 
   matrixPane.onConfigRequest = Some(() => {
-    Option(scene.value).map(_.getWindow).foreach { window =>
+    Option(matrixPane.node.scene.value).map(_.getWindow).foreach { window =>
       this.show(window)
     }
   })

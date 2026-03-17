@@ -33,7 +33,7 @@ import fdswarm.fx.GridColumns.*
 class ContestEntry @Inject()(qsoEntryPanel: QsoEntryPanel,
                              qsoTablePane: QsoTablePane,
                              qsoSearchPane: QsoSearchPane,
-                             bandModeMatrixPane: BandModeMatrixPane,
+                             val bandModeMatrixPane: BandModeMatrixPane,
                              sectionPanel: SectionPanel,
                              contestTimerPanel: ContestTimerPanel
                             ) extends LazyLogging:

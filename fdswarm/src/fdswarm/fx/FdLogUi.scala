@@ -296,6 +296,13 @@ final class FdLogUi @Inject() (
     stage.scene = new Scene(root, 1100, 800):
       stylesheets = Seq(getClass.getResource("/styles/app.css").toExternalForm)
     stage.show()
+    
+    // Wire the Band/Mode matrix in ContestEntry to open the manager
+    contestEntry.bandModeMatrixPane.onConfigRequest = Some(() => {
+      Option(ownerWindow) match
+        case Some(w) => bandModeManagerPane.show(w)
+        case None    => ()
+    })
 
     if sys.env.getOrElse("SHOW_STARTUP", "true") == "true" then
       startupDialog.show(stage)
