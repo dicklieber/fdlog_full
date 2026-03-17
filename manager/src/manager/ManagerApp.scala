@@ -30,6 +30,8 @@ import scalafx.scene.control.*
 import scalafx.scene.control.TableColumn.*
 import scalafx.scene.control.cell.{CheckBoxTableCell, TextFieldTableCell}
 import scalafx.scene.layout.{BorderPane, HBox}
+import fdswarm.fx.bandmodes.{BandModeMatrixPane, SelectedBandModeStore}
+import scalafx.stage.Window
 
 object ManagerApp extends JFXApp3 {
 
@@ -65,17 +67,48 @@ object ManagerApp extends JFXApp3 {
               new TableColumn[DebugConfig, String] {
                 text = "BandMode"
                 cellValueFactory = { cd => new StringProperty(cd.value, "bandMode", cd.value.bandMode.toString) }
-                cellFactory = TextFieldTableCell.forTableColumn[DebugConfig]()
-                onEditCommit = (evt: TableColumn.CellEditEvent[DebugConfig, String]) => {
-                  val index = evt.tablePosition.row
-                  val old = nodeConfigManager.observableBuffer(index)
-                  try {
-                    nodeConfigManager.observableBuffer(index) = old.copy(bandMode = BandMode(evt.newValue))
-                  } catch {
-                    case _: Exception => // Ignore invalid format
+                cellFactory = (col: TableColumn[DebugConfig, String]) => {
+                  new TableCell[DebugConfig, String] {
+                    item.onChange { (_, _, newValue) =>
+                      text = newValue
+                    }
+                    onMouseClicked = _ => {
+                      val index = tableRow.value.indexProperty().get()
+                      if (index >= 0 && index < nodeConfigManager.observableBuffer.size) {
+                        val oldConfig = nodeConfigManager.observableBuffer(index)
+                        
+                        // We need a BandModeMatrixPane. Since it's a singleton in this injector,
+                        // we can just get it. But we must set its initial selection.
+                        val matrixPane = injector.instance[BandModeMatrixPane]
+                        val selectedStore = injector.instance[SelectedBandModeStore]
+                        selectedStore.save(oldConfig.bandMode)
+                        
+                        val dialog = new Dialog[BandMode] {
+                          initOwner(stage)
+                          title = "Select BandMode"
+                          headerText = s"Select BandMode for ${oldConfig.id}"
+                        }
+                        
+                        matrixPane.showConfigButton.value = false
+                        dialog.dialogPane().content = matrixPane.node
+                        dialog.dialogPane().buttonTypes = Seq(ButtonType.OK, ButtonType.Cancel)
+                        
+                        dialog.resultConverter = {
+                          case ButtonType.OK => selectedStore.selected.value
+                          case _ => null
+                        }
+                        
+                        val result = dialog.showAndWait()
+                        result match {
+                          case Some(bm: BandMode) =>
+                            nodeConfigManager.observableBuffer(index) = oldConfig.copy(bandMode = bm)
+                          case _ => // Cancelled
+                        }
+                      }
+                    }
                   }
                 }
-                editable = true
+                editable = false // Use modal instead of text field
               },
               new TableColumn[DebugConfig, java.lang.Boolean] {
                 text = "Startup Config"
