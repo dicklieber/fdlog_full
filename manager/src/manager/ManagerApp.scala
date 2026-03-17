@@ -31,6 +31,7 @@ import scalafx.scene.control.TableColumn.*
 import scalafx.scene.control.cell.{CheckBoxTableCell, TextFieldTableCell}
 import scalafx.scene.layout.{BorderPane, HBox}
 import fdswarm.fx.bandmodes.{BandModeMatrixPane, SelectedBandModeStore}
+import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager, BandCatalog, BandClass, ModeCatalog}
 import scalafx.stage.Window
 
 object ManagerApp extends JFXApp3 {
@@ -39,6 +40,18 @@ object ManagerApp extends JFXApp3 {
     Guice.createInjector(new ManagerModule())
 
   override def start(): Unit = {
+    // Force all HF, VHF, and UHF bands and all modes to be available for selection in manager
+    val bandCatalog = injector.instance[BandCatalog]
+    val modeCatalog = injector.instance[ModeCatalog]
+    val bandsManager = injector.instance[AvailableBandsManager]
+    val modesManager = injector.instance[AvailableModesManager]
+
+    val allRequiredBands = bandCatalog.hamBands
+      .filter(b => b.bandClass == BandClass.HF || b.bandClass == BandClass.VHF || b.bandClass == BandClass.UHF)
+      .map(_.bandName)
+    bandsManager.bands.setAll(allRequiredBands*)
+    modesManager.modes.setAll(modeCatalog.modes*)
+
     val nodeConfigManager = injector.instance[NodeConfigManager]
 
     stage = new JFXApp3.PrimaryStage {
