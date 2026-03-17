@@ -1,0 +1,19 @@
+Configuration:
+  status: warn
+
+  Appenders:
+    Console:
+      name: Console
+      target: SYSTEM_OUT
+      PatternLayout:
+        Pattern: "%d{HH:mm:ss.SSS} [%t] %highlight{%-5level}{FATAL=bg_red, ERROR=red, WARN=yellow, INFO=green, DEBUG=blue, TRACE=cyan} %logger{36} - %msg%n"
+        alwaysWriteExceptions: true
+
+  Loggers:
+    Logger:
+      - name: manager.NodeConfigManager
+        level: trace
+    Root:
+      level: info
+      AppenderRef:
+        ref: Console

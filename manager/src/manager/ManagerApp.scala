@@ -19,6 +19,7 @@
 package manager
 
 import com.google.inject.{Guice, Injector}
+import com.typesafe.scalalogging.LazyLogging
 import fdswarm.DebugConfig
 import fdswarm.model.{BandMode, Callsign}
 import net.codingwell.scalaguice.InjectorExtensions.*
@@ -34,7 +35,7 @@ import fdswarm.fx.bandmodes.{BandModeMatrixPane, SelectedBandModeStore}
 import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager, BandCatalog, BandClass, ModeCatalog}
 import scalafx.stage.Window
 
-object ManagerApp extends JFXApp3 {
+object ManagerApp extends JFXApp3 with LazyLogging {
 
   private lazy val injector: Injector =
     Guice.createInjector(new ManagerModule())
@@ -69,7 +70,26 @@ object ManagerApp extends JFXApp3 {
               new TableColumn[DebugConfig, String] {
                 text = "Operator"
                 cellValueFactory = { cd => new StringProperty(cd.value, "operator", cd.value.operator.value) }
-                cellFactory = TextFieldTableCell.forTableColumn[DebugConfig]()
+                cellFactory = (col: TableColumn[DebugConfig, String]) => {
+                  new TextFieldTableCell[DebugConfig, String](new scalafx.util.StringConverter[String] {
+                    override def toString(t: String): String = t
+                    override def fromString(s: String): String = s
+                  }) {
+                    graphic.onChange { (_, _, newValue) =>
+                      if (newValue != null && newValue.isInstanceOf[javafx.scene.control.TextField]) {
+                        val textField = newValue.asInstanceOf[javafx.scene.control.TextField]
+                        textField.setTextFormatter(new javafx.scene.control.TextFormatter[String](new java.util.function.UnaryOperator[javafx.scene.control.TextFormatter.Change] {
+                          override def apply(change: javafx.scene.control.TextFormatter.Change): javafx.scene.control.TextFormatter.Change = {
+                            if (change.isContentChange) {
+                              change.setText(change.getText.toUpperCase)
+                            }
+                            change
+                          }
+                        }))
+                      }
+                    }
+                  }
+                }
                 onEditCommit = (evt: TableColumn.CellEditEvent[DebugConfig, String]) => {
                   val index = evt.tablePosition.row
                   val old = nodeConfigManager.observableBuffer(index)
@@ -183,7 +203,7 @@ object ManagerApp extends JFXApp3 {
               new Button("Save") {
                 onAction = _ => {
                   nodeConfigManager.persist()
-                  println("Changes saved to nodes.json")
+                  logger.info("Changes saved to nodes.json")
                 }
               }
             )
