@@ -11,7 +11,8 @@ import mill.contrib.scoverage.*
 import mill.javalib.Assembly.*
 import mill.scalalib.*
 
-object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with JpackageModule {
+
+trait CommonSettings extends ScalaModule:
   val majorVersion = "0"
   val version = s"$majorVersion.0.0"
   val name = "fdswarm"
@@ -31,6 +32,15 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
       "-deprecation",
       "-Wconf:msg=Implicit parameters should be provided with a `using` clause:s"
     )
+
+object common extends CommonSettings:
+  def mvnDeps = Seq(
+    mvn"io.circe::circe-core:0.14.10",
+    mvn"com.softwaremill.sttp.tapir:tapir-core_3:$tapirV"
+  )
+
+object fdswarm extends CommonSettings with ScoverageModule with BuildInfo with JpackageModule {
+  override def moduleDeps = Seq(common)
 
   def mainClass = Some("fdswarm.FdLogApp")
 
@@ -401,14 +411,7 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
     mvn"org.http4s:http4s-circe_3:$http4sV",
     mvn"org.typelevel:cats-effect_3:3.5.7",
 
-    mvn"org.scalafx:scalafx_3:21.0.0-R32"
-      .exclude("org.openjfx" -> "javafx-base")
-      .exclude("org.openjfx" -> "javafx-controls")
-      .exclude("org.openjfx" -> "javafx-fxml")
-      .exclude("org.openjfx" -> "javafx-graphics")
-      .exclude("org.openjfx" -> "javafx-media")
-      .exclude("org.openjfx" -> "javafx-swing")
-      .exclude("org.openjfx" -> "javafx-web"),
+    mvn"org.scalafx:scalafx_3:21.0.0-R32",
     mvn"org.scala-lang.modules::scala-xml:2.3.0",
 
     mvn"io.micrometer:micrometer-registry-prometheus:1.14.4",
@@ -430,4 +433,14 @@ object fdswarm extends ScalaModule with ScoverageModule with BuildInfo with Jpac
     override def testReportXml = Some("test-report.xml")
 
   }
+}
+
+object manager extends CommonSettings {
+  override def moduleDeps = Seq(common)
+
+  def mvnDeps = Seq(
+    mvn"org.scalafx:scalafx_3:21.0.0-R32"
+  )
+
+  def mainClass = Some("manager.ManagerApp")
 }
