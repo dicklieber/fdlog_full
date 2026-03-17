@@ -20,10 +20,14 @@ package fdswarm.fx.qso
 
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.UserConfig
-import fdswarm.fx.bands.{AvailableModesManager, BandCatalog, ModeCatalog}
+import fdswarm.fx.bands.AvailableModesManager
+import fdswarm.fx.bands.BandCatalog
+import fdswarm.fx.bands.ModeCatalog
 import fdswarm.fx.components.{AnyComboBox, CountComboBox, OptionTextField}
 import fdswarm.fx.contest.*
-import fdswarm.fx.utils.{BootstrapIcons, IconButton, MultiChangeWatcher}
+import fdswarm.fx.utils.BootstrapIcons
+import fdswarm.fx.utils.IconButton
+import fdswarm.fx.utils.MultiChangeWatcher
 import fdswarm.model.BandMode.*
 import fdswarm.model.Qso
 import fdswarm.store.QsoStore

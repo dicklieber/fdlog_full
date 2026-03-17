@@ -27,7 +27,7 @@ import jakarta.inject.Singleton
 import scalafx.geometry.Insets
 import scalafx.scene.Node
 import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority, VBox}
-import GridColumns.*
+import fdswarm.fx.GridColumns.*
 
 @Singleton
 class ContestEntry @Inject()(qsoEntryPanel: QsoEntryPanel,

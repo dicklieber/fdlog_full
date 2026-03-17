@@ -19,7 +19,6 @@
 package manager.io
 
 import fdswarm.io.DirectoryProvider
-import jakarta.inject.Singleton
 
 class ManagerDirectory extends DirectoryProvider:
   def apply(): os.Path = 

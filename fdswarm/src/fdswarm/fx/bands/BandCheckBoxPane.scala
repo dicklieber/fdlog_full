@@ -19,6 +19,7 @@
 package fdswarm.fx.bands
 
 import fdswarm.fx.GridColumns
+import fdswarm.fx.bands.*
 import fdswarm.io.DirectoryProvider
 import fdswarm.model.BandMode.Band
 import jakarta.inject.{Inject, Singleton}

@@ -20,7 +20,8 @@ package fdswarm.fx.qso
 
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.GridColumns
-import fdswarm.fx.bandmodes.{BandModeStore, SelectedBandModeStore}
+import fdswarm.fx.bandmodes.BandModeStore
+import fdswarm.fx.bandmodes.SelectedBandModeStore
 import fdswarm.store.{DupInfo, QsoStore, StyledMessage}
 import fdswarm.util.TimeHelpers.localFrom
 import jakarta.inject.{Inject, Singleton}

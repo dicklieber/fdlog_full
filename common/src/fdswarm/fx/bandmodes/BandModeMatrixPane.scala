@@ -48,10 +48,10 @@ import scala.jdk.CollectionConverters.*
 final class BandModeMatrixPane @Inject()(availableBandsStore: AvailableBandsManager,
                                          availableModesManager: AvailableModesManager,
                                          selectedStore: SelectedBandModeStore,
-                                         bandModeBuilder: BandModeBuilder,
-                                         bandsAndModesPaneProvider: Provider[BandsAndModesPane]) extends  LazyLogging:
+                                         bandModeBuilder: BandModeBuilder) extends  LazyLogging:
 
   val showConfigButton = BooleanProperty(true)
+  var onConfigRequest: Option[() => Unit] = None
   private val tg = new ToggleGroup()
 
   private val container = new scalafx.scene.layout.StackPane()
@@ -120,11 +120,7 @@ final class BandModeMatrixPane @Inject()(availableBandsStore: AvailableBandsMana
         grid.add(button, col + 1, row)
     val configButton = IconButton("sliders2-vertical", 24, "Change available bands and modes")
     configButton.visible <== showConfigButton
-    configButton.onAction = _ => {
-      Option(node.getScene).map(_.getWindow).foreach { window =>
-        bandsAndModesPaneProvider.get().show(window)
-      }
-    }
+    configButton.onAction = _ => onConfigRequest.foreach(_.apply())
     container.children = Seq(
       GridColumns.fieldSet("Band & Mode", grid),
       configButton

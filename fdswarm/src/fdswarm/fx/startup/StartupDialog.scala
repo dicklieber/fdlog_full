@@ -21,6 +21,7 @@ package fdswarm.fx.startup
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.contest.{ContestConfig, ContestDiscovery, ContestManager, ContestStation}
+import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager}
 import fdswarm.fx.station.{StationEditor, StationStore}
 import fdswarm.util.NodeIdentity
 import jakarta.inject.{Inject, Singleton}
@@ -44,8 +45,8 @@ class StartupDialog @Inject() (
     contestManager: ContestManager,
     contestDiscovery: ContestDiscovery,
     stationStore: StationStore,
-    bandsManager: fdswarm.fx.bands.AvailableBandsManager,
-    modesManager: fdswarm.fx.bands.AvailableModesManager,
+    bandsManager: AvailableBandsManager,
+    modesManager: AvailableModesManager,
     contestCond: ContestCondition,
     stationCond: StationCondition
 ) extends LazyLogging:

@@ -45,6 +45,12 @@ final class BandsAndModesPane @Inject()(
                                          matrixPane: BandModeMatrixPane
                                       ) extends GridPane:
 
+  matrixPane.onConfigRequest = Some(() => {
+    Option(scene.value).map(_.getWindow).foreach { window =>
+      this.show(window)
+    }
+  })
+
   padding = Insets(10)
   hgap = 10
   vgap = 10
