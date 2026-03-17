@@ -18,13 +18,8 @@
 
 package fdswarm.io
 
-import jakarta.inject.Singleton
-
-@Singleton
-class ProductionDirectory extends DirectoryProvider:
-  def apply(): os.Path = 
-    val base = os.home / "fdswarm"
-    sys.env.get("PORT") match
-      case Some(port) => base / port
-      case None => base
-
+/**
+ * Allows test TestDiretory for tests.
+ */
+trait DirectoryProvider :
+  def apply(): os.Path

@@ -24,9 +24,11 @@ import io.circe.Printer
 import io.circe.generic.auto.*
 import io.circe.parser.decode
 import io.circe.syntax.*
+import jakarta.inject.{Inject, Singleton}
 import scalafx.collections.ObservableBuffer
 
-object NodeConfigManager:
+@Singleton
+class NodeConfigManager @Inject()():
   private val file = os.home / "fdswarm" / "nodes.json"
   private val printer = Printer.spaces2.copy(dropNullValues = true)
 

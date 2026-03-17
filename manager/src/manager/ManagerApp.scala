@@ -18,8 +18,10 @@
 
 package manager
 
+import com.google.inject.{Guice, Injector}
 import fdswarm.DebugConfig
 import fdswarm.model.{BandMode, Callsign}
+import net.codingwell.scalaguice.InjectorExtensions.*
 import scalafx.Includes.*
 import scalafx.application.JFXApp3
 import scalafx.beans.property.{BooleanProperty, ObjectProperty, StringProperty}
@@ -30,12 +32,18 @@ import scalafx.scene.control.cell.{CheckBoxTableCell, TextFieldTableCell}
 import scalafx.scene.layout.{BorderPane, HBox}
 
 object ManagerApp extends JFXApp3 {
+
+  private lazy val injector: Injector =
+    Guice.createInjector(new ManagerModule())
+
   override def start(): Unit = {
+    val nodeConfigManager = injector.instance[NodeConfigManager]
+
     stage = new JFXApp3.PrimaryStage {
       title = "Debug Configuration Manager"
       scene = new Scene {
         root = new BorderPane {
-          center = new TableView[DebugConfig](NodeConfigManager.observableBuffer) {
+          center = new TableView[DebugConfig](nodeConfigManager.observableBuffer) {
             editable = true
             columns ++= Seq(
               new TableColumn[DebugConfig, String] {
@@ -49,8 +57,8 @@ object ManagerApp extends JFXApp3 {
                 cellFactory = TextFieldTableCell.forTableColumn[DebugConfig]()
                 onEditCommit = (evt: TableColumn.CellEditEvent[DebugConfig, String]) => {
                   val index = evt.tablePosition.row
-                  val old = NodeConfigManager.observableBuffer(index)
-                  NodeConfigManager.observableBuffer(index) = old.copy(operator = Callsign(evt.newValue))
+                  val old = nodeConfigManager.observableBuffer(index)
+                  nodeConfigManager.observableBuffer(index) = old.copy(operator = Callsign(evt.newValue))
                 }
                 editable = true
               },
@@ -60,9 +68,9 @@ object ManagerApp extends JFXApp3 {
                 cellFactory = TextFieldTableCell.forTableColumn[DebugConfig]()
                 onEditCommit = (evt: TableColumn.CellEditEvent[DebugConfig, String]) => {
                   val index = evt.tablePosition.row
-                  val old = NodeConfigManager.observableBuffer(index)
+                  val old = nodeConfigManager.observableBuffer(index)
                   try {
-                    NodeConfigManager.observableBuffer(index) = old.copy(bandMode = BandMode(evt.newValue))
+                    nodeConfigManager.observableBuffer(index) = old.copy(bandMode = BandMode(evt.newValue))
                   } catch {
                     case _: Exception => // Ignore invalid format
                   }
@@ -74,10 +82,10 @@ object ManagerApp extends JFXApp3 {
                 cellValueFactory = { cd =>
                   val prop = BooleanProperty(cd.value.showStartupConfig)
                   prop.onChange { (_, _, newValue) =>
-                    val index = NodeConfigManager.observableBuffer.indexOf(cd.value)
+                    val index = nodeConfigManager.observableBuffer.indexOf(cd.value)
                     if (index >= 0) {
-                      val old = NodeConfigManager.observableBuffer(index)
-                      NodeConfigManager.observableBuffer(index) = old.copy(showStartupConfig = newValue)
+                      val old = nodeConfigManager.observableBuffer(index)
+                      nodeConfigManager.observableBuffer(index) = old.copy(showStartupConfig = newValue)
                     }
                   }
                   prop.delegate
@@ -90,10 +98,10 @@ object ManagerApp extends JFXApp3 {
                 cellValueFactory = { cd =>
                   val prop = BooleanProperty(cd.value.clearQsos)
                   prop.onChange { (_, _, newValue) =>
-                    val index = NodeConfigManager.observableBuffer.indexOf(cd.value)
+                    val index = nodeConfigManager.observableBuffer.indexOf(cd.value)
                     if (index >= 0) {
-                      val old = NodeConfigManager.observableBuffer(index)
-                      NodeConfigManager.observableBuffer(index) = old.copy(clearQsos = newValue)
+                      val old = nodeConfigManager.observableBuffer(index)
+                      nodeConfigManager.observableBuffer(index) = old.copy(clearQsos = newValue)
                     }
                   }
                   prop.delegate
@@ -109,7 +117,7 @@ object ManagerApp extends JFXApp3 {
                     item.onChange { (_, _, debugConfig) =>
                       graphic = if (debugConfig != null) {
                         new Button("Delete") {
-                          onAction = _ => NodeConfigManager.observableBuffer -= debugConfig
+                          onAction = _ => nodeConfigManager.observableBuffer -= debugConfig
                         }
                       } else null
                     }
@@ -123,12 +131,12 @@ object ManagerApp extends JFXApp3 {
             children = Seq(
               new Button("Add") {
                 onAction = _ => {
-                  NodeConfigManager.add(DebugConfig(Callsign("N0CALL"), BandMode("20M PH")))
+                  nodeConfigManager.add(DebugConfig(Callsign("N0CALL"), BandMode("20M PH")))
                 }
               },
               new Button("Save") {
                 onAction = _ => {
-                  NodeConfigManager.persist()
+                  nodeConfigManager.persist()
                   println("Changes saved to nodes.json")
                 }
               }
