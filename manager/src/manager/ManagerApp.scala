@@ -57,6 +57,9 @@ object ManagerApp extends JFXApp3 with LazyLogging {
 
     stage = new JFXApp3.PrimaryStage {
       title = "Debug Configuration Manager"
+      onCloseRequest = _ => {
+        injector.instance[Runner].stopAll()
+      }
       scene = new Scene {
         root = new BorderPane {
           center = new TableView[DebugConfig](nodeConfigManager.observableBuffer) {
