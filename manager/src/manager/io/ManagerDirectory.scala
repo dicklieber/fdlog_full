@@ -16,16 +16,12 @@
  *
  */
 
-package manager
+package manager.io
 
-import com.google.inject.AbstractModule
 import fdswarm.io.DirectoryProvider
-import manager.io.ManagerDirectory
-import net.codingwell.scalaguice.ScalaModule
+import jakarta.inject.Singleton
 
-class ManagerModule extends AbstractModule with ScalaModule {
-  override def configure(): Unit = {
-    bind[NodeConfigManager].asEagerSingleton()
-    bind[DirectoryProvider].toInstance(new ManagerDirectory)
-  }
-}
+class ManagerDirectory extends DirectoryProvider:
+  def apply(): os.Path = 
+    os.home / "fdswarm" / "manager"
+
