@@ -18,9 +18,9 @@
 
 package fdswarm.model
 
-import io.circe.{Decoder, Encoder, Codec}
+import fdswarm.model.BandMode.*
+import io.circe.{Codec, Decoder, Encoder}
 import sttp.tapir.Schema
-import BandMode.*
 
 /**
  * Allows storng band and mode in a compact why in a [[Qso]]
