@@ -27,7 +27,6 @@ class AppInstance(debugConfigJsonPath: String, port: Int) extends LazyLogging:
     os.proc("java", "-jar", jarPath, s"startupInfo=$debugConfigJsonPath")
   val subProcess: SubProcess = proc.spawn(env = Map("PORT" -> port.toString))
   logger.trace(s"Started $proc s: $subProcess")
-
   def stop(): Unit =
     subProcess.destroy()
 object AppInstance:
