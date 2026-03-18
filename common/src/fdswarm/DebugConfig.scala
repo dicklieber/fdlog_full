@@ -19,6 +19,7 @@
 package fdswarm
 
 import fdswarm.model.{BandMode, Callsign}
+import _root_.io.circe.Codec
 import fdswarm.util.Ids
 import fdswarm.util.Ids.Id
 
@@ -27,4 +28,4 @@ case class DebugConfig (operator: Callsign,
                         bandMode:BandMode,
                         showStartupConfig: Boolean = false,
                         clearQsos: Boolean = false,
-                        id:Id = Ids.generateInstanceId())
+                        id:Id = Ids.generateInstanceId()) derives Codec.AsObject

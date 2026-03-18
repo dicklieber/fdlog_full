@@ -18,35 +18,37 @@
 
 package manager
 
+import _root_.io.circe.syntax.*
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.DebugConfig
 import fdswarm.io.DirectoryProvider
-import fdswarm.util.Ids.Id
 import jakarta.inject.Inject
-import os.SubProcess
 
-import scala.collection.mutable
+import java.util.concurrent.atomic.AtomicInteger
+import scala.collection.IndexedSeqView
 
 /** create a JSON file of [[DebugConfig]] Starts an instance of the FDSwarm
   * application. pass reference to that file on the command line.
   *
-  * @param directoryProvider
+  * @param directoryProvider where manager puts it's files.
   */
 class Runner @Inject() (directoryProvider: DirectoryProvider)
     extends LazyLogging:
 
-  private val managedNodes = mutable.Map.empty[Id, ManagedNode]
+  private var instances:Seq[AppInstance] = Seq.empty
+  private val path = directoryProvider() / "debugConfigs"
 
-  def start(debugConfig: DebugConfig): Unit =
-    managedNodes
-      .getOrElseUpdate(
-        debugConfig.id,
-        ManagedNode(debugConfig, directoryProvider, os.pwd / os.RelPath(AppInstance.jarPath))
-      )
-      .start()
+  def start(view: IndexedSeqView[DebugConfig]): Unit =
+    os.remove.all(path)
+    val ports = new AtomicInteger(8080)
+    instances = view.iterator.map { debugConfig =>
+      val pathToJson = path / s"${debugConfig.id}.json"
+      os.write.over(pathToJson, debugConfig.asJson.spaces2, createFolders = true)
+      val sJsonPath = pathToJson.toString
+      AppInstance(sJsonPath, ports.getAndIncrement())
+    }.toSeq
 
   def stop(): Unit =
-    managedNodes.values.foreach(_.stop())
-    managedNodes.clear()
+    instances.foreach(_.stop())
 
 
