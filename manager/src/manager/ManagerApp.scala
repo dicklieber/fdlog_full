@@ -57,9 +57,9 @@ object ManagerApp extends JFXApp3 with LazyLogging {
 
     stage = new JFXApp3.PrimaryStage {
       title = "Debug Configuration Manager"
-      onCloseRequest = _ => {
-        injector.instance[Runner].stopAll()
-      }
+//      onCloseRequest = _ => {
+//        injector.instance[Runner].stopAll()
+//      }
       scene = new Scene {
         root = new BorderPane {
           center = new TableView[DebugConfig](nodeConfigManager.observableBuffer) {
@@ -207,6 +207,17 @@ object ManagerApp extends JFXApp3 with LazyLogging {
                 onAction = _ => {
                   nodeConfigManager.persist()
                   logger.info("Changes saved to nodes.json")
+                }
+              },
+              new Button("Start All") {
+                onAction = _ => {
+                  val runner = injector.instance[Runner]
+                  nodeConfigManager.observableBuffer.foreach(runner.start)
+                }
+              },
+              new Button("Stop All") {
+                onAction = _ => {
+//                  injector.instance[Runner].stopAll()
                 }
               }
             )
