@@ -17,21 +17,15 @@
  */
 
 package fdswarm
-import cats.effect.IO
-import cats.effect.std.Dispatcher
-import cats.effect.unsafe.implicits.global
+
 import com.google.inject.{Guice, Injector}
-import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.{ConfigModule, FdLogUi}
-import fdswarm.replication.{NodeStatusHandler, StatusBroadcastService}
-import javafx.application.Platform
+import fdswarm.replication.StatusBroadcastService
+import mainargs.{ParserForClass, arg}
 import net.codingwell.scalaguice.InjectorExtensions.*
 import scalafx.application.JFXApp3
-import scalafx.scene.control.{Button, Label}
 
-import java.time.Instant
-import java.time.Duration
-import mainargs.{arg, ParserForClass}
+import java.time.{Duration, Instant}
 
 /** Minimal app bootstrap:
   *   - builds the Guice injector
@@ -56,9 +50,8 @@ object FdLogApp extends JFXApp3:
     }
     System.setProperty("javafx.embed.singleThread", "true")
 
-    val cli = ParserForClass[StartupArgs].constructOrExit(args.toIndexedSeq)
-    startupInfoPath = cli.startupInfo
-    println(s"Parsed startup info path: ${startupInfoPath.getOrElse("none")}")
+    cli = ParserForClass[StartupArgs].constructOrExit(args.toIndexedSeq)
+
     super.main(args)
 
   private val log = org.slf4j.LoggerFactory.getLogger(getClass)
@@ -68,15 +61,12 @@ object FdLogApp extends JFXApp3:
   private lazy val injector: Injector =
     Guice.createInjector(new ConfigModule())
   var statusBroadcastService: Option[StatusBroadcastService] = None
-  var startupInfoPath: Option[String] = None
+  private var cli: StartupArgs = _
 
   override def start(): Unit =
-//    statusBroadcastService = Option(injector.instance[StatusBroadcastService])
-//    injector.instance[NodeStatusHandler]
-
-    log.debug("fdlog start")
-    
     val ui = injector.instance[FdLogUi]
+
+    StartupInfo(cli.startupInfo)
 
     // Create the primary stage, let the UI configure it, then publish it
     val s = new JFXApp3.PrimaryStage
@@ -88,4 +78,3 @@ object FdLogApp extends JFXApp3:
     statusBroadcastService.foreach(_.stop())
 
 
-  
