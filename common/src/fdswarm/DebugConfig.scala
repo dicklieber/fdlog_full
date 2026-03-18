@@ -28,4 +28,7 @@ case class DebugConfig (operator: Callsign,
                         bandMode:BandMode,
                         showStartupConfig: Boolean = false,
                         clearQsos: Boolean = false,
-                        id:Id = Ids.generateInstanceId()) derives Codec.AsObject
+                        id:Id = Ids.generateInstanceId()) derives Codec.AsObject {
+  override def toString: String =
+    s"DebugConfig(operator=$operator, bandMode=$bandMode, showStartupConfig=$showStartupConfig, clearQsos=$clearQsos, id=$id)"
+}
