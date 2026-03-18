@@ -31,12 +31,19 @@ import scalafx.scene.control.{Button, Label}
 
 import java.time.Instant
 import java.time.Duration
+import mainargs.{arg, ParserForClass}
 
 /** Minimal app bootstrap:
   *   - builds the Guice injector
   *   - runs startup validation checks
   *   - delegates all UI construction to [[FdLogUi]]
-  */
+  */ 
+
+case class StartupArgs(
+  @arg(name = "startupInfo")
+  startupInfo: Option[String] = None
+)
+
 object FdLogApp extends JFXApp3:
   private val startTime = Instant.now()
   override def main(args: Array[String]): Unit =
@@ -48,6 +55,10 @@ object FdLogApp extends JFXApp3:
       System.setProperty("apple.awt.application.appearance", "system")
     }
     System.setProperty("javafx.embed.singleThread", "true")
+
+    val cli = ParserForClass[StartupArgs].constructOrExit(args.toIndexedSeq)
+    startupInfoPath = cli.startupInfo
+    println(s"Parsed startup info path: ${startupInfoPath.getOrElse("none")}")
     super.main(args)
 
   private val log = org.slf4j.LoggerFactory.getLogger(getClass)
@@ -57,6 +68,7 @@ object FdLogApp extends JFXApp3:
   private lazy val injector: Injector =
     Guice.createInjector(new ConfigModule())
   var statusBroadcastService: Option[StatusBroadcastService] = None
+  var startupInfoPath: Option[String] = None
 
   override def start(): Unit =
 //    statusBroadcastService = Option(injector.instance[StatusBroadcastService])
