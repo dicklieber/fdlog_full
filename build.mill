@@ -59,6 +59,7 @@ object common extends CommonSettings:
 object fdswarm extends CommonSettings with ScoverageModule with BuildInfo with JpackageModule {
   override def moduleDeps = Seq(common)
 
+
   def mainClass = Some("fdswarm.FdLogApp")
 
   override def manifest = Task {
@@ -426,7 +427,8 @@ object fdswarm extends CommonSettings with ScoverageModule with BuildInfo with J
     mvn"org.scala-lang.modules::scala-xml:2.3.0",
 
     mvn"io.micrometer:micrometer-registry-prometheus:1.14.4",
-    mvn"io.github.keirlawson:meters4s-http4s_3:2.0.1"
+    mvn"io.github.keirlawson:meters4s-http4s_3:2.0.1",
+    mvn"com.lihaoyi::mainargs:0.7.8"
   )
 
   object test extends ScoverageTests with TestModule.Munit {
