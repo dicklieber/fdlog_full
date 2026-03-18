@@ -24,6 +24,8 @@ import fdswarm.DebugConfig
 import fdswarm.fx.bandmodes.{BandModeMatrixPane, SelectedBandModeStore}
 import fdswarm.fx.bands.*
 import fdswarm.model.{BandMode, Callsign}
+import fdswarm.util.CallsignGenerator
+import scala.util.Random
 import net.codingwell.scalaguice.InjectorExtensions.*
 import scalafx.Includes.*
 import scalafx.application.JFXApp3
@@ -55,8 +57,8 @@ object ManagerApp extends JFXApp3 with LazyLogging :
     val allRequiredBands = bandCatalog.hamBands
       .filter(b => b.bandClass == BandClass.HF || b.bandClass == BandClass.VHF || b.bandClass == BandClass.UHF)
       .map(_.bandName)
-    bandsManager.bands.setAll(allRequiredBands: _*)
-    modesManager.modes.setAll(modeCatalog.modes: _*)
+    bandsManager.bands.setAll(allRequiredBands*)
+    modesManager.modes.setAll(modeCatalog.modes*)
 
     val nodeConfigManager = injector.instance[NodeConfigManager]
 
@@ -206,7 +208,19 @@ object ManagerApp extends JFXApp3 with LazyLogging :
             spacing = 10
             children = Seq(
               new Button("Add") {
-                onAction = _ => nodeConfigManager.add(DebugConfig(Callsign("N0CALL"), BandMode("20M PH")))
+                onAction = _ => {
+                  val usedCallsigns = nodeConfigManager.observableBuffer.map(_.operator.value).toSet
+                  val generator = CallsignGenerator.callsignIterator("N0")
+                  val callsignStr = Iterator.continually(generator.next()).find(cs => !usedCallsigns.contains(cs)).get
+                  val callsign = Callsign(callsignStr)
+                  val bands = bandsManager.bands.toIndexedSeq
+                  val modes = modesManager.modes.toIndexedSeq
+                  val band = bands(Random.nextInt(bands.length))
+                  val mode = modes(Random.nextInt(modes.length))
+                  val bandModeStr = s"$band $mode"
+                  val bandMode = BandMode(bandModeStr)
+                  nodeConfigManager.add(DebugConfig(callsign, bandMode))
+                }
               },
               new Button("Save") {
                 onAction = _ => {
