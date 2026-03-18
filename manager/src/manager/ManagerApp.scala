@@ -21,6 +21,8 @@ package manager
 import com.google.inject.{Guice, Injector}
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.DebugConfig
+import fdswarm.fx.bandmodes.{BandModeMatrixPane, SelectedBandModeStore}
+import fdswarm.fx.bands.*
 import fdswarm.model.{BandMode, Callsign}
 import net.codingwell.scalaguice.InjectorExtensions.*
 import scalafx.Includes.*
@@ -31,16 +33,19 @@ import scalafx.scene.control.*
 import scalafx.scene.control.TableColumn.*
 import scalafx.scene.control.cell.{CheckBoxTableCell, TextFieldTableCell}
 import scalafx.scene.layout.{BorderPane, HBox}
-import fdswarm.fx.bandmodes.{BandModeMatrixPane, SelectedBandModeStore}
-import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager, BandCatalog, BandClass, ModeCatalog}
-import scalafx.stage.Window
 
-object ManagerApp extends JFXApp3 with LazyLogging {
+import scala.collection.IndexedSeqView
+
+object ManagerApp extends JFXApp3 with LazyLogging :
 
   private lazy val injector: Injector =
     Guice.createInjector(new ManagerModule())
 
+
   override def start(): Unit = {
+
+    val runner = injector.instance[Runner]
+
     // Force all HF, VHF, and UHF bands and all modes to be available for selection in manager
     val bandCatalog = injector.instance[BandCatalog]
     val modeCatalog = injector.instance[ModeCatalog]
@@ -50,16 +55,16 @@ object ManagerApp extends JFXApp3 with LazyLogging {
     val allRequiredBands = bandCatalog.hamBands
       .filter(b => b.bandClass == BandClass.HF || b.bandClass == BandClass.VHF || b.bandClass == BandClass.UHF)
       .map(_.bandName)
-    bandsManager.bands.setAll(allRequiredBands*)
-    modesManager.modes.setAll(modeCatalog.modes*)
+    bandsManager.bands.setAll(allRequiredBands: _*)
+    modesManager.modes.setAll(modeCatalog.modes: _*)
 
     val nodeConfigManager = injector.instance[NodeConfigManager]
 
     stage = new JFXApp3.PrimaryStage {
       title = "Debug Configuration Manager"
-//      onCloseRequest = _ => {
-//        injector.instance[Runner].stopAll()
-//      }
+      //      onCloseRequest = _ => {
+      //        injector.instance[Runner].stopAll()
+      //      }
       scene = new Scene {
         root = new BorderPane {
           center = new TableView[DebugConfig](nodeConfigManager.observableBuffer) {
@@ -76,6 +81,7 @@ object ManagerApp extends JFXApp3 with LazyLogging {
                 cellFactory = (col: TableColumn[DebugConfig, String]) => {
                   new TextFieldTableCell[DebugConfig, String](new scalafx.util.StringConverter[String] {
                     override def toString(t: String): String = t
+
                     override def fromString(s: String): String = s
                   }) {
                     graphic.onChange { (_, _, newValue) =>
@@ -83,6 +89,7 @@ object ManagerApp extends JFXApp3 with LazyLogging {
                         val textField = newValue.asInstanceOf[javafx.scene.control.TextField]
                         textField.setTextFormatter(new javafx.scene.control.TextFormatter[String](new java.util.function.UnaryOperator[javafx.scene.control.TextFormatter.Change] {
                           override def apply(change: javafx.scene.control.TextFormatter.Change): javafx.scene.control.TextFormatter.Change = {
+
                             if (change.isContentChange) {
                               change.setText(change.getText.toUpperCase)
                             }
@@ -112,28 +119,28 @@ object ManagerApp extends JFXApp3 with LazyLogging {
                       val index = tableRow.value.indexProperty().get()
                       if (index >= 0 && index < nodeConfigManager.observableBuffer.size) {
                         val oldConfig = nodeConfigManager.observableBuffer(index)
-                        
+
                         // We need a BandModeMatrixPane. Since it's a singleton in this injector,
                         // we can just get it. But we must set its initial selection.
                         val matrixPane = injector.instance[BandModeMatrixPane]
                         val selectedStore = injector.instance[SelectedBandModeStore]
                         selectedStore.save(oldConfig.bandMode)
-                        
+
                         val dialog = new Dialog[BandMode] {
                           initOwner(stage)
                           title = "Select BandMode"
                           headerText = s"Select BandMode for ${oldConfig.id}"
                         }
-                        
+
                         matrixPane.showConfigButton.value = false
                         dialog.dialogPane().content = matrixPane.node
                         dialog.dialogPane().buttonTypes = Seq(ButtonType.OK, ButtonType.Cancel)
-                        
+
                         dialog.resultConverter = {
                           case ButtonType.OK => selectedStore.selected.value
                           case _ => null
                         }
-                        
+
                         val result = dialog.showAndWait()
                         result match {
                           case Some(bm: BandMode) =>
@@ -199,9 +206,7 @@ object ManagerApp extends JFXApp3 with LazyLogging {
             spacing = 10
             children = Seq(
               new Button("Add") {
-                onAction = _ => {
-                  nodeConfigManager.add(DebugConfig(Callsign("N0CALL"), BandMode("20M PH")))
-                }
+                onAction = _ => nodeConfigManager.add(DebugConfig(Callsign("N0CALL"), BandMode("20M PH")))
               },
               new Button("Save") {
                 onAction = _ => {
@@ -211,19 +216,17 @@ object ManagerApp extends JFXApp3 with LazyLogging {
               },
               new Button("Start All") {
                 onAction = _ => {
-                  val runner = injector.instance[Runner]
-                  nodeConfigManager.observableBuffer.foreach(runner.start)
+                  val view: IndexedSeqView[DebugConfig] = nodeConfigManager.observableBuffer.view
+                  runner.start(view)
                 }
               },
               new Button("Stop All") {
-                onAction = _ => {
-//                  injector.instance[Runner].stopAll()
-                }
+                onAction = _ => runner.stop()
               }
             )
           }
         }
       }
     }
-  }
+  
 }
