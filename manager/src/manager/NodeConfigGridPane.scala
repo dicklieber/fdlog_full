@@ -136,8 +136,8 @@ final class NodeConfigGridPane(
             if change.isContentChange then change.setText(change.getText.toUpperCase)
             change
       )
-      focused.onChange { (_, hadFocus, hasFocus) =>
-        if hadFocus && !hasFocus && index < nodeConfigManager.observableBuffer.size then
+      focused.onChange { (_, oldFocus, newFocus) =>
+        if oldFocus && !newFocus && index < nodeConfigManager.observableBuffer.size then
           val updated = text.value.trim
           val old = nodeConfigManager.observableBuffer(index)
           if old.operator.value != updated && updated.nonEmpty then
@@ -234,6 +234,7 @@ final class NodeConfigGridPane(
     new ListChangeListener[StartupConfig]:
       override def onChanged(change: ListChangeListener.Change[? <: StartupConfig]): Unit =
         refreshGrid()
+        nodeConfigManager.persist()
         grid.requestLayout()
         Platform.runLater { () => ownerStage.sizeToScene() }
   )
