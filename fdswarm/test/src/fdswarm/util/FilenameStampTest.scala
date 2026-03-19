@@ -34,7 +34,8 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import java.time.{Instant, ZoneOffset, ZonedDateTime}
 import munit.FunSuite
 import scala.compiletime.uninitialized
- 
+import fdswarm.MockStartupInfo
+
 class FilenameStampTest extends FunSuite:
  
   private var testDir: TestDirectory = uninitialized
@@ -85,7 +86,7 @@ class FilenameStampTest extends FunSuite:
     val sections = new Sections(sectionsProvider)
     val registry = new SimpleMeterRegistry()
     val mockNodeIdentityManager = MockNodeIdentityManager(port = 8080)
-    stationManager = new StationManager(testDir)
+    stationManager = new StationManager(testDir, MockStartupInfo)
     val bandCatalog = new BandCatalog(config)
     val modeCatalog = new ModeCatalog(config)
     val bandModeBuilder = new BandModeBuilder(bandCatalog, modeCatalog)
@@ -97,7 +98,7 @@ class FilenameStampTest extends FunSuite:
       override def get(): ContestManager = contestManager
     })
     
-    qsoStore = new QsoStore(testDir, registry, mockTransport, swarmStatus, filenameStamp)
+    qsoStore = new QsoStore(testDir, registry, mockTransport, swarmStatus, MockStartupInfo, filenameStamp)
     val discovery = new ContestDiscovery(mockTransport, 1)
     contestManager = new ContestManager(testDir, catalog, sections, qsoStore, filenameStamp, mockTransport, discovery, 7)
  

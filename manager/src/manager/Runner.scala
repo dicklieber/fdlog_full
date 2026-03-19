@@ -20,14 +20,14 @@ package manager
 
 import _root_.io.circe.syntax.*
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.DebugConfig
+import fdswarm.StartupConfig
 import fdswarm.io.DirectoryProvider
 import jakarta.inject.Inject
 
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.IndexedSeqView
 
-/** create a JSON file of [[DebugConfig]] Starts an instance of the FDSwarm
+/** create a JSON file of [[StartupConfig]] Starts an instance of the FDSwarm
   * application. pass reference to that file on the command line.
   *
   * @param directoryProvider where manager puts it's files.
@@ -38,7 +38,7 @@ class Runner @Inject() (directoryProvider: DirectoryProvider)
   private var instances:Seq[AppInstance] = Seq.empty
   private val path = directoryProvider() / "debugConfigs"
 
-  def start(view: IndexedSeqView[DebugConfig]): Unit =
+  def start(view: IndexedSeqView[StartupConfig]): Unit =
     os.remove.all(path)
     val ports = new AtomicInteger(8080)
     instances = view.iterator.map { debugConfig =>

@@ -19,11 +19,12 @@
 package fdswarm.store
 
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.StartupInfo
 import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
 import fdswarm.model.*
 import fdswarm.replication.status.SwarmStatus
-import fdswarm.replication.{Transport, Service}
+import fdswarm.replication.{Service, Transport}
 import fdswarm.util.Ids.Id
 import io.micrometer.core.instrument.{Counter, MeterRegistry, Timer}
 import jakarta.inject.*
@@ -39,6 +40,7 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider,
                          registry: MeterRegistry,
                          transport: Transport,
                          swarmStatus: SwarmStatus,
+                         startupInfo: StartupInfo,
                          filenameStamp: fdswarm.util.FilenameStamp) extends LazyLogging:
   val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()
   protected val map: TrieMap[Id, Qso] = new TrieMap
@@ -101,6 +103,10 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider,
    */
   def digests(): Seq[FdHourDigest] = fdHourDigests.values.toSeq.sorted
 
+  if startupInfo.info.exists(_.clearQsos) then
+    logger.info("StartupInfo Clearing QSOs journal")
+    os.remove(journalFile)
+  
   if os.exists(journalFile) then
     os.read.lines(journalFile)
       .iterator

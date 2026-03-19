@@ -31,6 +31,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import munit.FunSuite
 
 import scala.compiletime.uninitialized
+import fdswarm.MockStartupInfo
 
 class QsoStoreTest extends FunSuite:
   private var testDirectory: TestDirectory = uninitialized
@@ -62,7 +63,7 @@ class QsoStoreTest extends FunSuite:
   override def beforeEach(context: BeforeEach): Unit =
     testDirectory = new TestDirectory()
     mockNodeIdentityManager = MockNodeIdentityManager()
-    stationManager = new StationManager(testDirectory)
+    stationManager = new StationManager(testDirectory, MockStartupInfo)
     val config = com.typesafe.config.ConfigFactory.parseString(
       """
         |fdswarm {
@@ -92,7 +93,7 @@ class QsoStoreTest extends FunSuite:
     filenameStamp = new fdswarm.util.FilenameStamp(new jakarta.inject.Provider[fdswarm.fx.contest.ContestManager] {
       override def get(): fdswarm.fx.contest.ContestManager = contestManager
     })
-    qsoStore = new QsoStore(testDirectory, new SimpleMeterRegistry(), mockTransport, swarmStatus, filenameStamp)
+    qsoStore = new QsoStore(testDirectory, new SimpleMeterRegistry(), mockTransport, swarmStatus, MockStartupInfo, filenameStamp)
     val discovery = new fdswarm.fx.contest.ContestDiscovery(mockTransport, 1)
     contestManager = new fdswarm.fx.contest.ContestManager(testDirectory, contestCatalog, sections, qsoStore, filenameStamp, mockTransport, discovery, 7)
 
@@ -121,14 +122,14 @@ class QsoStoreTest extends FunSuite:
     
     // This should not throw an exception because of the new error handling
     // Re-instantiating with corrupt file
-    val qs = new QsoStore(testDirectory, new SimpleMeterRegistry(), mockTransport, swarmStatus, filenameStamp)
+    val qs = new QsoStore(testDirectory, new SimpleMeterRegistry(), mockTransport, swarmStatus, MockStartupInfo, filenameStamp)
     
     assertEquals(qs.qsoCollection.isEmpty, true)
     assertEquals(qs.digests().isEmpty, true)
 
   test("qsosForIds should return all qsos for hour if specificQsos is empty"):
     import cats.effect.unsafe.implicits.global
-    val replicationSupport = ReplicationSupport(testDirectory, new SimpleMeterRegistry(), mockTransport, swarmStatus, filenameStamp)
+    val replicationSupport = ReplicationSupport(testDirectory, new SimpleMeterRegistry(), mockTransport, swarmStatus, MockStartupInfo, filenameStamp)
     val qso1 = Qso(callsign = Callsign("W9NNN"),
       exchange = Exchange(fdswarm.model.FdClass("1A"), "IL"),
       bandMode = BandMode("20m", "CW"),
@@ -148,7 +149,7 @@ class QsoStoreTest extends FunSuite:
 
   test("qsosForIds should return only requested qsos"):
     import cats.effect.unsafe.implicits.global
-    val replicationSupport = ReplicationSupport(testDirectory, new SimpleMeterRegistry(), mockTransport, swarmStatus, filenameStamp)
+    val replicationSupport = ReplicationSupport(testDirectory, new SimpleMeterRegistry(), mockTransport, swarmStatus, MockStartupInfo, filenameStamp)
     val qso1 = Qso(callsign = Callsign("W9NNN"),
       exchange = Exchange(fdswarm.model.FdClass("1A"), "IL"),
       bandMode = BandMode("20m", "CW"),
@@ -167,7 +168,7 @@ class QsoStoreTest extends FunSuite:
 
   test("determineNeeded should return needed FdHourIds"):
     import cats.effect.unsafe.implicits.global
-    val replicationSupport = ReplicationSupport(testDirectory, new SimpleMeterRegistry(), mockTransport, swarmStatus, filenameStamp)
+    val replicationSupport = ReplicationSupport(testDirectory, new SimpleMeterRegistry(), mockTransport, swarmStatus, MockStartupInfo, filenameStamp)
     val qso1 = Qso(callsign = Callsign("W9NNN"),
       exchange = Exchange("1A", "IL"),
       bandMode = BandMode("20m", "CW"),

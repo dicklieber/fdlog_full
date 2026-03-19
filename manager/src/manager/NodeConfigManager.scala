@@ -18,7 +18,7 @@
 
 package manager
 
-import fdswarm.DebugConfig
+import fdswarm.StartupConfig
 import fdswarm.util.Ids.Id
 import _root_.io.circe.Printer
 import _root_.io.circe.generic.auto.*
@@ -33,12 +33,12 @@ class NodeConfigManager @Inject()() extends LazyLogging:
   private val file = os.home / "fdswarm" / "nodes.json"
   private val printer = Printer.spaces2.copy(dropNullValues = true)
 
-  val observableBuffer: ObservableBuffer[DebugConfig] =
+  val observableBuffer: ObservableBuffer[StartupConfig] =
     val initial = load()
     val buffer = ObservableBuffer.from(initial)
     buffer
 
-  def add(debugConfig: DebugConfig): Unit =
+  def add(debugConfig: StartupConfig): Unit =
     logger.trace(s"Adding NodeConfig: $debugConfig")
     observableBuffer += debugConfig
 
@@ -51,12 +51,12 @@ class NodeConfigManager @Inject()() extends LazyLogging:
     val json = printer.print(observableBuffer.toList.asJson)
     os.write.over(file, json, createFolders = true)
 
-  private def load(): List[DebugConfig] =
+  private def load(): List[StartupConfig] =
     logger.trace(s"Loading NodeConfigs from $file")
     try
       if os.exists(file) then
         val json = os.read(file)
-        decode[List[DebugConfig]](json) match
+        decode[List[StartupConfig]](json) match
           case Right(list) => list
           case Left(err) =>
             logger.error(s"Failed to decode NodeConfigs from $file: $err")

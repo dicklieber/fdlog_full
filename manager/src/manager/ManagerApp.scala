@@ -20,7 +20,7 @@ package manager
 
 import com.google.inject.{Guice, Injector}
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.DebugConfig
+import fdswarm.StartupConfig
 import fdswarm.fx.bands.*
 import fdswarm.model.{BandMode, Callsign}
 import fdswarm.util.CallsignGenerator
@@ -88,7 +88,7 @@ object ManagerApp extends JFXApp3 with LazyLogging :
                   val mode = modes(Random.nextInt(modes.length))
                   val bandModeStr = s"$band $mode"
                   val bandMode = BandMode(bandModeStr)
-                  nodeConfigManager.add(DebugConfig(callsign, bandMode))
+                  nodeConfigManager.add(StartupConfig(callsign, bandMode))
                 }
               },
               new Button("Save") {
@@ -99,7 +99,7 @@ object ManagerApp extends JFXApp3 with LazyLogging :
               },
               new Button("Start All") {
                 onAction = _ => {
-                  val view: IndexedSeqView[DebugConfig] = nodeConfigManager.observableBuffer.view
+                  val view: IndexedSeqView[StartupConfig] = nodeConfigManager.observableBuffer.view
                   runner.start(view)
                 }
               },

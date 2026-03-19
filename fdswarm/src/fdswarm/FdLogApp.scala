@@ -24,7 +24,7 @@ import fdswarm.replication.StatusBroadcastService
 import mainargs.{ParserForClass, arg}
 import net.codingwell.scalaguice.InjectorExtensions.*
 import scalafx.application.JFXApp3
-import fdswarm.DebugConfig
+import fdswarm.StartupConfig
 
 import java.time.{Duration, Instant}
 

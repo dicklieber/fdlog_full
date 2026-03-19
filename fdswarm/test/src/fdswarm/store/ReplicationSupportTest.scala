@@ -31,6 +31,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import munit.FunSuite
 
 import scala.compiletime.uninitialized
+import fdswarm.MockStartupInfo
 
 class ReplicationSupportTest extends FunSuite:
   private var testDirectory: TestDirectory = uninitialized
@@ -63,7 +64,7 @@ class ReplicationSupportTest extends FunSuite:
     testDirectory = new TestDirectory()
     registry = new SimpleMeterRegistry()
     mockNodeIdentityManager = fdswarm.util.MockNodeIdentityManager(port = 8080)
-    stationManager = new StationManager(testDirectory)
+    stationManager = new StationManager(testDirectory, MockStartupInfo)
     val config = com.typesafe.config.ConfigFactory.parseString(
       """
         |fdswarm {
@@ -93,7 +94,7 @@ class ReplicationSupportTest extends FunSuite:
     filenameStamp = new fdswarm.util.FilenameStamp(new jakarta.inject.Provider[fdswarm.fx.contest.ContestManager] {
       override def get(): fdswarm.fx.contest.ContestManager = contestManager
     })
-    qsoStore = new QsoStore(testDirectory, registry, mockTransport, swarmStatus, filenameStamp)
+    qsoStore = new QsoStore(testDirectory, registry, mockTransport, swarmStatus, MockStartupInfo, filenameStamp)
     val discovery = new fdswarm.fx.contest.ContestDiscovery(mockTransport, 1)
     contestManager = new fdswarm.fx.contest.ContestManager(testDirectory, contestCatalog, sections, qsoStore, filenameStamp, mockTransport, discovery, 7)
 
@@ -102,7 +103,7 @@ class ReplicationSupportTest extends FunSuite:
 
   test("missingIds should return ids present in remote but not in local"):
     import cats.effect.unsafe.implicits.global
-    val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus, filenameStamp)
+    val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus, MockStartupInfo, filenameStamp)
 
     val qso1 = Qso(callsign = Callsign("W9NNN"),
       exchange = Exchange(FdClass("1A"), "IL"),
@@ -135,7 +136,7 @@ class ReplicationSupportTest extends FunSuite:
 
   test("missingIds should return empty if all remote ids are present locally"):
     import cats.effect.unsafe.implicits.global
-    val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus, filenameStamp)
+    val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus, MockStartupInfo, filenameStamp)
 
     val qso1 = Qso(callsign = Callsign("W9NNN"),
       exchange = Exchange(FdClass("1A"), "IL"),
@@ -152,7 +153,7 @@ class ReplicationSupportTest extends FunSuite:
 
   test("missingIds should return all remote ids if local has none for that hour"):
     import cats.effect.unsafe.implicits.global
-    val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus, filenameStamp)
+    val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus, MockStartupInfo, filenameStamp)
 
     val qso1 = Qso(callsign = Callsign("W9NNN"),
       exchange = Exchange(FdClass("1A"), "IL"),
@@ -167,7 +168,7 @@ class ReplicationSupportTest extends FunSuite:
 
   test("idsForHour should return all ids for given fdHour"):
     import cats.effect.unsafe.implicits.global
-    val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus, filenameStamp)
+    val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus, MockStartupInfo, filenameStamp)
 
     val qso1 = Qso(callsign = Callsign("W9NNN"),
       exchange = Exchange(FdClass("1A"), "IL"),
@@ -187,7 +188,7 @@ class ReplicationSupportTest extends FunSuite:
 
   test("qsosForFdHour should return all qsos for given fdHour"):
     import cats.effect.unsafe.implicits.global
-    val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus, filenameStamp)
+    val replicationSupport = ReplicationSupport(testDirectory, registry, mockTransport, swarmStatus, MockStartupInfo, filenameStamp)
 
     val qso1 = Qso(callsign = Callsign("W9NNN"),
       exchange = Exchange(FdClass("1A"), "IL"),

@@ -20,11 +20,12 @@ package fdswarm.store
 
 import cats.effect.IO
 import cats.syntax.all.*
+import fdswarm.StartupInfo
 import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
-import fdswarm.util.Ids.Id
 import fdswarm.replication.Transport
 import fdswarm.replication.status.SwarmStatus
+import fdswarm.util.Ids.Id
 import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.{Inject, Singleton}
 
@@ -34,11 +35,12 @@ import jakarta.inject.{Inject, Singleton}
  */
 @Singleton
 class ReplicationSupport @Inject()(directoryProvider: DirectoryProvider,
-                         registry: MeterRegistry,
-                         transport: Transport,
-                         swarmStatus: SwarmStatus,
-                         filenameStamp: fdswarm.util.FilenameStamp)
-  extends QsoStore(directoryProvider, registry, transport, swarmStatus, filenameStamp):
+                                   registry: MeterRegistry,
+                                   transport: Transport,
+                                   swarmStatus: SwarmStatus,
+                                   startupInfo: StartupInfo,
+                                   filenameStamp: fdswarm.util.FilenameStamp)
+  extends QsoStore(directoryProvider, registry, transport, swarmStatus, startupInfo, filenameStamp):
   /**
    * 
    * @param fdHourDigest from a remote node
