@@ -38,7 +38,8 @@ final class NodeConfigGridPane(
   ownerStage: scalafx.stage.Stage
 ) extends VBox:
 
-
+  private var enableBulkNext: Boolean = false
+  private var clearQsosBulkNext: Boolean = false
   private val grid = new GridPane:
     hgap = 10
     vgap = 8
@@ -71,16 +72,34 @@ final class NodeConfigGridPane(
   children = Seq(grid)
 
   private def addHeaderRow(): Unit =
-    val headers = Seq("Id", "Enable", "Operator", "BandMode", "Debug", "Clear QSOs", "Delete")
-    headers.zipWithIndex.foreach { case (title, col) =>
-      grid.add(
-        new Label(title):
-          style = "-fx-font-weight: bold;"
-          ellipsisString = ""
-        ,
-        col,
-        0
-      )
+    Seq(
+      ("Id", 0),
+      ("Enable", 1),
+      ("Operator", 2),
+      ("BandMode", 3),
+      ("Debug", 4),
+      ("Clear QSOs", 5),
+      ("Delete", 6)
+    ).foreach { case (title, col) =>
+      val header =
+        if col == 1 then
+          new Button("Enable") {
+            style = "-fx-font-weight: bold; -fx-background-color: transparent; -fx-border-color: transparent; -fx-cursor: hand;"
+            onAction = _ => toggleAllEnables()
+            ellipsisString = ""
+          }
+        else if col == 5 then
+          new Button("Clear QSOs") {
+            style = "-fx-font-weight: bold; -fx-background-color: transparent; -fx-border-color: transparent; -fx-cursor: hand;"
+            onAction = _ => toggleAllClearQsos()
+            ellipsisString = ""
+          }
+        else
+          new Label(title) {
+            style = "-fx-font-weight: bold;"
+            ellipsisString = ""
+          }
+      grid.add(header, col, 0)
     }
 
   private def openBandModeDialog(index: Int): Unit =
@@ -151,10 +170,33 @@ final class NodeConfigGridPane(
       value = config.debugMode
       value.onChange { (_, _, newValue) =>
         if index < nodeConfigManager.observableBuffer.size && newValue != null then
+          if newValue == DebugMode.Debug || newValue == DebugMode.Wait then {
+            val bufferSize = nodeConfigManager.observableBuffer.size
+            for (j <- 0 until bufferSize if j != index) {
+              val otherOld = nodeConfigManager.observableBuffer(j)
+              nodeConfigManager.observableBuffer(j) = otherOld.copy(debugMode = DebugMode.Off)
+            }
+          }
           val old = nodeConfigManager.observableBuffer(index)
           nodeConfigManager.observableBuffer(index) = old.copy(debugMode = newValue)
       }
-
+  
+  private def toggleAllEnables(): Unit =
+    val target = enableBulkNext
+    val buffer = nodeConfigManager.observableBuffer
+    for (i <- 0 until buffer.size) {
+      buffer(i) = buffer(i).copy(enable = target)
+    }
+    enableBulkNext = !enableBulkNext
+  
+  private def toggleAllClearQsos(): Unit =
+    val target = clearQsosBulkNext
+    val buffer = nodeConfigManager.observableBuffer
+    for (i <- 0 until buffer.size) {
+      buffer(i) = buffer(i).copy(clearQsos = target)
+    }
+    clearQsosBulkNext = !clearQsosBulkNext
+  
   private def refreshGrid(): Unit =
     grid.children.clear()
     addHeaderRow()
