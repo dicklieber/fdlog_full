@@ -18,29 +18,33 @@
 
 package fdswarm
 
+import _root_.io.circe.Printer
+import _root_.io.circe.parser.decode
+import _root_.io.circe.syntax.*
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.io.DirectoryProvider
 import fdswarm.model.{Callsign, Station}
 import jakarta.inject.{Inject, Singleton}
-import _root_.io.circe.Printer
-import _root_.io.circe.parser.decode
-import _root_.io.circe.syntax.*
 import scalafx.beans.property.ObjectProperty
-import scalafx.event.subscriptions.Subscription
 
 @Singleton
 final class StationManager @Inject()(
-                                      productionDirectory: DirectoryProvider
+                                      productionDirectory: DirectoryProvider,
+                                      startupInfo: StartupInfo
                                     ) extends LazyLogging:
 
   private val file: os.Path =
     productionDirectory() / "station.json"
-  /**
-   * Observable current station.
-   * None means "no station configured yet" or "failed to load".
-   */
-  val stationProperty: ObjectProperty[Station] =
-    ObjectProperty(load())
+
+  val stationProperty:ObjectProperty[Station] =
+    ObjectProperty(startupInfo.info match
+      case Some(debugConfig) =>
+        logger.info(s"Using debug config: $debugConfig")
+        Station(debugConfig.operator)
+      case None =>
+        logger.info("No debug config found, loading station from file")
+        load()
+    )
 
   def station: Station =
     stationProperty.value

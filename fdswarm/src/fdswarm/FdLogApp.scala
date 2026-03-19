@@ -24,6 +24,7 @@ import fdswarm.replication.StatusBroadcastService
 import mainargs.{ParserForClass, arg}
 import net.codingwell.scalaguice.InjectorExtensions.*
 import scalafx.application.JFXApp3
+import fdswarm.DebugConfig
 
 import java.time.{Duration, Instant}
 
@@ -40,7 +41,10 @@ case class StartupArgs(
 
 object FdLogApp extends JFXApp3:
   private val startTime = Instant.now()
+  private var rawArgs: Array[String] = Array.empty
+
   override def main(args: Array[String]): Unit =
+    rawArgs = args
     System.setProperty("apple.laf.useScreenMenuBar", "true")
     if (System.getProperty("os.name").toLowerCase.contains("mac")) {
       System.setProperty("apple.awt.application.name", "FdSwarm")
@@ -50,23 +54,20 @@ object FdLogApp extends JFXApp3:
     }
     System.setProperty("javafx.embed.singleThread", "true")
 
-    cli = ParserForClass[StartupArgs].constructOrExit(args.toIndexedSeq)
-
     super.main(args)
 
   private val log = org.slf4j.LoggerFactory.getLogger(getClass)
 
   lazy val startupDuration: Duration = Duration.between(startTime, Instant.now())
 
-  private lazy val injector: Injector =
-    Guice.createInjector(new ConfigModule())
+  private lazy val injector: Injector = Guice.createInjector(new ConfigModule(rawArgs))
+  
+
   var statusBroadcastService: Option[StatusBroadcastService] = None
-  private var cli: StartupArgs = _
 
   override def start(): Unit =
     val ui = injector.instance[FdLogUi]
 
-    StartupInfo(cli.startupInfo)
 
     // Create the primary stage, let the UI configure it, then publish it
     val s = new JFXApp3.PrimaryStage
