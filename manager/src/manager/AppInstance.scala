@@ -25,8 +25,21 @@ import fdswarm.StartupConfig
 
 class AppInstance(debugConfigJsonPath: String, startupConfig: StartupConfig, port: Int) extends LazyLogging:
   val debugOpt = startupConfig.debugMode.javaOpt(5005)
-  val args = Seq("java") ++ debugOpt.toSeq ++ Seq("-jar", jarPath, s"--startupInfo $debugConfigJsonPath")
-  logger.debug(s"Command line that will be invoked: ${args.mkString(" ")}")
+
+  val args =
+    Seq("java") ++
+      debugOpt.toSeq ++
+      Seq(
+        "-jar",
+        jarPath,
+        "--startupInfo",
+        debugConfigJsonPath
+      )
+
+  logger.debug(
+    s"Command line that will be invoked: ${args.zipWithIndex.map((a, i) => s"[$i]='$a'").mkString(" ")}"
+  )
+  println()
   val proc = os.proc(args)
   val subProcess: SubProcess = proc.spawn(env = Map("PORT" -> port.toString))
   def stop(): Unit =

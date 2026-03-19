@@ -1,0 +1,12 @@
+{
+  "enable" : true,
+  "operator" : "N0AAA",
+  "bandMode" : "6m CW",
+  "clearQsos" : true,
+  "debugMode" : {
+    "Wait" : {
+      
+    }
+  },
+  "id" : "DE0"
+}

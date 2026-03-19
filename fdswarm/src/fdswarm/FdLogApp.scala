@@ -44,6 +44,7 @@ object FdLogApp extends JFXApp3:
   private var rawArgs: Array[String] = Array.empty
 
   override def main(args: Array[String]): Unit =
+    println(s"Starting FdSwarm with args: ${args.mkString(" ")}")
     rawArgs = args
     System.setProperty("apple.laf.useScreenMenuBar", "true")
     if (System.getProperty("os.name").toLowerCase.contains("mac")) {

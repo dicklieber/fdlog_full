@@ -33,3 +33,11 @@
 ## Failure Condition
 - If any output contains "...", the output is INVALID
 - Regenerate until complete
+
+- Use Scala 3 indented brace-less syntax throughout—no curly braces except where required.
+- Use `match` and `case` without braces around the `match` body.
+- For `try-catch`, use `try` followed by an indented block and `catch` followed by an indented `case` block.
+- Use `for` expressions with `yield` or `do` using indentation.
+- When creating anonymous classes or extending classes with a body, use `new ClassName(...):` followed by indented members.
+- 
+- **Do not collapse text in labels or other text output** (e.g., do not use "..." or other truncation in labels produced by Junie). Ensure all text is fully visible.

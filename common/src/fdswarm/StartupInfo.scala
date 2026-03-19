@@ -20,25 +20,37 @@ package fdswarm
 import _root_.io.circe.parser.decode
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.StartupConfig
-import mainargs.{arg, ParserForClass}
+import os.*
 
 class StartupInfo(rawArgs: Array[String]) extends LazyLogging:
   val info: Option[StartupConfig] =
-    try
-      for
-        params <- mainargs.ParserForClass[Params].constructEither(rawArgs).fold(_ => None, Some(_))
-        pathString <- params.startupInfo
-        jsonString = os.read(os.pwd / pathString)
-        x <- decode[StartupConfig](jsonString).toOption
-      yield
-        logger.info(s"Using Debug config: $x")
-        x
-    catch
-      case e: Exception =>
-        logger.error(s"Error parsing startupInfo: $e")
-        None
- 
+    logger.debug(s"Raw command line arguments: [${rawArgs.mkString(", ")}]")
+    val startupInfoIdx = rawArgs.indexOf("--startupInfo")
+    if startupInfoIdx == -1 then
+      logger.debug("No --startupInfo parameter found in command line arguments.")
+      None
+    else if startupInfoIdx + 1 >= rawArgs.length then
+      logger.debug(s"--startupInfo parameter found at position $startupInfoIdx but no file path provided.")
+      None
+    else
+      val pathString = rawArgs(startupInfoIdx + 1)
+      logger.debug(s"StartupInfo file path from command line: $pathString")
+      try
 
-  case class Params(@arg(name = "startupInfo") startupInfo: Option[String] = None)
+        val path: Path = os.Path(pathString)
+        logger.debug(s"StartupInfo file path resolved to: $path exists: ${os.exists(path)}" )
+        val jsonString = os.read(path)
+        logger.debug(s"Successfully read ${jsonString.length} characters from startup info file: $pathString")
+        decode[StartupConfig](jsonString) match
+          case Right(config) =>
+            logger.debug(s"Successfully decoded StartupConfig from $pathString: $config")
+            Some(config)
+          case Left(error) =>
+            logger.debug(s"Failed to decode JSON from $pathString to StartupConfig: ${error.getMessage}")
+            None
+      catch
+        case e: Exception =>
+          logger.debug(s"Failed to read startup info file '$pathString': ${e.getClass.getSimpleName}: ${e.getMessage}")
+          None
   
   
