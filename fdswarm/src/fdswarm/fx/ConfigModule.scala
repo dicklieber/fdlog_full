@@ -36,6 +36,7 @@ import net.codingwell.scalaguice.ScalaModule
 import com.google.inject.TypeLiteral
 import fdswarm.replication.status.{SwarmStatus, SwarmStatusApi}
 import fdswarm.replication.{BroadcastTransport, MulticastTransport, NodeStatusHandler, StatusBroadcastService, Transport}
+import fdswarm.util.LoggingManager
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
@@ -44,14 +45,15 @@ class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModu
 
   override def configure(): Unit =
     val productionDirectory = new ProductionDirectory
+    //
+    val loggingManager = new fdswarm.util.LoggingManager(new ProductionDirectory)
+    loggingManager.applyInitialConfig()
+    bind[fdswarm.util.LoggingManager].toInstance(loggingManager)
+
     val startupInfo = new StartupInfo(rawArgs)
     bind[StartupInfo].toInstance(startupInfo)
     bind[DirectoryProvider].toInstance(productionDirectory)
     fdswarm.util.LoggingConfigurator.addFileAppender(new ProductionDirectory)
-
-    val loggingManager = new fdswarm.util.LoggingManager(new ProductionDirectory)
-    loggingManager.applyInitialConfig()
-    bind[fdswarm.util.LoggingManager].toInstance(loggingManager)
 
     bind[fdswarm.util.NodeIdentityManager].asEagerSingleton()
 
