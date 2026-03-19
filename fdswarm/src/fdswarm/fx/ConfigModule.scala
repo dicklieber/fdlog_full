@@ -25,7 +25,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.LazyLogging
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
-import fdswarm.AutoBind
+import fdswarm.{AutoBind, StartupInfo}
 import fdswarm.api.ApiEndpoints
 import fdswarm.io.{DirectoryProvider, ProductionDirectory}
 import fdswarm.store.{QsoStore, ReplicationSupport}
@@ -40,9 +40,11 @@ import fdswarm.replication.{BroadcastTransport, MulticastTransport, NodeStatusHa
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 
-class ConfigModule() extends AbstractModule with ScalaModule with LazyLogging:
+class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModule with LazyLogging:
 
   override def configure(): Unit =
+    val startupInfo = new StartupInfo(rawArgs)
+    bind[StartupInfo].toInstance(startupInfo)
     bind[DirectoryProvider].toInstance(new ProductionDirectory)
     fdswarm.util.LoggingConfigurator.addFileAppender(new ProductionDirectory)
 

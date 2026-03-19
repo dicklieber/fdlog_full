@@ -19,21 +19,23 @@
 package fdswarm
 import _root_.io.circe.parser.decode
 import com.typesafe.scalalogging.LazyLogging
+import mainargs.*
+import fdswarm.DebugConfig
 
-object StartupInfo extends LazyLogging:
-  /**
-   * Contains the debug configuration if it was found on he command line.
-   */
-  var maybeDebugConfig: Option[DebugConfig] = None
-
-  def apply(mabeyStartupPath: Option[String]): Unit =
-    val r: Option[DebugConfig] = for
-      pathString <- mabeyStartupPath
+class StartupInfo(rawArgs: Array[String]) extends LazyLogging:
+  val info: Option[DebugConfig] =
+    for
+      params <- mainargs.ParserForClass[Params].constructEither(rawArgs).fold(_ => None, Some(_))
+      _ = println(s"StartupInfo: $params")
+      pathString <- params.startupInfo
       jsonString = os.read(os.Path(pathString))
       x <- decode[DebugConfig](jsonString).toOption
     yield
       logger.info(s"Using Debug config: $x")
       x
-    maybeDebugConfig = r
+  logger.info(s"StartupInfo: $info")
+  println(s"StartupInfo: $info")
 
-
+  case class Params(@arg(name = "startupInfo") startupInfo: Option[String] = None)
+  
+  
