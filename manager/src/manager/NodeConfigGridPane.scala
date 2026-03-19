@@ -29,15 +29,15 @@ import scalafx.geometry.Insets
 import scalafx.scene.control.*
 import scalafx.collections.ObservableBuffer
 import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority, VBox}
+import scalafx.application.Platform
+import scalafx.stage.Stage
 
 final class NodeConfigGridPane(
   nodeConfigManager: NodeConfigManager,
   injector: Injector,
-  ownerWindow: javafx.stage.Window
-) extends ScrollPane:
+  ownerStage: scalafx.stage.Stage
+) extends VBox:
 
-  fitToWidth = true
-  pannable = true
 
   private val grid = new GridPane:
     hgap = 10
@@ -68,8 +68,7 @@ final class NodeConfigGridPane(
         hgrow = Priority.Never
     )
 
-  content = new VBox:
-    children = Seq(grid)
+  children = Seq(grid)
 
   private def addHeaderRow(): Unit =
     val headers = Seq("Id", "Enable", "Operator", "BandMode", "Debug", "Clear QSOs", "Delete")
@@ -92,7 +91,7 @@ final class NodeConfigGridPane(
       selectedStore.save(oldConfig.bandMode)
 
       val dialog = new Dialog[BandMode]:
-        initOwner(ownerWindow)
+        initOwner(ownerStage.delegate)
         title = "Select BandMode"
         headerText = s"Select BandMode for ${oldConfig.id}"
 
@@ -193,6 +192,10 @@ final class NodeConfigGridPane(
     new ListChangeListener[StartupConfig]:
       override def onChanged(change: ListChangeListener.Change[? <: StartupConfig]): Unit =
         refreshGrid()
+        grid.requestLayout()
+        Platform.runLater { () => ownerStage.sizeToScene() }
   )
 
   refreshGrid()
+  grid.requestLayout()
+  Platform.runLater { () => ownerStage.sizeToScene() }
