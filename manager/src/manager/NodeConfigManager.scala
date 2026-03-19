@@ -25,12 +25,13 @@ import _root_.io.circe.generic.auto.*
 import _root_.io.circe.parser.decode
 import _root_.io.circe.syntax.*
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.io.DirectoryProvider
 import jakarta.inject.{Inject, Singleton}
 import scalafx.collections.ObservableBuffer
 
 @Singleton
-class NodeConfigManager @Inject()() extends LazyLogging:
-  private val file = os.home / "fdswarm" / "nodes.json"
+class NodeConfigManager @Inject()(directoryProvider:DirectoryProvider) extends LazyLogging:
+  private val file = directoryProvider() / "nodes.json"
   private val printer = Printer.spaces2.copy(dropNullValues = true)
 
   val observableBuffer: ObservableBuffer[StartupConfig] =
