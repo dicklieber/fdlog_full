@@ -21,12 +21,14 @@ package manager
 import com.typesafe.scalalogging.LazyLogging
 import manager.AppInstance.jarPath
 import os.SubProcess
+import fdswarm.StartupConfig
 
-class AppInstance(debugConfigJsonPath: String, port: Int) extends LazyLogging:
-  val proc =
-    os.proc("java", "-jar", jarPath, s"--startupInfo $debugConfigJsonPath")
+class AppInstance(debugConfigJsonPath: String, startupConfig: StartupConfig, port: Int) extends LazyLogging:
+  val debugOpt = startupConfig.debugMode.javaOpt(5005)
+  val args = Seq("java") ++ debugOpt.toSeq ++ Seq("-jar", jarPath, s"--startupInfo $debugConfigJsonPath")
+  logger.debug(s"Command line that will be invoked: ${args.mkString(" ")}")
+  val proc = os.proc(args)
   val subProcess: SubProcess = proc.spawn(env = Map("PORT" -> port.toString))
-  logger.trace(s"Started $proc s: $subProcess")
   def stop(): Unit =
     subProcess.destroy()
 object AppInstance:

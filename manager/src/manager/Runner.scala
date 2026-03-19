@@ -49,7 +49,7 @@ class Runner @Inject() (directoryProvider: DirectoryProvider)
         val pathToJson = path / s"${startupConfig.id}.json"
         os.write.over(pathToJson, startupConfig.asJson.spaces2, createFolders = true)
         val sJsonPath = pathToJson.toString
-        AppInstance(sJsonPath, ports.getAndIncrement())
+        AppInstance(sJsonPath, startupConfig, ports.getAndIncrement())
 
       ).toSeq
 

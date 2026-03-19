@@ -94,12 +94,6 @@ object ManagerApp extends JFXApp3 with LazyLogging :
               nodeConfigManager.add(StartupConfig(operator = callsign, bandMode = bandMode))
             }
           },
-          new Button("Save") {
-            onAction = _ => {
-              nodeConfigManager.persist()
-              logger.info("Changes saved to nodes.json")
-            }
-          },
           new Button("Start All") {
             onAction = _ => {
               val view: IndexedSeqView[StartupConfig] = nodeConfigManager.observableBuffer.view
