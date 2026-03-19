@@ -88,7 +88,7 @@ object ManagerApp extends JFXApp3 with LazyLogging :
                   val mode = modes(Random.nextInt(modes.length))
                   val bandModeStr = s"$band $mode"
                   val bandMode = BandMode(bandModeStr)
-                  nodeConfigManager.add(StartupConfig(callsign, bandMode))
+                  nodeConfigManager.add(StartupConfig(operator = callsign, bandMode = bandMode))
                 }
               },
               new Button("Save") {
