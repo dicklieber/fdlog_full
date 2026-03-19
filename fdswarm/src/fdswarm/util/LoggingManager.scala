@@ -28,7 +28,6 @@ import io.circe.Printer
 import jakarta.inject.{Inject, Singleton}
 import java.nio.file.Files
 
-@Singleton
 class LoggingManager @Inject() (directoryProvider: DirectoryProvider) extends LazyLogging:
   private val loggingJsonPath = directoryProvider() / "logging.json"
   private var currentLoggers: List[LoggerLevel] = load()

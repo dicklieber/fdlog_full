@@ -24,15 +24,19 @@ import mainargs.{arg, ParserForClass}
 
 class StartupInfo(rawArgs: Array[String]) extends LazyLogging:
   val info: Option[StartupConfig] =
-    for
-      params <- mainargs.ParserForClass[Params].constructEither(rawArgs).fold(_ => None, Some(_))
-      pathString <- params.startupInfo
-      jsonString = os.read(os.Path(pathString))
-      x <- decode[StartupConfig](jsonString).toOption
-    yield
-      logger.info(s"Using Debug config: $x")
-      x
-  println(s"StartupInfo: $info")
+    try
+      for
+        params <- mainargs.ParserForClass[Params].constructEither(rawArgs).fold(_ => None, Some(_))
+        pathString <- params.startupInfo
+        jsonString = os.read(os.pwd / pathString)
+        x <- decode[StartupConfig](jsonString).toOption
+      yield
+        logger.info(s"Using Debug config: $x")
+        x
+    catch
+      case e: Exception =>
+        logger.error(s"Error parsing startupInfo: $e")
+        None
  
 
   case class Params(@arg(name = "startupInfo") startupInfo: Option[String] = None)
