@@ -41,12 +41,17 @@ class Runner @Inject() (directoryProvider: DirectoryProvider)
   def start(view: IndexedSeqView[StartupConfig]): Unit =
     os.remove.all(path)
     val ports = new AtomicInteger(8080)
-    instances = view.iterator.map { startupConfig =>
-      val pathToJson = path / s"${startupConfig.id}.json"
-      os.write.over(pathToJson, startupConfig.asJson.spaces2, createFolders = true)
-      val sJsonPath = pathToJson.toString
-      AppInstance(sJsonPath, ports.getAndIncrement())
-    }.toSeq
+    instances = (
+      for
+        startupConfig <- view.iterator
+        if startupConfig.enable
+      yield
+        val pathToJson = path / s"${startupConfig.id}.json"
+        os.write.over(pathToJson, startupConfig.asJson.spaces2, createFolders = true)
+        val sJsonPath = pathToJson.toString
+        AppInstance(sJsonPath, ports.getAndIncrement())
+
+      ).toSeq
 
   def stop(): Unit =
     instances.foreach(_.stop())
