@@ -15,3 +15,21 @@
   - Set `textOverrun = OverrunStyle.Clip` where applicable to avoid ellipses.
   - Do not use `minWidth = 0` or any other setting that allows these controls to collapse.
   - In CSS, use `-fx-min-width: -fx-pref-width` and `-fx-text-overrun: clip`.
+    CRITICAL FORMATTING RULES (MUST FOLLOW):
+
+# Code Generation Rules (STRICT)
+
+## Output Completeness
+- NEVER use "..." (ellipsis) in code or data structures
+- NEVER omit values, fields, or parameters
+- NEVER summarize or truncate code
+- ALWAYS produce full, explicit, copy-paste runnable code
+
+## Data Structures
+- All fields must have concrete values
+- No placeholders
+- No elided members
+
+## Failure Condition
+- If any output contains "...", the output is INVALID
+- Regenerate until complete

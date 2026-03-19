@@ -19,7 +19,7 @@
 package manager
 
 import com.google.inject.Injector
-import fdswarm.StartupConfig
+import fdswarm.{StartupConfig, DebugMode}
 import fdswarm.fx.bandmodes.{BandModeMatrixPane, SelectedBandModeStore}
 import fdswarm.model.{BandMode, Callsign}
 import javafx.collections.ListChangeListener
@@ -27,6 +27,7 @@ import net.codingwell.scalaguice.InjectorExtensions.*
 import scalafx.Includes.*
 import scalafx.geometry.Insets
 import scalafx.scene.control.*
+import scalafx.collections.ObservableBuffer
 import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority, VBox}
 
 final class NodeConfigGridPane(
@@ -43,6 +44,9 @@ final class NodeConfigGridPane(
     vgap = 8
     padding = Insets(10)
     columnConstraints ++= Seq(
+      new ColumnConstraints:
+        hgrow = Priority.Never
+      ,
       new ColumnConstraints:
         hgrow = Priority.Never
       ,
@@ -68,11 +72,12 @@ final class NodeConfigGridPane(
     children = Seq(grid)
 
   private def addHeaderRow(): Unit =
-    val headers = Seq("Id", "Operator", "BandMode", "Clear QSOs", "Delete")
+    val headers = Seq("Id", "Enable", "Operator", "BandMode", "Debug", "Clear QSOs", "Delete")
     headers.zipWithIndex.foreach { case (title, col) =>
       grid.add(
         new Label(title):
           style = "-fx-font-weight: bold;"
+          ellipsisString = ""
         ,
         col,
         0
@@ -122,6 +127,16 @@ final class NodeConfigGridPane(
       }
 
 
+  private def enableCheckBox(index: Int, config: StartupConfig): CheckBox =
+    new CheckBox:
+      selected = config.enable
+      selected.onChange { (_, _, newValue) =>
+        if index < nodeConfigManager.observableBuffer.size then
+          val old = nodeConfigManager.observableBuffer(index)
+          if old.enable != newValue then
+            nodeConfigManager.observableBuffer(index) = old.copy(enable = newValue)
+      }
+
   private def clearQsosCheckBox(index: Int, config: StartupConfig): CheckBox =
     new CheckBox:
       selected = config.clearQsos
@@ -132,6 +147,15 @@ final class NodeConfigGridPane(
             nodeConfigManager.observableBuffer(index) = old.copy(clearQsos = newValue)
       }
 
+  private def debugCombo(index: Int, config: StartupConfig): ComboBox[DebugMode] =
+    new ComboBox[DebugMode](ObservableBuffer(DebugMode.values.toSeq *)):
+      value = config.debugMode
+      value.onChange { (_, _, newValue) =>
+        if index < nodeConfigManager.observableBuffer.size && newValue != null then
+          val old = nodeConfigManager.observableBuffer(index)
+          nodeConfigManager.observableBuffer(index) = old.copy(debugMode = newValue)
+      }
+
   private def refreshGrid(): Unit =
     grid.children.clear()
     addHeaderRow()
@@ -139,24 +163,28 @@ final class NodeConfigGridPane(
     nodeConfigManager.observableBuffer.zipWithIndex.foreach { case (config, index) =>
       val row = index + 1
 
-      grid.add(new Label(config.id), 0, row)
-      grid.add(operatorField(index, config), 1, row)
+      grid.add(new Label(config.id) { ellipsisString = "" }, 0, row)
+      grid.add(enableCheckBox(index, config), 1, row)
+      grid.add(operatorField(index, config), 2, row)
       grid.add(
         new Button(config.bandMode.toString):
           maxWidth = Double.MaxValue
+          ellipsisString = ""
           onAction = _ => openBandModeDialog(index)
         ,
-        2,
+        3,
         row
       )
-      grid.add(clearQsosCheckBox(index, config), 3, row)
+      grid.add(debugCombo(index, config), 4, row)
+      grid.add(clearQsosCheckBox(index, config), 5, row)
       grid.add(
         new Button("Delete"):
+          ellipsisString = ""
           onAction = _ =>
             if index < nodeConfigManager.observableBuffer.size then
               nodeConfigManager.observableBuffer.remove(index)
         ,
-        4,
+        6,
         row
       )
     }
