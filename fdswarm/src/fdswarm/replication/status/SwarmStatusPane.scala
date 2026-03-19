@@ -19,12 +19,10 @@
 package fdswarm.replication.status
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.qso.FdHour
+import fdswarm.fx.GridBuilder
 import fdswarm.fx.utils.IntLabel
-import fdswarm.fx.{GridBuilder, GridColumns}
-import fdswarm.replication.{NodeDetails, ReceivedNodeStatus}
-import fdswarm.store.FdHourDigest
-import fdswarm.util.{AgeStyleService, NodeIdentity, NodeIdentityManager}
+import fdswarm.replication.ReceivedNodeStatus
+import fdswarm.util.{AgeStyleService, NodeIdentityManager}
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
 import scalafx.animation.{KeyFrame, Timeline}
