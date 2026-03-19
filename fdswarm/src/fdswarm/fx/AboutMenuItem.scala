@@ -30,6 +30,8 @@ import scalafx.Includes.*
 import fdswarm.fx.utils.JsonPrettyPrinter
 import fdswarm.util.NodeIdentityManager
 import fdswarm.replication.{UDPHeader, Transport}
+import fdswarm.{StartupConfig, StartupInfo}
+import io.circe.syntax._
 import scalafx.scene.input.Clipboard
 import scalafx.scene.input.ClipboardContent
 
@@ -41,6 +43,7 @@ import com.typesafe.config.Config
 class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
                               nodeIdentityManager: NodeIdentityManager,
                               transport: Transport,
+                              startupInfo: StartupInfo,
                               config: Config)
   extends MenuItem("About"):
   def setOwner(window: Window): Unit =
@@ -284,6 +287,47 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
     grid.add(new Label("UDP Instance ID:"), 0, 15)
     grid.add(new Label(nodeIdentityManager.nodeIdentity.instanceId), 1, 15)
 
+    val startupInfoNode = startupInfo.info match {
+      case None =>
+        new Label("Not Used")
+      case Some(sc) => 
+        val button = new Hyperlink("View StartupConfig") {
+          onAction = _ => {
+            val jsonString = sc.asJson.spaces2
+            
+            val alert = new Alert(AlertType.Information) {
+              initOwner(window)
+              title = "StartupConfig"
+              headerText = "Startup Configuration"
+              
+              val copyButton = new Button("Copy to Clipboard") {
+                onAction = _ => {
+                  val content = new ClipboardContent()
+                  content.putString(jsonString)
+                  Clipboard.systemClipboard.setContent(content)
+                }
+              }
+              
+              dialogPane().content = new VBox {
+                spacing = 10
+                children = Seq(
+                  copyButton,
+                  new ScrollPane {
+                    content = JsonPrettyPrinter.toTable(jsonString)
+                    prefViewportHeight = 400
+                    prefViewportWidth = 600
+                  }
+                )
+              }
+            }
+            alert.showAndWait()
+          }
+        }
+        button
+    }
+    grid.add(new Label("StartupInfo:"), 0, 16)
+    grid.add(startupInfoNode, 1, 16)
+
     val labels = grid.children.collect { case l: javafx.scene.control.Label => l }
     labels.foreach(_.getStyleClass.add("fixed-width"))
 
@@ -302,19 +346,22 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
         val groupAddr = if (config.hasPath("fdswarm.UDP.groupAddr")) config.getString("fdswarm.UDP.groupAddr") else "Not configured"
         sb.append(s"UDP Group Addr: $groupAddr\n")
         sb.append(s"UDP Instance ID: ${nodeIdentityManager.nodeIdentity.instanceId}\n")
+        sb.append(s"StartupInfo: ${if (startupInfo.info.isEmpty) "Not Used" else "Used"}\n")
         val configStr = config.root().render(com.typesafe.config.ConfigRenderOptions.defaults().setOriginComments(false).setComments(true).setFormatted(true).setJson(false))
         sb.append(s"\n--- Application Config ---\n$configStr\n")
         val content = new ClipboardContent()
         content.putString(sb.toString())
         Clipboard.systemClipboard.setContent(content)
 
-    val contentBox = new VBox:
+    val contentBox = new VBox {
       spacing = 10
       children = Seq(headerBox, copyAllButton, grid)
+    }
 
-    val aboutAlert = new Alert(AlertType.Information):
+    val aboutAlert = new Alert(AlertType.Information) {
       initOwner(window)
       title = "About FdSwarm"
       headerText = "fdswarm build information"
       dialogPane().content = contentBox
+    }
     aboutAlert.showAndWait()
