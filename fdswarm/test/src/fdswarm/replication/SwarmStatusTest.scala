@@ -18,7 +18,7 @@
 
 package fdswarm.replication
 
-import fdswarm.TestDirectory
+import fdswarm.{MockStartupInfo, StationManager, TestDirectory}
 import fdswarm.fx.bandmodes.SelectedBandModeStore
 import fdswarm.fx.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
 import fdswarm.fx.qso.FdHour
@@ -26,7 +26,6 @@ import fdswarm.model.{BandMode, BandModeOperator, Callsign}
 import fdswarm.replication.status.SwarmStatus
 import fdswarm.store.FdHourDigest
 import fdswarm.util.{MockNodeIdentityManager, NodeIdentity}
-import fdswarm.StationManager
 import munit.FunSuite
 
 import java.time.Instant
@@ -36,7 +35,7 @@ class SwarmStatusTest extends FunSuite:
 
   test("SwarmStatus.put should update nodeMap"):
     val testDir = new TestDirectory
-    val stationManager = new StationManager(testDir)
+    val stationManager = new StationManager(testDir, MockStartupInfo)
     val config = com.typesafe.config.ConfigFactory.parseString(
       """
         |fdswarm {
@@ -67,7 +66,7 @@ class SwarmStatusTest extends FunSuite:
 
   test("SwarmStatus.clear should retain local node data"):
     val testDir = new TestDirectory
-    val stationManager = new StationManager(testDir)
+    val stationManager = new StationManager(testDir, MockStartupInfo)
     val config = com.typesafe.config.ConfigFactory.parseString(
       """
         |fdswarm {
@@ -117,7 +116,7 @@ class SwarmStatusTest extends FunSuite:
 
   test("SwarmStatus should persist state"):
     val testDir = new TestDirectory
-    val stationManager = new StationManager(testDir)
+    val stationManager = new StationManager(testDir, MockStartupInfo)
     val config = com.typesafe.config.ConfigFactory.parseString(
       """
         |fdswarm {

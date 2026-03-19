@@ -19,7 +19,7 @@
 package manager
 
 import com.google.inject.Injector
-import fdswarm.DebugConfig
+import fdswarm.StartupConfig
 import fdswarm.fx.bandmodes.{BandModeMatrixPane, SelectedBandModeStore}
 import fdswarm.model.{BandMode, Callsign}
 import javafx.collections.ListChangeListener
@@ -68,7 +68,7 @@ final class NodeConfigGridPane(
     children = Seq(grid)
 
   private def addHeaderRow(): Unit =
-    val headers = Seq("Id", "Operator", "BandMode", "Startup Config", "Clear QSOs", "Delete")
+    val headers = Seq("Id", "Operator", "BandMode", "Clear QSOs", "Delete")
     headers.zipWithIndex.foreach { case (title, col) =>
       grid.add(
         new Label(title):
@@ -104,7 +104,7 @@ final class NodeConfigGridPane(
           nodeConfigManager.observableBuffer(index) = oldConfig.copy(bandMode = bm)
         case _ =>
 
-  private def operatorField(index: Int, config: DebugConfig): TextField =
+  private def operatorField(index: Int, config: StartupConfig): TextField =
     new TextField:
       text = config.operator.value
       textFormatter = new javafx.scene.control.TextFormatter[String](
@@ -121,17 +121,8 @@ final class NodeConfigGridPane(
             nodeConfigManager.observableBuffer(index) = old.copy(operator = Callsign(updated))
       }
 
-  private def startupCheckBox(index: Int, config: DebugConfig): CheckBox =
-    new CheckBox:
-      selected = config.showStartupConfig
-      selected.onChange { (_, _, newValue) =>
-        if index < nodeConfigManager.observableBuffer.size then
-          val old = nodeConfigManager.observableBuffer(index)
-          if old.showStartupConfig != newValue then
-            nodeConfigManager.observableBuffer(index) = old.copy(showStartupConfig = newValue)
-      }
 
-  private def clearQsosCheckBox(index: Int, config: DebugConfig): CheckBox =
+  private def clearQsosCheckBox(index: Int, config: StartupConfig): CheckBox =
     new CheckBox:
       selected = config.clearQsos
       selected.onChange { (_, _, newValue) =>
@@ -158,22 +149,21 @@ final class NodeConfigGridPane(
         2,
         row
       )
-      grid.add(startupCheckBox(index, config), 3, row)
-      grid.add(clearQsosCheckBox(index, config), 4, row)
+      grid.add(clearQsosCheckBox(index, config), 3, row)
       grid.add(
         new Button("Delete"):
           onAction = _ =>
             if index < nodeConfigManager.observableBuffer.size then
               nodeConfigManager.observableBuffer.remove(index)
         ,
-        5,
+        4,
         row
       )
     }
 
   nodeConfigManager.observableBuffer.delegate.addListener(
-    new ListChangeListener[DebugConfig]:
-      override def onChanged(change: ListChangeListener.Change[? <: DebugConfig]): Unit =
+    new ListChangeListener[StartupConfig]:
+      override def onChanged(change: ListChangeListener.Change[? <: StartupConfig]): Unit =
         refreshGrid()
   )
 

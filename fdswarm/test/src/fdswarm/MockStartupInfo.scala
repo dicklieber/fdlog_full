@@ -18,17 +18,4 @@
 
 package fdswarm
 
-import fdswarm.model.{BandMode, Callsign}
-import _root_.io.circe.Codec
-import fdswarm.util.Ids
-import fdswarm.util.Ids.Id
-
-
-case class DebugConfig (operator: Callsign,
-                        bandMode:BandMode,
-                        showStartupConfig: Boolean = false,
-                        clearQsos: Boolean = false,
-                        id:Id = Ids.generateInstanceId()) derives Codec.AsObject {
-  override def toString: String =
-    s"DebugConfig(operator=$operator, bandMode=$bandMode, showStartupConfig=$showStartupConfig, clearQsos=$clearQsos, id=$id)"
-}
+object MockStartupInfo extends StartupInfo(Array.empty)
