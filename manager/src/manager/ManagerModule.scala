@@ -22,6 +22,7 @@ import com.google.inject.AbstractModule
 import com.typesafe.config.{Config, ConfigFactory}
 import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager, BandCatalog, BandModeBuilder, ModeCatalog}
 import fdswarm.fx.bandmodes.{BandModeMatrixPane, SelectedBandModeManager}
+import fdswarm.StartupInfo
 import fdswarm.io.DirectoryProvider
 import manager.io.ManagerDirectory
 import net.codingwell.scalaguice.ScalaModule
@@ -37,6 +38,7 @@ class ManagerModule extends AbstractModule with ScalaModule {
     bind[BandCatalog].asEagerSingleton()
     bind[ModeCatalog].asEagerSingleton()
     bind[BandModeBuilder].asEagerSingleton()
+    bind[StartupInfo].toInstance(new StartupInfo(Array.empty[String]))
     bind[AvailableBandsManager].asEagerSingleton()
     bind[AvailableModesManager].asEagerSingleton()
     bind[SelectedBandModeManager].asEagerSingleton()
