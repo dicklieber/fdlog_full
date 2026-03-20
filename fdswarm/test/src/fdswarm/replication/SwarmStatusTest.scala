@@ -19,7 +19,7 @@
 package fdswarm.replication
 
 import fdswarm.{MockStartupInfo, StationManager, TestDirectory}
-import fdswarm.fx.bandmodes.SelectedBandModeStore
+import fdswarm.fx.bandmodes.SelectedBandModeManager
 import fdswarm.fx.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
 import fdswarm.fx.qso.FdHour
 import fdswarm.model.{BandMode, BandModeOperator, Callsign}
@@ -48,7 +48,7 @@ class SwarmStatusTest extends FunSuite:
     val bandCatalog = new BandCatalog(config)
     val modeCatalog = new ModeCatalog(config)
     val bandModeBuilder = new BandModeBuilder(bandCatalog, modeCatalog)
-    val selectedBandModeStore = new SelectedBandModeStore(testDir, bandModeBuilder)
+    val selectedBandModeStore = new SelectedBandModeManager(testDir, bandModeBuilder, MockStartupInfo)
     val swarmStatus = new SwarmStatus(testDir, MockNodeIdentityManager(), stationManager, selectedBandModeStore, null)
     val hp = NodeIdentity("192.168.1.100", 8080, "test-instance")
     val hour = FdHour(15, 12)
@@ -79,7 +79,7 @@ class SwarmStatusTest extends FunSuite:
     val bandCatalog = new BandCatalog(config)
     val modeCatalog = new ModeCatalog(config)
     val bandModeBuilder = new BandModeBuilder(bandCatalog, modeCatalog)
-    val selectedBandModeStore = new SelectedBandModeStore(testDir, bandModeBuilder)
+    val selectedBandModeStore = new SelectedBandModeManager(testDir, bandModeBuilder, MockStartupInfo)
     val localNi = NodeIdentity("127.0.0.1", 8080, "local-instance")
     val remoteNi = NodeIdentity("192.168.1.100", 8080, "remote-instance")
     val mockNodeIdentityManager = new MockNodeIdentityManager(localNi)
@@ -129,7 +129,7 @@ class SwarmStatusTest extends FunSuite:
     val bandCatalog = new BandCatalog(config)
     val modeCatalog = new ModeCatalog(config)
     val bandModeBuilder = new BandModeBuilder(bandCatalog, modeCatalog)
-    val selectedBandModeStore = new SelectedBandModeStore(testDir, bandModeBuilder)
+    val selectedBandModeStore = new SelectedBandModeManager(testDir, bandModeBuilder, MockStartupInfo)
     val hp = NodeIdentity("192.168.1.101", 9090, "test-instance-2")
     val hour = FdHour(16, 13)
     val digest = FdHourDigest(hour, 5, "def")

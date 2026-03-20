@@ -19,7 +19,7 @@
 package fdswarm.store
 
 import fdswarm.fx.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
-import fdswarm.fx.bandmodes.SelectedBandModeStore
+import fdswarm.fx.bandmodes.SelectedBandModeManager
 import fdswarm.StationManager
 import fdswarm.TestDirectory
 import fdswarm.model.QsoMetadata.testQsoMetadata
@@ -51,7 +51,7 @@ class ReplicationSupportTest extends FunSuite:
 
   private var mockNodeIdentityManager: fdswarm.util.MockNodeIdentityManager = uninitialized
   private var stationManager: StationManager = uninitialized
-  private var selectedBandModeStore: SelectedBandModeStore = uninitialized
+  private var selectedBandModeStore: SelectedBandModeManager = uninitialized
   private var swarmStatus: fdswarm.replication.status.SwarmStatus = uninitialized
   private var contestCatalog: fdswarm.fx.contest.ContestCatalog = uninitialized
   private var sections: fdswarm.fx.sections.Sections = uninitialized
@@ -77,7 +77,7 @@ class ReplicationSupportTest extends FunSuite:
     val bandCatalog = new BandCatalog(config)
     val modeCatalog = new ModeCatalog(config)
     val bandModeBuilder = new BandModeBuilder(bandCatalog, modeCatalog)
-    selectedBandModeStore = new SelectedBandModeStore(testDirectory, bandModeBuilder)
+    selectedBandModeStore = new SelectedBandModeManager(testDirectory, bandModeBuilder, MockStartupInfo)
     swarmStatus = fdswarm.replication.status.SwarmStatus(testDirectory, mockNodeIdentityManager, stationManager, selectedBandModeStore, null)
     contestCatalog = {
       val config = com.typesafe.config.ConfigFactory.parseString(

@@ -21,7 +21,7 @@ package fdswarm.web
 import cats.effect.IO
 import fdswarm.StationManager
 import fdswarm.fx.UserConfig
-import fdswarm.fx.bandmodes.SelectedBandModeStore
+import fdswarm.fx.bandmodes.SelectedBandModeManager
 import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager, BandModeBuilder}
 import fdswarm.fx.contest.ContestManager
 import fdswarm.fx.qso.ContestTimerPanel
@@ -52,7 +52,7 @@ class WebRoutes @Inject()(
                            qsoStore: QsoStore,
                            availableBandsManager: AvailableBandsManager,
                            availableModesManager: AvailableModesManager,
-                           selectedBandModeStore: SelectedBandModeStore,
+                           selectedBandModeStore: SelectedBandModeManager,
                            sectionsProvider: SectionsProvider,
                            contestManager: ContestManager,
                            stationManager: StationManager,

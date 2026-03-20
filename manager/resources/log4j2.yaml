@@ -12,9 +12,9 @@ Configuration:
   Loggers:
     Logger:
       - name: manager.NodeConfigManager
-        level: trace
+        level: info
       - name: manager.AppInstance
-        level: trace
+        level: info
     Root:
       level: info
       AppenderRef:

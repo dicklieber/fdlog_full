@@ -20,7 +20,7 @@ package fdswarm.replication.status
 
 import fdswarm.StationManager
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.bandmodes.SelectedBandModeStore
+import fdswarm.fx.bandmodes.SelectedBandModeManager
 import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
 import fdswarm.model.BandModeOperator
@@ -42,11 +42,11 @@ import scala.collection.concurrent.TrieMap
  */
 @Singleton
 class SwarmStatus @Inject() (
-    directoryProvider: DirectoryProvider,
-    nodeIdentityManager: NodeIdentityManager,
-    stationManager: StationManager,
-    selectedBandModeStore: SelectedBandModeStore,
-    swarmStatusPane: SwarmStatusPane
+                              directoryProvider: DirectoryProvider,
+                              nodeIdentityManager: NodeIdentityManager,
+                              stationManager: StationManager,
+                              selectedBandModeStore: SelectedBandModeManager,
+                              swarmStatusPane: SwarmStatusPane
                             ) extends SwarmStatusApi with LazyLogging:
   val nodeMap: TrieMap[NodeIdentity, ReceivedNodeStatus] = new TrieMap[NodeIdentity, ReceivedNodeStatus]
   private val statusFile = directoryProvider() / "swarmStatus.json"
