@@ -26,6 +26,11 @@ import jakarta.inject.Inject
 
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.IndexedSeqView
+import scalafx.Includes.*
+import scalafx.scene.control.{Alert, ButtonType}
+import manager.FdswarmJarManager
+import java.time.{Instant, ZoneId, ZonedDateTime}
+import java.time.format.DateTimeFormatter
 
 /** create a JSON file of [[StartupConfig]] Starts an instance of the FDSwarm
   * application. pass reference to that file on the command line.
@@ -40,6 +45,20 @@ class Runner @Inject() (directoryProvider: DirectoryProvider)
 
   def start(view: IndexedSeqView[StartupConfig]): Unit =
     os.remove.all(path)
+
+    val jarManager = FdswarmJarManager()
+    val jarInfoOpt = jarManager.jarInfo()
+    val timeFmt = DateTimeFormatter.ofPattern("MMM dd, HH:mm:ss")
+
+    val alert = new Alert(Alert.AlertType.Confirmation) {
+      title = "Build fdswarm-all.jar?"
+      headerText = "Build fdswarm-all.jar?"
+      contentText = s"JAR ${jarInfoOpt.map(_.atZone(ZoneId.systemDefault()).format(timeFmt)).getOrElse("does not exist")}."
+    }
+
+    if alert.showAndWait().contains(ButtonType.OK) then
+      jarManager.buildFdswarmJar()
+
     val ports = new AtomicInteger(8080)
     instances = (
       for
