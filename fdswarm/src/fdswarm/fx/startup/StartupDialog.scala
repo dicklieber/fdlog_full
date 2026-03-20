@@ -99,7 +99,6 @@ class StartupDialog @Inject() (
     dialog.dialogPane().buttonTypes = Seq(startBtnType)
     val startBtn = dialog.dialogPane().lookupButton(startBtnType).asInstanceOf[javafx.scene.control.Button]
     startBtnInternal = startBtn
-    startBtn.disable <== !allOk
 
     val autoStartLabel = new Label:
       text <== autoStartSeconds.map(s => s"Auto-starting in $s seconds...")
