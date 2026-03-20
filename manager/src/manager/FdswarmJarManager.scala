@@ -3,6 +3,10 @@ package manager
 import com.typesafe.scalalogging.LazyLogging
 import java.time.Instant
 
+/**
+ * 
+ * @param outDir for unit testing.
+ */
 class FdswarmJarManager(
                          outDir: os.Path = os.pwd / "out"
                        ) extends LazyLogging:
