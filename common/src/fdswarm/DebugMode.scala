@@ -1,11 +1,20 @@
 package fdswarm
-import _root_.io.circe.Codec
 
-enum DebugMode derives Codec:
-  case Off, Debug, Wait
+import _root_.io.circe.{Decoder, Encoder}
 
-  def javaOpt(port: Int): Option[String] =
-    this match
-      case Off   => None
-      case Debug => Some(s"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:$port")
-      case Wait  => Some(s"-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:$port")
+enum DebugMode(val javaOpt: Option[String]):
+  case Off extends DebugMode(None)
+  case Debug extends DebugMode(Some("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"))
+  case Wait extends DebugMode(Some("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005"))
+
+object DebugMode:
+  private def fromString(s: String): Option[DebugMode] =
+    values.find(_.productPrefix == s)
+
+  given Encoder[DebugMode] =
+    Encoder.encodeString.contramap(_.productPrefix)
+
+  given Decoder[DebugMode] =
+    Decoder.decodeString.emap { s =>
+      fromString(s).toRight(s"Invalid DebugMode: $s")
+    }
