@@ -20,7 +20,7 @@ package fdswarm.fx.qso
 
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.StationManager
-import fdswarm.fx.bandmodes.SelectedBandModeStore
+import fdswarm.fx.bandmodes.SelectedBandModeManager
 import fdswarm.fx.contest.ContestManager
 import fdswarm.fx.sections.Section
 import fdswarm.fx.CallSignField
@@ -39,7 +39,7 @@ import scalafx.scene.layout.{GridPane, VBox}
 class QsoEntryPanel @Inject()(
                                qsoStore: QsoStore,
                                transport: Transport,
-                               selectedBandModeStore: SelectedBandModeStore,
+                               selectedBandModeStore: SelectedBandModeManager,
                                stationManager: StationManager,
                                contestManager: ContestManager,
                                callsignField: CallSignField,

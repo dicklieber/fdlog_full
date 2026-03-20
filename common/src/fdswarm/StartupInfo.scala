@@ -22,6 +22,12 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.StartupConfig
 import os.*
 
+/**
+ * extracts StartupConfig from the command line arguments.
+ * [[StartupConfig]] is set my the deveopment tool manager, used to start multiple instances of the fdswrm.
+ *
+ * @param rawArgs from command line.
+ */
 class StartupInfo(rawArgs: Array[String]) extends LazyLogging:
   val info: Option[StartupConfig] =
     logger.debug(s"Raw command line arguments: [${rawArgs.mkString(", ")}]")

@@ -20,7 +20,7 @@ package fdswarm.fx
 
 import _root_.scalafx.scene.control.{TextField, TextFormatter}
 import _root_.scalafx.scene.input.KeyCode
-import fdswarm.fx.bandmodes.SelectedBandModeStore
+import fdswarm.fx.bandmodes.SelectedBandModeManager
 import fdswarm.model.Callsign
 import fdswarm.store.QsoStore
 import jakarta.inject.Inject
@@ -28,9 +28,9 @@ import jakarta.inject.Inject
 /** Callsign entry field sad or happy as validated while typing.
   */
 class CallSignField @Inject() (
-    qsoStore: QsoStore,
-    selectedBsndModeStore: SelectedBandModeStore,
-    override val userConfig: UserConfig
+                                qsoStore: QsoStore,
+                                selectedBsndModeStore: SelectedBandModeManager,
+                                override val userConfig: UserConfig
 ) extends TextField
     with NextField:
   styleClass += "qsoCallSign"

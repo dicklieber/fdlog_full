@@ -21,7 +21,7 @@ package fdswarm.replication
 import com.google.inject.name.Named
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.StationManager
-import fdswarm.fx.bandmodes.SelectedBandModeStore
+import fdswarm.fx.bandmodes.SelectedBandModeManager
 import fdswarm.io.DirectoryProvider
 import fdswarm.model.BandModeOperator
 import fdswarm.store.QsoStore
@@ -42,7 +42,7 @@ class StatusBroadcastService @Inject()(
                                         qsoStore: QsoStore,
                                         transport: Transport,
                                         stationManager: StationManager,
-                                        selectedBandModeStore:SelectedBandModeStore,
+                                        selectedBandModeStore:SelectedBandModeManager,
                                         nodeIdentityManager: NodeIdentityManager,
                                         dirProvider: DirectoryProvider,
                                         @Named("fdswarm.broadcastPeriodSec") val defaultBroadcastPeriodSec: Int

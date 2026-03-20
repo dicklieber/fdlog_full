@@ -21,7 +21,7 @@ package fdswarm.fx.qso
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.GridColumns
 import fdswarm.fx.bandmodes.BandModeStore
-import fdswarm.fx.bandmodes.SelectedBandModeStore
+import fdswarm.fx.bandmodes.SelectedBandModeManager
 import fdswarm.store.{DupInfo, QsoStore, StyledMessage}
 import fdswarm.util.TimeHelpers.localFrom
 import jakarta.inject.{Inject, Singleton}
@@ -34,7 +34,7 @@ import scalafx.scene.layout.{GridPane, Pane, StackPane, VBox}
 class DupPanel @Inject()(
                           qsoStore: QsoStore,
                           bandModeStore: BandModeStore,
-                          selectedBandModeStore: SelectedBandModeStore
+                          selectedBandModeStore: SelectedBandModeManager
                         ) extends LazyLogging:
 
   private val grid = new GridPane {

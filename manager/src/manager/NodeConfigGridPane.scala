@@ -20,7 +20,7 @@ package manager
 
 import com.google.inject.Injector
 import fdswarm.{StartupConfig, DebugMode}
-import fdswarm.fx.bandmodes.{BandModeMatrixPane, SelectedBandModeStore}
+import fdswarm.fx.bandmodes.{BandModeMatrixPane, SelectedBandModeManager}
 import fdswarm.model.{BandMode, Callsign}
 import javafx.collections.ListChangeListener
 import net.codingwell.scalaguice.InjectorExtensions.*
@@ -106,7 +106,7 @@ final class NodeConfigGridPane(
     if index >= 0 && index < nodeConfigManager.observableBuffer.size then
       val oldConfig = nodeConfigManager.observableBuffer(index)
       val matrixPane = injector.instance[BandModeMatrixPane]
-      val selectedStore = injector.instance[SelectedBandModeStore]
+      val selectedStore = injector.instance[SelectedBandModeManager]
       selectedStore.save(oldConfig.bandMode)
 
       val dialog = new Dialog[BandMode]:

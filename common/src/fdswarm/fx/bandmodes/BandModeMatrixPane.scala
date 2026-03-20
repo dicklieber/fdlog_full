@@ -47,7 +47,7 @@ import scala.jdk.CollectionConverters.*
  */
 final class BandModeMatrixPane @Inject()(availableBandsStore: AvailableBandsManager,
                                          availableModesManager: AvailableModesManager,
-                                         selectedStore: SelectedBandModeStore,
+                                         selectedStore: SelectedBandModeManager,
                                          bandModeBuilder: BandModeBuilder) extends  LazyLogging:
 
   val showConfigButton = BooleanProperty(true)
@@ -136,7 +136,7 @@ class ModeBandButton(band:Band,
                      selectedHamBand:BandMode,
                      bandModeBuilder: BandModeBuilder,
                      tg: ToggleGroup,
-                     selectedStore: SelectedBandModeStore
+                     selectedStore: SelectedBandModeManager
                     ) extends ToggleButton() with LazyLogging:
   val bandMode: BandMode = bandModeBuilder(band, mode)
   text = band
