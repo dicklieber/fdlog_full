@@ -18,16 +18,20 @@
 
 package fdswarm.fx.bandmodes
 
-import jakarta.inject.{Inject, Singleton}
+import com.typesafe.scalalogging.LazyLogging
+import fdswarm.StartupInfo
 import fdswarm.fx.bands.BandModeBuilder
-import fdswarm.model.BandMode
 import fdswarm.io.DirectoryProvider
-import scalafx.beans.property.ObjectProperty
+import fdswarm.model.BandMode
 import io.circe.parser.*
 import io.circe.syntax.*
+import jakarta.inject.{Inject, Singleton}
+import scalafx.beans.property.ObjectProperty
 
 @Singleton
-final class SelectedBandModeStore @Inject() (dirProvider: DirectoryProvider, bandModeBuilder: BandModeBuilder):
+final class SelectedBandModeManager @Inject()(dirProvider: DirectoryProvider,
+                                              bandModeBuilder: BandModeBuilder,
+                                              startupInfo: StartupInfo) extends LazyLogging:
 
   private val dir: os.Path =
     val p = dirProvider()
@@ -47,12 +51,15 @@ final class SelectedBandModeStore @Inject() (dirProvider: DirectoryProvider, ban
     selected.value = value
 
   private def load(): BandMode =
-      try {
-        val bandMode = decode[BandMode](os.read(path)).toTry.get
+    if startupInfo.info.isDefined then
+      startupInfo.info.get.bandMode
+    else
+      try
+        decode[BandMode](os.read(path)).toTry.get
+      catch case e: Throwable =>
+        val bandMode = bandModeBuilder("20m", "PH")
+        logger.warn(s"Could not load bandmode from $path: ${e.getMessage}, using $bandMode!")
         bandMode
-      }
-      catch case _: Throwable =>
-        bandModeBuilder("20m", "PH")
 
   private def persist(value: BandMode): Unit =
     val json = value.asJson.spaces2
