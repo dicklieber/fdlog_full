@@ -30,7 +30,7 @@ class CabrilloExporterTest extends FunSuite:
 
   test("exportQsos creates a valid Cabrillo format"):
     val station = Station(operator = Callsign("W1AW"), rig = "1A", antenna = "Wire")
-    val qsoMetadata = QsoMetadata(station = station, node = NodeIdentity(), contest = ContestType.WFD)
+    val qsoMetadata = QsoMetadata(station = station, node = NodeIdentity(name =), contest = ContestType.WFD)
     
     val qso1 = Qso(
       callsign = Callsign("K1ABC"),

@@ -34,4 +34,4 @@ class MockNodeIdentityManager(val mockNodeIdentity: NodeIdentity, instanceIdMana
 
 object MockNodeIdentityManager:
   def apply(host: String = "127.0.0.1", port: Int = 8080): MockNodeIdentityManager =
-    new MockNodeIdentityManager(NodeIdentity(host, port))
+    new MockNodeIdentityManager(NodeIdentity(host, port, name =))

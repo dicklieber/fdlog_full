@@ -55,8 +55,10 @@ class NodeIdentityManager @Inject()(@Named("fdswarm.httpPort") httpPort: Int,
   }.getOrElse(httpPort)
 
   def hostPort: String = s"${currentIp.ip}:$port"
-  def nodeIdentity: NodeIdentity = NodeIdentity(currentIp.ip, port, instanceIdManager.ourInstanceId)
+  def nodeIdentity: NodeIdentity = NodeIdentity(currentIp.ip, port, instanceIdManager.ourInstanceId,)
   def portAndInstance: PortAndInstance = PortAndInstance(port, instanceIdManager.ourInstanceId)
+
+  def getHostName: String = java.net.InetAddress.getLocalHost.getHostName.split('.').head
 
 
 

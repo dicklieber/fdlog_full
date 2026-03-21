@@ -30,7 +30,7 @@ class AdifExporterTest extends FunSuite:
 
   test("AdifExporter should generate correct ADIF"):
     val station = Station(operator = Callsign("WA9NNN"), rig = "FT-891", antenna = "End Fed")
-    val qsoMetadata = QsoMetadata(station = station, node = NodeIdentity(), contest = ContestType.WFD)
+    val qsoMetadata = QsoMetadata(station = station, node = NodeIdentity(name =), contest = ContestType.WFD)
     val bandMode = BandMode("40M", "CW")
     val stamp = Instant.parse("2026-02-25T10:00:00Z")
     val qso = Qso(
@@ -62,7 +62,7 @@ class AdifExporterTest extends FunSuite:
 
   test("AdifExporter should map internal modes to ADIF modes"):
     val station = Station(operator = Callsign("WA9NNN"), rig = "FT-891", antenna = "End Fed")
-    val qsoMetadata = QsoMetadata(station = station, node = NodeIdentity(), contest = ContestType.WFD)
+    val qsoMetadata = QsoMetadata(station = station, node = NodeIdentity(name =), contest = ContestType.WFD)
     val stamp = Instant.parse("2026-02-25T10:00:00Z")
 
     val qsoPh = Qso(Callsign("K1ABC"), Exchange(FdClass("1A"), "CT"), BandMode("40M", "PH"), qsoMetadata, stamp, "id-ph")

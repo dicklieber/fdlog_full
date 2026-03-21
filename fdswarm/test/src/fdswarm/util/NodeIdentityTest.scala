@@ -25,13 +25,13 @@ import io.circe.parser.decode
 class NodeIdentityTest extends FunSuite:
 
   test("string round trip"):
-    val nodeIdentity = NodeIdentity()
+    val nodeIdentity = NodeIdentity(name =)
     val string = nodeIdentity.toString
     val backAgain = NodeIdentity(string)
     assertEquals( backAgain, nodeIdentity)
 
   test("circe round trip"):
-    val nodeIdentity = NodeIdentity()
+    val nodeIdentity = NodeIdentity(name =)
     val json = nodeIdentity.asJson.noSpaces
     val decoded = decode[NodeIdentity](json)
       .getOrElse(fail("failed to decode"))
@@ -39,7 +39,7 @@ class NodeIdentityTest extends FunSuite:
 
   test("handle legacy 'local' string"):
     val nodeIdentity = NodeIdentity("local")
-    assertEquals(nodeIdentity, NodeIdentity())
+    assertEquals(nodeIdentity, NodeIdentity(name =))
 
   test("PortAndInstance circe round trip"):
     val portAndInstance = PortAndInstance(8080, "test-instance")
