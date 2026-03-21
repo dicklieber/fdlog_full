@@ -29,7 +29,9 @@ import scala.util.matching.Regex
  *
  * @constructor Creates a new NodeIdentity with a specified host, port, and instance ID.
  *              Default values for host and port are "44.0.0.1" and 42, respectively.
+ *
  * @param host       The hostname or IP address of the node.
+ * @param name       The name of the node.
  * @param port       The port number on which the node is reachable.
  * @param instanceId A unique identifier for the instance of the node.
  *
@@ -43,10 +45,11 @@ import scala.util.matching.Regex
  *                   - `compare`: Compares two `NodeIdentity` instances first by host, then by port.
  */
 case class NodeIdentity(host: String = "44.0.0.1",
+                        name: String,
                         port: Int = 42,
                         instanceId: Id = "") extends Ordered[NodeIdentity]:
   override val toString: String =
-    f"$host:$port%d-$instanceId"
+    f"$host:$port%d-${instanceId}_$name"
   val hostAndPort: String = s"$host:$port"
   lazy val short:String =
     host.split('.').last
@@ -74,10 +77,7 @@ case class NodeIdentity(host: String = "44.0.0.1",
     this.instanceId.compareTo(that.instanceId)
 
 object NodeIdentity:
-
-  def fromURI(uri: URI): NodeIdentity =
-    NodeIdentity(host = uri.getHost, port = uri.getPort, instanceId = uri.getUserInfo)
-
+  
   private val regx = """^(localhost|[0-9.]+):(\d{1,5})-(.*)$""".r
 
   given Encoder[NodeIdentity] = Encoder.encodeString.contramap(_.toString)
@@ -88,9 +88,9 @@ object NodeIdentity:
 
   def apply(s: String): NodeIdentity =
       s match
-        case "local" => NodeIdentity()
+        case "local" => NodeIdentity(name = "toto")
         case regx(host, sPort, instanceId) =>
-          NodeIdentity(host, sPort.toInt, instanceId)
+          NodeIdentity(host,  "todo", sPort.toInt, instanceId)
         case _ =>
           // Try to parse just host:port for backward compatibility if needed, 
           // but based on toString it should always have -instanceId

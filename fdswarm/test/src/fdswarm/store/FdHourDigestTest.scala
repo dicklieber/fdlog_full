@@ -31,7 +31,7 @@ class FdHourDigestTest extends FunSuite :
     
     
     val station = Station(Callsign("WA9NNN"), "S1", "Home")
-    val metadata = QsoMetadata(station, NodeIdentity(), ContestType.WFD)
+    val metadata = QsoMetadata(station, NodeIdentity(name =), ContestType.WFD)
     
     val qso1 = Qso(
       callsign = Callsign("W1AW"),
@@ -81,7 +81,7 @@ class FdHourDigestTest extends FunSuite :
   test("FdHourDigest.apply is order-independent for input QSOs") {
     val fdHour = FdHour(15, 12)
     val station = Station(Callsign("WA9NNN"), "S1", "Home")
-    val metadata = QsoMetadata(station, NodeIdentity(), ContestType.WFD)
+    val metadata = QsoMetadata(station, NodeIdentity(name =), ContestType.WFD)
     
     val qso1 = Qso(Callsign("C1"), Exchange(FdClass("1A"), "CT"), BandMode("20m", "CW"), metadata, uuid = "a")
     val qso2 = Qso(Callsign("C2"), Exchange(FdClass("1A"), "CT"), BandMode("20m", "CW"), metadata, uuid = "b")
