@@ -73,7 +73,7 @@ class SwarmStatusGrid(allNodes: Seq[ReceivedNodeStatus],
         }
       }
     }*)
-    builder("IP", allNodes.map(_.nodeIdentity.host)*)
+    builder("IP", allNodes.map(_.nodeIdentity.hostIp)*)
     builder("Age", allNodes.map { receivedNodeStatus =>
       if (receivedNodeStatus.nodeIdentity.instanceId == ourInstanceId) {
         new scalafx.scene.control.Label {

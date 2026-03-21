@@ -22,11 +22,11 @@ import jakarta.inject.{Inject, Named}
 
 class MockNodeIdentityManager(val mockNodeIdentity: NodeIdentity, instanceIdManager: InstanceIdManager = null) extends NodeIdentityManager(mockNodeIdentity.port, instanceIdManager):
 
-  override def suitableInterfaces: Seq[AnIpAddress] = Seq(AnIpAddress("mock", mockNodeIdentity.host))
-  override def currentIp: AnIpAddress = AnIpAddress("mock", mockNodeIdentity.host)
+  override def suitableInterfaces: Seq[AnIpAddress] = Seq(AnIpAddress("mock", mockNodeIdentity.hostIp))
+  override def currentIp: AnIpAddress = AnIpAddress("mock", mockNodeIdentity.hostIp)
   override def setIp(newIp: AnIpAddress): Unit = ()
 
-  override def hostPort: String = s"${mockNodeIdentity.host}:${mockNodeIdentity.port}"
+  override def hostPort: String = s"${mockNodeIdentity.hostIp}:${mockNodeIdentity.port}"
   override def nodeIdentity: NodeIdentity = mockNodeIdentity
   override def portAndInstance: PortAndInstance = PortAndInstance(mockNodeIdentity.port, mockNodeIdentity.instanceId)
   override def isUs(nodeIdentity: NodeIdentity): Boolean =
@@ -34,4 +34,4 @@ class MockNodeIdentityManager(val mockNodeIdentity: NodeIdentity, instanceIdMana
 
 object MockNodeIdentityManager:
   def apply(host: String = "127.0.0.1", port: Int = 8080): MockNodeIdentityManager =
-    new MockNodeIdentityManager(NodeIdentity(host, port, name =))
+    new MockNodeIdentityManager(mockNodeIdentity = NodeIdentity(host, port, hostName = "ccc"))

@@ -71,7 +71,7 @@ class CirceSupportTest extends FunSuite:
     assertEquals(decoded, fdClass)
 
   test("StatusMessage round trip"):
-    val hostAndPort = NodeIdentity("localhost", 8080, name =)
+    val hostAndPort = NodeIdentity(8080, "testHost")
     val fdHour = FdHour(15, 23)
     val digest = FdHourDigest(fdHour, 10, "some-digest")
     val bno = BandModeOperator(Callsign("WA9NNN"), BandMode("40M", "CW"), Instant.parse("2026-03-16T15:00:00Z"))

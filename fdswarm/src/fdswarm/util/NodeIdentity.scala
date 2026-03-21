@@ -21,16 +21,17 @@ import fdswarm.util.Ids.Id
 import io.circe.*
 import sttp.tapir.Schema
 
-import java.net.URI
+import java.net.{InetAddress, URI}
 import scala.util.matching.Regex
 
 /**
  * Represents the identity of a network node, encapsulating details such as host, port, and an instance ID.
  *
- * @constructor Creates a new NodeIdentity with a specified host, port, and instance ID.
- *              Default values for host and port are "44.0.0.1" and 42, respectively.
- * @param host       The hostname or IP address of the node.
+ * @param hostIp     The hostname or IP address of the node. This will default to "local".
+ *                   When received host will be replaced with the source of the UDP message.
+ *
  * @param port       The port number on which the node is reachable.
+ * @param hostName   The hostname of the node.
  * @param instanceId A unique identifier for the instance of the node.
  *
  *                   Extends the `Ordered` trait to allow comparison of `NodeIdentity` instances based on host and port.
@@ -42,20 +43,21 @@ import scala.util.matching.Regex
  *                   - `toURI`: Converts the node's information into a URI instance using the scheme "http".
  *                   - `compare`: Compares two `NodeIdentity` instances first by host, then by port.
  */
-case class NodeIdentity(host: String = "local",
-                        port: Int = 42,
-						hostName:String,
-                        instanceId: Id = "") extends Ordered[NodeIdentity]:
+case class NodeIdentity(hostIp: String = "local", port: Int = 42, hostName: String, instanceId: Id = "") extends Ordered[NodeIdentity]:
+  lazy val short: String =
+    hostIp.split('.').last
+  /**
+   * String representation.
+   * This is the complement to the [[NodeIdentity.apply(s:String)]] method.
+   */
   override val toString: String =
-    f"$host:$port_$instanceId"
-	
-  val hostAndPort: String = s"$host:$port"
-  
-  val udpHeaderPiece:String=
-  	s"$port_${instanceId}_$hostName"
-	
-  lazy val short:String =
-    host.split('.').last
+    f"${hostIp}_${port}_${instanceId}_$hostName"
+  /**
+   * UDP header piece is used to identify the node.
+   * This gets put into the [[fdswarm.replication.UDPHeader]].
+   */
+  val udpHeaderPiece: String =
+    s"${port}_${instanceId}_$hostName"
 
   def toURL: String =
     toURI.toString
@@ -64,7 +66,7 @@ case class NodeIdentity(host: String = "local",
     new URI(
       "http", // scheme
       instanceId, // userInfo
-      host,
+      hostIp,
       port,
       null, // path
       null, // query
@@ -80,11 +82,12 @@ case class NodeIdentity(host: String = "local",
     this.instanceId.compareTo(that.instanceId)
 
 object NodeIdentity:
+  val testNodeIdentity = NodeIdentity("44.0.0.1", 42, "testHost", "=id")
+  private val regx = """([^:]+)_(\d+)_(.{3})_(.*)""".r
+  private val regxUdp = """(\d+)_(.{3})_(.*)""".r
 
-  def fromURI(uri: URI): NodeIdentity =
-    NodeIdentity(host = uri.getHost, port = uri.getPort, instanceId = uri.getUserInfo)
-
-  private val regx = """^(localhost|[0-9.]+):(\d{1,5})-(.*)$""".r
+  def apply(port: Int, hostName: String): NodeIdentity =
+    NodeIdentity(hostName, port, "")
 
   given Encoder[NodeIdentity] = Encoder.encodeString.contramap(_.toString)
   given Decoder[NodeIdentity] = Decoder.decodeString.map(NodeIdentity.apply)
@@ -92,16 +95,31 @@ object NodeIdentity:
   given KeyDecoder[NodeIdentity] = KeyDecoder.instance(s => Some(NodeIdentity(s)))
   given Schema[NodeIdentity] = Schema.string
 
-  def apply(sourceHost:String, udpPiece:String)=
-  //todo
+  /**
+   *
+   * @param address  from packet.getAddress as received from UDP.
+   * @param udpPiece from the [[udpPiece]].
+   */
+  def fromUdpHeader(address: InetAddress, udpPiece: String) =
+    udpPiece match
+      case regxUdp(port, hostName, instanceId) =>
+        NodeIdentity(hostIp = address.getHostAddress,
+          port = port.toInt,
+          hostName = instanceId,
+          instanceId = hostName)
+      case _ =>
+        throw new IllegalArgumentException(s"Invalid UdpPiece in header: $udpPiece")
+
+/**
+ *
+ * @param s from [[toString]]
+ * @return
+ */
   def apply(s: String): NodeIdentity =
       s match
-        case "local" => NodeIdentity()
-        case regx(host, sPort, instanceId) =>
-          NodeIdentity(host, sPort.toInt, instanceId)
+        case regx(hostIp, sPort, hostName, instanceId) =>
+          NodeIdentity(hostIp = hostIp, port = sPort.toInt, hostName = instanceId, instanceId = hostName)
         case _ =>
-          // Try to parse just host:port for backward compatibility if needed, 
-          // but based on toString it should always have -instanceId
           throw new IllegalArgumentException(s"Invalid NodeIdentity: $s")
 
 import io.circe.{Decoder, Encoder}

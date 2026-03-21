@@ -31,13 +31,12 @@ class QsoCirceTest extends FunSuite:
 
   test("Qso round trip via Circe"):
     val station = Station(operator = Callsign("WA9NNN"), rig = "FT-891", antenna = "End Fed")
-    val qsoMetadata = QsoMetadata(station = station, node = NodeIdentity(name =), contest = ContestType.WFD)
     val bandMode = BandMode("40M", "CW")
     val qso = Qso(
       callsign = Callsign("K1ABC"),
       exchange = Exchange(FdClass("1A"), "CT"),
       bandMode = bandMode,
-      qsoMetadata = qsoMetadata,
+      qsoMetadata = fdswarm.model.QsoMetadata.testQsoMetadata,
       stamp = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS),
       uuid = "unique-id-123"
     )
@@ -79,7 +78,7 @@ class QsoCirceTest extends FunSuite:
 
   test("QsoMetadata Circe round trip"):
     val station = Station(operator = Callsign("N9VTB"), rig = "IC-7300", antenna = "Dipole")
-    val metadata = QsoMetadata(station = station, node = NodeIdentity(name =), contest = ContestType.ARRL)
+    val metadata = fdswarm.model.QsoMetadata.testQsoMetadata
     val json = metadata.asJson.noSpaces
     val decoded = decode[QsoMetadata](json).getOrElse(fail("failed to decode"))
     assertEquals(decoded, metadata)
