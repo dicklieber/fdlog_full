@@ -42,12 +42,18 @@ import scala.util.matching.Regex
  *                   - `toURI`: Converts the node's information into a URI instance using the scheme "http".
  *                   - `compare`: Compares two `NodeIdentity` instances first by host, then by port.
  */
-case class NodeIdentity(host: String = "44.0.0.1",
+case class NodeIdentity(host: String = "local",
                         port: Int = 42,
+						hostName:String,
                         instanceId: Id = "") extends Ordered[NodeIdentity]:
   override val toString: String =
-    f"$host:$port%d-$instanceId"
+    f"$host:$port_$instanceId"
+	
   val hostAndPort: String = s"$host:$port"
+  
+  val udpHeaderPiece:String=
+  	s"$port_${instanceId}_$hostName"
+	
   lazy val short:String =
     host.split('.').last
 
@@ -86,6 +92,8 @@ object NodeIdentity:
   given KeyDecoder[NodeIdentity] = KeyDecoder.instance(s => Some(NodeIdentity(s)))
   given Schema[NodeIdentity] = Schema.string
 
+  def apply(sourceHost:String, udpPiece:String)=
+  //todo
   def apply(s: String): NodeIdentity =
       s match
         case "local" => NodeIdentity()
