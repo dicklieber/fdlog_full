@@ -46,7 +46,7 @@ class CallEndpoint @jakarta.inject.Inject()(reporter: Reporter[IO]) extends Lazy
     val baseUri = Uri(
       scheme = Some(Uri.Scheme.http),
       authority = Some(Uri.Authority(
-        host = Uri.RegName(nodeIdentity.host),
+        host = Uri.RegName(nodeIdentity.hostIp),
         port = Some(nodeIdentity.port)
       ))
     )

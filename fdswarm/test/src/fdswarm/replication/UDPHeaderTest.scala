@@ -19,7 +19,7 @@
 package fdswarm.replication
 
 import com.organization.BuildInfo
-import fdswarm.util.PortAndInstance
+import fdswarm.util.{NodeIdentity, NodeIdentityTest, PortAndInstance}
 import munit.FunSuite
 
 import scala.util.Success
@@ -32,16 +32,16 @@ import java.net.InetAddress
 class UDPHeaderTest extends FunSuite:
 
   test("UDPHeader generates correct Status header"):
-    val pi = PortAndInstance(8080, "test-instance")
-    val bytes = UDPHeader(Service.Status, pi)
-    val expected = s"FDSWARM|Status|$pi|${BuildInfo.dataVersion}|\n".getBytes("UTF-8")
+    val nodeIdentity = NodeIdentity.testNodeIdentity
+    val bytes = UDPHeader(Service.Status, nodeIdentity, Array.emptyByteArray)
+    val expected = s"FDSWARM|Status|${nodeIdentity.udpHeaderPiece}|${BuildInfo.dataVersion}|\n".getBytes("UTF-8")
     assert(bytes.sameElements(expected))
 
   test("UDPHeader generates correct header with payload"):
-    val pi = PortAndInstance(8080, "test-instance")
+    val nodeIdentity = NodeIdentity.testNodeIdentity
     val payload = "Hello World".getBytes("UTF-8")
-    val bytes = UDPHeader(Service.Status, pi, payload)
-    val headerPart = s"FDSWARM|Status|$pi|${BuildInfo.dataVersion}|\n".getBytes("UTF-8")
+    val bytes = UDPHeader(Service.Status, nodeIdentity, payload)
+    val headerPart = s"FDSWARM|Status|${nodeIdentity.udpHeaderPiece}|${BuildInfo.dataVersion}|\n".getBytes("UTF-8")
     val expected = new Array[Byte](headerPart.length + payload.length)
     System.arraycopy(headerPart, 0, expected, 0, headerPart.length)
     System.arraycopy(payload, 0, expected, headerPart.length, payload.length)
@@ -59,7 +59,7 @@ class UDPHeaderTest extends FunSuite:
     val result = UDPHeader.parse(packet).get
     assertEquals(result.service, Service.Status)
     assertEquals(result.nodeIdentity.instanceId, instance)
-    assertEquals(result.nodeIdentity.host, "192.168.1.100")
+    assertEquals(result.nodeIdentity.hostIp, "192.168.1.100")
     assertEquals(result.nodeIdentity.port, port)
     assertEquals(new String(result.payload, "UTF-8"), jsonPayload)
 

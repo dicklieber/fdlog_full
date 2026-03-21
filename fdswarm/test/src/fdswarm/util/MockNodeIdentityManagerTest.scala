@@ -22,7 +22,7 @@ import munit.FunSuite
 
 class MockNodeIdentityManagerTest extends FunSuite:
   test("MockNodeIdentityManager should supply correct nodeIdentity"):
-    val ni = NodeIdentity("1.2.3.4", 9999, "my-instance",)
+    val ni = NodeIdentity("1.2.3.4", 9999, "my-instance", "sss")
     val mock = new MockNodeIdentityManager(ni)
     
     assertEquals(mock.nodeIdentity, ni)
@@ -33,5 +33,5 @@ class MockNodeIdentityManagerTest extends FunSuite:
 
   test("MockNodeIdentityManager.apply should work"):
     val mock = MockNodeIdentityManager("5.6.7.8", 1234)
-    assertEquals(mock.nodeIdentity.host, "5.6.7.8")
+    assertEquals(mock.nodeIdentity.hostIp, "5.6.7.8")
     assertEquals(mock.nodeIdentity.port, 1234)

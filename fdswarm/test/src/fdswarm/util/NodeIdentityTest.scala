@@ -22,24 +22,31 @@ import munit.FunSuite
 import io.circe.syntax.*
 import io.circe.parser.decode
 
+import java.net.InetAddress
+
 class NodeIdentityTest extends FunSuite:
 
   test("string round trip"):
-    val nodeIdentity = NodeIdentity(name =)
+    val nodeIdentity = NodeIdentity.testNodeIdentity
     val string = nodeIdentity.toString
     val backAgain = NodeIdentity(string)
     assertEquals( backAgain, nodeIdentity)
 
+  test("udpPiece round trip"):
+    val nodeIdentity = NodeIdentity.testNodeIdentity
+    val udpPiece = nodeIdentity.udpHeaderPiece
+    // The [[UDPHeder]] mechanism doens't send the IP address in the UDPHeader. Instead, it uses the IP address of rempote socket. 
+    val inetAddress = InetAddress.getByName(nodeIdentity.hostIp)
+    val backAgain = NodeIdentity.fromUdpHeader(inetAddress, udpPiece)
+    assertEquals( backAgain, nodeIdentity)
+
   test("circe round trip"):
-    val nodeIdentity = NodeIdentity(name =)
+    val nodeIdentity = NodeIdentity.testNodeIdentity
     val json = nodeIdentity.asJson.noSpaces
     val decoded = decode[NodeIdentity](json)
       .getOrElse(fail("failed to decode"))
     assertEquals(decoded, nodeIdentity)
 
-  test("handle legacy 'local' string"):
-    val nodeIdentity = NodeIdentity("local")
-    assertEquals(nodeIdentity, NodeIdentity(name =))
 
   test("PortAndInstance circe round trip"):
     val portAndInstance = PortAndInstance(8080, "test-instance")

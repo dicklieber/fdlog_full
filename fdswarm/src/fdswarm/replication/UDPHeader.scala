@@ -19,11 +19,10 @@
 package fdswarm.replication
 
 import com.organization.BuildInfo
-import fdswarm.util.Ids.Id
-import fdswarm.util.{Ids, NodeIdentity, PortAndInstance}
+import fdswarm.util.NodeIdentity
 import org.slf4j.LoggerFactory
 
-import java.net.DatagramPacket
+import java.net.{DatagramPacket, InetAddress}
 import scala.util.Try
 
 case class UDPHeaderData(service: Service, nodeIdentity: NodeIdentity, payload: Array[Byte])
@@ -53,12 +52,12 @@ object UDPHeader:
    * e.g. "fdswarm|Status|10.10.10.10:8078(s123232131)|0"
    *
    * @param service      the service type, represented as an instance of the `Service` enum (e.g., Status or QSO).
-   * @param portAndInstance just the port and instanceID ultimately will get the host from the [[DatagramPacket]].
+   * @param nodeIdentity for the udpPiece.
    * @param payload      optional byte array representing additional data to append after the header, defaulting to an empty array.
    * @return a byte array combining the formatted header and the optional payload.
    */
-  def apply(service: Service, portAndInstance: PortAndInstance, payload: Array[Byte] = Array.emptyByteArray): Array[Byte] =
-    val header = s"FDSWARM|$service|$portAndInstance|${BuildInfo.dataVersion}|\n"
+  def apply(service: Service, nodeIdentity: NodeIdentity, payload: Array[Byte] = Array.emptyByteArray): Array[Byte] =
+    val header = s"FDSWARM|$service|${nodeIdentity.udpHeaderPiece}|${BuildInfo.dataVersion}|\n"
     val headerBytes: Array[Byte] = header.getBytes("UTF-8")
     val result: Array[Byte] = headerBytes ++ payload
     result
@@ -81,12 +80,11 @@ object UDPHeader:
       val payloadBytes = data.drop(newlineIndex + 1) // after newline
 
       headerStr match
-        case headerRegx(sService, sPortAndInstance, sDataVersion) =>
+        case headerRegx(sService, udpPiece, sDataVersion) =>
           if sDataVersion != BuildInfo.dataVersion then
             throw new IllegalArgumentException(s"Data version mismatch: expected ${BuildInfo.dataVersion}, got $sDataVersion")
-          val hostAddress = packet.getAddress.getHostAddress
-          val portAndInstance: PortAndInstance = PortAndInstance.fromString(sPortAndInstance)
-          val nodeIdentity= NodeIdentity(hostAddress, portAndInstance.port, portAndInstance.instanceId,)
+          val address: InetAddress = packet.getAddress
+          val nodeIdentity= NodeIdentity.fromUdpHeader(address, udpPiece)
           
           Some(UDPHeaderData(Service.valueOf(sService), nodeIdentity, payloadBytes))
         case _ =>

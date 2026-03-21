@@ -172,7 +172,7 @@ class MulticastTransport @Inject() (
     send(Service.QSO, data)
 
   def send(service: Service, data: Array[Byte]): Unit =
-    val packetBytes = UDPHeader(service, nodeIdentityManager.portAndInstance, data)
+    val packetBytes = UDPHeader(service, nodeIdentityManager.nodeIdentity, data)
     lastPacketBytes = packetBytes.length
     val packet =
       new DatagramPacket(packetBytes, packetBytes.length, group, port)

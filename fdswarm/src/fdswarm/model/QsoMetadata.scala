@@ -40,5 +40,5 @@ case class QsoMetadata(station: Station,
 
 object QsoMetadata:
   val testQsoMetadata: QsoMetadata = QsoMetadata(station = Station(),
-    node = NodeIdentity("44.0.0.1", "XYZZY", 8888, "qO-"),
+    node = NodeIdentity(hostIp = "44.0.0.1", port = 8888, hostName = "testHost", instanceId = "qO-"),
     contest = ContestType.WFD)

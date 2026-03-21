@@ -48,7 +48,7 @@ class ContestDefinitionDiscoveryTest extends FunSuite:
       lastSentService = Some(service)
       if (service == Service.DiscReq) {
         // Simulate a response from another node
-        val otherNode = NodeIdentity("10.0.0.1", 8081, "other-instance",)
+        val otherNode = NodeIdentity("10.0.0.1", 8081, "other-instance")
         val config = ContestStation(
           ContestConfig(
             ContestType.WFD,
@@ -82,5 +82,5 @@ class ContestDefinitionDiscoveryTest extends FunSuite:
     assertEquals(mockTransport.lastSentService, Some(Service.DiscReq))
     assertEquals(results.size, 1)
     val (node, config) = results.head
-    assertEquals(node.host, "10.0.0.1")
+    assertEquals(node.hostIp, "10.0.0.1")
     assertEquals(config.config.ourCallsign, Callsign("W1AW"))

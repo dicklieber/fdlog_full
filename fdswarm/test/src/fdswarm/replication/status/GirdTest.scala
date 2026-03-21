@@ -38,8 +38,8 @@ class GirdTest extends FunSuite:
     } catch {
       case _: Throwable => // ignore
     }
-    val ni1 = NodeIdentity("192.168.1.1", 8080, "node1",)
-    val ni2 = NodeIdentity("192.168.1.2", 8080, "node2",)
+    val ni1 = NodeIdentity("192.168.1.1", 8080, "node1", "111")
+    val ni2 = NodeIdentity("192.168.1.2", 8080, "node2", "222")
 
     val hour1 = FdHour(10, 1)
     val hour2 = FdHour(10, 2)
@@ -91,7 +91,7 @@ class GirdTest extends FunSuite:
     // assertEquals(gird.bodyCounts(1)(1).text.value, "0")
 
   test("Gird.populate should add header rows"):
-    val ni1 = NodeIdentity("192.168.1.1", 8080, "node1",)
+    val ni1 = NodeIdentity("192.168.1.1", 8080, "node1", "111")
     val nd1 = ReceivedNodeStatus(StatusMessage(Nil, dummyBno), ni1)
 
     val builder = new GridBuilder()
@@ -145,7 +145,7 @@ class GirdTest extends FunSuite:
       case _ => false
     })
     // Check "Our Node" when it matches
-    val niOur = NodeIdentity("127.0.0.1", 8080, "our-node",)
+    val niOur = NodeIdentity("127.0.0.1", 8080, "our-node", "111")
     val ndOur = ReceivedNodeStatus(StatusMessage(Nil, dummyBno), niOur)
     val builder2 = new GridBuilder()
     val gird2 = SwarmStatusGrid(Seq(ndOur), nowProperty, ageStyleService, "our-node", swarmStatusApi)

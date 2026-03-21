@@ -30,13 +30,12 @@ class CabrilloExporterTest extends FunSuite:
 
   test("exportQsos creates a valid Cabrillo format"):
     val station = Station(operator = Callsign("W1AW"), rig = "1A", antenna = "Wire")
-    val qsoMetadata = QsoMetadata(station = station, node = NodeIdentity(name =), contest = ContestType.WFD)
     
     val qso1 = Qso(
       callsign = Callsign("K1ABC"),
       exchange = Exchange(FdClass("1O"), "CT"),
       bandMode = BandMode("20m CW"),
-      qsoMetadata = qsoMetadata,
+      qsoMetadata = fdswarm.model.QsoMetadata.testQsoMetadata,
       stamp = Instant.parse("2026-02-25T14:00:00Z")
     )
 
