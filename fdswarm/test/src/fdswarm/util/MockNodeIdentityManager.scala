@@ -27,11 +27,10 @@ class MockNodeIdentityManager(val mockNodeIdentity: NodeIdentity, instanceIdMana
   override def setIp(newIp: AnIpAddress): Unit = ()
 
   override def hostPort: String = s"${mockNodeIdentity.hostIp}:${mockNodeIdentity.port}"
-  override def nodeIdentity: NodeIdentity = mockNodeIdentity
-  override def portAndInstance: PortAndInstance = PortAndInstance(mockNodeIdentity.port, mockNodeIdentity.instanceId)
+  override def ourNodeIdentity: NodeIdentity = mockNodeIdentity
   override def isUs(nodeIdentity: NodeIdentity): Boolean =
     nodeIdentity.instanceId == mockNodeIdentity.instanceId
 
 object MockNodeIdentityManager:
   def apply(host: String = "127.0.0.1", port: Int = 8080): MockNodeIdentityManager =
-    new MockNodeIdentityManager(mockNodeIdentity = NodeIdentity(host, port, hostName = "ccc"))
+    new MockNodeIdentityManager(mockNodeIdentity = NodeIdentity(host, port, hostName = "ccc", instanceId = "iii"))

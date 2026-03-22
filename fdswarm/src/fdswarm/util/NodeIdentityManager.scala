@@ -50,15 +50,18 @@ class NodeIdentityManager @Inject()(@Named("fdswarm.httpPort") httpPort: Int,
     logger.info(s"ourIp updated to: $ourIp")
 
   // Override port with PORT env var if present
-  private val port = sys.env.get("PORT").map { sPort =>
+  val port: Int = sys.env.get("PORT").map { sPort =>
     sPort.toInt
   }.getOrElse(httpPort)
 
   def hostPort: String = s"${currentIp.ip}:$port"
-  def nodeIdentity: NodeIdentity = NodeIdentity(currentIp.ip, port, instanceIdManager.ourInstanceId)
-  def portAndInstance: PortAndInstance = PortAndInstance(port, instanceIdManager.ourInstanceId)
+  val ourHostName: String = java.net.InetAddress.getLocalHost.getHostName.split('.').head
 
-  def getHostName: String = java.net.InetAddress.getLocalHost.getHostName.split('.').head
+  def ourNodeIdentity: NodeIdentity = NodeIdentity(
+    hostIp = currentIp.ip,
+    port = port,
+    hostName = ourHostName,
+    instanceId = instanceIdManager.ourInstanceId)
 
 
 

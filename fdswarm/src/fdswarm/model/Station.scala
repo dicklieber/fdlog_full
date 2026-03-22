@@ -21,12 +21,13 @@ import fdswarm.fx.bands.HamBand
 import fdswarm.fx.caseForm.ChoiceField
 import fdswarm.model.BandMode.*
 import io.circe.Codec
+import sttp.tapir.Schema
 
 /**
  * Details about this station.
  *
  */
-final case class Station(operator: Callsign = Callsign(""), rig: String = "", antenna: String = "") derives  Codec.AsObject, sttp.tapir.Schema
+final case class Station(operator: Callsign = Callsign(""), rig: String = "", antenna: String = "") derives  Codec.AsObject, Schema
 //
 //object Station:
 //

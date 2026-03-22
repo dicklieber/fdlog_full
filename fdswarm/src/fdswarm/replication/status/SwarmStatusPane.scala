@@ -133,7 +133,7 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
       }
     }
 
-    val gird: SwarmStatusGrid = SwarmStatusGrid(receivedNodeStatuses, nowProperty, ageStyleService, nodeIdentityManager.nodeIdentity.instanceId, swarmStatusApi)
+    val gird: SwarmStatusGrid = SwarmStatusGrid(receivedNodeStatuses, nowProperty, ageStyleService, nodeIdentityManager.ourNodeIdentity.instanceId, swarmStatusApi)
     gird.populate(builder, rowStyleCallback)
     val gridPane = builder.result
     VBox.setVgrow(gridPane, Priority.Always)

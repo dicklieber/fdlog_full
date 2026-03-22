@@ -54,7 +54,7 @@ class ApiServer @Inject()(
       "/" -> (webRoutes.routes <+> tapirRoutes)
     ).orNotFound
 
-    val port = nodeIdentityManager.portAndInstance.port
+    val port = nodeIdentityManager.port
     
     logger.info(s"Starting API server on port $port")
     

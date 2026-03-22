@@ -136,7 +136,7 @@ class BroadcastTransport @Inject() (
   def send(service: Service, data: Array[Byte]): Unit =
     try
       logger.trace("Sending UDP packet to 255.255.255.255:{} bytes: {}", service, data.length)
-      val packetBytes = UDPHeader(service, nodeIdentityManager.nodeIdentity, data)
+      val packetBytes = UDPHeader(service, nodeIdentityManager.ourNodeIdentity, data)
       lastPacketBytes = packetBytes.length
       val broadcastAddr = InetAddress.getByName("255.255.255.255")
       val packet =

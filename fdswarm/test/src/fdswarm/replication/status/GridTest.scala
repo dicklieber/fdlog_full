@@ -28,7 +28,7 @@ import munit.FunSuite
 import java.time.Instant
 import scala.jdk.CollectionConverters.*
 
-class GirdTest extends FunSuite:
+class GridTest extends FunSuite:
   private val dummyBno = BandModeOperator(Callsign("WA9NNN"), BandMode("40M", "CW"), Instant.parse("2026-03-16T20:11:04Z"))
 
   test("Gird should create a 2D array of IntLabels"):
@@ -38,8 +38,8 @@ class GirdTest extends FunSuite:
     } catch {
       case _: Throwable => // ignore
     }
-    val ni1 = NodeIdentity("192.168.1.1", 8080, "node1", "111")
-    val ni2 = NodeIdentity("192.168.1.2", 8080, "node2", "222")
+    val ni1 = NodeIdentity("192.168.1.1", 8080, "111", "node1")
+    val ni2 = NodeIdentity("192.168.1.2", 8080, "222", "node2")
 
     val hour1 = FdHour(10, 1)
     val hour2 = FdHour(10, 2)
@@ -91,7 +91,7 @@ class GirdTest extends FunSuite:
     // assertEquals(gird.bodyCounts(1)(1).text.value, "0")
 
   test("Gird.populate should add header rows"):
-    val ni1 = NodeIdentity("192.168.1.1", 8080, "node1", "111")
+    val ni1 = NodeIdentity("192.168.1.1", 8080, "111", "node1")
     val nd1 = ReceivedNodeStatus(StatusMessage(Nil, dummyBno), ni1)
 
     val builder = new GridBuilder()
@@ -114,9 +114,9 @@ class GirdTest extends FunSuite:
       override def refresh(): Unit = ()
       override def remove(nodeIdentity: NodeIdentity): Unit = ()
     }
-    val gird = SwarmStatusGrid(Seq(nd1), nowProperty, ageStyleService, "some-id", swarmStatusApi)
+    val grid = SwarmStatusGrid(Seq(nd1), nowProperty, ageStyleService, "some-id", swarmStatusApi)
 
-    gird.populate(builder, _ => "test-style")
+    grid.populate(builder, _ => "test-style")
     
     val gridPane = builder.result
     // 4 headers + 0 hours = 4 rows
@@ -145,7 +145,7 @@ class GirdTest extends FunSuite:
       case _ => false
     })
     // Check "Our Node" when it matches
-    val niOur = NodeIdentity("127.0.0.1", 8080, "our-node", "111")
+    val niOur = NodeIdentity("127.0.0.1", 8080, "111", "our-node")
     val ndOur = ReceivedNodeStatus(StatusMessage(Nil, dummyBno), niOur)
     val builder2 = new GridBuilder()
     val gird2 = SwarmStatusGrid(Seq(ndOur), nowProperty, ageStyleService, "our-node", swarmStatusApi)
@@ -159,7 +159,6 @@ class GirdTest extends FunSuite:
     assert(ourNodeLabel.get.getStyleClass.contains("ourNode"))
     
     // Check font styles (now applied via CSS, so we check if the style class is present)
-    assert(ourNodeLabel.get.getStyleClass.contains("ourNode"))
 
     // Check host
     val allChildren = gridPane.getChildren.asScala.toList

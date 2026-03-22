@@ -162,7 +162,7 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
     grid.add(new Label("Data Files:"), 0, 6)
     grid.add(dataFilesNode, 1, 6)
     grid.add(new Label("Node:"), 0, 7)
-    grid.add(new Label(nodeIdentityManager.nodeIdentity.toString), 1, 7)
+    grid.add(new Label(nodeIdentityManager.ourNodeIdentity.toString), 1, 7)
     grid.add(new Label("Transport:"), 0, 8)
     grid.add(new Label(transport.mode), 1, 8)
 
@@ -285,7 +285,7 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
     grid.add(new Label(groupAddr), 1, 14)
 
     grid.add(new Label("UDP Instance ID:"), 0, 15)
-    grid.add(new Label(nodeIdentityManager.nodeIdentity.instanceId), 1, 15)
+    grid.add(new Label(nodeIdentityManager.ourNodeIdentity.instanceId), 1, 15)
 
     val startupInfoNode = startupInfo.info match {
       case None =>
@@ -340,12 +340,12 @@ class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
         sb.append(s"Scala Version: $scalaVersion\n")
         sb.append(s"Data Version: $dataVersion\n")
         sb.append(s"Data Directory: $dataPath\n")
-        sb.append(s"Host: ${nodeIdentityManager.nodeIdentity}\n")
+        sb.append(s"Host: ${nodeIdentityManager.ourNodeIdentity}\n")
         sb.append(s"Java Version: ${sys.props("java.version")}\n")
         sb.append(s"Java Home: ${sys.props("java.home")}\n")
         val groupAddr = if (config.hasPath("fdswarm.UDP.groupAddr")) config.getString("fdswarm.UDP.groupAddr") else "Not configured"
         sb.append(s"UDP Group Addr: $groupAddr\n")
-        sb.append(s"UDP Instance ID: ${nodeIdentityManager.nodeIdentity.instanceId}\n")
+        sb.append(s"UDP Instance ID: ${nodeIdentityManager.ourNodeIdentity.instanceId}\n")
         sb.append(s"StartupInfo: ${if (startupInfo.info.isEmpty) "Not Used" else "Used"}\n")
         val configStr = config.root().render(com.typesafe.config.ConfigRenderOptions.defaults().setOriginComments(false).setComments(true).setFormatted(true).setJson(false))
         sb.append(s"\n--- Application Config ---\n$configStr\n")
