@@ -37,7 +37,7 @@ class QsoCirceTest extends FunSuite:
       exchange = Exchange(FdClass("1A"), "CT"),
       bandMode = bandMode,
       qsoMetadata = fdswarm.model.QsoMetadata.testQsoMetadata,
-      stamp = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.SECONDS),
+      stamp = Instant.EPOCH.truncatedTo(java.time.temporal.ChronoUnit.SECONDS),
       uuid = "unique-id-123"
     )
 
@@ -54,11 +54,16 @@ class QsoCirceTest extends FunSuite:
                                |      "rig" : "",
                                |      "antenna" : ""
                                |    },
-                               |    "node" : "44.0.0.1_8888_qO-_testHost",
+                               |    "node" : {
+                               |      "hostIp" : "44.0.0.1",
+                               |      "port" : 8888,
+                               |      "hostName" : "testHost",
+                               |      "instanceId" : "qO-"
+                               |    },
                                |    "contest" : "WFD",
                                |    "v" : "0.0.0"
                                |  },
-                               |  "stamp" : "AAAAAGm_85Y",
+                               |  "stamp" : "AAAAAAAAAAA",
                                |  "uuid" : "unique-id-123"
                                |}""".stripMargin)
     // Decode back to Qso
