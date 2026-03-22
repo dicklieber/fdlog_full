@@ -32,6 +32,7 @@ final class ExportService @Inject()(
                                      directoryProvider: DirectoryProvider,
                                      contestManager: ContestManager,
                                      stationStore: StationStore,
+                                     val adifExporter: AdifExporter,
                                      cabrilloHeaderStore: CabrilloHeaderStore
                                    ):
 
@@ -47,7 +48,7 @@ final class ExportService @Inject()(
     format match
       case ExportFormat.ADIF =>
         val qsos = qsoStore.all
-        val adif = AdifExporter.exportQsos(qsos)
+        val adif = adifExporter.exportQsos(qsos)
         os.write.over(path, adif)
       case ExportFormat.CABRILLO =>
         val qsos = qsoStore.all
