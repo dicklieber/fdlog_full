@@ -51,14 +51,7 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
   }
   timeline.play()
 
-
-  //  private val container = new BorderPane()
-  //
-  //  val hours = fdHours.toSeq.sorted
-  //
-  //  def node: BorderPane = container
-
-  def clearData(): Unit =
+  private def clearData(): Unit =
     val alert = new Alert(Alert.AlertType.Confirmation) {
       title = "Clear Swarm Status"
       headerText = "Clear remote swarm status?"
