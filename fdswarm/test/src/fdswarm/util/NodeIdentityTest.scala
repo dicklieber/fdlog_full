@@ -42,17 +42,15 @@ class NodeIdentityTest extends FunSuite:
 
   test("circe round trip"):
     val nodeIdentity = NodeIdentity.testNodeIdentity
-    val json = nodeIdentity.asJson.noSpaces
-    val decoded = decode[NodeIdentity](json)
+    val sJson = nodeIdentity.asJson.spaces2
+    assertEquals(sJson, """{
+                         |  "hostIp" : "44.0.0.1",
+                         |  "port" : 42,
+                         |  "hostName" : "testHost",
+                         |  "instanceId" : "=id"
+                         |}""".stripMargin)
+    val decoded = decode[NodeIdentity](sJson)
       .getOrElse(fail("failed to decode"))
     assertEquals(decoded, nodeIdentity)
 
-
-  test("PortAndInstance circe round trip"):
-    val portAndInstance = PortAndInstance(8080, "test-instance")
-    val json = portAndInstance.asJson.noSpaces
-    println(json)
-    val decoded = decode[PortAndInstance](json)
-      .getOrElse(fail("failed to decode"))
-    assertEquals(decoded, portAndInstance)
 

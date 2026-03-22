@@ -25,7 +25,7 @@ import fdswarm.model.Qso
 import fdswarm.replication.status.SwarmStatus
 import fdswarm.store.ReplicationSupport
 import fdswarm.util.JavaTimeCirce.given
-import fdswarm.util.{NodeIdentity, NodeIdentityManager}
+import fdswarm.util.{InstanceIdManager, NodeIdentity, NodeIdentityManager}
 import fdswarm.StationManager
 import io.circe.parser.decode
 import io.circe.syntax.*
@@ -41,6 +41,7 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
                                   swarmStatus: SwarmStatus,
                                   contestManager: ContestManager,
                                   stationManager: StationManager,
+                                  instanceIdManager: InstanceIdManager,
                                   meterRegistry: MeterRegistry) extends LazyLogging:
   logger.debug("Starting NodeStatusHandler")
   private val statusCounter = meterRegistry.counter("fdswarm_received_status_total")
@@ -100,9 +101,9 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
                 logger.error(s"Failed to decode ContestConfig from RestartContest: $sJson", error)
           case Service.InstanceQuery =>
             val requestedInstanceId = new String(udpHeader.payload, "UTF-8")
-            if requestedInstanceId == nodeIdentityManager.portAndInstance.instanceId then
+            if requestedInstanceId == instanceIdManager.ourInstanceId then
               logger.debug(s"Received InstanceQuery for our instance: $requestedInstanceId")
-              val responsePayload = nodeIdentityManager.nodeIdentity.toString.getBytes("UTF-8")
+              val responsePayload = nodeIdentityManager.ourNodeIdentity.toString.getBytes("UTF-8")
               transport.send(Service.InstanceResponse, responsePayload)
           case Service.InstanceResponse =>
             logger.trace(s"Received InstanceResponse from ${udpHeader.nodeIdentity}")

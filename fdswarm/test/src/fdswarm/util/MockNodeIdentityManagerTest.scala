@@ -25,13 +25,11 @@ class MockNodeIdentityManagerTest extends FunSuite:
     val ni = NodeIdentity("1.2.3.4", 9999, "my-instance", "sss")
     val mock = new MockNodeIdentityManager(ni)
     
-    assertEquals(mock.nodeIdentity, ni)
+    assertEquals(mock.ourNodeIdentity, ni)
     assertEquals(mock.currentIp.ip, "1.2.3.4")
-    assertEquals(mock.portAndInstance.port, 9999)
-    assertEquals(mock.portAndInstance.instanceId, "my-instance")
     assertEquals(mock.hostPort, "1.2.3.4:9999")
 
   test("MockNodeIdentityManager.apply should work"):
     val mock = MockNodeIdentityManager("5.6.7.8", 1234)
-    assertEquals(mock.nodeIdentity.hostIp, "5.6.7.8")
-    assertEquals(mock.nodeIdentity.port, 1234)
+    assertEquals(mock.ourNodeIdentity.hostIp, "5.6.7.8")
+    assertEquals(mock.ourNodeIdentity.port, 1234)

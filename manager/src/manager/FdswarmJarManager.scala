@@ -20,10 +20,19 @@ class FdswarmJarManager(
     else
       None
 
+  private def findMillHome(current: os.Path = os.pwd): os.Path =
+    if os.exists(current / "build.mill") then
+      current
+    else if current == os.root then
+      sys.error("Could not find mill project root with build.mill")
+    else
+      findMillHome(current / os.up)
+
   def buildFdswarmJar(): Unit =
+    val millHome = findMillHome()
     val result = os.proc("./mill", "fdswarm.assembly")
       .call(
-        cwd = os.pwd,
+        cwd = millHome,
         env = Map("MILL_OUTPUT_DIR" -> outDir.toString),
         check = false
       )

@@ -215,7 +215,7 @@ class WebRoutes @Inject()(
             if callsign.nonEmpty && contestClass.nonEmpty && section.nonEmpty then
               val metadata = QsoMetadata(
                 station = ws.station,
-                node = nodeIdentityManager.nodeIdentity,
+                node = nodeIdentityManager.ourNodeIdentity,
                 contest = contestManager.config.contestType
               )
               val qso = Qso(

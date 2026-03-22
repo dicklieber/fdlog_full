@@ -88,7 +88,7 @@ class SwarmStatus @Inject() (
     if swarmStatusPane != null then
       swarmStatusPane.update(nodeMap.values.toSeq)
 
-  def ourNodeIdentity: NodeIdentity = nodeIdentityManager.nodeIdentity
+  def ourNodeIdentity: NodeIdentity = nodeIdentityManager.ourNodeIdentity
   def clear(): Unit =
     val localStatus = nodeMap.get(ourNodeIdentity)
     nodeMap.clear()

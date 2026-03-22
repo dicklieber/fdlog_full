@@ -21,11 +21,10 @@ import fdswarm.util.Ids.Id
 import io.circe.*
 import sttp.tapir.Schema
 
-import java.net.{InetAddress, URI}
-import scala.util.matching.Regex
+import java.net.InetAddress
 
 /**
- * Represents the identity of a network node, encapsulating details such as host, port, and an instance ID.
+ * Represents the identity of a network node, encapsulating details such as hostip, hostName, port, and an instance ID.
  *
  * @param hostIp     The hostname or IP address of the node. This will default to "local".
  *                   When received host will be replaced with the source of the UDP message.
@@ -43,9 +42,8 @@ import scala.util.matching.Regex
  *                   - `toURI`: Converts the node's information into a URI instance using the scheme "http".
  *                   - `compare`: Compares two `NodeIdentity` instances first by host, then by port.
  */
-case class NodeIdentity(hostIp: String = "local", port: Int = 42, hostName: String, instanceId: Id = "") extends Ordered[NodeIdentity]:
-  lazy val short: String =
-    hostIp.split('.').last
+case class NodeIdentity(hostIp: String, port: Int, hostName: String, instanceId: Id)
+  extends Ordered[NodeIdentity] derives Codec.AsObject, Schema:
   /**
    * String representation.
    * This is the complement to the [[NodeIdentity.apply(s:String)]] method.
@@ -59,48 +57,31 @@ case class NodeIdentity(hostIp: String = "local", port: Int = 42, hostName: Stri
   val udpHeaderPiece: String =
     s"${port}_${instanceId}_$hostName"
 
-  def toURL: String =
-    toURI.toString
 
-  def toURI: URI =
-    new URI(
-      "http", // scheme
-      instanceId, // userInfo
-      hostIp,
-      port,
-      null, // path
-      null, // query
-      null // fragment
-    )
-
-  /**
-   * Compares this NodeIdentity with another NodeIdentity based on instanceId..
-   * Order is arbitrary, but consistent.
-   *
-   */
   override def compare(that: NodeIdentity): Int =
-    this.instanceId.compareTo(that.instanceId)
+    this.hostName.compareTo(that.hostName)
+
+  override def equals(that: Any): Boolean = that match
+    case other: NodeIdentity => this.instanceId == other.instanceId
+    case _ => false
+
+  override def hashCode: Int = instanceId.hashCode
 
 object NodeIdentity:
-  val testNodeIdentity = NodeIdentity("44.0.0.1", 42, "testHost", "=id")
+  val testNodeIdentity = NodeIdentity(
+    hostIp = "44.0.0.1",
+    port = 42,
+    hostName = "testHost",
+    instanceId = "=id")
   private val regx = """([^:]+)_(\d+)_(.{3})_(.*)""".r
   private val regxUdp = """(\d+)_(.{3})_(.*)""".r
-
-  def apply(port: Int, hostName: String): NodeIdentity =
-    NodeIdentity(hostName, port, "")
-
-  given Encoder[NodeIdentity] = Encoder.encodeString.contramap(_.toString)
-  given Decoder[NodeIdentity] = Decoder.decodeString.map(NodeIdentity.apply)
-  given KeyEncoder[NodeIdentity] = KeyEncoder.encodeKeyString.contramap(_.toString)
-  given KeyDecoder[NodeIdentity] = KeyDecoder.instance(s => Some(NodeIdentity(s)))
-  given Schema[NodeIdentity] = Schema.string
 
   /**
    *
    * @param address  from packet.getAddress as received from UDP.
    * @param udpPiece from the [[udpPiece]].
    */
-  def fromUdpHeader(address: InetAddress, udpPiece: String) =
+  def fromUdpHeader(address: InetAddress, udpPiece: String): NodeIdentity =
     udpPiece match
       case regxUdp(port, hostName, instanceId) =>
         NodeIdentity(hostIp = address.getHostAddress,
@@ -122,42 +103,5 @@ object NodeIdentity:
         case _ =>
           throw new IllegalArgumentException(s"Invalid NodeIdentity: $s")
 
-import io.circe.{Decoder, Encoder}
-
-/**
- * Represents a combination of a numeric port and an instance identifier.
- *
- * @param port       The numeric port associated with the instance.
- * @param instanceId The unique identifier for the instance.
- *
- *                   The `toString` method provides a string representation
- *                   in the format `port-instanceId`.
- */
-case class PortAndInstance(port: Int, instanceId: Id):
-  override def toString: String =
-    s"$port-$instanceId"
-
-object PortAndInstance:
-  private val Pattern: Regex = """^(\d+)-(.+)$""".r
-
-  /** Parse and throw if invalid (useful when input is trusted). */
-  def fromString(s: String): PortAndInstance =
-    parse(s).fold(err => throw new IllegalArgumentException(err), identity)
 
 
-  def parse(s: String): Either[String, PortAndInstance] =
-    s match
-      case Pattern(portStr, idStr) =>
-        portStr.toIntOption match
-          case Some(port) =>
-            val portAndInstance = PortAndInstance(port, idStr)
-            Right(portAndInstance)
-          case None       => Left(s"Invalid port: $portStr")
-      case _ =>
-        Left(s"Invalid PortAndInstance format: $s")
-
-  given Encoder[PortAndInstance] =
-    Encoder.encodeString.contramap(_.toString)
-
-  given Decoder[PortAndInstance] =
-    Decoder.decodeString.emap(s => parse(s))

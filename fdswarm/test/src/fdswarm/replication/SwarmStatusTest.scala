@@ -81,7 +81,7 @@ class SwarmStatusTest extends FunSuite:
     val bandModeBuilder = new BandModeBuilder(bandCatalog, modeCatalog)
     val selectedBandModeStore = new SelectedBandModeManager(testDir, bandModeBuilder, MockStartupInfo)
     val localNi = NodeIdentity("127.0.0.1", 8080, "local-instance", "xxx")
-    val remoteNi = NodeIdentity("192.168.1.100", 8080, "remote-instance", "xxx")
+    val remoteNi = NodeIdentity("192.168.1.100", 8080, "remote-instance", "yyy")
     val mockNodeIdentityManager = new MockNodeIdentityManager(localNi)
     val swarmStatus = new SwarmStatus(testDir, mockNodeIdentityManager, stationManager, selectedBandModeStore, null)
 
