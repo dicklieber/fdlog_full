@@ -10,6 +10,8 @@ import java.net.*
 import java.util.concurrent.LinkedBlockingQueue
 import scala.compiletime.uninitialized
 import scala.jdk.CollectionConverters.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 
 @Singleton
 class MulticastTransport @Inject() (
@@ -22,15 +24,38 @@ class MulticastTransport @Inject() (
   logger.debug("Starting MulticastTransport on {}:{}", groupAddr, port)
 
   override val mode: String = "Multicast"
-  val queue = new LinkedBlockingQueue[UDPHeaderData]()
-  private val listeners = new java.util.concurrent.CopyOnWriteArrayList[UDPHeaderData => Unit]()
+  private val queues: ConcurrentHashMap[Service, MyQueue] = new ConcurrentHashMap()
 
   private val sendCounter = meterRegistry.counter("fdswarm_sent_packets_total", "mode", mode)
   private var lastPacketBytes: Int = 0
   meterRegistry.gauge("fdswarm_sent_packet_bytes", this, (mt: MulticastTransport) => mt.lastPacketBytes.toDouble)
 
-  def addListener(listener: UDPHeaderData => Unit): Unit = listeners.add(listener)
-  def removeListener(listener: UDPHeaderData => Unit): Unit = listeners.remove(listener)
+  private class MyQueue(val service: Service) extends LinkedBlockingQueue[UDPHeaderData]:
+    private val inner = new LinkedBlockingQueue[UDPHeaderData]()
+    private val active = new AtomicBoolean(true)
+
+    def stop(): Unit = active.set(false)
+
+    override def offer(e: UDPHeaderData): Boolean =
+      if active.get then inner.offer(e) else false
+
+    override def poll(): UDPHeaderData =
+      if active.get then inner.poll() else
+        throw new IllegalStateException(s"Queue for $service stopped")
+
+    override def take(): UDPHeaderData =
+      if active.get then inner.take() else
+        throw new IllegalStateException(s"Queue for $service stopped")
+
+    override def peek(): UDPHeaderData =
+      if active.get then inner.peek() else null.asInstanceOf[UDPHeaderData]
+
+    override def size: Int =
+      if active.get then inner.size else 0
+
+    override def isEmpty: Boolean =
+      !active.get || inner.isEmpty()
+
 
   private val group = InetAddress.getByName(groupAddr)
   private val socketAddress = new InetSocketAddress(group, port)
@@ -120,8 +145,8 @@ class MulticastTransport @Inject() (
               if nodeIdentityManager.isUs(udpHeader.nodeIdentity) then
                 logger.trace(s"Ignoring our own loopback message")
               else
-                listeners.forEach(_.apply(udpHeader))
-                queue.offer(udpHeader)
+                val q = queues.get(udpHeader.service)
+                if (q != null) q.offer(udpHeader)
             catch
               case e: IllegalArgumentException =>
                 logger.error(
@@ -144,6 +169,17 @@ class MulticastTransport @Inject() (
 
   private val sentCounter = new java.util.concurrent.atomic.LongAdder()
   override def sentCount: Long = sentCounter.sum()
+
+  override def startQueue(service: Service): Queue = {
+    val mapping = new java.util.function.Function[Service, MyQueue] {
+      def apply(s: Service): MyQueue = new MyQueue(s)
+    }
+    queues.computeIfAbsent(service, mapping)
+  }
+
+  override def stopQueue(service: Service): Unit =
+    val qOpt = Option(queues.remove(service))
+    qOpt.foreach(_.stop())
 
   def send(data: Array[Byte]): Unit =
     send(Service.QSO, data)

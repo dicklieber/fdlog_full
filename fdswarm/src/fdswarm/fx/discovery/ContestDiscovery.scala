@@ -39,25 +39,27 @@ class ContestDiscovery @Inject() (
   def discoverContest(
                        onResponse: NodeContestStation => Unit 
                      ): Unit =
-    val latch = new CountDownLatch(1)
     logger.info(s"Starting contest discovery (timeout: ${timeoutSec}s)")
 
-    val handler: UDPHeaderData => Unit = (udpHeaderData: UDPHeaderData) =>
-      logger.info(s"Discovery handler: ${udpHeaderData.nodeIdentity} service=${udpHeaderData.service}")
-      if udpHeaderData.service == Service.DiscResponse then
-        try
-          val xx: DiscoveryWire = udpHeaderData.decode
-          val disMessage = NodeContestStation(udpHeaderData.nodeIdentity, xx)
-          onResponse(disMessage)
-          logger.info(s"Processed DiscResponse from ${udpHeaderData.nodeIdentity}")
-        catch
-          case e: Exception =>
-            logger.error(s"Failed to process DiscResponse from ${udpHeaderData.nodeIdentity}", e)
-    // start listening for responses before sending the request.
-    transport.addListener(handler)
-    transport.send(Service.DiscReq)
-    latch.await(timeoutSec, TimeUnit.SECONDS)
-    transport.removeListener(handler)
+    val responseQueue = transport.startQueue(Service.DiscResponse)
+    val startTime = System.currentTimeMillis()
+    while (System.currentTimeMillis() - startTime < timeoutSec * 1000L) {
+      responseQueue.poll(100, TimeUnit.MILLISECONDS) match {
+        case null =>
+        case udpHeaderData =>
+          logger.info(s"Discovery handler: ${udpHeaderData.nodeIdentity} service=${udpHeaderData.service}")
+          if udpHeaderData.service == Service.DiscResponse then
+            try
+              val xx: DiscoveryWire = udpHeaderData.decode
+              val disMessage = NodeContestStation(udpHeaderData.nodeIdentity, xx)
+              onResponse(disMessage)
+              logger.info(s"Processed DiscResponse from ${udpHeaderData.nodeIdentity}")
+            catch
+              case e: Exception =>
+                logger.error(s"Failed to process DiscResponse from ${udpHeaderData.nodeIdentity}", e)
+      }
+    }
+    transport.stopQueue(Service.DiscResponse)
 
 
 /**

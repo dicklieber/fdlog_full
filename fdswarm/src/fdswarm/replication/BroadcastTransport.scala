@@ -34,6 +34,8 @@ import java.net.{
 import java.util.concurrent.LinkedBlockingQueue
 import scala.compiletime.uninitialized
 import scala.jdk.CollectionConverters.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 
 @Singleton
 class BroadcastTransport @Inject() (
@@ -45,15 +47,10 @@ class BroadcastTransport @Inject() (
   logger.debug("Starting BroadcastTransport on port {}", port)
 
   override val mode: String = "Broadcast"
-  val queue = new LinkedBlockingQueue[UDPHeaderData]()
-  private val listeners = new java.util.concurrent.CopyOnWriteArrayList[UDPHeaderData => Unit]()
 
   private val sendCounter = meterRegistry.counter("fdswarm_sent_packets_total", "mode", mode)
   private var lastPacketBytes: Int = 0
   meterRegistry.gauge("fdswarm_sent_packet_bytes", this, (bt: BroadcastTransport) => bt.lastPacketBytes.toDouble)
-
-  def addListener(listener: UDPHeaderData => Unit): Unit = listeners.add(listener)
-  def removeListener(listener: UDPHeaderData => Unit): Unit = listeners.remove(listener)
 
   private var socket: DatagramSocket = uninitialized
   private var thread: Thread = uninitialized
@@ -89,8 +86,10 @@ class BroadcastTransport @Inject() (
                 logger.trace(
                   s"Received UDP packet from $senderAddr:$senderPort: ${udpHeaderData.service}"
                 )
-                listeners.forEach(_.apply(udpHeaderData))
-                queue.offer(udpHeaderData)
+                for
+                  liveOrDeadQueue <- queues.get(udpHeaderData.service)
+                  if !liveOrDeadQueue.isDead // if dead just ignore message no one is listening.
+                  liveOrDeadQueue.offer(udpHeaderData)
 
             catch
               case e: IllegalArgumentException =>
@@ -128,6 +127,17 @@ class BroadcastTransport @Inject() (
 
   private val sentCounter = new java.util.concurrent.atomic.LongAdder()
   override def sentCount: Long = sentCounter.sum()
+
+  override def startQueue(service: Service): Queue = {
+    val mapping = new java.util.function.Function[Service, MyQueue] {
+      def apply(s: Service): MyQueue = new MyQueue(s)
+    }
+    queues.computeIfAbsent(service, mapping)
+  }
+
+  override def stopQueue(service: Service): Unit =
+    val qOpt = Option(queues.remove(service))
+    qOpt.foreach(_.stop())
 
   def send(data: Array[Byte]): Unit =
     send(Service.QSO, data)

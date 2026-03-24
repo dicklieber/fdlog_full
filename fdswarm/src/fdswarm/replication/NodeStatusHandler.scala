@@ -32,6 +32,7 @@ import io.circe.parser.decode
 import io.circe.syntax.*
 import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.{Inject, Singleton}
+import java.util.concurrent.TimeUnit
 
 import java.net.http.HttpClient
 @Singleton
@@ -53,6 +54,14 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
   meterRegistry.gauge("fdswarm_received_status_payload_bytes", this, (handler: NodeStatusHandler) => handler.lastStatusMessagePayloadSize)
   meterRegistry.gauge("fdswarm_received_status_digest_count", this, (handler: NodeStatusHandler) => handler.lastStatusMessageDigestCount.toDouble)
 
+  private val statusQueue = transport.startQueue(Service.Status)
+  private val qsoQueue = transport.startQueue(Service.QSO)
+  private val discReqQueue = transport.startQueue(Service.DiscReq)
+  private val discRespQueue = transport.startQueue(Service.DiscResponse)
+  private val restartContestQueue = transport.startQueue(Service.RestartContest)
+  private val instanceQueryQueue = transport.startQueue(Service.InstanceQuery)
+  private val instanceRespQueue = transport.startQueue(Service.InstanceResponse)
+
   private val httpClient = HttpClient.newBuilder()
     .followRedirects(HttpClient.Redirect.NORMAL)
     .build()
@@ -63,9 +72,9 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
         val udpHeader: UDPHeaderData = transport.queue.take()
         udpHeader.service match
           case Service.Status =>
-            if (contestManager.shouldIgnoreStatus) {
+            if (contestManager.shouldIgnoreStatus) 
               logger.debug(s"Ignoring status message from ${udpHeader.nodeIdentity} because of recent contest change")
-            } else {
+            else 
               statusCounter.increment()
               lastStatusMessagePayloadSize = udpHeader.payload.length.toDouble
               val statusMessage = StatusMessage(udpHeader.payload)
@@ -74,7 +83,6 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
               swarmStatus.put(receivedNodeStatus)
               logger.trace("StatusHandle: StatusMessage  {}.", statusMessage)
               statusProcessor.processStatus(receivedNodeStatus).unsafeRunAndForget()
-            }
           case Service.QSO =>
             qsoCounter.increment()
             val sJson = new String(udpHeader.payload, "UTF-8")

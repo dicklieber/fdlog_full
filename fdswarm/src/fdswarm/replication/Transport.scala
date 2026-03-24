@@ -22,19 +22,24 @@ import fdswarm.util.{NodeIdentity, NodeIdentityManager}
 
 import java.util.concurrent.LinkedBlockingQueue
 import io.circe.Encoder
-import io.circe.syntax._
+import io.circe.syntax.*
+
 import java.nio.charset.StandardCharsets
+import scala.collection.concurrent.TrieMap
 
 trait Transport:
   val nodeIdentityManager: NodeIdentityManager
   def isUs(candidate:NodeIdentity):Boolean=
     nodeIdentityManager.isUs(candidate)
   val mode: String
-  val queue: LinkedBlockingQueue[UDPHeaderData]
-  def addListener(listener: UDPHeaderData => Unit): Unit
-  def removeListener(listener: UDPHeaderData => Unit): Unit
+  def startQueue(service: Service): LiveOrDeadQueue
+  def stopQueue(service: Service): Unit=
+    queues.get(service).foreach(_.invalidateQueue())
+  
   def send(service: Service, data: Array[Byte] = Array.empty): Unit
   def send[T](service: Service, payload: T)(using Encoder[T]): Unit =
     send(service, payload.asJson.noSpaces.getBytes(StandardCharsets.UTF_8))
   def sentCount: Long
   def stop(): Unit
+  val queues: TrieMap[Service, LiveOrDeadQueue] = new TrieMap[Service, LiveOrDeadQueue]()
+

@@ -19,13 +19,17 @@
 package fdswarm.fx.contest
 
 import fdswarm.TestDirectory
-import fdswarm.fx.discovery.{ContestDiscovery, DiscoveryWire, NodeContestStation}
+import fdswarm.fx.discovery.{
+  ContestDiscovery,
+  DiscoveryWire,
+  NodeContestStation
+}
 import fdswarm.model.Callsign
 import fdswarm.replication.{Service, Transport, UDPHeaderData}
+import fdswarm.util.JavaTimeCirce.given
 import fdswarm.util.{MockNodeIdentityManager, NodeIdentity, NodeIdentityManager}
 import io.circe.syntax.*
 import munit.FunSuite
-import fdswarm.util.JavaTimeCirce.given
 
 import java.time.*
 import scala.compiletime.uninitialized
@@ -42,8 +46,16 @@ class ContestDefinitionDiscoveryTest extends FunSuite:
   class MockTransport extends Transport:
     override val nodeIdentityManager: NodeIdentityManager = MockNodeIdentityManager()
     override val mode: String = "Mock"
-    override val queue = new java.util.concurrent.LinkedBlockingQueue[UDPHeaderData]()
+    private val mockResponseQueue = new LinkedBlockingQueue[UDPHeaderData]()
     var lastSentService: Option[Service] = None
+
+    override def startQueue(service: Service): Queue =
+      if (service == Service.DiscResponse) then 
+        mockResponseQueue
+      else
+        new LinkedBlockingQueue[UDPHeaderData]()
+
+    override def stopQueue(service: Service): Unit = ()
     override def send(data: Array[Byte]): Unit = ()
     override def send(service: Service, data: Array[Byte]): Unit =
       lastSentService = Some(service)
@@ -66,14 +78,10 @@ class ContestDefinitionDiscoveryTest extends FunSuite:
           )
           val payload = config.asJson.noSpaces.getBytes("UTF-8")
           val header = UDPHeaderData(Service.DiscResponse, nodeId, payload)
-          triggerListeners(header)
+          mockResponseQueue.offer(header)
         }
       }
 
-    private val testListeners = new java.util.concurrent.CopyOnWriteArrayList[UDPHeaderData => Unit]()
-    override def addListener(l: UDPHeaderData => Unit): Unit = testListeners.add(l)
-    override def removeListener(l: UDPHeaderData => Unit): Unit = testListeners.remove(l)
-    def triggerListeners(h: UDPHeaderData): Unit = testListeners.forEach(_.apply(h))
     override def sentCount: Long = if lastSentService.isDefined then 1 else 0
     override def stop(): Unit = ()
 
