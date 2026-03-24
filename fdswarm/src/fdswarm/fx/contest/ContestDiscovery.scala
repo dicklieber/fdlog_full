@@ -20,8 +20,10 @@ package fdswarm.fx.contest
 
 import com.google.inject.name.Named
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.replication.{Transport, Service, UDPHeaderData}
+import fdswarm.model.StationConfig
+import fdswarm.replication.{Service, Transport, UDPHeaderData}
 import fdswarm.util.NodeIdentity
+import io.circe.Codec
 import io.circe.parser.decode
 import jakarta.inject.{Inject, Singleton}
 
@@ -35,32 +37,32 @@ class ContestDiscovery @Inject() (
 ) extends LazyLogging:
 
   def discoverContest(
-      onResponse: (NodeIdentity, ContestStation) => Unit = (_, _) => ()
-  ): Map[NodeIdentity, ContestStation] =
+                       onResponse: NodeContestStation => Unit 
+                     ): Unit =
     val latch = new CountDownLatch(1)
     logger.info(s"Starting contest discovery (timeout: ${timeoutSec}s)")
-    val responses = new ConcurrentHashMap[NodeIdentity, ContestStation]()
 
-    val handler: UDPHeaderData => Unit = (udpHeader: UDPHeaderData) =>
-      if udpHeader.service == Service.DiscResponse then
-        val sJson = new String(udpHeader.payload, "UTF-8")
-        decode[ContestStation](sJson) match
-          case Right(contestStation) =>
-            logger.debug(
-              s"Received ContestStation from ${udpHeader.nodeIdentity}"
-            )
-            responses.put(udpHeader.nodeIdentity, contestStation)
-            onResponse(udpHeader.nodeIdentity, contestStation)
-          case Left(error) =>
-            logger.error(
-              s"Failed to decode ContestStation from ${udpHeader.nodeIdentity}: $sJson",
-              error
-            )
+    val handler: UDPHeaderData => Unit = (udpHeaderData: UDPHeaderData) =>
+      require(udpHeaderData.service == Service.DiscResponse)
 
+      val xx: DiscoveryWire = udpHeaderData.decode
+      val disMessage = NodeContestStation(udpHeaderData.nodeIdentity, xx)
+      onResponse(disMessage)
+    // start listening for responses before sending the request.
     transport.addListener(handler)
-    try
-      transport.send(Service.DiscReq, Array.emptyByteArray)
-      latch.await(timeoutSec, TimeUnit.SECONDS)
-    finally transport.removeListener(handler)
+    transport.send(Service.DiscReq)
+    latch.await(timeoutSec, TimeUnit.SECONDS)
+    transport.removeListener(handler)
 
-    responses.asScala.toMap
+
+/**
+ * What gets sent in a UDP packet of type [[fdswarm.replication.Service.DiscResponse]]
+ * in response to a [[fdswarm.replication.Service.DiscReq]].
+ *
+ */
+case class DiscoveryWire(contestConfig: ContestConfig, stationConfig: StationConfig) derives Codec.AsObject
+
+/**
+ * Combines the ContestStation as received from other nodes with the NodeIdentity of the node, as extracted from the UDPHeader..
+ */
+case class NodeContestStation(nodeIdentity: NodeIdentity, contestStation: DiscoveryWire) derives Codec.AsObject

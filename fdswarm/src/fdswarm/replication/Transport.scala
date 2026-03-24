@@ -21,6 +21,9 @@ package fdswarm.replication
 import fdswarm.util.{NodeIdentity, NodeIdentityManager}
 
 import java.util.concurrent.LinkedBlockingQueue
+import io.circe.Encoder
+import io.circe.syntax._
+import java.nio.charset.StandardCharsets
 
 trait Transport:
   val nodeIdentityManager: NodeIdentityManager
@@ -30,7 +33,8 @@ trait Transport:
   val queue: LinkedBlockingQueue[UDPHeaderData]
   def addListener(listener: UDPHeaderData => Unit): Unit
   def removeListener(listener: UDPHeaderData => Unit): Unit
-  def send(data: Array[Byte]): Unit
-  def send(service: Service, data: Array[Byte]): Unit
+  def send(service: Service, data: Array[Byte] = Array.empty): Unit
+  def send[T](service: Service, payload: T)(using Encoder[T]): Unit =
+    send(service, payload.asJson.noSpaces.getBytes(StandardCharsets.UTF_8))
   def sentCount: Long
   def stop(): Unit

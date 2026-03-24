@@ -105,7 +105,7 @@ final class ContestManager @Inject()(
       ourSection: ChoiceField[String]
   )
 
-  private case class DiscoveryResult(node: NodeIdentity, contestStation: ContestStation)
+  private case class DiscoveryResult(node: NodeIdentity, contestStation: DiscoveryWire)
 
   def show(ownerWindow: Window): Unit =
     def getClasses(contestType: ContestType): Seq[ClassChoice] =

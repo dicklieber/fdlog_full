@@ -20,13 +20,13 @@ package fdswarm.exporter
 
 import fdswarm.fx.contest.ContestType
 import fdswarm.model.Qso
-import fdswarm.model.Station
+import fdswarm.model.StationConfig
 import java.time.format.DateTimeFormatter
 import java.time.ZoneOffset
 
 object CabrilloExporter:
 
-  def exportQsos(qsos: Seq[Qso], station: fdswarm.model.Station, contest: ContestType, header: CabrilloHeader): String =
+  def exportQsos(qsos: Seq[Qso], station: fdswarm.model.StationConfig, contest: ContestType, header: CabrilloHeader): String =
     val sb = StringBuilder()
     // Header per Cabrillo v3
     sb.append("START-OF-LOG: 3.0\n")

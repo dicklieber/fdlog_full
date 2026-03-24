@@ -19,7 +19,7 @@
 package fdswarm.fx.startup
 
 import jakarta.inject.{Inject, Singleton}
-import fdswarm.fx.contest.ContestStation
+import fdswarm.fx.contest.DiscoveryWire
 import fdswarm.fx.station.{StationEditor, StationStore}
 import fdswarm.util.NodeIdentity
 import scalafx.stage.Window
@@ -34,10 +34,10 @@ class StationCondition @Inject()(
   override def editButton(ownerWindow: Window): Unit =
     stationEditor.show(ownerWindow)
 
-  override def update(discovered: Map[NodeIdentity, ContestStation]): Unit =
+  override def update(discovered: Map[NodeIdentity, DiscoveryWire]): Unit =
     val station = stationStore.station.value
     val ourOperator = station.operator
-    val duplicateOperator = discovered.values.exists(_.station.operator == ourOperator)
+    val duplicateOperator = discovered.values.exists(_.stationConfig.operator == ourOperator)
 
     val newProblems = scala.collection.mutable.ListBuffer[String]()
     if duplicateOperator then

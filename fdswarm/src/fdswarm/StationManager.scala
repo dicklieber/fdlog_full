@@ -23,7 +23,7 @@ import _root_.io.circe.parser.decode
 import _root_.io.circe.syntax.*
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.io.DirectoryProvider
-import fdswarm.model.{Callsign, Station}
+import fdswarm.model.{Callsign, StationConfig}
 import jakarta.inject.{Inject, Singleton}
 import scalafx.beans.property.ObjectProperty
 
@@ -36,20 +36,20 @@ final class StationManager @Inject()(
   private val file: os.Path =
     productionDirectory() / "station.json"
 
-  val stationProperty:ObjectProperty[Station] =
+  val stationProperty:ObjectProperty[StationConfig] =
     ObjectProperty(startupInfo.info match
       case Some(debugConfig) =>
         logger.info(s"Using debug config: $debugConfig")
-        Station(debugConfig.operator)
+        StationConfig(debugConfig.operator)
       case None =>
         logger.info("No debug config found, loading station from file")
         load()
     )
 
-  def station: Station =
+  def station: StationConfig =
     stationProperty.value
 
-  def setStation(newStation: Station): Unit =
+  def setStation(newStation: StationConfig): Unit =
     stationProperty.value = newStation
     persist()
 
@@ -63,20 +63,20 @@ final class StationManager @Inject()(
     val json = printer.print(station.asJson)
     os.write.over(file, json, createFolders = true)
 
-  private def load(): Station =
+  private def load(): StationConfig =
     try {
-      if !os.exists(file) then return Station(Callsign(""), "", "")
+      if !os.exists(file) then return StationConfig(Callsign(""), "", "")
       val sJson = os.read(file)
-      decode[Station](sJson) match
+      decode[StationConfig](sJson) match
         case Right(st) => st
         case Left(error) =>
           logger.error(s"Failed to decode Station from $file: ${error.getMessage}")
-          Station(Callsign(""), "", "")
+          StationConfig(Callsign(""), "", "")
     }
     catch
       case e: Throwable =>
         logger.warn(s"Failed to load station from $file: ${e.getMessage}")
-        Station(Callsign(""), "", "")
+        StationConfig(Callsign(""), "", "")
 
 /*
   def pane(): Pane =

@@ -49,7 +49,7 @@ class ContestDefinitionDiscoveryTest extends FunSuite:
       if (service == Service.DiscReq) {
         // Simulate a response from another node
         val otherNode = NodeIdentity("10.0.0.1", 8081, "other-instance", "123")
-        val config = ContestStation(
+        val config = DiscoveryWire(
           ContestConfig(
             ContestType.WFD,
             Callsign("W1AW"),
@@ -57,7 +57,7 @@ class ContestDefinitionDiscoveryTest extends FunSuite:
             "I",
             "CT"
           ),
-          fdswarm.model.Station()
+          fdswarm.model.StationConfig()
         )
         val payload = config.asJson.noSpaces.getBytes("UTF-8")
         val header = UDPHeaderData(Service.DiscResponse, otherNode, payload)

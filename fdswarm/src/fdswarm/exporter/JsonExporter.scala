@@ -21,7 +21,7 @@ package fdswarm.exporter
 import fdswarm.model.Qso
 import io.circe.syntax.*
 import fdswarm.model.QsoMetadata
-import fdswarm.model.Station
+import fdswarm.model.StationConfig
 import fdswarm.fx.contest.ContestType
 
 object JsonExporter:

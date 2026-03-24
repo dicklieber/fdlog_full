@@ -33,12 +33,12 @@ import io.circe.Codec
  * @param v       FdSwarm Version that built this so we can detect mismatched versions.
  */
 
-case class QsoMetadata(station: Station,
+case class QsoMetadata(station: StationConfig,
                        node: NodeIdentity,
                        contest: ContestType,
                        v: String = BuildInfo.version) derives Codec.AsObject, sttp.tapir.Schema
 
 object QsoMetadata:
-  val testQsoMetadata: QsoMetadata = QsoMetadata(station = Station(),
+  val testQsoMetadata: QsoMetadata = QsoMetadata(station = StationConfig(),
     node = NodeIdentity(hostIp = "44.0.0.1", port = 8888, hostName = "testHost", instanceId = "qO-"),
     contest = ContestType.WFD)

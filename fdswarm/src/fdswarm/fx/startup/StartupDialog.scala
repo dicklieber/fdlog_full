@@ -20,7 +20,7 @@ package fdswarm.fx.startup
 
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.contest.{ContestConfig, ContestDiscovery, ContestManager, ContestStation}
+import fdswarm.fx.contest.{ContestConfig, ContestDiscovery, ContestManager, DiscoveryWire}
 import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager}
 import fdswarm.fx.station.{StationEditor, StationStore}
 import fdswarm.util.NodeIdentity
@@ -205,7 +205,7 @@ class StartupDialog @Inject() (
       bandsListener.cancel()
       modesListener.cancel()
 
-  private var discoveredStations: Map[NodeIdentity, ContestStation] = Map.empty
+  private var discoveredStations: Map[NodeIdentity, DiscoveryWire] = Map.empty
 
   private def runChecks(): Unit =
     if isDiscovering.value then return

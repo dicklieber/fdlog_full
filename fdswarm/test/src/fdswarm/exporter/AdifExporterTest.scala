@@ -32,7 +32,7 @@ class AdifExporterTest extends FunSuite:
   val qsoMetadata = fdswarm.model.QsoMetadata.testQsoMetadata
 
   val testDir = os.temp.dir()
-  val station = Station(Callsign("WA9NNN"), "FT-891", "End Fed")
+  val station = StationConfig(Callsign("WA9NNN"), "FT-891", "End Fed")
   val stationJson = station.asJson.noSpaces
   os.write.over(testDir / "station.json", stationJson)
   val dummyDirProvider: DirectoryProvider = () => testDir

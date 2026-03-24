@@ -19,7 +19,7 @@
 package fdswarm.fx.station
 
 import fdswarm.io.DirectoryProvider
-import fdswarm.model.Station
+import fdswarm.model.StationConfig
 import jakarta.inject.{Inject, Singleton}
 import _root_.io.circe.Printer
 import _root_.io.circe.parser.decode
@@ -33,36 +33,36 @@ final class StationStore @Inject() (directoryProvider: DirectoryProvider) {
     directoryProvider() / "station.json"
 
   /** Observable current station. Listen to changes via station.onChange { ... } */
-  val station: ObjectProperty[Station] =
-    ObjectProperty[Station](this, "station", loadOrDefault())
+  val station: ObjectProperty[StationConfig] =
+    ObjectProperty[StationConfig](this, "station", loadOrDefault())
 
   /** Persist current station value to station.json */
   def save(): Unit =
     saveToDisk(station.value)
 
   /** Replace station (fires change listeners) + persist */
-  def update(newStation: Station): Unit = {
+  def update(newStation: StationConfig): Unit = {
     station.value = newStation
     saveToDisk(newStation)
   }
 
   // ---------- internals ----------
 
-  private def loadOrDefault(): Station =
+  private def loadOrDefault(): StationConfig =
     if os.exists(stationFile) then
       parseStation(os.read(stationFile)) match
         case Right(s) => s
-        case Left(_)  => Station()
+        case Left(_)  => StationConfig()
     else
-      Station()
+      StationConfig()
 
   private val printer: Printer = Printer.spaces2.copy(dropNullValues = true)
 
-  private def saveToDisk(s: Station): Unit = {
+  private def saveToDisk(s: StationConfig): Unit = {
     os.makeDir.all(stationFile / os.up)
     os.write.over(stationFile, printer.print(s.asJson))
   }
 
-  private def parseStation(json: String): Either[String, Station] =
-    decode[Station](json).left.map(_.getMessage)
+  private def parseStation(json: String): Either[String, StationConfig] =
+    decode[StationConfig](json).left.map(_.getMessage)
 }

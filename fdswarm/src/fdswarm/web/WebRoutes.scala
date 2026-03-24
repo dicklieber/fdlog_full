@@ -112,7 +112,7 @@ class WebRoutes @Inject()(
         val defaultBm = selectedBandModeStore.selected.value
         val id = fdswarm.util.Ids.generateId()
         val ws = WebSession(
-          station = fdswarm.model.Station(fdswarm.model.Callsign(operator.toUpperCase), rig, antenna),
+          station = fdswarm.model.StationConfig(fdswarm.model.Callsign(operator.toUpperCase), rig, antenna),
           bandMode = defaultBm,
           qsoLines = qsoLines,
           sessionId = id

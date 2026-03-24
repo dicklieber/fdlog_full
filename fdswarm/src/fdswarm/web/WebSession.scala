@@ -18,7 +18,7 @@
 
 package fdswarm.web
 
-import fdswarm.model.{BandMode, Station}
+import fdswarm.model.{BandMode, StationConfig}
 import fdswarm.util.Ids.Id
 import io.circe.Codec
 import java.time.ZonedDateTime
@@ -43,7 +43,7 @@ case class SessionStats(
  * @param sessionId unique session identifier.
  */
 case class WebSession(
-                       station: Station,
+                       station: StationConfig,
                        bandMode: BandMode,
                        qsoLines: Int,
                        sessionId: Id

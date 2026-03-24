@@ -29,7 +29,7 @@ import fdswarm.util.NodeIdentity
 class CabrilloExporterTest extends FunSuite:
 
   test("exportQsos creates a valid Cabrillo format"):
-    val station = Station(operator = Callsign("W1AW"), rig = "1A", antenna = "Wire")
+    val station = StationConfig(operator = Callsign("W1AW"), rig = "1A", antenna = "Wire")
     
     val qso1 = Qso(
       callsign = Callsign("K1ABC"),
@@ -54,7 +54,7 @@ class CabrilloExporterTest extends FunSuite:
     assert(result.contains("END-OF-LOG:"))
 
   test("mapContest maps correctly"):
-    val station = Station(operator = Callsign("W1AW"))
+    val station = StationConfig(operator = Callsign("W1AW"))
     val header = CabrilloHeader()
     val resultWfd = CabrilloExporter.exportQsos(Seq.empty, station, ContestType.WFD, header)
     assert(resultWfd.contains("CONTEST: WFD"))

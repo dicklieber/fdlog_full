@@ -19,7 +19,7 @@
 package fdswarm.fx.startup
 
 import jakarta.inject.{Inject, Singleton}
-import fdswarm.fx.contest.{ContestDiscovery, ContestManager, ContestStation}
+import fdswarm.fx.contest.{ContestDiscovery, ContestManager, DiscoveryWire}
 import fdswarm.util.NodeIdentity
 import scalafx.stage.Window
 
@@ -33,7 +33,7 @@ class ContestCondition @Inject()(
   override def editButton(ownerWindow: Window): Unit =
     contestManager.show(ownerWindow)
 
-  override def update(discovered: Map[NodeIdentity, ContestStation]): Unit =
+  override def update(discovered: Map[NodeIdentity, DiscoveryWire]): Unit =
     val config = contestManager.config
     val currentDetails =
       s"Callsign: ${config.ourCallsign}, Contest: ${config.contestType.name}, Class: ${config.ourClass}, Section: ${config.ourSection}"

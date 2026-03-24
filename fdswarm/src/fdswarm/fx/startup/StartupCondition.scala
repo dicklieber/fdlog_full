@@ -18,7 +18,7 @@
 
 package fdswarm.fx.startup
 
-import fdswarm.fx.contest.ContestStation
+import fdswarm.fx.contest.DiscoveryWire
 import fdswarm.util.NodeIdentity
 import scalafx.collections.ObservableBuffer
 import scalafx.beans.property.StringProperty
@@ -30,4 +30,4 @@ trait StartupCondition:
   def ok: Boolean = problems.isEmpty
   val details = StringProperty("")
   def editButton(ownerWindow: Window): Unit
-  def update(discovered: Map[NodeIdentity, ContestStation]): Unit
+  def update(discovered: Map[NodeIdentity, DiscoveryWire]): Unit

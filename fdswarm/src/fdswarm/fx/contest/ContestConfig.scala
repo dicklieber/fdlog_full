@@ -52,5 +52,3 @@ case class ContestConfig(contestType: ContestType,
                          transmitters: Int,
                          ourClass: String,
                          ourSection: String) derives Codec.AsObject
-
-case class ContestStation(config: ContestConfig, station: fdswarm.model.Station) derives Codec.AsObject

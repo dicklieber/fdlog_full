@@ -20,12 +20,26 @@ package fdswarm.replication
 
 import com.organization.BuildInfo
 import fdswarm.util.NodeIdentity
+import io.circe.{Decoder, Json, parser}
 import org.slf4j.LoggerFactory
 
 import java.net.{DatagramPacket, InetAddress}
+import java.nio.charset.StandardCharsets
 import scala.util.Try
 
-case class UDPHeaderData(service: Service, nodeIdentity: NodeIdentity, payload: Array[Byte])
+enum Service:
+  case Status, QSO, DiscReq, DiscResponse, InstanceQuery, InstanceResponse, RestartContest
+
+case class UDPHeaderData(service: Service, nodeIdentity: NodeIdentity, payload: Array[Byte]):
+
+  def decode[T](using Decoder[T]): T =
+    val jsonString = new String(payload, StandardCharsets.UTF_8)
+    io.circe.parser.parse(jsonString) match
+      case Left(error) => throw new RuntimeException(s"Failed to parse JSON: ${error.getMessage}", error)
+      case Right(json) => json.as[T] match
+        case Left(error) => throw new RuntimeException(s"Failed to decode JSON to T: ${error.getMessage}", error)
+        case Right(value) => value
+  
 
 /**
  *
@@ -62,15 +76,16 @@ object UDPHeader:
     val result: Array[Byte] = headerBytes ++ payload
     result
 
+//  val address: InetAddress = packet.getAddress
+
   /**
-   * Parses a UDP packet into a UDPHeaderData.
+   * Parses a UDP packet into a [[UDPHeaderData]].
    *
    * @param packet received.
    * @return Option[UDPHeaderData] None if the packet is from the local instance.
    */
   @throws[IllegalArgumentException]("if packet is invalid")
-  def parse(packet: DatagramPacket): Option[UDPHeaderData] =
-    Try {
+  def parse(packet: DatagramPacket): UDPHeaderData =
       val data: Array[Byte] = packet.getData.take(packet.getLength)
       val newlineIndex = data.indexOf('\n'.toByte)
       if (newlineIndex == -1) throw new IllegalArgumentException("Invalid packet: no newline found")
@@ -83,14 +98,9 @@ object UDPHeader:
         case headerRegx(sService, udpPiece, sDataVersion) =>
           if sDataVersion != BuildInfo.dataVersion then
             throw new IllegalArgumentException(s"Data version mismatch: expected ${BuildInfo.dataVersion}, got $sDataVersion")
-          val address: InetAddress = packet.getAddress
+          val address = packet.getAddress
           val nodeIdentity= NodeIdentity.fromUdpHeader(address, udpPiece)
-          
-          Some(UDPHeaderData(Service.valueOf(sService), nodeIdentity, payloadBytes))
+          UDPHeaderData(Service.valueOf(sService), nodeIdentity, payloadBytes)
         case _ =>
           throw new IllegalArgumentException(s"Invalid header format: $headerStr")
-    }.get
-
-enum Service:
-  case Status, QSO, DiscReq, DiscResponse, InstanceQuery, InstanceResponse, RestartContest
   
