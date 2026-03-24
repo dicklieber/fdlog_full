@@ -36,6 +36,7 @@ import java.time.Instant
 import java.util
 import scala.compiletime.uninitialized
 import fdswarm.MockStartupInfo
+import fdswarm.fx.discovery.ContestDiscovery
 
 /**
  * Add a lot of QSOs to the store checking for correct collections.
@@ -102,7 +103,7 @@ class BigQsosGeneratorTest extends FunSuite with LazyLogging:
       override def get(): fdswarm.fx.contest.ContestManager = contestManager
     })
     qsoStore = new QsoStore(testDirectory, registry, mockTransport, swarmStatus, MockStartupInfo, filenameStamp)
-    val discovery = new fdswarm.fx.contest.ContestDiscovery(mockTransport, 1)
+    val discovery = new ContestDiscovery(mockTransport, 1)
     contestManager = new fdswarm.fx.contest.ContestManager(testDirectory, contestCatalog, sections, qsoStore, filenameStamp, mockTransport, discovery, 7)
 
   override def afterEach(context: AfterEach): Unit =

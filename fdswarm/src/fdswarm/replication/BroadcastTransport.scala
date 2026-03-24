@@ -80,38 +80,37 @@ class BroadcastTransport @Inject() (
             )
 
             try
-              UDPHeader.parse(packet) match
-                case Some(udpHeader) if !isUs(udpHeader.nodeIdentity) =>
-                  logger.trace(
-                    s"Received UDP packet from $senderAddr:$senderPort: ${udpHeader.service}"
-                  )
-                  listeners.forEach(_.apply(udpHeader))
-                  queue.offer(udpHeader)
-                case Some(_) =>
-                  logger.trace("Ignoring our own message from {}", senderPort)
-                case None =>
-                  // Should not happen as UDPHeader.parse returns Some or throws
-                  logger.warn("Received empty UDP packet from $senderAddr:$senderPort")
+              val udpHeaderData = UDPHeader.parse(packet)
+              if isUs(udpHeaderData.nodeIdentity) then
+                logger.trace(
+                  s"Received UDP packet from $senderAddr:$senderPort: ${udpHeaderData.service}"
+                )
+              else
+                logger.trace(
+                  s"Received UDP packet from $senderAddr:$senderPort: ${udpHeaderData.service}"
+                )
+                listeners.forEach(_.apply(udpHeaderData))
+                queue.offer(udpHeaderData)
 
             catch
               case e: IllegalArgumentException =>
                 logger.error(
                   s"Received invalid UDP packet from $senderAddr:$senderPort: ${e.getMessage}"
                 )
-
-          catch
-            case _: InterruptedException =>
-              Thread.currentThread().interrupt()
-
-            case e: java.net.SocketException if socket != null && socket.isClosed =>
-              Thread.currentThread().interrupt()
-
-            case e: Exception =>
-              if socket != null && !socket.isClosed then
-                logger.error(
-                  s"Error in BroadcastTransport receiver: ${e.getMessage}",
-                  e
-                )
+//
+//          catch
+//            case _: InterruptedException =>
+//              Thread.currentThread().interrupt()
+//
+//            case e: java.net.SocketException if socket != null && socket.isClosed =>
+//              Thread.currentThread().interrupt()
+//
+//            case e: Exception =>
+//              if socket != null && !socket.isClosed then
+//                logger.error(
+//                  s"Error in BroadcastTransport receiver: ${e.getMessage}",
+//                  e
+//                )
       ,
       "Broadcast-Receiver"
     )

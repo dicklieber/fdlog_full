@@ -19,7 +19,8 @@
 package fdswarm.fx.startup
 
 import jakarta.inject.{Inject, Singleton}
-import fdswarm.fx.contest.{ContestDiscovery, ContestManager, DiscoveryWire}
+import fdswarm.fx.contest.ContestManager
+import fdswarm.fx.discovery.{ContestDiscovery, DiscoveryWire}
 import fdswarm.util.NodeIdentity
 import scalafx.stage.Window
 
@@ -31,7 +32,8 @@ class ContestCondition @Inject()(
   override def name: String = "Contest"
 
   override def editButton(ownerWindow: Window): Unit =
-    contestManager.show(ownerWindow)
+//    contestManager.show(ownerWindow)
+    throw new NotImplementedError("") //todo
 
   override def update(discovered: Map[NodeIdentity, DiscoveryWire]): Unit =
     val config = contestManager.config

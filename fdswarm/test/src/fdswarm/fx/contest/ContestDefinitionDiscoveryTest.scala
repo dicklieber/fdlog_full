@@ -19,6 +19,7 @@
 package fdswarm.fx.contest
 
 import fdswarm.TestDirectory
+import fdswarm.fx.discovery.{ContestDiscovery, DiscoveryWire, NodeContestStation}
 import fdswarm.model.Callsign
 import fdswarm.replication.{Service, Transport, UDPHeaderData}
 import fdswarm.util.{MockNodeIdentityManager, NodeIdentity, NodeIdentityManager}
@@ -47,23 +48,26 @@ class ContestDefinitionDiscoveryTest extends FunSuite:
     override def send(service: Service, data: Array[Byte]): Unit =
       lastSentService = Some(service)
       if (service == Service.DiscReq) {
-        // Simulate a response from another node
-        val otherNode = NodeIdentity("10.0.0.1", 8081, "other-instance", "123")
-        val config = DiscoveryWire(
-          ContestConfig(
-            ContestType.WFD,
-            Callsign("W1AW"),
-            2,
-            "I",
-            "CT"
-          ),
-          fdswarm.model.StationConfig()
+        val responses = List(
+          (NodeIdentity("10.0.0.1", 8081, "node1", "123"), Callsign("W1AW")),
+          (NodeIdentity("10.0.0.2", 8081, "node2", "456"), Callsign("K1ABC")),
+          (NodeIdentity("10.0.0.3", 8081, "node3", "789"), Callsign("N1XYZ"))
         )
-        val payload = config.asJson.noSpaces.getBytes("UTF-8")
-        val header = UDPHeaderData(Service.DiscResponse, otherNode, payload)
-        // In our real MulticastTransport, we added listeners.
-        // We need to trigger them here.
-        triggerListeners(header)
+        responses.foreach { case (nodeId, callsign) =>
+          val config = DiscoveryWire(
+            ContestConfig(
+              ContestType.WFD,
+              callsign,
+              2,
+              "I",
+              "CT"
+            ),
+            fdswarm.model.StationConfig()
+          )
+          val payload = config.asJson.noSpaces.getBytes("UTF-8")
+          val header = UDPHeaderData(Service.DiscResponse, nodeId, payload)
+          triggerListeners(header)
+        }
       }
 
     private val testListeners = new java.util.concurrent.CopyOnWriteArrayList[UDPHeaderData => Unit]()
@@ -76,11 +80,9 @@ class ContestDefinitionDiscoveryTest extends FunSuite:
   test("discoverContest should send request and collect responses"):
     val mockTransport = new MockTransport()
     val discovery = new ContestDiscovery(mockTransport, 1) // 1 second timeout for test
-    
-    val results = discovery.discoverContest()
-    
+    import scala.collection.mutable.ListBuffer
+    val results = ListBuffer[(NodeIdentity, DiscoveryWire)]()
+    discovery.discoverContest(ncs => results += ((ncs.nodeIdentity, ncs.contestStation)))
     assertEquals(mockTransport.lastSentService, Some(Service.DiscReq))
-    assertEquals(results.size, 1)
-    val (node, config) = results.head
-    assertEquals(node.hostIp, "10.0.0.1")
-    assertEquals(config.config.ourCallsign, Callsign("W1AW"))
+    assertEquals(results.size, 3)
+    assertEquals(results.map(_._1.hostIp).toSet, Set("10.0.0.1", "10.0.0.2", "10.0.0.3"))

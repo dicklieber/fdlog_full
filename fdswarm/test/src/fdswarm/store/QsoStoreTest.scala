@@ -25,13 +25,14 @@ import fdswarm.TestDirectory
 import fdswarm.model.QsoMetadata.testQsoMetadata
 import fdswarm.model.{BandMode, Callsign, Exchange, Qso}
 import fdswarm.replication.status.SwarmStatus
-import fdswarm.replication.{Transport, Service, StatusMessage}
-import fdswarm.util.{NodeIdentity, NodeIdentityManager, MockNodeIdentityManager}
+import fdswarm.replication.{Service, StatusMessage, Transport}
+import fdswarm.util.{MockNodeIdentityManager, NodeIdentity, NodeIdentityManager}
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import munit.FunSuite
 
 import scala.compiletime.uninitialized
 import fdswarm.MockStartupInfo
+import fdswarm.fx.discovery.ContestDiscovery
 
 class QsoStoreTest extends FunSuite:
   private var testDirectory: TestDirectory = uninitialized
@@ -94,7 +95,7 @@ class QsoStoreTest extends FunSuite:
       override def get(): fdswarm.fx.contest.ContestManager = contestManager
     })
     qsoStore = new QsoStore(testDirectory, new SimpleMeterRegistry(), mockTransport, swarmStatus, MockStartupInfo, filenameStamp)
-    val discovery = new fdswarm.fx.contest.ContestDiscovery(mockTransport, 1)
+    val discovery = new ContestDiscovery(mockTransport, 1)
     contestManager = new fdswarm.fx.contest.ContestManager(testDirectory, contestCatalog, sections, qsoStore, filenameStamp, mockTransport, discovery, 7)
 
   override def afterEach(context: AfterEach): Unit =

@@ -18,7 +18,7 @@
 
 package fdswarm.fx.startup
 
-import fdswarm.fx.contest.DiscoveryWire
+import fdswarm.fx.discovery.DiscoveryWire
 import fdswarm.util.NodeIdentity
 import scalafx.collections.ObservableBuffer
 import scalafx.beans.property.StringProperty

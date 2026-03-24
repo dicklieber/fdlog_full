@@ -21,7 +21,7 @@ package fdswarm.util
 import fdswarm.fx.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
 import fdswarm.fx.bandmodes.SelectedBandModeManager
 import fdswarm.StationManager
-import fdswarm.fx.contest.{ContestCatalog, ContestConfig, ContestManager, ContestType, ContestDiscovery}
+import fdswarm.fx.contest.{ContestCatalog, ContestConfig, ContestManager, ContestType}
 import fdswarm.fx.sections.{Sections, SectionsProvider}
 import fdswarm.model.Callsign
 import fdswarm.store.QsoStore
@@ -35,6 +35,7 @@ import java.time.{Instant, ZoneOffset, ZonedDateTime}
 import munit.FunSuite
 import scala.compiletime.uninitialized
 import fdswarm.MockStartupInfo
+import fdswarm.fx.discovery.ContestDiscovery
 
 class FilenameStampTest extends FunSuite:
  

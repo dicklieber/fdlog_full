@@ -18,8 +18,8 @@
 
 package fdswarm.fx.startup
 
+import fdswarm.fx.discovery.DiscoveryWire
 import jakarta.inject.{Inject, Singleton}
-import fdswarm.fx.contest.DiscoveryWire
 import fdswarm.fx.station.{StationEditor, StationStore}
 import fdswarm.util.NodeIdentity
 import scalafx.stage.Window

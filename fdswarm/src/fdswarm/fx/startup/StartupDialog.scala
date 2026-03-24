@@ -20,8 +20,9 @@ package fdswarm.fx.startup
 
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.contest.{ContestConfig, ContestDiscovery, ContestManager, DiscoveryWire}
+import fdswarm.fx.contest.{ContestConfig, ContestManager}
 import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager}
+import fdswarm.fx.discovery.{ContestDiscovery, DiscoveryWire}
 import fdswarm.fx.station.{StationEditor, StationStore}
 import fdswarm.util.NodeIdentity
 import jakarta.inject.{Inject, Singleton}
@@ -219,12 +220,12 @@ class StartupDialog @Inject() (
 
     // Start discovery in a background thread to avoid blocking the UI
     new Thread(() => {
-      val discovered = contestDiscovery.discoverContest()
-
-      Platform.runLater {
-        discoveredStations = discovered
-        conditions.foreach(_.update(discovered))
-        allOk.value = conditions.forall(_.ok)
-        isDiscovering.value = false
-      }
+//      val discovered = contestDiscovery.discoverContest()
+//
+//      Platform.runLater {
+//        discoveredStations = discovered
+//        conditions.foreach(_.update(discovered))
+//        allOk.value = conditions.forall(_.ok)
+//        isDiscovering.value = false
+//      }
     }).start()

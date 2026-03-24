@@ -24,14 +24,12 @@ import fdswarm.FdLogApp
 import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.bandmodes.BandsAndModesPane
 import fdswarm.fx.contest.ContestManager
+import fdswarm.fx.discovery.DiscoveryDialog
 import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.station.StationEditor
 import fdswarm.fx.tools.*
 import fdswarm.replication.status.SwarmStatusPane
-import fdswarm.replication.{
-  NodeStatusHandler,
-  StatusBroadcastService
-}
+import fdswarm.replication.{NodeStatusHandler, StatusBroadcastService}
 import fdswarm.util.{DurationFormat, NodeIdentityManager}
 import io.circe.parser.decode
 import io.circe.syntax.*
@@ -40,7 +38,6 @@ import jakarta.inject.Inject
 import javafx.concurrent.Worker
 import javafx.embed.swing.SwingFXUtils
 import netscape.javascript.JSObject
-import scalafx.Includes.*
 import scalafx.application.Platform
 import scalafx.beans.binding.Bindings
 import scalafx.beans.property.{BooleanProperty, StringProperty}
@@ -85,7 +82,8 @@ final class FdLogUi @Inject() (
     summaryDialog: fdswarm.fx.tools.SummaryDialog,
     metricsDialog: fdswarm.fx.tools.MetricsDialog,
     apiServer: fdswarm.api.ApiServer,
-    startupDialog: fdswarm.fx.startup.StartupDialog
+    startupDialog: fdswarm.fx.startup.StartupDialog,
+    discoveryDialog: DiscoveryDialog
 ) extends LazyLogging:
 
   // --- ARRL Sections Map (SVG) -------------------------------------------------
@@ -132,9 +130,10 @@ final class FdLogUi @Inject() (
     new MenuItem("Contest"):
       disable = true
       onAction = _ =>
-        Option(ownerWindow) match
-          case Some(w) => contestManager.show(w)
-          case None    => ()
+        discoveryDialog.show(ownerWindow)
+//        Option(ownerWindow) match
+//          case Some(w) => contestManager.show(w)
+//          case None    => ()
   private val stationMenuItem: MenuItem =
     new MenuItem("Station"):
       disable = true
@@ -193,6 +192,12 @@ final class FdLogUi @Inject() (
           onAction = _ =>
             Option(ownerWindow) match
               case Some(w) => ipAddressDialogService.show(w)
+              case None    => ()
+        ,
+        new MenuItem("Discovery"):
+          onAction = _ =>
+            Option(ownerWindow) match
+              case Some(w) => discoveryDialog.show(w)
               case None    => ()
       )
   private val developerModeMenuItem = new CheckMenuItem("Developer Mode")

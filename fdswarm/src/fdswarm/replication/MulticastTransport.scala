@@ -76,7 +76,7 @@ class MulticastTransport @Inject() (
 
     // Allow same-host multicast delivery (macOS often needs this for 2 local processes)
     // NOTE: API is inverted: true = disable loopback, false = enable loopback
-//    socket.setLoopbackMode(false)
+    socket.setLoopbackMode(false)
 
     // TTL: keep it >1 to avoid surprises with some local network setups (still stays on LAN)
     socket.setTimeToLive(8)
@@ -112,43 +112,20 @@ class MulticastTransport @Inject() (
             socket.receive(packet)
             val senderAddr = packet.getAddress
             val senderPort = packet.getPort
-            logger.trace(
-              s"Received UDP packet from $senderAddr:$senderPort, length ${packet.getLength}"
-            )
+            logger.info(s"Received UDP packet from $senderAddr:$senderPort, length=${packet.getLength}")
 
             try
-              UDPHeader.parse(packet) match
-                case Some(udpHeader) if !nodeIdentityManager.isUs(udpHeader.nodeIdentity) =>
-                  logger.trace(
-                    s"Received UDP packet from $senderAddr:$senderPort: ${udpHeader.service}"
-                  )
-                  listeners.forEach(_.apply(udpHeader))
-                  queue.offer(udpHeader)
-                case Some(_) =>
-                  logger.trace("Ignoring our own message from {}", senderPort)
-                case None =>
-                  // Should not happen as UDPHeader.parse returns Some or throws
-                  logger.warn("Received empty UDP packet from $senderAddr:$senderPort")
-
+              val udpHeader = UDPHeader.parse(packet)
+              logger.info(s"Parsed UDP: service=${udpHeader.service} node=${udpHeader.nodeIdentity} pktSender=$senderAddr:$senderPort")
+              if nodeIdentityManager.isUs(udpHeader.nodeIdentity) then
+                logger.trace(s"Ignoring our own loopback message")
+              else
+                listeners.forEach(_.apply(udpHeader))
+                queue.offer(udpHeader)
             catch
               case e: IllegalArgumentException =>
                 logger.error(
                   s"Received invalid UDP packet from $senderAddr:$senderPort: ${e.getMessage}"
-                )
-
-          catch
-            case _: InterruptedException =>
-              Thread.currentThread().interrupt()
-
-            case e: java.net.SocketException if socket != null && socket.isClosed =>
-              // receive() unblocks with SocketException when socket is closed during stop()
-              Thread.currentThread().interrupt()
-
-            case e: Exception =>
-              if socket != null && !socket.isClosed then
-                logger.error(
-                  s"Error in MulticastTransport receiver: ${e.getMessage}",
-                  e
                 )
       ,
       "Multicast-Receiver"

@@ -20,13 +20,14 @@ package fdswarm.replication
 
 import cats.effect.unsafe.implicits.global
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.contest.{ContestConfig, ContestManager, DiscoveryWire}
+import fdswarm.fx.contest.{ContestConfig, ContestManager}
 import fdswarm.model.Qso
 import fdswarm.replication.status.SwarmStatus
 import fdswarm.store.ReplicationSupport
 import fdswarm.util.JavaTimeCirce.given
 import fdswarm.util.{InstanceIdManager, NodeIdentity, NodeIdentityManager}
 import fdswarm.StationManager
+import fdswarm.fx.discovery.DiscoveryWire
 import io.circe.parser.decode
 import io.circe.syntax.*
 import io.micrometer.core.instrument.MeterRegistry
