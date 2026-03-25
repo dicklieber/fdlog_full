@@ -23,14 +23,10 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.StartupConfig
 import fdswarm.io.DirectoryProvider
 import jakarta.inject.Inject
+import manager.FdswarmJarManager
 
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.IndexedSeqView
-import scalafx.Includes.*
-import scalafx.scene.control.{Alert, ButtonType}
-import manager.FdswarmJarManager
-import java.time.{Instant, ZoneId, ZonedDateTime}
-import java.time.format.DateTimeFormatter
 
 /** create a JSON file of [[StartupConfig]] Starts an instance of the FDSwarm
   * application. pass reference to that file on the command line.
@@ -41,23 +37,13 @@ class Runner @Inject() (directoryProvider: DirectoryProvider)
     extends LazyLogging:
 
   private var instances:Seq[AppInstance] = Seq.empty
-  private val path = directoryProvider() / "debugConfigs"
+  private val edebugConfigDir = directoryProvider() / "debugConfigs"
 
   def start(view: IndexedSeqView[StartupConfig]): Unit =
-    os.remove.all(path)
+    os.remove.all(edebugConfigDir)
 
     val jarManager = FdswarmJarManager()
-    val jarInfoOpt = jarManager.jarInfo()
-    val timeFmt = DateTimeFormatter.ofPattern("MMM dd, HH:mm:ss")
-
-    val alert = new Alert(Alert.AlertType.Confirmation) {
-      title = "Build fdswarm-all.jar?"
-      headerText = "Build fdswarm-all.jar?"
-      contentText = s"JAR ${jarInfoOpt.map(_.atZone(ZoneId.systemDefault()).format(timeFmt)).getOrElse("does not exist")}."
-    }
-
-    if alert.showAndWait().contains(ButtonType.OK) then
-      jarManager.buildFdswarmJar()
+    jarManager.buildFdswarmJar()
 
     val ports = new AtomicInteger(8080)
     instances = (
@@ -65,7 +51,7 @@ class Runner @Inject() (directoryProvider: DirectoryProvider)
         startupConfig <- view.iterator
         if startupConfig.enable
       yield
-        val pathToJson = path / s"${startupConfig.id}.json"
+        val pathToJson = edebugConfigDir / s"${startupConfig.id}.json"
         os.write.over(pathToJson, startupConfig.asJson.spaces2, createFolders = true)
         val sJsonPath = pathToJson.toString
         AppInstance(sJsonPath, startupConfig, ports.getAndIncrement())

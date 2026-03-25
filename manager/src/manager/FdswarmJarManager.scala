@@ -30,8 +30,13 @@ class FdswarmJarManager(
 
   def buildFdswarmJar(): Unit =
     val millHome = findMillHome()
-    val result = os.proc("./mill", "fdswarm.assembly")
+    logger.info("Killing existing mill processes to avoid conflicts...")
+    os.proc("pkill", "-f", "mill")
+      .call(cwd = millHome, check = false)
+    logger.info("Proceeding with fdswarm assembly build.")
+    val result = os.proc("./mill", "--no-daemon", "fdswarm.assembly")
       .call(
+        timeout = 120000L,
         cwd = millHome,
         env = Map("MILL_OUTPUT_DIR" -> outDir.toString),
         check = false

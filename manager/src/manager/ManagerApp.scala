@@ -28,10 +28,15 @@ import net.codingwell.scalaguice.InjectorExtensions.*
 import scalafx.application.JFXApp3
 import scalafx.scene.Scene
 import scalafx.scene.control.Button
-import scalafx.scene.layout.{BorderPane, HBox}
+import scalafx.scene.layout.{BorderPane, HBox, StackPane}
 
 import scala.collection.IndexedSeqView
 import scala.util.Random
+
+import scalafx.scene.paint.Color
+import scalafx.scene.image.Image
+import scalafx.stage.Stage
+import javafx.embed.swing.SwingFXUtils
 
 /**
  * A development tool tha runs a bunch of instances of the FDSwarm application
@@ -67,6 +72,8 @@ object ManagerApp extends JFXApp3 with LazyLogging :
       //        injector.instance[Runner].stopAll()
       //      }
     }
+
+    setAppIcon(stage)
 
     val nodeConfigGridPane = new NodeConfigGridPane(
       nodeConfigManager = nodeConfigManager,
@@ -110,5 +117,29 @@ object ManagerApp extends JFXApp3 with LazyLogging :
     stage.scene = new Scene {
       root = borderPane
     }
-
   }
+
+  private def setAppIcon(stage: Stage): Unit = {
+      try {
+        val resource = getClass.getResource("/managerAppIcon.png")
+        if resource != null then {
+          val iconImage = new Image(resource.toExternalForm)
+          stage.getIcons.add(iconImage)
+          try {
+            if java.awt.Taskbar.isTaskbarSupported then {
+              val taskbar = java.awt.Taskbar.getTaskbar
+              if taskbar.isSupported(java.awt.Taskbar.Feature.ICON_IMAGE) then {
+                val bufferedImage = SwingFXUtils.fromFXImage(iconImage, null)
+                taskbar.setIconImage(bufferedImage)
+                logger.debug("Successfully set manager app icon via Taskbar")
+              }
+            }
+          } catch {
+            case e: Exception =>
+              logger.debug("Could not set app icon via Taskbar (normal on some platforms)", e)
+          }
+        }
+      } catch {
+        case e: Exception => logger.warn("Could not set manager application icon", e)
+      }
+    }
