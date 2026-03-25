@@ -218,17 +218,16 @@
     -fx-background-color: lightblue;
     -fx-font-weight: bold;
 }
-
-
-#discovery-grid .label {
-    /*-fx-text-overrun: clip;*/
-    /*-fx-ellipsis-string: '';*/
-    /*-fx-background-color: white;*/
-    /*-fx-padding: 6 12 6 12;*/
+.grid-header-label{
+    -fx-background-color: red;
+    -fx-font-weight: bold;
 }
-
-
-
-#discovery-grid {
-    -fx-grid-line-color: lightgray;
+.grid-header-cell{
+    -fx-background-color: green;
+    -fx-font-weight: bold;
+}
+.grid-table-cell{
+    -fx-background-color: lightgray;
+    -fx-border-width: 2;
+    -fx-border-color: blue;
 }
