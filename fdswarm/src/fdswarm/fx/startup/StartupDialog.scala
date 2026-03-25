@@ -20,7 +20,7 @@ package fdswarm.fx.startup
 
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.contest.{ContestConfig, ContestManager}
+import fdswarm.fx.contest.{ContestConfig, ContestConfigManager}
 import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager}
 import fdswarm.fx.discovery.{ContestDiscovery, DiscoveryWire}
 import fdswarm.fx.station.{StationEditor, StationStore}
@@ -42,14 +42,14 @@ import scala.compiletime.uninitialized
 
 @Singleton
 class StartupDialog @Inject() (
-    config: Config,
-    contestManager: ContestManager,
-    contestDiscovery: ContestDiscovery,
-    stationStore: StationStore,
-    bandsManager: AvailableBandsManager,
-    modesManager: AvailableModesManager,
-    contestCond: ContestCondition,
-    stationCond: StationCondition
+                                config: Config,
+                                contestManager: ContestConfigManager,
+                                contestDiscovery: ContestDiscovery,
+                                stationStore: StationStore,
+                                bandsManager: AvailableBandsManager,
+                                modesManager: AvailableModesManager,
+                                contestCond: ContestCondition,
+                                stationCond: StationCondition
 ) extends LazyLogging:
 
   private val startupSeconds: Int = config.getInt("fdswarm.autoStartSeconds")

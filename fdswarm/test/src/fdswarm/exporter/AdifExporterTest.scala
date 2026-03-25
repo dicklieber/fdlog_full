@@ -23,7 +23,7 @@ import fdswarm.model.*
 import java.time.Instant
 import os.*
 import io.circe.syntax.*
-import fdswarm.StationManager
+import fdswarm.StationConfigManager
 import fdswarm.MockStartupInfo
 import fdswarm.io.DirectoryProvider
 import fdswarm.exporter.AdifExporter
@@ -36,7 +36,7 @@ class AdifExporterTest extends FunSuite:
   val stationJson = station.asJson.noSpaces
   os.write.over(testDir / "station.json", stationJson)
   val dummyDirProvider: DirectoryProvider = () => testDir
-  val stationManager = new StationManager(dummyDirProvider, MockStartupInfo)
+  val stationManager = new StationConfigManager(dummyDirProvider, MockStartupInfo)
   val exporter = new AdifExporter(stationManager)
 
   test("AdifExporter should generate correct ADIF"):

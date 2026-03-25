@@ -18,126 +18,88 @@
 
 package fdswarm.replication
 
-import com.google.inject.name.Named
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.util.NodeIdentityManager
 import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.{Inject, Singleton}
 
-import java.net.{
-  DatagramPacket,
-  DatagramSocket,
-  InetAddress,
-  InetSocketAddress,
-  NetworkInterface
-}
-import java.util.concurrent.LinkedBlockingQueue
+import java.net.{DatagramPacket, DatagramSocket, InetAddress, InetSocketAddress}
 import scala.compiletime.uninitialized
-import scala.jdk.CollectionConverters.*
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicBoolean
 
+/**
+ * Broadcasts UDP packets to all nodes in the network.
+ * Receive any UDP packets from all nodes in the network.
+ * Consumers use the varooius startQueueXXX methods to get a queue for a specific service.
+ * @param nodeIdentityManager who we are.
+ * @param meterRegistry for metrics,
+ */
 @Singleton
 class BroadcastTransport @Inject() (
-                                     @Named("fdswarm.UDP.port") port: Int,
                                      val nodeIdentityManager: NodeIdentityManager,
                                      meterRegistry: MeterRegistry
-                                   ) extends Transport with LazyLogging:
+                                   ) extends Transport with Runnable with LazyLogging:
 
-  logger.debug("Starting BroadcastTransport on port {}", port)
+  logger.info("Starting BroadcastTransport")
 
   override val mode: String = "Broadcast"
 
   private val sendCounter = meterRegistry.counter("fdswarm_sent_packets_total", "mode", mode)
   private var lastPacketBytes: Int = 0
   meterRegistry.gauge("fdswarm_sent_packet_bytes", this, (bt: BroadcastTransport) => bt.lastPacketBytes.toDouble)
+  val buffer = new Array[Byte](65535)
 
   private var socket: DatagramSocket = uninitialized
-  private var thread: Thread = uninitialized
+  val port = 8090
+  socket = new DatagramSocket(null)
+  socket.setReuseAddress(true)
+  socket.setBroadcast(true)
+  socket.bind(new InetSocketAddress("0.0.0.0", port))
 
-  // Start receiver in constructor
-  try
-    socket = new DatagramSocket(null)
-    socket.setReuseAddress(true)
-    socket.setBroadcast(true)
-    socket.bind(new InetSocketAddress("0.0.0.0", port))
+  val thread = new Thread(this, "Broadcast-Receiver")
+  val queue = new LiveOrDeadQueue()
 
-    thread = new Thread(
-      () =>
-        val buffer = new Array[Byte](65535)
+  thread.setDaemon(true)
+  thread.start()
 
-        while !Thread.currentThread().isInterrupted do
-          try
-            val packet: DatagramPacket = new DatagramPacket(buffer, buffer.length)
-            socket.receive(packet)
-            val senderAddr = packet.getAddress
-            val senderPort = packet.getPort
-            logger.trace(
-              s"Received UDP packet from $senderAddr:$senderPort, length ${packet.getLength}"
-            )
-
-            try
-              val udpHeaderData = UDPHeader.parse(packet)
-              if isUs(udpHeaderData.nodeIdentity) then
-                logger.trace(
-                  s"Received UDP packet from $senderAddr:$senderPort: ${udpHeaderData.service}"
-                )
-              else
-                logger.trace(
-                  s"Received UDP packet from $senderAddr:$senderPort: ${udpHeaderData.service}"
-                )
-                for
-                  liveOrDeadQueue <- queues.get(udpHeaderData.service)
-                  if !liveOrDeadQueue.isDead // if dead just ignore message no one is listening.
-                  liveOrDeadQueue.offer(udpHeaderData)
-
-            catch
-              case e: IllegalArgumentException =>
-                logger.error(
-                  s"Received invalid UDP packet from $senderAddr:$senderPort: ${e.getMessage}"
-                )
-//
-//          catch
-//            case _: InterruptedException =>
-//              Thread.currentThread().interrupt()
-//
-//            case e: java.net.SocketException if socket != null && socket.isClosed =>
-//              Thread.currentThread().interrupt()
-//
-//            case e: Exception =>
-//              if socket != null && !socket.isClosed then
-//                logger.error(
-//                  s"Error in BroadcastTransport receiver: ${e.getMessage}",
-//                  e
-//                )
-      ,
-      "Broadcast-Receiver"
-    )
-
-    thread.setDaemon(true)
-    thread.start()
-
-  catch
-    case e: Exception =>
-      logger.error(
-        s"Failed to start BroadcastTransport receiver: ${e.getMessage}",
-        e
-      )
-      stop()
 
   private val sentCounter = new java.util.concurrent.atomic.LongAdder()
   override def sentCount: Long = sentCounter.sum()
 
-  override def startQueue(service: Service): Queue = {
-    val mapping = new java.util.function.Function[Service, MyQueue] {
-      def apply(s: Service): MyQueue = new MyQueue(s)
-    }
-    queues.computeIfAbsent(service, mapping)
-  }
+  override def run(): Unit =
+    while !Thread.currentThread().isInterrupted do
+      val packet: DatagramPacket = new DatagramPacket(buffer, buffer.length)
+      logger.trace(s"Waiting for a UDP packet")
+      socket.receive(packet)
+      val senderAddr = packet.getAddress
+      val senderPort = packet.getPort
+      logger.trace(s"Received a UDP packet")
+      val udpHeaderData = UDPHeader.parse(packet)
+      if isUs(udpHeaderData.nodeIdentity) then
+        logger.trace(s"Received UDP packet from $senderAddr:$senderPort: ${udpHeaderData.service}")
+      else
+        logger.trace(s"Received UDP packet from $senderAddr:$senderPort: ${udpHeaderData.service}")
+        val queue = queues.getOrElseUpdate(
+          udpHeaderData.service, {
+            new LiveOrDeadQueue()
+          }
+        )
+        if queue.isAlive then // if dead just ignore message no one is listening.
+          queue.offer(udpHeaderData)
+
+  def startQueue(request: Service, response: Service): LiveOrDeadQueue =
+    val queue = startQueue(response)
+    send(request, Array.empty)
+    queue
+
+  def startQueue(service: Service): LiveOrDeadQueue =
+    queues.getOrElse(service, {
+      val newQueue = new LiveOrDeadQueue()
+      queues.putIfAbsent(service, newQueue).getOrElse(newQueue)
+    })
 
   override def stopQueue(service: Service): Unit =
-    val qOpt = Option(queues.remove(service))
-    qOpt.foreach(_.stop())
+    val qOpt = queues.remove(service)
+    qOpt.foreach(_.invalidateQueue())
 
   def send(data: Array[Byte]): Unit =
     send(Service.QSO, data)
@@ -168,6 +130,3 @@ class BroadcastTransport @Inject() (
           logger.debug(s"Error while closing DatagramSocket: ${e.getMessage}")
       finally socket = null
 
-    if thread != null then
-      thread.interrupt()
-      thread = null

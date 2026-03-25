@@ -18,7 +18,7 @@
 
 package fdswarm.util
  
-import fdswarm.fx.contest.ContestManager
+import fdswarm.fx.contest.ContestConfigManager
 import jakarta.inject.{Inject, Provider, Singleton}
 import java.time.*
 import java.time.format.DateTimeFormatter
@@ -30,14 +30,14 @@ import java.time.format.DateTimeFormatter
  * `${product}-${contest}-${dataVersion}_${timestamp}`
  *
  *   - `product`: Application name from `BuildInfo.name` (e.g., "fdswarm").
- *   - `contest`: Current contest identifier from [[ContestManager]] (e.g., "WFD").
+ *   - `contest`: Current contest identifier from [[ContestConfigManager]] (e.g., "WFD").
  *   - `dataVersion`: Data schema version from `BuildInfo.dataVersion`.
  *   - `timestamp`: Canonical UTC timestamp in `yyyyMMdd'T'HHmmss'Z'` format.
  *
  * Example: `fdswarm-WFD-1.0.0_20260225T173742Z`
  */
 @Singleton
-class FilenameStamp @Inject()(contestManagerProvider: Provider[ContestManager]):
+class FilenameStamp @Inject():
  
   // ─────────────────────────────────────────────────────────────
   // Canonical UTC timestamp formatter (20260225T173742Z)
@@ -54,9 +54,10 @@ class FilenameStamp @Inject()(contestManagerProvider: Provider[ContestManager]):
   def build(
              instant: Instant = Instant.now()
            ): String =
-    val contestType = contestManagerProvider.get().config.contestType
+//    val contestType = contestManagerProvider.get().config.contestType
     val parts =
-      List(com.organization.BuildInfo.name, contestType.toString, com.organization.BuildInfo.dataVersion)
+      List(com.organization.BuildInfo.name,
+        com.organization.BuildInfo.dataVersion)
         .map(sanitize)
  
     s"${parts.mkString("-")}_${format(instant)}"

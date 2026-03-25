@@ -18,7 +18,7 @@
 
 package fdswarm.exporter
 
-import fdswarm.fx.contest.ContestManager
+import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.fx.station.StationStore
 import fdswarm.io.DirectoryProvider
 import fdswarm.store.QsoStore
@@ -30,7 +30,7 @@ import jakarta.inject.{Inject, Singleton}
 final class ExportService @Inject()(
                                      qsoStore: QsoStore,
                                      directoryProvider: DirectoryProvider,
-                                     contestManager: ContestManager,
+                                     contestManager: ContestConfigManager,
                                      stationStore: StationStore,
                                      val adifExporter: AdifExporter,
                                      cabrilloHeaderStore: CabrilloHeaderStore

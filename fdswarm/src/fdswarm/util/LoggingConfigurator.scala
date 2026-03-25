@@ -33,10 +33,10 @@ object LoggingConfigurator:
     builder.setStatusLevel(Level.WARN)
 
     // Console Appender
-    val console = builder.newAppender("TestConsole", "Console")
-    console.addAttribute("target", "SYSTEM_ERR")
+    val console = builder.newAppender("Console", "Console")
+    console.addAttribute("target", "SYSTEM_OUT")
     console.add(builder.newLayout("PatternLayout")
-      .addAttribute("pattern", "%logger{36} %highlight{%-5level}{FATAL=bg_red, ERROR=red, WARN=yellow, INFO=green, info=blue, info=cyan}  %msg%n"))
+      .addAttribute("pattern", "%logger{36} %highlight{%-5level}{FATAL=bg_red, ERROR=red, WARN=yellow, INFO=green, DEBUG=blue, TRACE=cyan}  %msg%n"))
     builder.add(console)
 
     // File Appender
@@ -66,7 +66,7 @@ object LoggingConfigurator:
 
     // Root Logger
     builder.add(builder.newRootLogger(Level.INFO)
-      .add(builder.newAppenderRef("TestConsole"))
+      .add(builder.newAppenderRef("Console"))
       .add(builder.newAppenderRef("FileAppender")))
 
     Configurator.reconfigure(builder.build())

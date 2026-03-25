@@ -19,29 +19,56 @@
 package fdswarm.fx.discovery
 
 import com.google.inject.name.Named
+import com.google.inject.Provider
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.contest.ContestConfig
+import fdswarm.StationConfigManager
+import fdswarm.fx.contest.{ContestConfig, ContestConfigManager}
 import fdswarm.model.StationConfig
-import fdswarm.replication.{Service, Transport, UDPHeaderData}
+import fdswarm.replication.{LiveOrDeadQueue, Service, Transport, UDPHeaderData}
 import fdswarm.util.NodeIdentity
 import io.circe.Codec
 import io.circe.parser.decode
+import io.circe.syntax._
+import io.micrometer.core.instrument.MeterRegistry
+import java.nio.charset.StandardCharsets
 import jakarta.inject.{Inject, Singleton}
 
 import java.util.concurrent.{ConcurrentHashMap, CountDownLatch, TimeUnit}
 import scala.jdk.CollectionConverters.*
 
 class ContestDiscovery @Inject() (
-    transport: Transport,
-    @Named("fdswarm.contestDiscoveryTimeoutSec") val timeoutSec: Int
+    val transport: Transport,
+    contestConfigProvider: Provider[ContestConfigManager],
+    stationConfigManager: StationConfigManager,
+    @Named("fdswarm.contestDiscoveryTimeoutSec") val timeoutSec: Int,
+    meterRegistry: MeterRegistry
 ) extends LazyLogging:
 
+  private val discReqReceived = meterRegistry.counter("fdswarm_discovery_req_received")
+
+  private val queue: LiveOrDeadQueue = transport.startQueue(Service.DiscReq)
+  // This thread runbs for ever handling Service.DiscReq messages
+  new Thread {
+    setDaemon(true)
+    setName("ContestDiscoveryHandler")
+    override def run(): Unit = {
+      while (true) {
+        val msg: UDPHeaderData = queue.take()
+        discReqReceived.increment()
+        val response = DiscoveryWire(contestConfigProvider.get.config, stationConfigManager.station)
+        val jsonBytes = response.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+        transport.send(Service.DiscResponse, jsonBytes)
+        logger.trace("Received DiscReq from {} responding with {}",msg.nodeIdentity, response)
+      }
+    }
+  }.start()
+  
   def discoverContest(
                        onResponse: NodeContestStation => Unit 
                      ): Unit =
     logger.info(s"Starting contest discovery (timeout: ${timeoutSec}s)")
 
-    val responseQueue = transport.startQueue(Service.DiscResponse)
+    val responseQueue = transport.startQueue(Service.DiscReq, Service.DiscResponse)
     val startTime = System.currentTimeMillis()
     while (System.currentTimeMillis() - startTime < timeoutSec * 1000L) {
       responseQueue.poll(100, TimeUnit.MILLISECONDS) match {

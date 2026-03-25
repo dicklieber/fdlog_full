@@ -28,7 +28,7 @@ import jakarta.inject.{Inject, Singleton}
 import scalafx.beans.property.ObjectProperty
 
 @Singleton
-final class StationManager @Inject()(
+final class StationConfigManager @Inject()(
                                       productionDirectory: DirectoryProvider,
                                       startupInfo: StartupInfo
                                     ) extends LazyLogging:

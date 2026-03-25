@@ -20,7 +20,7 @@ package fdswarm.replication
 
 import com.google.inject.name.Named
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.StationManager
+import fdswarm.StationConfigManager
 import fdswarm.fx.bandmodes.SelectedBandModeManager
 import fdswarm.io.DirectoryProvider
 import fdswarm.model.BandModeOperator
@@ -41,7 +41,7 @@ final case class StatusBroadcastSettings(
 class StatusBroadcastService @Inject()(
                                         qsoStore: QsoStore,
                                         transport: Transport,
-                                        stationManager: StationManager,
+                                        stationManager: StationConfigManager,
                                         selectedBandModeStore:SelectedBandModeManager,
                                         nodeIdentityManager: NodeIdentityManager,
                                         dirProvider: DirectoryProvider,

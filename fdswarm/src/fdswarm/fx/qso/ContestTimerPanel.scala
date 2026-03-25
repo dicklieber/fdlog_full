@@ -20,7 +20,7 @@ package fdswarm.fx.qso
 
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.GridColumns
-import fdswarm.fx.contest.ContestManager
+import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.util.DurationFormat
 import jakarta.inject.{Inject, Named, Singleton}
 import scalafx.animation.{KeyFrame, Timeline}
@@ -33,7 +33,7 @@ import scalafx.Includes.*
 
 @Singleton
 class ContestTimerPanel @Inject()(
-                                   contestManager: ContestManager,
+                                   contestManager: ContestConfigManager,
                                    @Named("fdswarm.contestTimerUpdateSec") contestTimerUpdateSec: Int
                                  ) extends LazyLogging:
 

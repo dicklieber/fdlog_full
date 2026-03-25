@@ -19,15 +19,15 @@
 package fdswarm.fx.startup
 
 import jakarta.inject.{Inject, Singleton}
-import fdswarm.fx.contest.ContestManager
+import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.fx.discovery.{ContestDiscovery, DiscoveryWire}
 import fdswarm.util.NodeIdentity
 import scalafx.stage.Window
 
 @Singleton
 class ContestCondition @Inject()(
-    private val contestManager: ContestManager,
-    private val contestDiscovery: ContestDiscovery
+                                  private val contestManager: ContestConfigManager,
+                                  private val contestDiscovery: ContestDiscovery
 ) extends StartupCondition:
   override def name: String = "Contest"
 

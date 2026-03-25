@@ -1,201 +1,99 @@
 package fdswarm.replication
 
-import java.util.concurrent.{BlockingQueue, TimeUnit}
-import java.util.{Collection, Iterator => JIterator}
+import fdswarm.replication.LiveOrDeadQueue.deadQueueInstance
+import fdswarm.replication.UDPHeaderData
+
+import java.util
+import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
+import scala.jdk.CollectionConverters.*
 
 /**
- * A queue that can be invalidated (becomes "dead").
- * Once dead, it stops accepting elements and unblocks callers.
+ * A concurrent queue implementation that can be marked as either "live" or "dead."
+ * When marked as "live," the queue supports normal operations such as adding,
+ * retrieving, and draining elements. When marked as "dead," the queue becomes
+ * non-operational and throws an exception upon any access attempt.
+ *
+ * The primary use case for this class is scenarios where the queue's availability
+ * or operational state might change dynamically.
  */
-class LiveOrDeadQueue(initial: BlockingQueue[UDPHeaderData])
-  extends BlockingQueue[UDPHeaderData]:
+final class LiveOrDeadQueue:
 
-  @volatile private var queue: BlockingQueue[UDPHeaderData] = initial
+  @volatile
+  private var delegate: LinkedBlockingQueue[UDPHeaderData] =
+    new LinkedBlockingQueue[UDPHeaderData]()
 
   def invalidateQueue(): Unit =
-    queue = DeadQueue
+    delegate = deadQueueInstance
 
-  def isDead: Boolean =
-    queue eq DeadQueue
+  def isAlive: Boolean =
+    delegate ne deadQueueInstance
 
-  override def put(e: UDPHeaderData): Unit =
-    checkAlive()
-    queue.put(e)
+  def put(e: UDPHeaderData): Unit =
+    delegate.put(e)
 
-  override def take(): UDPHeaderData =
-    if isDead then
-      throw IllegalStateException("Queue is dead")
-    queue.take()
+  def offer(e: UDPHeaderData): Boolean =
+    delegate.offer(e)
 
-  override def offer(
-                      e: UDPHeaderData,
-                      timeout: Long,
-                      unit: TimeUnit
-                    ): Boolean =
-    checkAlive()
-    queue.offer(e, timeout, unit)
+  def offer(e: UDPHeaderData, timeout: Long, unit: TimeUnit): Boolean =
+    delegate.offer(e, timeout, unit)
 
-  override def poll(timeout: Long, unit: TimeUnit): UDPHeaderData =
-    if isDead then null
-    else queue.poll(timeout, unit)
+  def take(): UDPHeaderData =
+    delegate.take()
 
-  override def remainingCapacity(): Int =
-    if isDead then 0 else queue.remainingCapacity()
+  def poll(): UDPHeaderData | Null =
+    delegate.poll()
 
-  override def drainTo(c: Collection[_ >: UDPHeaderData]): Int =
-    queue.drainTo(c)
+  def poll(timeout: Long, unit: TimeUnit): UDPHeaderData | Null =
+    delegate.poll(timeout, unit)
 
-  override def drainTo(
-                        c: Collection[_ >: UDPHeaderData],
-                        maxElements: Int
-                      ): Int =
-    queue.drainTo(c, maxElements)
+  def peek(): UDPHeaderData | Null =
+    delegate.peek()
 
-  override def offer(e: UDPHeaderData): Boolean =
-    if isDead then false else queue.offer(e)
+  def size: Int =
+    delegate.size()
 
-  override def poll(): UDPHeaderData =
-    if isDead then null else queue.poll()
+  def isEmpty: Boolean =
+    delegate.isEmpty
 
-  override def peek(): UDPHeaderData =
-    if isDead then null else queue.peek()
+  def drain(): List[UDPHeaderData] =
+    val buf = new util.ArrayList[UDPHeaderData]()
+    delegate.drainTo(buf)
+    buf.asScala.toList
 
-  override def iterator(): JIterator[UDPHeaderData] =
-    queue.iterator()
+  def drain(max: Int): List[UDPHeaderData] =
+    val buf = new util.ArrayList[UDPHeaderData]()
+    delegate.drainTo(buf, max)
+    buf.asScala.toList
 
-  override def size(): Int =
-    queue.size()
 
-  override def add(e: UDPHeaderData): Boolean =
-    if isDead then throw IllegalStateException("Queue is dead")
-    else queue.add(e)
+object LiveOrDeadQueue:
 
-  override def remove(): UDPHeaderData =
-    val value = poll()
-    if value == null then throw java.util.NoSuchElementException()
-    value
+  private class DeadQueue extends LinkedBlockingQueue[UDPHeaderData]:
+    private def dead(): Nothing =
+      throw new IllegalStateException("Queue is dead")
 
-  override def element(): UDPHeaderData =
-    val value = peek()
-    if value == null then throw java.util.NoSuchElementException()
-    value
+    override def put(e: UDPHeaderData): Unit = dead()
+    override def offer(e: UDPHeaderData): Boolean = dead()
+    override def offer(e: UDPHeaderData, timeout: Long, unit: TimeUnit): Boolean = dead()
+    override def add(e: UDPHeaderData): Boolean = dead()
+    override def take(): UDPHeaderData = dead()
+    override def poll(): UDPHeaderData | Null = dead()
+    override def poll(timeout: Long, unit: TimeUnit): UDPHeaderData | Null = dead()
+    override def peek(): UDPHeaderData | Null = dead()
+    override def clear(): Unit = dead()
+    override def size(): Int = dead()
+    override def isEmpty: Boolean = dead()
+    override def remainingCapacity(): Int = dead()
+    override def contains(o: Any): Boolean = dead()
+    override def remove(): UDPHeaderData = dead()
+    override def remove(o: Any): Boolean = dead()
+    override def element(): UDPHeaderData = dead()
+    override def iterator(): util.Iterator[UDPHeaderData] = dead()
+    override def toArray: Array[Object] = dead()
+    override def toArray[T](a: Array[T & Object]): Array[T & Object] = dead()
+    override def drainTo(c: util.Collection[? >: UDPHeaderData]): Int = dead()
+    override def drainTo(c: util.Collection[? >: UDPHeaderData], maxElements: Int): Int = dead()
 
-  override def contains(o: Any): Boolean =
-    queue.contains(o)
+  private val deadQueueInstance: LinkedBlockingQueue[UDPHeaderData] =
+    new DeadQueue
 
-  override def toArray(): Array[Object] =
-    queue.toArray()
-
-  override def toArray[T <: Object](a: Array[T]): Array[T] =
-    queue.toArray(a.asInstanceOf[Array[Object]]).asInstanceOf[Array[T]]
-
-  override def remove(o: Any): Boolean =
-    queue.remove(o)
-
-  override def containsAll(c: Collection[?]): Boolean =
-    queue.containsAll(c)
-
-  override def addAll(c: Collection[_ <: UDPHeaderData]): Boolean =
-    checkAlive()
-    queue.addAll(c)
-
-  override def removeAll(c: Collection[?]): Boolean =
-    queue.removeAll(c)
-
-  override def retainAll(c: Collection[?]): Boolean =
-    queue.retainAll(c)
-
-  override def clear(): Unit =
-    queue.clear()
-
-  override def isEmpty(): Boolean =
-    queue.isEmpty()
-
-  private def checkAlive(): Unit =
-    if isDead then
-      throw IllegalStateException("Queue is dead")
-
-object DeadQueue extends BlockingQueue[UDPHeaderData]:
-
-  override def put(e: UDPHeaderData): Unit =
-    throw IllegalStateException("Queue is dead")
-
-  override def take(): UDPHeaderData =
-    throw IllegalStateException("Queue is dead")
-
-  override def offer(e: UDPHeaderData): Boolean =
-    false
-
-  override def offer(
-                      e: UDPHeaderData,
-                      timeout: Long,
-                      unit: TimeUnit
-                    ): Boolean =
-    false
-
-  override def poll(): UDPHeaderData =
-    null
-
-  override def poll(timeout: Long, unit: TimeUnit): UDPHeaderData =
-    null
-
-  override def peek(): UDPHeaderData =
-    null
-
-  override def remainingCapacity(): Int =
-    0
-
-  override def drainTo(c: Collection[_ >: UDPHeaderData]): Int =
-    0
-
-  override def drainTo(
-                        c: Collection[_ >: UDPHeaderData],
-                        maxElements: Int
-                      ): Int =
-    0
-
-  override def iterator(): JIterator[UDPHeaderData] =
-    java.util.Collections.emptyIterator()
-
-  override def size(): Int =
-    0
-
-  override def add(e: UDPHeaderData): Boolean =
-    throw IllegalStateException("Queue is dead")
-
-  override def remove(): UDPHeaderData =
-    throw java.util.NoSuchElementException()
-
-  override def element(): UDPHeaderData =
-    throw java.util.NoSuchElementException()
-
-  override def contains(o: Any): Boolean =
-    false
-
-  override def toArray(): Array[Object] =
-    Array.empty[Object]
-
-  override def toArray[T <: Object](a: Array[T]): Array[T] =
-    a
-
-  override def remove(o: Any): Boolean =
-    false
-
-  override def containsAll(c: Collection[?]): Boolean =
-    c.isEmpty
-
-  override def addAll(c: Collection[_ <: UDPHeaderData]): Boolean =
-    if c.isEmpty then false
-    else throw IllegalStateException("Queue is dead")
-
-  override def removeAll(c: Collection[?]): Boolean =
-    false
-
-  override def retainAll(c: Collection[?]): Boolean =
-    false
-
-  override def clear(): Unit =
-    ()
-
-  override def isEmpty(): Boolean =
-    true

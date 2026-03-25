@@ -19,11 +19,11 @@
 package fdswarm.web
 
 import cats.effect.IO
-import fdswarm.StationManager
+import fdswarm.StationConfigManager
 import fdswarm.fx.UserConfig
 import fdswarm.fx.bandmodes.SelectedBandModeManager
 import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager, BandModeBuilder}
-import fdswarm.fx.contest.ContestManager
+import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.fx.qso.ContestTimerPanel
 import fdswarm.fx.sections.SectionsProvider
 import fdswarm.model.{BandMode, Callsign, Exchange, FdClass, Qso, QsoMetadata}
@@ -54,8 +54,8 @@ class WebRoutes @Inject()(
                            availableModesManager: AvailableModesManager,
                            selectedBandModeStore: SelectedBandModeManager,
                            sectionsProvider: SectionsProvider,
-                           contestManager: ContestManager,
-                           stationManager: StationManager,
+                           contestManager: ContestConfigManager,
+                           stationManager: StationConfigManager,
                            userConfig: UserConfig,
                            transport: Transport,
                            bandModeBuilder: BandModeBuilder,

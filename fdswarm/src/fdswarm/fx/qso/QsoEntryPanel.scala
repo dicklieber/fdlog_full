@@ -19,9 +19,9 @@
 package fdswarm.fx.qso
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.StationManager
+import fdswarm.StationConfigManager
 import fdswarm.fx.bandmodes.SelectedBandModeManager
-import fdswarm.fx.contest.ContestManager
+import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.fx.sections.Section
 import fdswarm.fx.CallSignField
 import fdswarm.fx.GridColumns
@@ -40,8 +40,8 @@ class QsoEntryPanel @Inject()(
                                qsoStore: QsoStore,
                                transport: Transport,
                                selectedBandModeStore: SelectedBandModeManager,
-                               stationManager: StationManager,
-                               contestManager: ContestManager,
+                               stationManager: StationConfigManager,
+                               contestManager: ContestConfigManager,
                                callsignField: CallSignField,
                                contestClassField: ContestClassField,
                                sectionField: fdswarm.fx.sections.SectionField,

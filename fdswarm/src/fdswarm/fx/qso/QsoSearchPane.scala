@@ -47,7 +47,7 @@ import java.io.PrintWriter
 import java.time.Duration
 
 class QsoSearchPane @Inject()(
-                               contestManager: ContestManager,
+                               contestManager: ContestConfigManager,
                                contestCatalog: ContestCatalog,
                                modeCatalog: ModeCatalog,
                                modesManager: AvailableModesManager,

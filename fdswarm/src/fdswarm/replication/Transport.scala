@@ -32,14 +32,30 @@ trait Transport:
   def isUs(candidate:NodeIdentity):Boolean=
     nodeIdentityManager.isUs(candidate)
   val mode: String
+
+  /**
+   * 
+   * @param service send a message of this type with empty payload.
+   * @return a queue that will receive messages of this type.
+   */
+  def startQueue(request: Service, response:Service): LiveOrDeadQueue
+
+  /**
+   * Start a queue for a service that will receive messages of type [[Service]].
+   * Don't send anything.
+   * @param service
+   * @return
+   */
   def startQueue(service: Service): LiveOrDeadQueue
   def stopQueue(service: Service): Unit=
     queues.get(service).foreach(_.invalidateQueue())
-  
-  def send(service: Service, data: Array[Byte] = Array.empty): Unit
-  def send[T](service: Service, payload: T)(using Encoder[T]): Unit =
-    send(service, payload.asJson.noSpaces.getBytes(StandardCharsets.UTF_8))
+
+  /**
+   * Just send a message of type [[Service]] with a given payload.
+   */
+  def send(service: Service, data: Array[Byte]): Unit
   def sentCount: Long
   def stop(): Unit
   val queues: TrieMap[Service, LiveOrDeadQueue] = new TrieMap[Service, LiveOrDeadQueue]()
+  
 

@@ -20,13 +20,13 @@ package fdswarm.replication
 
 import cats.effect.unsafe.implicits.global
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.contest.{ContestConfig, ContestManager}
+import fdswarm.fx.contest.{ContestConfig, ContestConfigManager}
 import fdswarm.model.Qso
 import fdswarm.replication.status.SwarmStatus
 import fdswarm.store.ReplicationSupport
 import fdswarm.util.JavaTimeCirce.given
 import fdswarm.util.{InstanceIdManager, NodeIdentity, NodeIdentityManager}
-import fdswarm.StationManager
+import fdswarm.StationConfigManager
 import fdswarm.fx.discovery.DiscoveryWire
 import io.circe.parser.decode
 import io.circe.syntax.*
@@ -41,8 +41,8 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
                                   transport: Transport,
                                   nodeIdentityManager: NodeIdentityManager,
                                   swarmStatus: SwarmStatus,
-                                  contestManager: ContestManager,
-                                  stationManager: StationManager,
+                                  contestManager: ContestConfigManager,
+                                  stationManager: StationConfigManager,
                                   instanceIdManager: InstanceIdManager,
                                   meterRegistry: MeterRegistry) extends LazyLogging:
   logger.debug("Starting NodeStatusHandler")
@@ -56,11 +56,9 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
 
   private val statusQueue = transport.startQueue(Service.Status)
   private val qsoQueue = transport.startQueue(Service.QSO)
-  private val discReqQueue = transport.startQueue(Service.DiscReq)
-  private val discRespQueue = transport.startQueue(Service.DiscResponse)
   private val restartContestQueue = transport.startQueue(Service.RestartContest)
-  private val instanceQueryQueue = transport.startQueue(Service.InstanceQuery)
-  private val instanceRespQueue = transport.startQueue(Service.InstanceResponse)
+//  private val instanceQueryQueue = transport.startQueue(Service.InstanceQuery)
+//  private val instanceRespQueue = transport.startQueue(Service.InstanceResponse)
 
   private val httpClient = HttpClient.newBuilder()
     .followRedirects(HttpClient.Redirect.NORMAL)
@@ -69,7 +67,7 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
   private val thread = new Thread(() =>
     while !Thread.currentThread().isInterrupted do
       try
-        val udpHeader: UDPHeaderData = transport.queue.take()
+        val udpHeader: UDPHeaderData = statusQueue.take()
         udpHeader.service match
           case Service.Status =>
             if (contestManager.shouldIgnoreStatus) 

@@ -23,7 +23,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.FdLogApp
 import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.bandmodes.BandsAndModesPane
-import fdswarm.fx.contest.ContestManager
+import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.fx.discovery.DiscoveryDialog
 import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.station.StationEditor
@@ -53,37 +53,37 @@ import scalafx.stage.{Stage, Window}
 import scala.io.Source
 
 final class FdLogUi @Inject() (
-    contestEntry: ContestEntry,
-    bandModeManagerPane: BandsAndModesPane,
-    stationEditor: StationEditor,
-    contestManager: ContestManager,
-    howManyDialogService: HowManyDialogService,
-    fdHourDialogService: FdHourDialogService,
-    statusBroadcastDialog: StatusBroadcastDialog,
-    loggingDialog: LoggingDialog,
-    contestTimeDialog: ContestTimeDialog,
-    fdHourDigestsPane: FdHourDigestsPane,
-    repl: NodeStatusHandler,
-    swarmStatusPane: SwarmStatusPane,
-    statusBroadcastService: StatusBroadcastService,
-    aboutMenuItem: AboutMenuItem,
-    nodeIdentityManager: NodeIdentityManager,
-    userConfig: UserConfig,
-    userConfigEditor: UserConfigEditor,
-    meterRegistry: MeterRegistry,
-    qsoStore: fdswarm.store.QsoStore,
-    qsoSearchPane: fdswarm.fx.qso.QsoSearchPane,
-    exportDialog: fdswarm.fx.tools.ExportDialog,
-    webSessionsAdmin: fdswarm.fx.admin.WebSessionsAdmin,
-    sectionsProvider: fdswarm.fx.sections.SectionsProvider,
-    sectionPanel: fdswarm.fx.sections.SectionPanel,
-    ipAddressDialogService: IpAddressDialogService,
-    swarmStatusAdmin: fdswarm.fx.admin.SwarmStatusAdmin,
-    summaryDialog: fdswarm.fx.tools.SummaryDialog,
-    metricsDialog: fdswarm.fx.tools.MetricsDialog,
-    apiServer: fdswarm.api.ApiServer,
-    startupDialog: fdswarm.fx.startup.StartupDialog,
-    discoveryDialog: DiscoveryDialog
+                                contestEntry: ContestEntry,
+                                bandModeManagerPane: BandsAndModesPane,
+                                stationEditor: StationEditor,
+                                contestManager: ContestConfigManager,
+                                howManyDialogService: HowManyDialogService,
+                                fdHourDialogService: FdHourDialogService,
+                                statusBroadcastDialog: StatusBroadcastDialog,
+                                loggingDialog: LoggingDialog,
+                                contestTimeDialog: ContestTimeDialog,
+                                fdHourDigestsPane: FdHourDigestsPane,
+                                repl: NodeStatusHandler,
+                                swarmStatusPane: SwarmStatusPane,
+                                statusBroadcastService: StatusBroadcastService,
+                                aboutMenuItem: AboutMenuItem,
+                                nodeIdentityManager: NodeIdentityManager,
+                                userConfig: UserConfig,
+                                userConfigEditor: UserConfigEditor,
+                                meterRegistry: MeterRegistry,
+                                qsoStore: fdswarm.store.QsoStore,
+                                qsoSearchPane: fdswarm.fx.qso.QsoSearchPane,
+                                exportDialog: fdswarm.fx.tools.ExportDialog,
+                                webSessionsAdmin: fdswarm.fx.admin.WebSessionsAdmin,
+                                sectionsProvider: fdswarm.fx.sections.SectionsProvider,
+                                sectionPanel: fdswarm.fx.sections.SectionPanel,
+                                ipAddressDialogService: IpAddressDialogService,
+                                swarmStatusAdmin: fdswarm.fx.admin.SwarmStatusAdmin,
+                                summaryDialog: fdswarm.fx.tools.SummaryDialog,
+                                metricsDialog: fdswarm.fx.tools.MetricsDialog,
+                                apiServer: fdswarm.api.ApiServer,
+                                startupDialog: fdswarm.fx.startup.StartupDialog,
+                                discoveryDialog: DiscoveryDialog
 ) extends LazyLogging:
 
   // --- ARRL Sections Map (SVG) -------------------------------------------------

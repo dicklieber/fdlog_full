@@ -35,7 +35,7 @@ import _root_.meters4s.Reporter
 import net.codingwell.scalaguice.ScalaModule
 import com.google.inject.TypeLiteral
 import fdswarm.replication.status.{SwarmStatus, SwarmStatusApi}
-import fdswarm.replication.{BroadcastTransport, MulticastTransport, NodeStatusHandler, StatusBroadcastService, Transport}
+import fdswarm.replication.{BroadcastTransport, NodeStatusHandler, StatusBroadcastService, Transport}
 import fdswarm.util.LoggingManager
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -47,13 +47,13 @@ class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModu
     val productionDirectory = new ProductionDirectory
     //
     val loggingManager = new fdswarm.util.LoggingManager(new ProductionDirectory)
-    loggingManager.applyInitialConfig()
     bind[fdswarm.util.LoggingManager].toInstance(loggingManager)
 
     val startupInfo = new StartupInfo(rawArgs)
     bind[StartupInfo].toInstance(startupInfo)
     bind[DirectoryProvider].toInstance(productionDirectory)
     fdswarm.util.LoggingConfigurator.addFileAppender(new ProductionDirectory)
+    loggingManager.applyInitialConfig()
 
     bind[fdswarm.util.NodeIdentityManager].asEagerSingleton()
 
@@ -83,15 +83,15 @@ class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModu
     bind[SwarmStatusApi].to[SwarmStatus]
     bind[StatusBroadcastService].asEagerSingleton()
     bind[NodeStatusHandler].asEagerSingleton()
-    bind[MulticastTransport].asEagerSingleton()
+//    bind[MulticastTransport].asEagerSingleton()
     bind[BroadcastTransport].asEagerSingleton()
 
     val transportType = if fullConfig.hasPath("fdswarm.transportType") then fullConfig.getString("fdswarm.transportType") else "Multicast"
-    if (transportType.equalsIgnoreCase("Broadcast")) {
+    if (transportType.equalsIgnoreCase("Broadcast")) 
       bind[Transport].to[BroadcastTransport].asEagerSingleton()
-    } else {
-      bind[Transport].to[MulticastTransport].asEagerSingleton()
-    }
+    else 
+      throw new Exception("Transport type not supported: " + transportType)
+//      bind[Transport].to[MulticastTransport].asEagerSingleton()
 
     bind[QsoStore].to[ReplicationSupport].asEagerSingleton()
     bind[MeterRegistry].to[PrometheusMeterRegistry].asEagerSingleton()

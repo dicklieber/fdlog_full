@@ -18,7 +18,7 @@
 
 package fdswarm.fx.tools
 
-import fdswarm.fx.contest.{ContestManager, ContestTimes}
+import fdswarm.fx.contest.{ContestConfigManager, ContestTimes}
 import fdswarm.fx.qso.ContestTimerPanel
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
@@ -30,7 +30,7 @@ import scalafx.stage.{Stage, Window}
 import java.time.{LocalTime, ZonedDateTime}
 
 @Singleton
-class ContestTimeDialog @Inject()(contestManager: ContestManager, contestTimerPanel: ContestTimerPanel) {
+class ContestTimeDialog @Inject()(contestManager: ContestConfigManager, contestTimerPanel: ContestTimerPanel) {
 
   private var stage: Option[Stage] = None
 

@@ -50,7 +50,7 @@ import scalafx.util.Duration
 import java.time.*
 
 @Singleton
-final class ContestManager @Inject()(
+final class ContestConfigManager @Inject()(
                                       productionDirectory: DirectoryProvider,
                                       contestCatalog: ContestCatalog,
                                       sections: Sections,

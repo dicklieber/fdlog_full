@@ -19,16 +19,16 @@
 package fdswarm.fx.qso
 
 import fdswarm.fx.{NextField, UserConfig}
-import fdswarm.fx.contest.{ContestCatalog, ContestManager}
+import fdswarm.fx.contest.{ContestCatalog, ContestConfigManager}
 import jakarta.inject.*
 import scalafx.Includes.*
 import scalafx.scene.control.{TextField, TextFormatter}
 
 class ContestClassField @Inject() (
-    contestManager: ContestManager,
-    contestCatalog: ContestCatalog,
-    dupPanel: DupPanel,
-    override val userConfig: UserConfig
+                                    contestManager: ContestConfigManager,
+                                    contestCatalog: ContestCatalog,
+                                    dupPanel: DupPanel,
+                                    override val userConfig: UserConfig
 ) extends TextField
     with NextField:
   logger.trace("ctor")

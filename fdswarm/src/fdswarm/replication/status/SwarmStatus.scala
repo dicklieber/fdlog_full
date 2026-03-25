@@ -18,7 +18,7 @@
 
 package fdswarm.replication.status
 
-import fdswarm.StationManager
+import fdswarm.StationConfigManager
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.bandmodes.SelectedBandModeManager
 import fdswarm.fx.qso.FdHour
@@ -44,7 +44,7 @@ import scala.collection.concurrent.TrieMap
 class SwarmStatus @Inject() (
                               directoryProvider: DirectoryProvider,
                               nodeIdentityManager: NodeIdentityManager,
-                              stationManager: StationManager,
+                              stationManager: StationConfigManager,
                               selectedBandModeStore: SelectedBandModeManager,
                               swarmStatusPane: SwarmStatusPane
                             ) extends SwarmStatusApi with LazyLogging:

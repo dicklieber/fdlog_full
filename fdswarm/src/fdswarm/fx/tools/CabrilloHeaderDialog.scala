@@ -20,7 +20,7 @@ package fdswarm.fx.tools
 
 import fdswarm.fx.InputHelper.forceCaps
 import fdswarm.exporter.*
-import fdswarm.fx.contest.ContestManager
+import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.fx.station.StationStore
 import fdswarm.fx.utils.{BootstrapIcons, IconButton}
 import jakarta.inject.{Inject, Singleton}
@@ -34,7 +34,7 @@ import scalafx.stage.Window
 final class CabrilloHeaderDialog @Inject()(
                                             headerStore: CabrilloHeaderStore,
                                             stationStore: StationStore,
-                                            contestManager: ContestManager
+                                            contestManager: ContestConfigManager
                                           ):
 
   def show(ownerWindow: Window): Unit =
