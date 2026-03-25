@@ -398,12 +398,12 @@ final class FdLogUi @Inject() (
 
   private def fileMenu: Menu =
     new Menu("File"):
-      val exportItem = new MenuItem("Export"):
+      private val exportItem = new MenuItem("Export"):
         onAction = _ =>
           Option(ownerWindow) match
             case Some(w) => exportDialog.show(w)
             case None    => ()
-      val exitItem = new MenuItem("Exit"):
+      private val exitItem = new MenuItem("Exit"):
         onAction = _ => Platform.exit()
 
       items = if isMac then Seq(exportItem) else Seq(exportItem, exitItem)
