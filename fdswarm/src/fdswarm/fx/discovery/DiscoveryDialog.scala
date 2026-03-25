@@ -19,16 +19,15 @@
 package fdswarm.fx.discovery
 
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.fx.utils.GridHeaderCell
 import jakarta.inject.Inject
+import scalafx.Includes.*
 import scalafx.application.Platform
 import scalafx.collections.ObservableBuffer
+import scalafx.geometry.Insets
 import scalafx.scene.control.*
+import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority}
 import scalafx.stage.Window
-import scalafx.Includes.*
-import javafx.beans.property.{SimpleStringProperty, SimpleIntegerProperty}
-import fdswarm.util.NodeIdentity
-import fdswarm.fx.contest.ContestConfig
-import fdswarm.model.StationConfig
 
 class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery)
     extends LazyLogging:
@@ -45,46 +44,61 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery)
       title = "Discovered Contest Stations"
       resizable = true
 
-      val tableView: scalafx.scene.control.TableView[NodeContestStation] = new scalafx.scene.control.TableView[NodeContestStation] {
-        items = observableBuffer
-        columnResizePolicy = TableView.UnconstrainedResizePolicy
-        stylesheets ++= Seq("data:text/css,table-view .table-cell { -fx-text-overrun: clip; -fx-ellipsis-string: ''; }")
-        prefWidth = 1000.0
-        prefHeight = 500.0
-        columns ++= Seq(
-          new TableColumn[NodeContestStation, String] {
-            text = "Host IP"
-            cellValueFactory = { cellData => new SimpleStringProperty(cellData.value.nodeIdentity.hostIp) }
-          },
-          new TableColumn[NodeContestStation, String] {
-            text = "Host Name"
-            cellValueFactory = { cellData => new SimpleStringProperty(cellData.value.nodeIdentity.hostName) }
-            prefWidth = 350.0
-          },
-          new TableColumn[NodeContestStation, String] {
-            text = "Port"
-            cellValueFactory = { cellData => new SimpleStringProperty(cellData.value.nodeIdentity.port.toString) }
-          },
-          new TableColumn[NodeContestStation, String] {
-            text = "Contest"
-            cellValueFactory = { cellData => new SimpleStringProperty(cellData.value.discoveryWire.contestConfig.contestType.toString) }
-          },
-          new TableColumn[NodeContestStation, String] {
-            text = "Exchange"
-            cellValueFactory = { cellData => new SimpleStringProperty(cellData.value.exchange) }
-          },
-          new TableColumn[NodeContestStation, String] {
-            text = "Our Call"
-            cellValueFactory = { cellData => new SimpleStringProperty(cellData.value.discoveryWire.contestConfig.ourCallsign.toString) }
-          },
-           new TableColumn[NodeContestStation, String] {
-            text = "Operator"
-            cellValueFactory = { cellData => new SimpleStringProperty(cellData.value.discoveryWire.stationConfig.operator.toString) }
-          }
+      val gridPane: GridPane = new GridPane {
+//        id = "discovery-grid"
+        hgap = 1
+        vgap = 1
+        gridLinesVisible = true
+        padding = Insets(10)
+        stylesheets ++= Seq("/styles/app.css")
+        columnConstraints ++= Seq(
+          new ColumnConstraints { hgrow = Priority.Always },
+          new ColumnConstraints { hgrow = Priority.Always },
+          new ColumnConstraints { hgrow = Priority.Always },
+          new ColumnConstraints { hgrow = Priority.Always },
+          new ColumnConstraints { hgrow = Priority.Always },
+          new ColumnConstraints { hgrow = Priority.Always },
+          new ColumnConstraints { hgrow = Priority.Always }
         )
       }
 
-      dialogPane().content = tableView
+      def populateGrid(): Unit = {
+        gridPane.children.clear()
+        // Headers
+        gridPane.add(GridHeaderCell("Host IP"), 0, 0)
+        gridPane.add(GridHeaderCell("Host Name"), 1, 0)
+        gridPane.add(GridHeaderCell("Port"), 2, 0)
+        gridPane.add(GridHeaderCell("Contest"), 3, 0)
+        gridPane.add(GridHeaderCell("Exchange"), 4, 0)
+        gridPane.add(GridHeaderCell("Our Call"), 5, 0)
+        gridPane.add(GridHeaderCell("Operator"), 6, 0)
+        // Data rows
+        var row = 1
+        observableBuffer.foreach { ncs =>
+          gridPane.add(new Label(ncs.nodeIdentity.hostIp), 0, row)
+          gridPane.add(new Label(ncs.nodeIdentity.hostName), 1, row)
+          gridPane.add(new Label(ncs.nodeIdentity.port.toString), 2, row)
+          gridPane.add(new Label(ncs.discoveryWire.contestConfig.contestType.toString), 3, row)
+          gridPane.add(new Label(ncs.exchange), 4, row)
+          gridPane.add(new Label(ncs.discoveryWire.contestConfig.ourCallsign.toString), 5, row)
+          gridPane.add(new Label(ncs.discoveryWire.stationConfig.operator.toString), 6, row)
+          row += 1
+        }
+      }
+
+      observableBuffer.onChange {
+        populateGrid()
+      }
+
+      populateGrid()
+
+      val scrollPane: ScrollPane = new ScrollPane {
+        content = gridPane
+        prefWidth = 1000.0
+        prefHeight = 500.0
+      }
+
+      dialogPane().content = scrollPane
       dialogPane().buttonTypes = Seq(ButtonType.OK)
       initOwner(window)
     }

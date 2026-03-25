@@ -34,7 +34,8 @@
 
 .grid-header {
     -fx-font-weight: bold;
-    -fx-background-color: white;
+    -fx-background-color: blue;
+    -fx-color: green;
 }
 
 .grid-value {
@@ -211,4 +212,23 @@
 .parenthetic {
     -fx-text-fill: gray;
     -fx-font-style: italic;
+}
+
+.gridHeader {
+    -fx-background-color: lightblue;
+    -fx-font-weight: bold;
+}
+
+
+#discovery-grid .label {
+    /*-fx-text-overrun: clip;*/
+    /*-fx-ellipsis-string: '';*/
+    /*-fx-background-color: white;*/
+    /*-fx-padding: 6 12 6 12;*/
+}
+
+
+
+#discovery-grid {
+    -fx-grid-line-color: lightgray;
 }
