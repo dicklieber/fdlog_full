@@ -1,11 +1,7 @@
 package fdswarm.fx.discovery
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.utils.GridColumn
-import fdswarm.fx.utils.GridColumnAlignment
-import fdswarm.fx.utils.GridColumnWidth
-import fdswarm.fx.utils.GridRowBehavior
-import fdswarm.fx.utils.TypedGridTableBuilder
+import fdswarm.fx.utils.{GridColumn, GridColumnAlignment, GridColumnWidth, GridRowBehavior, StyledDialog, TypedGridTableBuilder}
 import jakarta.inject.Inject
 import scalafx.Includes.*
 import scalafx.application.Platform
@@ -19,7 +15,7 @@ import scalafx.scene.layout.Region
 import scala.collection.mutable.ArrayBuffer
 
 class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery)
-  extends Dialog[ButtonType] with LazyLogging:
+  extends StyledDialog[ButtonType] with LazyLogging:
 
   private type Ncs = NodeContestStation
 

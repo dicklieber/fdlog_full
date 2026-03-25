@@ -29,6 +29,7 @@ import fdswarm.fx.discovery.DiscoveryDialog
 import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.station.StationEditor
 import fdswarm.fx.tools.*
+import fdswarm.fx.utils.UiStyles
 import fdswarm.replication.status.SwarmStatusPane
 import fdswarm.replication.{NodeStatusHandler, StatusBroadcastService}
 import fdswarm.util.{DurationFormat, NodeIdentityManager}
@@ -294,8 +295,10 @@ final class FdLogUi @Inject() (
       catch case e: Exception => logger.warn("Could not set macOS handlers", e)
 
     stage.title = s"FdSwarm@${nodeIdentityManager.ourNodeIdentity.toString}"
-    stage.scene = new Scene(root, 1100, 800):
-      stylesheets = Seq(getClass.getResource("/styles/app.css").toExternalForm)
+    val scene = new Scene(root, 1100, 800)
+    UiStyles.applyTo(scene)
+    stage.scene = scene
+
     stage.show()
     
     // Wire the Band/Mode matrix in ContestEntry to open the manager
