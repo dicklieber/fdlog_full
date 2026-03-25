@@ -214,20 +214,73 @@
     -fx-font-style: italic;
 }
 
-.gridHeader {
-    -fx-background-color: lightblue;
+/* for TypedGridTableBuilder*/
+   .grid-table {
+       -fx-hgap: 0;
+       -fx-vgap: 0;
+   }
+
+.grid-table-cell {
+    -fx-border-color: #d0d0d0;
+    -fx-border-width: 0 1 1 0;
+    -fx-background-insets: 0;
+}
+
+.grid-header-cell {
+    -fx-background-color: #e9ecef;
     -fx-font-weight: bold;
 }
-.grid-header-label{
-    -fx-background-color: red;
+
+.grid-sortable-header-cell {
+    -fx-cursor: hand;
+}
+
+.grid-sortable-header-cell:hover {
+    -fx-background-color: #dde3e8;
+}
+
+.grid-body-cell {
+    -fx-background-color: white;
+}
+
+.grid-row-even {
+    -fx-background-color: #ffffff;
+}
+
+.grid-row-odd {
+    -fx-background-color: #f8f9fa;
+}
+
+.grid-table-cell.row-warning {
+    -fx-border-color: #d8b100;
+}
+
+.grid-table-cell:hover {
+    -fx-background-color: #eaf3ff;
+}
+
+.grid-header-label {
     -fx-font-weight: bold;
 }
-.grid-header-cell{
-    -fx-background-color: green;
-    -fx-font-weight: bold;
+
+.grid-body-label {
 }
-.grid-table-cell{
-    -fx-background-color: lightgray;
-    -fx-border-width: 2;
-    -fx-border-color: blue;
+
+.grid-table-cell.cell-ok {
+    -fx-background-color: #d1e7dd;
 }
+
+.grid-table-cell.cell-missing {
+    -fx-background-color: #f8d7da;
+}
+
+.grid-table-cell.cell-warning {
+    -fx-background-color: #fff3cd;
+}
+
+.grid-inline-button {
+    -fx-padding: 3 8 3 8;
+}
+.cell-ok{}
+.cell-missing{}
+.cell-warning{}
