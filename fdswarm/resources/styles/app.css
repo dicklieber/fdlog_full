@@ -227,7 +227,7 @@
 }
 
 .grid-header-cell {
-    -fx-background-color: #d630a1;
+    -fx-background-color: #0d6efd; //#0d6efd is bootstrap primary
     -fx-font-weight: bold;
 }
 
@@ -260,7 +260,8 @@
 }
 
 .grid-header-label {
-    -fx-font-weight: bold;
+    -fx-font-weight: bolder;
+    -fx-text-fill: white;
 }
 
 .grid-body-label {
