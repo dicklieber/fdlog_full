@@ -51,4 +51,6 @@ case class ContestConfig(contestType: ContestType,
                          ourCallsign: Callsign,
                          transmitters: Int,
                          ourClass: String,
-                         ourSection: String) derives Codec.AsObject
+                         ourSection: String) derives Codec.AsObject:
+  val exchange:String=
+    s"$transmitters$ourClass $ourSection"

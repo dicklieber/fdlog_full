@@ -43,10 +43,14 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery)
     logger.trace("Done waiting for responses from other nodes.")
     val dialog: scalafx.scene.control.Dialog[Unit] = new scalafx.scene.control.Dialog[Unit] {
       title = "Discovered Contest Stations"
+      resizable = true
 
       val tableView: scalafx.scene.control.TableView[NodeContestStation] = new scalafx.scene.control.TableView[NodeContestStation] {
         items = observableBuffer
-        columnResizePolicy = TableView.ConstrainedResizePolicy
+        columnResizePolicy = TableView.UnconstrainedResizePolicy
+        stylesheets ++= Seq("data:text/css,table-view .table-cell { -fx-text-overrun: clip; -fx-ellipsis-string: ''; }")
+        prefWidth = 1000.0
+        prefHeight = 500.0
         columns ++= Seq(
           new TableColumn[NodeContestStation, String] {
             text = "Host IP"
@@ -55,6 +59,7 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery)
           new TableColumn[NodeContestStation, String] {
             text = "Host Name"
             cellValueFactory = { cellData => new SimpleStringProperty(cellData.value.nodeIdentity.hostName) }
+            prefWidth = 350.0
           },
           new TableColumn[NodeContestStation, String] {
             text = "Port"
@@ -62,27 +67,19 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery)
           },
           new TableColumn[NodeContestStation, String] {
             text = "Contest"
-            cellValueFactory = { cellData => new SimpleStringProperty(cellData.value.contestStation.contestConfig.contestType.name) }
+            cellValueFactory = { cellData => new SimpleStringProperty(cellData.value.discoveryWire.contestConfig.contestType.toString) }
           },
           new TableColumn[NodeContestStation, String] {
-            text = "Class"
-            cellValueFactory = { cellData => new SimpleStringProperty(cellData.value.contestStation.contestConfig.ourClass) }
-          },
-          new TableColumn[NodeContestStation, String] {
-            text = "Section"
-            cellValueFactory = { cellData => new SimpleStringProperty(cellData.value.contestStation.contestConfig.ourSection) }
+            text = "Exchange"
+            cellValueFactory = { cellData => new SimpleStringProperty(cellData.value.exchange) }
           },
           new TableColumn[NodeContestStation, String] {
             text = "Our Call"
-            cellValueFactory = { cellData => new SimpleStringProperty(cellData.value.contestStation.contestConfig.ourCallsign.toString) }
+            cellValueFactory = { cellData => new SimpleStringProperty(cellData.value.discoveryWire.contestConfig.ourCallsign.toString) }
           },
-          new TableColumn[NodeContestStation, String] {
-            text = "TX"
-            cellValueFactory = { cellData => new SimpleStringProperty(cellData.value.contestStation.contestConfig.transmitters.toString) }
-          },
-          new TableColumn[NodeContestStation, String] {
+           new TableColumn[NodeContestStation, String] {
             text = "Operator"
-            cellValueFactory = { cellData => new SimpleStringProperty(cellData.value.contestStation.stationConfig.operator.toString) }
+            cellValueFactory = { cellData => new SimpleStringProperty(cellData.value.discoveryWire.stationConfig.operator.toString) }
           }
         )
       }

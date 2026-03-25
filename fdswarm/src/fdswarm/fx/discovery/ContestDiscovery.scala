@@ -99,4 +99,6 @@ case class DiscoveryWire(contestConfig: ContestConfig, stationConfig: StationCon
 /**
  * Combines the ContestStation as received from other nodes with the NodeIdentity of the node, as extracted from the UDPHeader..
  */
-case class NodeContestStation(nodeIdentity: NodeIdentity, contestStation: DiscoveryWire) derives Codec.AsObject
+case class NodeContestStation(nodeIdentity: NodeIdentity, discoveryWire: DiscoveryWire) derives Codec.AsObject:
+  val exchange:String=
+    s"${discoveryWire.contestConfig.exchange}"
