@@ -44,6 +44,12 @@ To create a new release with downloadable artifacts (JAR, Windows MSI, macOS PKG
 
 Artifacts are also available as GitHub Action run artifacts for every build on the `main` branch.
 
+## Using the manager
+A manager is available to manage a bunch of instances of fdswarm, on a single host.
+```
+./mill fdswarm.assembly + manager.run
+```
+
 ## Logging
 For information on how to configure and change log levels, see [docs/logging.md](docs/logging.md).
 
