@@ -19,6 +19,7 @@
 package fdswarm.fx
 
 import cats.effect.unsafe.implicits.global
+import com.google.inject.Injector
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.FdLogApp
 import fdswarm.fx.FdLogUi.isMac
@@ -37,6 +38,7 @@ import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.Inject
 import javafx.concurrent.Worker
 import javafx.embed.swing.SwingFXUtils
+import net.codingwell.scalaguice.InjectorExtensions.*
 import netscape.javascript.JSObject
 import scalafx.application.Platform
 import scalafx.beans.binding.Bindings
@@ -53,6 +55,7 @@ import scalafx.stage.{Stage, Window}
 import scala.io.Source
 
 final class FdLogUi @Inject() (
+                                injector: Injector,
                                 contestEntry: ContestEntry,
                                 bandModeManagerPane: BandsAndModesPane,
                                 stationEditor: StationEditor,
@@ -82,8 +85,7 @@ final class FdLogUi @Inject() (
                                 summaryDialog: fdswarm.fx.tools.SummaryDialog,
                                 metricsDialog: fdswarm.fx.tools.MetricsDialog,
                                 apiServer: fdswarm.api.ApiServer,
-                                startupDialog: fdswarm.fx.startup.StartupDialog,
-                                discoveryDialog: DiscoveryDialog
+                                startupDialog: fdswarm.fx.startup.StartupDialog
 ) extends LazyLogging:
 
   // --- ARRL Sections Map (SVG) -------------------------------------------------
@@ -100,7 +102,6 @@ final class FdLogUi @Inject() (
               case None    => ()
         ,
         stationMenuItem,
-        contestMenuItem,
         startupMenuItem,
         new SeparatorMenuItem(),
         arrlSectionsMapMenuItem,
@@ -126,14 +127,14 @@ final class FdLogUi @Inject() (
     contestEntry.node
   private val centerPane = new StackPane:
     children = List(qsoNode)
-  private val contestMenuItem: MenuItem =
-    new MenuItem("Contest"):
-      disable = true
-      onAction = _ =>
-        discoveryDialog.show(ownerWindow)
-//        Option(ownerWindow) match
-//          case Some(w) => contestManager.show(w)
-//          case None    => ()
+//  private val contestMenuItem: MenuItem =
+//    new MenuItem("Contest"):
+//      disable = true
+//      onAction = _ =>
+//        discoveryDialog.show(ownerWindow)
+////        Option(ownerWindow) match
+////          case Some(w) => contestManager.show(w)
+////          case None    => ()
   private val stationMenuItem: MenuItem =
     new MenuItem("Station"):
       disable = true
@@ -196,9 +197,7 @@ final class FdLogUi @Inject() (
         ,
         new MenuItem("Discovery"):
           onAction = _ =>
-            Option(ownerWindow) match
-              case Some(w) => discoveryDialog.show(w)
-              case None    => ()
+            injector.instance[DiscoveryDialog].show()
       )
   private val developerModeMenuItem = new CheckMenuItem("Developer Mode")
   private val userConfigMenuItem: MenuItem =
@@ -293,9 +292,6 @@ final class FdLogUi @Inject() (
             logger.debug("Successfully registered macOS Quit handler")
         else logger.debug("Desktop API not supported on this platform")
       catch case e: Exception => logger.warn("Could not set macOS handlers", e)
-
-    stationMenuItem.disable = false
-    contestMenuItem.disable = false
 
     stage.title = s"FdSwarm@${nodeIdentityManager.ourNodeIdentity.toString}"
     stage.scene = new Scene(root, 1100, 800):
