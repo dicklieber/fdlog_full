@@ -142,7 +142,7 @@ class QsoEntryPanel @Inject()(
     QsoMetadata(
       station = stationManager.station,
       node = nodeIdentityManager.ourNodeIdentity,
-      contest = contestManager.config.contestType
+      contest = contestManager.contestConfig.contestType
     )
 
   private def clearControls: Unit =

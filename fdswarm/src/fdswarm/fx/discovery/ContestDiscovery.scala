@@ -55,7 +55,7 @@ class ContestDiscovery @Inject() (
       while (true) {
         val msg: UDPHeaderData = queue.take()
         discReqReceived.increment()
-        val response = DiscoveryWire(contestConfigProvider.get.config, stationConfigManager.station)
+        val response = DiscoveryWire(contestConfigProvider.get.contestConfig, stationConfigManager.station)
         val jsonBytes = response.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
         transport.send(Service.DiscResponse, jsonBytes)
         logger.trace("Received DiscReq from {} responding with {}",msg.nodeIdentity, response)

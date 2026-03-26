@@ -56,8 +56,6 @@ final class ContestConfigManager @Inject()(
                                       sections: Sections,
                                       qsoStore: fdswarm.store.QsoStore,
                                       filenameStamp: fdswarm.util.FilenameStamp,
-                                      transport: fdswarm.replication.Transport,
-                                      contestDiscovery: ContestDiscovery,
                                       @Named("fdswarm.contestChangeIgnoreStatusSec") ignoreStatusSec: Int
                                     ) extends LazyLogging:
 
@@ -89,7 +87,7 @@ final class ContestConfigManager @Inject()(
     archiveAndPersist()
   }
 
-  def config: ContestConfig = configProperty.value
+  def contestConfig: ContestConfig = configProperty.value
 
   def configExists: Boolean = os.exists(file)
 
@@ -97,7 +95,7 @@ final class ContestConfigManager @Inject()(
     configProperty.value = newConfig
 
   def classChars: String =
-    contestCatalog.getContest(config.contestType).map(_.classCharsString).getOrElse("")
+    contestCatalog.getContest(contestConfig.contestType).map(_.classCharsString).getOrElse("")
 
   private case class ContestConfigProxy(
       contest: ContestType,

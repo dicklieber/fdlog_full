@@ -34,7 +34,7 @@ class ContestClassField @Inject() (
   logger.trace("ctor")
 
   private def showHelp(): Unit =
-    val currentContest = contestManager.config.contestType
+    val currentContest = contestManager.contestConfig.contestType
     val contest = contestCatalog.contests.find(_.name == currentContest)
     contest.foreach { contest =>
       val items = contest.classChars.map(contestClassChar => (contestClassChar.ch, contestClassChar.description))

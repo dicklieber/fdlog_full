@@ -92,7 +92,7 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
                 logger.error(s"Failed to decode QSO from multicast: $sJson", error)
           case Service.DiscReq =>
             logger.debug(s"Received ContestDiscoveryRequest from ${udpHeader.nodeIdentity}")
-            val contestStation = DiscoveryWire(contestManager.config, stationManager.station)
+            val contestStation = DiscoveryWire(contestManager.contestConfig, stationManager.station)
             val configBytes = contestStation.asJson.noSpaces.getBytes("UTF-8")
             transport.send(Service.DiscResponse, configBytes)
           case Service.DiscResponse =>

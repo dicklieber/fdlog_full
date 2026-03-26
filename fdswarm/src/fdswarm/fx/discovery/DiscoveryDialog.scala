@@ -1,6 +1,7 @@
 package fdswarm.fx.discovery
 
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.fx.contest.ContestConfigPane
 import fdswarm.fx.utils.{GridColumn, GridColumnAlignment, GridColumnWidth, GridRowBehavior, StyledDialog, TypedGridTableBuilder}
 import jakarta.inject.Inject
 import scalafx.Includes.*
@@ -10,15 +11,17 @@ import scalafx.scene.control.Button
 import scalafx.scene.control.ButtonType
 import scalafx.scene.control.Dialog
 import scalafx.scene.control.ScrollPane
-import scalafx.scene.layout.Region
+import scalafx.scene.layout.{Region, VBox}
 
 import scala.collection.mutable.ArrayBuffer
 
-class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery)
+class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
+                                 contestConfigPane:ContestConfigPane)
   extends StyledDialog[ButtonType] with LazyLogging:
 
   private type Ncs = NodeContestStation
 
+  
   private val discovered = ArrayBuffer.empty[Ncs]
 
   private def textCol(
@@ -119,15 +122,18 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery)
     }
   )
 
-  private val scrollPane = new ScrollPane:
-    content = table.grid
-    fitToWidth = true
-    prefWidth = 1100
-    prefHeight = 500
+  val vBox = new VBox()
+  vBox.children += contestConfigPane.pane
+  vBox.children += table.grid
+//  private val scrollPane = new ScrollPane:
+//    content = table.grid
+//    fitToWidth = true
+//    prefWidth = 1100
+//    prefHeight = 500
 
-  title = "Discovered Contest Stations"
+  title = "Contest Configuration"
   resizable = true
-  dialogPane().content = scrollPane
+  dialogPane().content = vBox
   dialogPane().buttonTypes = Seq(ButtonType.OK)
 
   private def refreshGrid(): Unit =

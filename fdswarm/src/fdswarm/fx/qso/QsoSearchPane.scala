@@ -60,7 +60,7 @@ class QsoSearchPane @Inject()(
   val callsignFilter = new OptionTextField {
     promptText = "Callsign"
   }
-  val contestConfig: ContestConfig = contestManager.config
+  val contestConfig: ContestConfig = contestManager.contestConfig
   val contestDefinition: ContestDefinition = contestCatalog.getContest(contestConfig.contestType).get
   val bandFilter = new AnyComboBox[Band](bandCatalog.hamBands)
   val modeFilter = new AnyComboBox[Mode](modeCatalog.choices)

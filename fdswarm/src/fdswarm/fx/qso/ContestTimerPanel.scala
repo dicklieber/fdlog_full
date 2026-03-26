@@ -56,7 +56,7 @@ class ContestTimerPanel @Inject()(
 
   private def updateContestTimer(): Unit =
     val now = if useMockTime then mockTime else ZonedDateTime.now()
-    val config = contestManager.config
+    val config = contestManager.contestConfig
     val times = contestManager.contestTimesProperty.value
 
     val mode =
@@ -87,6 +87,6 @@ class ContestTimerPanel @Inject()(
   updateContestTimer()
 
   def node: Node =
-    val config = contestManager.config
+    val config = contestManager.contestConfig
     val times = contestManager.contestTimesProperty.value
     GridColumns.fieldSet(s"${config.contestType.name} ${times.start.getYear}", contestTimerLabel)

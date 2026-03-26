@@ -36,13 +36,13 @@ class ContestCondition @Inject()(
     throw new NotImplementedError("") //todo
 
   override def update(discovered: Map[NodeIdentity, DiscoveryWire]): Unit =
-    val config = contestManager.config
+    val config = contestManager.contestConfig
     val currentDetails =
       s"Callsign: ${config.ourCallsign}, Contest: ${config.contestType.name}, Class: ${config.ourClass}, Section: ${config.ourSection}"
     
     val localConfigExists = contestManager.configExists
     val discoveryConsistent =
-      discovered.isEmpty || discovered.values.forall(_ == contestManager.config)
+      discovered.isEmpty || discovered.values.forall(_ == contestManager.contestConfig)
 
     val newProblems = scala.collection.mutable.ListBuffer[String]()
     if !localConfigExists then newProblems += "No local configuration found"

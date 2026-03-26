@@ -40,7 +40,7 @@ final class CabrilloHeaderDialog @Inject()(
   def show(ownerWindow: Window): Unit =
     val currentHeader = headerStore.header.value
     val station = stationStore.station.value
-    val contest = contestManager.config
+    val contest = contestManager.contestConfig
 
     val callsignField = new TextField {
       text = contest.ourCallsign.toString

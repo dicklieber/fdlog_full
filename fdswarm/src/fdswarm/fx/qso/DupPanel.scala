@@ -29,6 +29,7 @@ import scalafx.application.Platform
 import scalafx.beans.property.StringProperty
 import scalafx.scene.control.{Label, Tooltip}
 import scalafx.scene.layout.{GridPane, Pane, StackPane, VBox}
+import scala.compiletime.uninitialized
 
 @Singleton
 class DupPanel @Inject()(
@@ -41,8 +42,8 @@ class DupPanel @Inject()(
     hgap = 10
     vgap = 5
   }
-  private var root: Pane = _
-  private var titleLabel: Label = _
+  private var root: Pane = uninitialized
+  private var titleLabel: Label = uninitialized
 
   def show(styledMessage: StyledMessage): Unit =
     Platform.runLater {

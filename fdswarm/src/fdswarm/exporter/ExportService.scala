@@ -53,7 +53,7 @@ final class ExportService @Inject()(
       case ExportFormat.CABRILLO =>
         val qsos = qsoStore.all
         val station = stationStore.station.value
-        val contest = contestManager.config.contestType
+        val contest = contestManager.contestConfig.contestType
         val header = cabrilloHeaderStore.header.value
         val cabrillo = CabrilloExporter.exportQsos(qsos, station, contest, header)
         os.write.over(path, cabrillo)
