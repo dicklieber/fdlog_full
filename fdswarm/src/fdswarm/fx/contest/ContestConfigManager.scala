@@ -426,9 +426,9 @@ final class ContestConfigManager @Inject()(
     d.showAndWait().flatMap(_.toIntOption)
 
   private def updateZonedDateTimeControl(form: MyCaseForm[?], fieldName: String, zdt: ZonedDateTime): Unit =
-    val field = form.fields.find(_.name == fieldName).get
-    field.control match {
-      case editor: ZonedDateTimeEditor => editor.value = zdt
+    val field = form.fieldHandlers.find(_.name == fieldName).get
+    field.control() match {
+      case Some(editor: ZonedDateTimeEditor) => editor.value = zdt
       case _ =>
         // Fallback for any other control types if necessary, though currently it should be ZonedDateTimeEditor
         logger.warn(s"Control for $fieldName is not a ZonedDateTimeEditor")
