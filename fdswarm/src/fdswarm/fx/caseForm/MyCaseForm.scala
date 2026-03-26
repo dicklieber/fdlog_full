@@ -18,18 +18,12 @@
 
 package fdswarm.fx.caseForm
 
-import fdswarm.fx.InputHelper.*
-import fdswarm.fx.tools.ZonedDateTimeEditor
-import fdswarm.model.Callsign
-import scalafx.Includes.*
-import scalafx.collections.ObservableBuffer
 import scalafx.geometry.Insets
 import scalafx.scene.Node
 import scalafx.scene.control.*
 import scalafx.scene.layout.{GridPane, Pane, Region}
-import scalafx.util.StringConverter
 
-import java.time.{Instant, ZonedDateTime}
+import java.time.ZonedDateTime
 import scala.deriving.Mirror
 
 
@@ -189,15 +183,15 @@ class MyCaseForm[T <: Product](initial: T, controls: Seq[(String, FieldHandler)]
       case _: String => new SimpleTextField()
       case _: Int => new SpinnerField()
       case _: ZonedDateTime => new ZonedDateTimeField()
-      case _ => new SimpleTextField()
+      case e: scala.reflect.Enum =>
+        println(e)
+        new EnumField
+      case _ =>
+        new SimpleTextField()
     }
     fieldHandler
   }
         
-  /** For Java enums (and Scala 3 “simple” enums that compile to Java enums). */
-  private def javaEnumItems(e: java.lang.Enum[?]): Seq[AnyRef] =
-    val constants = e.getDeclaringClass.getEnumConstants
-    constants.iterator.map(_.asInstanceOf[AnyRef]).toSeq
 
 final case class Field[A](
                            name: String,
