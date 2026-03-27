@@ -2,11 +2,13 @@ package fdswarm.fx.utils
 
 import scalafx.Includes.*
 import scalafx.beans.property.*
+import scalafx.collections.ObservableBuffer
 import scalafx.scene.Node
 import scalafx.scene.control.*
 import scalafx.scene.layout.*
 
 import java.lang.reflect.Constructor
+import scala.collection.mutable
 
 class CaseClassPropertyEditor[T <: Product](
                                              val target: ObjectProperty[T]
@@ -33,7 +35,7 @@ class CaseClassPropertyEditor[T <: Product](
   sealed trait FieldValue:
     def value: Any
     def value_=(v: Any): Unit
-    def editor: Node
+    def defaultEditor: Node
 
   final class StringField(val property: StringProperty) extends FieldValue:
     def value: Any =
@@ -42,7 +44,7 @@ class CaseClassPropertyEditor[T <: Product](
     def value_=(v: Any): Unit =
       property.value = v.asInstanceOf[String]
 
-    def editor: Node =
+    def defaultEditor: Node =
       new TextField:
         text <==> property
 
@@ -53,7 +55,7 @@ class CaseClassPropertyEditor[T <: Product](
     def value_=(v: Any): Unit =
       property.value = v.asInstanceOf[Int]
 
-    def editor: Node =
+    def defaultEditor: Node =
       new TextField:
         text = property.value.toString
         text.onChange { (_, _, nv) =>
@@ -67,7 +69,7 @@ class CaseClassPropertyEditor[T <: Product](
     def value_=(v: Any): Unit =
       property.value = v.asInstanceOf[Long]
 
-    def editor: Node =
+    def defaultEditor: Node =
       new TextField:
         text = property.value.toString
         text.onChange { (_, _, nv) =>
@@ -81,7 +83,7 @@ class CaseClassPropertyEditor[T <: Product](
     def value_=(v: Any): Unit =
       property.value = v.asInstanceOf[Double]
 
-    def editor: Node =
+    def defaultEditor: Node =
       new TextField:
         text = property.value.toString
         text.onChange { (_, _, nv) =>
@@ -95,7 +97,7 @@ class CaseClassPropertyEditor[T <: Product](
     def value_=(v: Any): Unit =
       property.value = v.asInstanceOf[Boolean]
 
-    def editor: Node =
+    def defaultEditor: Node =
       new CheckBox:
         selected <==> property
 
@@ -106,11 +108,14 @@ class CaseClassPropertyEditor[T <: Product](
     def value_=(v: Any): Unit =
       property.value = v
 
-    def editor: Node =
+    def defaultEditor: Node =
       new TextField:
         text = Option(property.value).map(_.toString).getOrElse("")
         disable = true
         promptText = "Unsupported type for direct editing"
+
+  private val customEditors =
+    mutable.LinkedHashMap.empty[String, () => Node]
 
   private var updatingFromTarget = false
 
@@ -162,8 +167,26 @@ class CaseClassPropertyEditor[T <: Product](
       case f: ObjectField => f.property
       case _ => throw new IllegalArgumentException(s"Field '$name' is not an Object field")
 
-  def editorFor(name: String): Node =
-    field(name).editor
+  def objectPropertyAs[A](name: String): ObjectProperty[A] =
+    objectProperty(name).asInstanceOf[ObjectProperty[A]]
+
+  def setCustomEditor(name: String)(builder: => Node): Unit =
+    require(fieldNames.contains(name), s"No field named '$name'")
+    customEditors(name) = () => builder
+
+  def clearCustomEditor(name: String): Unit =
+    customEditors.remove(name)
+
+  def hasCustomEditor(name: String): Boolean =
+    customEditors.contains(name)
+
+  def defaultEditorFor(name: String): Node =
+    field(name).defaultEditor
+
+  def controlFor(name: String): Node =
+    customEditors.get(name) match
+      case Some(builder) => builder()
+      case None          => defaultEditorFor(name)
 
   def labelFor(name: String): Label =
     new Label(name)
@@ -233,7 +256,7 @@ class CaseClassPropertyEditor[T <: Product](
 
       for (name, row) <- shownNames.zipWithIndex do
         add(labelFor(name), 0, row)
-        add(editorFor(name), 1, row)
+        add(controlFor(name), 1, row)
 
   private def buildHorizontalForm(
                                    excluded: Set[String] = Set.empty,
@@ -248,7 +271,7 @@ class CaseClassPropertyEditor[T <: Product](
 
       for (name, col) <- shownNames.zipWithIndex do
         add(labelFor(name), col, 0)
-        add(editorFor(name), col, 1)
+        add(controlFor(name), col, 1)
 
   private def buildFields(value: T): Map[String, FieldValue] =
     val values = value.productIterator.toVector

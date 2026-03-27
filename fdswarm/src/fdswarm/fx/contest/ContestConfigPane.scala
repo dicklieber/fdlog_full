@@ -91,3 +91,4 @@ class ContestConfigPane @Inject() (
   def result: ContestConfig =
     configEditor.save()
     contestConfigManager.configProperty.value
+    contestConfigManager.configProperty.value
