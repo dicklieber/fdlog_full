@@ -1,8 +1,8 @@
 package fdswarm.fx.discovery
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.contest.ContestConfigPane
-import fdswarm.fx.utils.{GridColumn, GridColumnAlignment, GridColumnWidth, GridRowBehavior, StyledDialog, TypedGridTableBuilder}
+import fdswarm.fx.contest.{ContestConfigPane, ContestType}
+import fdswarm.fx.utils.{GridColumn, GridColumnAlignment, GridColumnWidth, GridRowBehavior, RadioGroup, RadioGroupBuilder, StyledDialog, TypedGridTableBuilder}
 import jakarta.inject.Inject
 import scalafx.Includes.*
 import scalafx.application.Platform
@@ -123,7 +123,7 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
   )
 
   val vBox = new VBox()
-  vBox.children += contestConfigPane.pane
+  vBox.children += contestConfigPane.pane()
   vBox.children += table.grid
 //  private val scrollPane = new ScrollPane:
 //    content = table.grid

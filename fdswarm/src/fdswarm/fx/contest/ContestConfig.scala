@@ -22,6 +22,11 @@ import fdswarm.{ContestDateCalculator, ContestDates}
 import fdswarm.model.Callsign
 import io.circe.Codec
 import fdswarm.util.JavaTimeCirce.given
+import scalafx.Includes.*
+import scalafx.beans.property.ObjectProperty
+import scalafx.scene.control.{RadioButton, ToggleGroup}
+import scalafx.scene.layout.{Pane, VBox}
+import io.circe.{Decoder, Encoder}
 
 import java.time.*
 
@@ -32,7 +37,38 @@ enum ContestType(val name: String, val compute: Int => ContestDates) derives stt
   case ARRL extends ContestType("ARRL Field Day", ContestDateCalculator.forthFullWeekend)
 
 object ContestType:
-  import io.circe.{Decoder, Encoder}
+
+
+  def chooseContest(initial:ContestType): Pane =
+    val current: ObjectProperty[ContestType] = new ObjectProperty(initial, "current", initial)
+    val tg = new ToggleGroup()
+
+    val buttons: Seq[(ContestType, RadioButton)] =
+      ContestType.values.toSeq.map: contestType =>
+        val button = new RadioButton:
+          text = contestType.name
+          toggleGroup = tg
+        contestType -> button
+
+    buttons.find(_._1 == current.value).foreach: (_, button) =>
+      button.selected = true
+
+    tg.selectedToggle.onChange { (_, _, newToggle) =>
+      if newToggle != null then
+        buttons.find(_._2 == newToggle).foreach: (contestType, _) =>
+          if current.value != contestType then
+            current.value = contestType
+    }
+
+//    current.onChange { (_, _, newValue) =>
+//      buttons.find(_._1 == newValue).foreach: (_, button) =>
+//        if tg.selectedToggle.value != button then
+//          tg.selectToggle(button)
+//    }
+
+    new VBox:
+      spacing = 8
+      children = buttons.map(_._2)
   given Codec[ContestType] = Codec.from(
     Decoder.decodeString.emap(s =>
       try Right(ContestType.valueOf(s))

@@ -20,32 +20,20 @@ package fdswarm.fx.contest
 
 import com.google.inject.name.Named
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.caseForm.{ChoiceField, MyCaseForm, SpinnerField}
-import fdswarm.fx.discovery.{ContestDiscovery, DiscoveryWire}
+import fdswarm.fx.caseForm.ChoiceField
+import fdswarm.fx.discovery.DiscoveryWire
+import fdswarm.fx.sections.Sections
 import fdswarm.fx.tools.ZonedDateTimeEditor
-import fdswarm.fx.sections.{Section, Sections}
-import fdswarm.model.Callsign
 import fdswarm.io.DirectoryProvider
-import jakarta.inject.{Inject, Singleton}
-import scalafx.Includes.*
-import scalafx.beans.property.ObjectProperty
-import scalafx.collections.ObservableBuffer
-import scalafx.geometry.Insets
-import scalafx.scene.control.*
-import scalafx.scene.layout.*
-import scalafx.stage.Window
-import io.circe.parser.*
-import fdswarm.replication.{Service, Transport}
-import io.circe.syntax.*
+import fdswarm.model.Callsign
 import fdswarm.util.JavaTimeCirce.given
-import javafx.util.StringConverter
-import fdswarm.fx.utils.{BootstrapIcons, IconButton}
 import fdswarm.util.NodeIdentity
-import scalafx.animation.{KeyFrame, Timeline}
-import scalafx.application.Platform
-import scalafx.beans.property.ReadOnlyStringWrapper
-import scalafx.event.ActionEvent
-import scalafx.util.Duration
+import io.circe.parser.*
+import io.circe.syntax.*
+import jakarta.inject.{Inject, Singleton}
+import scalafx.beans.property.ObjectProperty
+import scalafx.scene.control.*
+import scalafx.stage.Window
 
 import java.time.*
 
@@ -96,14 +84,7 @@ final class ContestConfigManager @Inject()(
 
   def classChars: String =
     contestCatalog.getContest(contestConfig.contestType).map(_.classCharsString).getOrElse("")
-
-  private case class ContestConfigProxy(
-      contest: ContestType,
-      ourCallsign: Callsign,
-      transmitters: SpinnerField,
-      ourClass: ChoiceField[String],
-      ourSection: ChoiceField[String]
-  )
+  
 
   private case class DiscoveryResult(node: NodeIdentity, contestStation: DiscoveryWire)
 
@@ -425,14 +406,14 @@ final class ContestConfigManager @Inject()(
 
     d.showAndWait().flatMap(_.toIntOption)
 
-  private def updateZonedDateTimeControl(form: MyCaseForm[?], fieldName: String, zdt: ZonedDateTime): Unit =
-    val field = form.fieldHandlers.find(_.name == fieldName).get
-    field.control() match {
-      case Some(editor: ZonedDateTimeEditor) => editor.value = zdt
-      case _ =>
-        // Fallback for any other control types if necessary, though currently it should be ZonedDateTimeEditor
-        logger.warn(s"Control for $fieldName is not a ZonedDateTimeEditor")
-    }
+//  private def updateZonedDateTimeControl(form: MyCaseForm[?], fieldName: String, zdt: ZonedDateTime): Unit =
+//    val field = form.fieldHandlers.find(_.name == fieldName).get
+//    field.control() match {
+//      case Some(editor: ZonedDateTimeEditor) => editor.value = zdt
+//      case _ =>
+//        // Fallback for any other control types if necessary, though currently it should be ZonedDateTimeEditor
+//        logger.warn(s"Control for $fieldName is not a ZonedDateTimeEditor")
+//    }
 
   // ---- persistence ----------------------------------------------------------
 
