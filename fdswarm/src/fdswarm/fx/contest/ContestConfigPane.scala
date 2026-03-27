@@ -19,32 +19,75 @@
 package fdswarm.fx.contest
 
 import fdswarm.fx.sections.SectionsProvider
+import fdswarm.fx.utils.CaseClassPropertyEditor
 import jakarta.inject.{Inject, Named}
+import scalafx.Includes.*
 import scalafx.beans.property.ObjectProperty
 import scalafx.scene.control.TitledPane
 import scalafx.scene.layout.{HBox, Pane, VBox}
 
 class ContestConfigPane @Inject() (
-    contestConfigManager: ContestConfigManager,
-    contestCatalog: ContestCatalog,
-    sectionsProvider: SectionsProvider,
-    qsoStore: fdswarm.store.QsoStore,
-    filenameStamp: fdswarm.util.FilenameStamp,
-    @Named("fdswarm.contestChangeIgnoreStatusSec") ignoreStatusSec: Int
-) :
-//  gridLinesVisible = true
+                                    contestConfigManager: ContestConfigManager,
+                                    contestCatalog: ContestCatalog,
+                                    sectionsProvider: SectionsProvider,
+                                    qsoStore: fdswarm.store.QsoStore,
+                                    filenameStamp: fdswarm.util.FilenameStamp,
+                                    @Named("fdswarm.contestChangeIgnoreStatusSec") ignoreStatusSec: Int
+                                  ) :
 
-  def pane(): TitledPane =
-    val current: ContestConfig = contestConfigManager.configProperty.value
-    val contestTypeProperty = ObjectProperty[ContestType](current.contestType)
-    val contestChooserPane: Pane = ContestType.chooseContest(contestTypeProperty)
+  private val configEditor =
+    new CaseClassPropertyEditor[ContestConfig](contestConfigManager.configProperty)
 
+  private val current: ContestConfig =
+    contestConfigManager.configProperty.value
 
-    new TitledPane {
+  private val contestTypeProperty =
+    ObjectProperty[ContestType](current.contestType)
+
+  private val contestTypeBridge =
+    configEditor.objectProperty("contestType")
+
+  contestTypeBridge.value match
+    case ct: ContestType =>
+      if contestTypeProperty.value != ct then
+        contestTypeProperty.value = ct
+    case _ =>
+      contestTypeBridge.value = contestTypeProperty.value
+
+  contestTypeProperty.onChange { (_, _, newValue) =>
+    if newValue != null && contestTypeBridge.value != newValue then
+      contestTypeBridge.value = newValue
+  }
+
+  contestTypeBridge.onChange { (_, _, newValue) =>
+    newValue match
+      case ct: ContestType =>
+        if contestTypeProperty.value != ct then
+          contestTypeProperty.value = ct
+      case _ =>
+  }
+
+  val contestChooserPane: Pane =
+    ContestType.chooseContest(contestTypeProperty)
+
+  val contestDetailPane: Pane =
+    new VBox:
+      spacing = 8
+      children = Seq(
+        configEditor.formExcluding(Set("contestType")),
+        configEditor.saveButton
+      )
+
+  def pane: scalafx.scene.Node =
+    new TitledPane:
       text = "Contest at this Node"
-      content = new HBox {
+      content = new HBox:
+        spacing = 12
         children.addAll(
-          contestChooserPane
+          contestChooserPane,
+          contestDetailPane
         )
-      }
-    }
+
+  def result: ContestConfig =
+    configEditor.save()
+    contestConfigManager.configProperty.value

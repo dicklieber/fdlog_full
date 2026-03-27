@@ -123,7 +123,7 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
   )
 
   val vBox = new VBox()
-  vBox.children += contestConfigPane.pane()
+  vBox.children += contestConfigPane.pane
   vBox.children += table.grid
 //  private val scrollPane = new ScrollPane:
 //    content = table.grid
