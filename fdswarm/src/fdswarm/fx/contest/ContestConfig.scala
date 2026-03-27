@@ -38,9 +38,7 @@ enum ContestType(val name: String, val compute: Int => ContestDates) derives stt
 
 object ContestType:
 
-
-  def chooseContest(initial:ContestType): Pane =
-    val current: ObjectProperty[ContestType] = new ObjectProperty(initial, "current", initial)
+  def chooseContest(value:ObjectProperty[ContestType]): Pane =
     val tg = new ToggleGroup()
 
     val buttons: Seq[(ContestType, RadioButton)] =
@@ -50,14 +48,14 @@ object ContestType:
           toggleGroup = tg
         contestType -> button
 
-    buttons.find(_._1 == current.value).foreach: (_, button) =>
+    buttons.find(_._1 == value.value).foreach: (_, button) =>
       button.selected = true
 
     tg.selectedToggle.onChange { (_, _, newToggle) =>
       if newToggle != null then
         buttons.find(_._2 == newToggle).foreach: (contestType, _) =>
-          if current.value != contestType then
-            current.value = contestType
+          if value.value != contestType then
+            value.value = contestType
     }
 
 //    current.onChange { (_, _, newValue) =>

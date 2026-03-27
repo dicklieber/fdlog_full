@@ -20,8 +20,9 @@ package fdswarm.fx.contest
 
 import fdswarm.fx.sections.SectionsProvider
 import jakarta.inject.{Inject, Named}
+import scalafx.beans.property.ObjectProperty
 import scalafx.scene.control.TitledPane
-import scalafx.scene.layout.VBox
+import scalafx.scene.layout.{HBox, Pane, VBox}
 
 class ContestConfigPane @Inject() (
     contestConfigManager: ContestConfigManager,
@@ -33,21 +34,17 @@ class ContestConfigPane @Inject() (
 ) :
 //  gridLinesVisible = true
 
-
-  //  val contestButtons = contestTypeGroup.box
-  //    val
-  //  vBox.children += contestTypeGroup.box
-
   def pane(): TitledPane =
     val current: ContestConfig = contestConfigManager.configProperty.value
-
-    val contestChooserPane = ContestType.chooseContest(current.contestType)
+    val contestTypeProperty = ObjectProperty[ContestType](current.contestType)
+    val contestChooserPane: Pane = ContestType.chooseContest(contestTypeProperty)
 
 
     new TitledPane {
       text = "Contest at this Node"
-      content = new VBox {
-        children = contestChooserPane
-
+      content = new HBox {
+        children.addAll(
+          contestChooserPane
+        )
       }
     }
