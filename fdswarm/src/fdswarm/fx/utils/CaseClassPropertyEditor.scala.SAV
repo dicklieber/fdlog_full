@@ -1,0 +1,204 @@
+package fdswarm.fx.utils
+
+import scalafx.beans.property.*
+import scalafx.scene.Node
+import scalafx.scene.control.*
+import scalafx.scene.layout.*
+
+import java.lang.reflect.Constructor
+import scala.collection.mutable
+
+trait CustomFieldEditor:
+  def editor(fieldProperty: Property[?, ?]): Node
+
+class CaseClassPropertyEditor[T <: Product](
+  val target: ObjectProperty[T]
+) extends VBox:
+
+  require(target != null, "target must not be null")
+  require(target.value != null, "target.value must not be null")
+
+  private val initialValue: T =
+    target.value
+
+  private val currentClass: Class[?] =
+    initialValue.getClass
+
+  val fieldNames: Vector[String] =
+    initialValue.productElementNames.toVector
+
+  private val propertiesInOrder: Vector[(String, Property[?, ?])] =
+    buildProperties(initialValue)
+
+  private val propertiesByName: Map[String, Property[?, ?]] =
+    propertiesInOrder.toMap
+
+  private val customEditors =
+    mutable.LinkedHashMap.empty[String, CustomFieldEditor]
+
+  private var updatingFromTarget = false
+
+  target.onChange { (_, _, newValue) =>
+    if !updatingFromTarget && newValue != null then
+      syncFromTarget(newValue)
+  }
+
+  def getProperty[A](propertyName: String): A =
+    propertiesByName.getOrElse(
+      propertyName,
+      throw new NoSuchElementException(s"No field named '$propertyName'")
+    ).asInstanceOf[A]
+
+  def setNodeEditor(fieldName: String, editor: CustomFieldEditor): Unit =
+    require(fieldNames.contains(fieldName), s"No field named '$fieldName'")
+    customEditors(fieldName) = editor
+
+  def clearNodeEditor(fieldName: String): Unit =
+    customEditors.remove(fieldName)
+
+  def horizontal: Pane =
+    buildHorizontalPane()
+
+  def vertical: Pane =
+    buildVerticalPane()
+
+  def finish: Unit =
+    val rebuilt = rebuild().asInstanceOf[T]
+    updatingFromTarget = true
+    try
+      target.value = rebuilt
+    finally
+      updatingFromTarget = false
+
+  private def buildVerticalPane(): GridPane =
+    new GridPane:
+      hgap = 8
+      vgap = 8
+
+      for ((name, _), row) <- propertiesInOrder.zipWithIndex do
+        add(new Label(name), 0, row)
+        add(nodeFor(name), 1, row)
+
+  private def buildHorizontalPane(): GridPane =
+    new GridPane:
+      hgap = 12
+      vgap = 8
+
+      for ((name, _), col) <- propertiesInOrder.zipWithIndex do
+        add(new Label(name), col, 0)
+        add(nodeFor(name), col, 1)
+
+  private def nodeFor(name: String): Node =
+    val property = propertiesByName(name)
+    customEditors.get(name) match
+      case Some(editor) => editor.editor(property)
+      case None         => defaultEditor(property)
+
+  private def buildProperties(value: T): Vector[(String, Property[?, ?])] =
+    val values = value.productIterator.toVector
+    fieldNames.zip(values).map { (name, fieldValue) =>
+      name -> newProperty(fieldValue)
+    }
+
+  private def newProperty(value: Any): Property[?, ?] =
+    value match
+      case v: String  => StringProperty(v)
+      case v: Int     => IntegerProperty(v)
+      case v: Long    => LongProperty(v)
+      case v: Double  => DoubleProperty(v)
+      case v: Boolean => BooleanProperty(v)
+      case v          => ObjectProperty[Any](v)
+
+  private def defaultEditor(property: Property[?, ?]): Node =
+    property match
+      case p: StringProperty =>
+        new TextField:
+          text <==> p
+
+      case p: IntegerProperty =>
+        new TextField:
+          text = p.value.toString
+          text.onChange { (_, _, nv) =>
+            parseIntValue(nv).foreach(v => p.value = v)
+          }
+
+      case p: LongProperty =>
+        new TextField:
+          text = p.value.toString
+          text.onChange { (_, _, nv) =>
+            parseLongValue(nv).foreach(v => p.value = v)
+          }
+
+      case p: DoubleProperty =>
+        new TextField:
+          text = p.value.toString
+          text.onChange { (_, _, nv) =>
+            parseDoubleValue(nv).foreach(v => p.value = v)
+          }
+
+      case p: BooleanProperty =>
+        new CheckBox:
+          selected <==> p
+
+      case p: ObjectProperty[?] =>
+        new TextField:
+          text = Option(p.value).map(_.toString).getOrElse("")
+          disable = true
+          promptText = "Unsupported type for direct editing"
+
+  private def syncFromTarget(value: T): Unit =
+    val newClass = value.getClass
+    require(
+      newClass == currentClass,
+      s"CaseClassPropertyEditor does not support changing runtime class from ${currentClass.getName} to ${newClass.getName}"
+    )
+
+    val values = value.productIterator.toVector
+    for (((_, property), fieldValue)) <- propertiesInOrder.zip(values) do
+      setPropertyValue(property, fieldValue)
+
+  private def setPropertyValue(property: Property[?, ?], value: Any): Unit =
+    property match
+      case p: StringProperty   => p.value = value.asInstanceOf[String]
+      case p: IntegerProperty  => p.value = value.asInstanceOf[Int]
+      case p: LongProperty     => p.value = value.asInstanceOf[Long]
+      case p: DoubleProperty   => p.value = value.asInstanceOf[Double]
+      case p: BooleanProperty  => p.value = value.asInstanceOf[Boolean]
+      case p: ObjectProperty[?] =>
+        p.asInstanceOf[ObjectProperty[Any]].value = value
+
+  private def propertyValue(property: Property[?, ?]): Object =
+    property match
+      case p: StringProperty   => p.value.asInstanceOf[Object]
+      case p: IntegerProperty  => Int.box(p.value)
+      case p: LongProperty     => Long.box(p.value)
+      case p: DoubleProperty   => Double.box(p.value)
+      case p: BooleanProperty  => Boolean.box(p.value)
+      case p: ObjectProperty[?] => p.value.asInstanceOf[Object]
+
+  private def rebuild(): Any =
+    val ctor = primaryConstructor(currentClass)
+    val args = propertiesInOrder.map { (_, property) =>
+      propertyValue(property)
+    }
+    ctor.newInstance(args*)
+
+  private def primaryConstructor(clazz: Class[?]): Constructor[?] =
+    val ctor = clazz.getDeclaredConstructors.maxBy(_.getParameterCount)
+    ctor.setAccessible(true)
+    ctor
+
+  private def parseIntValue(s: String): Option[Int] =
+    try Some(s.trim.toInt)
+    catch
+      case _: NumberFormatException => None
+
+  private def parseLongValue(s: String): Option[Long] =
+    try Some(s.trim.toLong)
+    catch
+      case _: NumberFormatException => None
+
+  private def parseDoubleValue(s: String): Option[Double] =
+    try Some(s.trim.toDouble)
+    catch
+      case _: NumberFormatException => None
