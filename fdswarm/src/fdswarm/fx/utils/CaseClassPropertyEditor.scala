@@ -201,6 +201,18 @@ class CaseClassPropertyEditor[T <: Product](
       included = included
     )
 
+  def horizontalFormExcluding(excluded: Set[String]): GridPane =
+    buildHorizontalForm(
+      excluded = excluded,
+      included = fieldNames
+    )
+
+  def horizontalFormIncluding(included: Seq[String]): GridPane =
+    buildHorizontalForm(
+      excluded = Set.empty,
+      included = included
+    )
+
   children = Seq(form, saveButton)
 
   target.onChange { (_, _, newValue) =>
@@ -222,6 +234,21 @@ class CaseClassPropertyEditor[T <: Product](
       for (name, row) <- shownNames.zipWithIndex do
         add(labelFor(name), 0, row)
         add(editorFor(name), 1, row)
+
+  private def buildHorizontalForm(
+                                   excluded: Set[String] = Set.empty,
+                                   included: Seq[String] = fieldNames
+                                 ): GridPane =
+    val shownNames =
+      included.filter(name => fieldNames.contains(name) && !excluded.contains(name))
+
+    new GridPane:
+      hgap = 12
+      vgap = 8
+
+      for (name, col) <- shownNames.zipWithIndex do
+        add(labelFor(name), col, 0)
+        add(editorFor(name), col, 1)
 
   private def buildFields(value: T): Map[String, FieldValue] =
     val values = value.productIterator.toVector

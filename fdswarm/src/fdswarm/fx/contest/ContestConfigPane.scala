@@ -74,11 +74,11 @@ class ContestConfigPane @Inject() (
     new VBox:
       spacing = 8
       children = Seq(
-        configEditor.formExcluding(Set("contestType")),
+        configEditor.horizontalFormExcluding(Set("contestType")),
         configEditor.saveButton
       )
 
-  def pane: scalafx.scene.Node =
+  def pane: TitledPane =
     new TitledPane:
       text = "Contest at this Node"
       content = new HBox:
