@@ -11,6 +11,7 @@ class ContestConfigPane @Inject()():
 
   def ss(contestConfig: ObjectProperty[ContestConfig]): ContestConfigPane =
     val configEditor = new CaseClassPropertyEditor(contestConfig)
+    configEditor.setCustomEditor("contestType", new ContestChooser())
     configEditor.setCustomEditor("transmitters", new IntSpinner())
     _configEditor = Some(configEditor)
     finish()
