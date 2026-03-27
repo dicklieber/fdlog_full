@@ -1,7 +1,7 @@
 package fdswarm.fx.discovery
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.contest.{ContestConfigPane, ContestType}
+import fdswarm.fx.contest.{ContestConfig, ContestConfigManager, ContestConfigPane, ContestType}
 import fdswarm.fx.utils.{GridColumn, GridColumnAlignment, GridColumnWidth, GridRowBehavior, RadioGroup, RadioGroupBuilder, StyledDialog, TypedGridTableBuilder}
 import jakarta.inject.Inject
 import scalafx.Includes.*
@@ -12,17 +12,21 @@ import scalafx.scene.control.ButtonType
 import scalafx.scene.control.Dialog
 import scalafx.scene.control.ScrollPane
 import scalafx.scene.layout.{Region, VBox}
+import scalafx.beans.property.ObjectProperty
 
 import scala.collection.mutable.ArrayBuffer
 
 class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
-                                 contestConfigPane:ContestConfigPane)
+  contestManager: ContestConfigManager)
   extends StyledDialog[ButtonType] with LazyLogging:
 
   private type Ncs = NodeContestStation
 
   
   private val discovered = ArrayBuffer.empty[Ncs]
+
+  private val contestConfigPane = new ContestConfigPane()
+  contestConfigPane.ss(contestManager.configProperty)
 
   private def textCol(
                        header: String,
