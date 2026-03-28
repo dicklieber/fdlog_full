@@ -1,3 +1,5 @@
+## MANDATORY FOR ALL TASKS: OVERRIDE codebase style for ALL new code, edits, refactors. Always use braceless Scala 3 syntax.
+
 ### Scala 3 Style Guidelines for Junie
 
 - **Avoid unneeded curly braces `{}`**. Prefer the Scala 3 indentation-based (braceless) syntax.

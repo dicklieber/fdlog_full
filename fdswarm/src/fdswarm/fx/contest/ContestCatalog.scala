@@ -68,60 +68,8 @@ final class ContestCatalog @Inject()(config: Config):
 
 
   def comboBox(contestTypeProperty: ObjectProperty[ContestType]): ClassComboBox =
-    new ClassComboBox(contestTypeProperty)
+    new ClassComboBox(this, contestTypeProperty)
 
-  class ClassComboBox(contestTypeProperty: ObjectProperty[ContestType]) extends CustomFieldEditor {
-    override def editor(fieldProperty: Property[?, ?]): Node = {
-      val stringProp = fieldProperty.asInstanceOf[StringProperty]
-
-      val combo = new ComboBox[ClassChoice] {
-        cellFactory = (lv: ListView[ClassChoice]) => new ListCell[ClassChoice] {
-          item.onChange { (_, _, newValue) =>
-            text = Option(newValue).map(_.label).getOrElse("")
-          }
-        }
-      }
-
-      var currentChoices: Seq[ClassChoice] = Nil
-
-      def updateItems(): Unit = {
-        val contestType = contestTypeProperty.value
-        val choices: Seq[ClassChoice] = if (contestType != null) {
-          getContest(contestType).map(_.classChoices).getOrElse(Seq.empty[ClassChoice])
-        } else {
-          Seq.empty[ClassChoice]
-        }
-        currentChoices = choices
-        combo.items = ObservableBuffer.from(choices)
-        // Preserve selection if possible
-        val currentClassStr = stringProp.value
-        combo.value = if (currentClassStr != null && currentClassStr.nonEmpty && choices.nonEmpty) {
-          choices.find(_.ch == currentClassStr).getOrElse(null.asInstanceOf[ClassChoice])
-        } else {
-          null.asInstanceOf[ClassChoice]
-        }
-      }
-
-      contestTypeProperty.onChange { (_, _, _) =>
-        updateItems()
-      }
-
-      combo.value.onChange { (_, _, newChoice) =>
-        stringProp.value = Option(newChoice).map(_.ch).getOrElse("")
-      }
-
-      stringProp.onChange { (_, _, newStr) =>
-        if (newStr != null && newStr.nonEmpty) {
-          currentChoices.find(_.ch == newStr).foreach(combo.value = _)
-        } else {
-          combo.value = null.asInstanceOf[ClassChoice]
-        }
-      }
-
-      updateItems()
-      combo
-    }
-  }
 
 
 
