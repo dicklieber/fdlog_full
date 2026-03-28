@@ -10,7 +10,7 @@ import scala.Option
 class ContestConfigPane @Inject()( contestCatalog:ContestCatalog):
   private var _configEditor: Option[CaseClassPropertyEditor[ContestConfig]] = None
 
-  def ss(contestConfig: ObjectProperty[ContestConfig]): ContestConfigPane =
+  def createContestConfigPane(contestConfig: ObjectProperty[ContestConfig]): ContestConfigPane =
     val configEditor = new CaseClassPropertyEditor(contestConfig)
     configEditor.setCustomEditor("contestType", new ContestChooser())
     configEditor.setCustomEditor("transmitters", new IntSpinner())

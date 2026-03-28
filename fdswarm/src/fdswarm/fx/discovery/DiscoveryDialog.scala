@@ -26,7 +26,7 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
   
   private val discovered = ArrayBuffer.empty[Ncs]
 
-  contestConfigPane.ss(contestManager.configProperty)
+  contestConfigPane.createContestConfigPane(contestManager.configProperty)
 
   private def textCol(
                        header: String,
