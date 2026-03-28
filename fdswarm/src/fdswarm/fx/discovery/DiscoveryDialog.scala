@@ -100,8 +100,8 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
       header = "Exchange",
       sortable = true,
       width = GridColumnWidth.flexible(120),
-      cellStyleClasses = ncs =>
-        if ncs.exchange.trim.isEmpty then Seq("cell-missing") else Seq("cell-ok")
+//      cellStyleClasses = ncs =>
+//        if ncs.exchange.trim.isEmpty then Seq("cell-missing") else Seq("cell-ok")
     )(_.exchange),
     textCol(
       header = "Our Call",
@@ -134,16 +134,10 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
   }
   vBox.children += configBorderPane
   vBox.children += table.grid
-//  private val scrollPane = new ScrollPane:
-//    content = table.grid
-//    fitToWidth = true
-//    prefWidth = 1100
-//    prefHeight = 500
 
   title = "Contest Configuration"
   resizable = true
   dialogPane().content = vBox
-  dialogPane().buttonTypes = Seq(ButtonType.OK)
 
   private def refreshGrid(): Unit =
     table.setItems(discovered)
