@@ -25,6 +25,7 @@ import scalafx.scene.layout.*
 
 import java.lang.reflect.Constructor
 import scala.collection.mutable
+import fdswarm.util.camelToWords
 
 
 class CaseClassPropertyEditor[T <: Product](
@@ -68,7 +69,7 @@ class CaseClassPropertyEditor[T <: Product](
       vgap = 8
 
       for ((fieldName, property), col) <- propertiesInOrder.zipWithIndex do
-        add(new Label(fieldName), col, 0)
+        add(new Label(camelToWords(fieldName)), col, 0)
         add(nodeFor(fieldName, property), col, 1)
 
   def vertical: Pane =
@@ -77,7 +78,7 @@ class CaseClassPropertyEditor[T <: Product](
       vgap = 8
 
       for ((fieldName, property), row) <- propertiesInOrder.zipWithIndex do
-        add(new Label(fieldName), 0, row)
+        add(new Label(camelToWords(fieldName)), 0, row)
         add(nodeFor(fieldName, property), 1, row)
 
   def finish(): Unit =
