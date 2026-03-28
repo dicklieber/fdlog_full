@@ -11,7 +11,7 @@ import scalafx.scene.control.Button
 import scalafx.scene.control.ButtonType
 import scalafx.scene.control.Dialog
 import scalafx.scene.control.ScrollPane
-import scalafx.scene.layout.{Region, VBox}
+import scalafx.scene.layout.{BorderPane, Region, VBox}
 import scalafx.beans.property.ObjectProperty
 
 import scala.collection.mutable.ArrayBuffer
@@ -127,7 +127,12 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
   )
 
   val vBox = new VBox()
-  vBox.children += contestConfigPane.horizontal
+  val configBorderPane = new BorderPane {
+    center = contestConfigPane.horizontal
+    bottom = new Button("Update"):
+      onAction = _ => contestConfigPane.finish()
+  }
+  vBox.children += configBorderPane
   vBox.children += table.grid
 //  private val scrollPane = new ScrollPane:
 //    content = table.grid
