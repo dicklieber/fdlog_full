@@ -41,9 +41,9 @@ class Runner @Inject() (directoryProvider: DirectoryProvider)
 
   def start(view: IndexedSeqView[StartupConfig]): Unit =
     os.remove.all(edebugConfigDir)
-
-    val jarManager = FdswarmJarManager()
-    jarManager.buildFdswarmJar()
+// todo hangs a lot, for now, run ./mill fdswarm.assembly before starting manager.
+//    val jarManager = FdswarmJarManager()
+//    jarManager.buildFdswarmJar()
 
     val ports = new AtomicInteger(8080)
     instances = (
