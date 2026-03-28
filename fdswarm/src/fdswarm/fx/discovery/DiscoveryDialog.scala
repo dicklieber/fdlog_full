@@ -17,7 +17,8 @@ import scalafx.beans.property.ObjectProperty
 import scala.collection.mutable.ArrayBuffer
 
 class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
-  contestManager: ContestConfigManager)
+                                 contestConfigPane: ContestConfigPane,
+                                 contestManager: ContestConfigManager)
   extends StyledDialog[ButtonType] with LazyLogging:
 
   private type Ncs = NodeContestStation
@@ -25,7 +26,6 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
   
   private val discovered = ArrayBuffer.empty[Ncs]
 
-  private val contestConfigPane = new ContestConfigPane()
   contestConfigPane.ss(contestManager.configProperty)
 
   private def textCol(

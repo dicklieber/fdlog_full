@@ -37,7 +37,7 @@ class ContestClassField @Inject() (
     val currentContest = contestManager.contestConfig.contestType
     val contest = contestCatalog.contests.find(_.name == currentContest)
     contest.foreach { contest =>
-      val items = contest.classChars.map(contestClassChar => (contestClassChar.ch, contestClassChar.description))
+      val items = contest.classChoices.map(contestClassChar => (contestClassChar.ch, contestClassChar.description))
       dupPanel.show(s"$currentContest Classes", items)
     }
 

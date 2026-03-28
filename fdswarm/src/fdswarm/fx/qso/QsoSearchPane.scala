@@ -64,7 +64,7 @@ class QsoSearchPane @Inject()(
   val contestDefinition: ContestDefinition = contestCatalog.getContest(contestConfig.contestType).get
   val bandFilter = new AnyComboBox[Band](bandCatalog.hamBands)
   val modeFilter = new AnyComboBox[Mode](modeCatalog.choices)
-  val classChoices: Seq[ClassChoice] = contestDefinition.classChars
+  val classChoices: Seq[ClassChoice] = contestDefinition.classChoices
   val classFilter = new AnyComboBox[Char](classChoices)
   val operatorFilter = new OptionTextField() {
     promptText = "Operator"

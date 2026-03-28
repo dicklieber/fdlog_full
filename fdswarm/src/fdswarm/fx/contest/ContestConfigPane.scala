@@ -7,7 +7,7 @@ import scalafx.scene.layout.Pane
 
 import scala.Option
 
-class ContestConfigPane @Inject()():
+class ContestConfigPane @Inject()( contestCatalog:ContestCatalog):
   private var _configEditor: Option[CaseClassPropertyEditor[ContestConfig]] = None
 
   def ss(contestConfig: ObjectProperty[ContestConfig]): ContestConfigPane =
@@ -15,6 +15,8 @@ class ContestConfigPane @Inject()():
     configEditor.setCustomEditor("contestType", new ContestChooser())
     configEditor.setCustomEditor("transmitters", new IntSpinner())
     configEditor.setCustomEditor("ourCallsign", new CallsignCustomField())
+    val contestTypeProperty: ObjectProperty[ContestType] = configEditor.getProperty("contestType")
+    configEditor.setCustomEditor("ourClass", contestCatalog.comboBox(contestTypeProperty))
     _configEditor = Some(configEditor)
     finish()
   def vertical: Pane =

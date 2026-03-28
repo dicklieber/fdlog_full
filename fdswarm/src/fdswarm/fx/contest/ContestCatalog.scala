@@ -19,10 +19,16 @@
 package fdswarm.fx.contest
 
 import com.typesafe.config.{Config, ConfigRenderOptions, ConfigValue}
+import fdswarm.fx.utils.editor.CustomFieldEditor
 import fdswarm.model.Choice
 import io.circe.Codec
 import jakarta.inject.{Inject, Singleton}
 import io.circe.parser.decode
+import scalafx.Includes.*
+import scalafx.beans.property.{ObjectProperty, Property, StringProperty}
+import scalafx.collections.ObservableBuffer
+import scalafx.scene.Node
+import scalafx.scene.control.{ComboBox, ListCell, ListView}
 
 case class ClassChoice(
                             ch: String,
@@ -38,11 +44,11 @@ case class ClassChoice(
  */
 case class ContestDefinition(
                               name: ContestType,
-                              classChars: Seq[ClassChoice]
+                              classChoices: Seq[ClassChoice]
                   ) derives Codec.AsObject:
   def isValidClass(classChar: String): Boolean =
-    classChars.exists(_.ch == classChar)
-  def classCharsString: String = classChars.map(_.ch).mkString
+    classChoices.exists(_.ch == classChar)
+  def classCharsString: String = classChoices.map(_.ch).mkString
 
 @Singleton
 final class ContestCatalog @Inject()(config: Config):
@@ -59,3 +65,63 @@ final class ContestCatalog @Inject()(config: Config):
 
   def getContest(contestType: ContestType): Option[ContestDefinition] =
     contests.find(_.name == contestType)
+
+
+  def comboBox(contestTypeProperty: ObjectProperty[ContestType]): ClassComboBox =
+    new ClassComboBox(contestTypeProperty)
+
+  class ClassComboBox(contestTypeProperty: ObjectProperty[ContestType]) extends CustomFieldEditor {
+    override def editor(fieldProperty: Property[?, ?]): Node = {
+      val stringProp = fieldProperty.asInstanceOf[StringProperty]
+
+      val combo = new ComboBox[ClassChoice] {
+        cellFactory = (lv: ListView[ClassChoice]) => new ListCell[ClassChoice] {
+          item.onChange { (_, _, newValue) =>
+            text = Option(newValue).map(_.label).getOrElse("")
+          }
+        }
+      }
+
+      var currentChoices: Seq[ClassChoice] = Nil
+
+      def updateItems(): Unit = {
+        val contestType = contestTypeProperty.value
+        val choices: Seq[ClassChoice] = if (contestType != null) {
+          getContest(contestType).map(_.classChoices).getOrElse(Seq.empty[ClassChoice])
+        } else {
+          Seq.empty[ClassChoice]
+        }
+        currentChoices = choices
+        combo.items = ObservableBuffer.from(choices)
+        // Preserve selection if possible
+        val currentClassStr = stringProp.value
+        combo.value = if (currentClassStr != null && currentClassStr.nonEmpty && choices.nonEmpty) {
+          choices.find(_.ch == currentClassStr).getOrElse(null.asInstanceOf[ClassChoice])
+        } else {
+          null.asInstanceOf[ClassChoice]
+        }
+      }
+
+      contestTypeProperty.onChange { (_, _, _) =>
+        updateItems()
+      }
+
+      combo.value.onChange { (_, _, newChoice) =>
+        stringProp.value = Option(newChoice).map(_.ch).getOrElse("")
+      }
+
+      stringProp.onChange { (_, _, newStr) =>
+        if (newStr != null && newStr.nonEmpty) {
+          currentChoices.find(_.ch == newStr).foreach(combo.value = _)
+        } else {
+          combo.value = null.asInstanceOf[ClassChoice]
+        }
+      }
+
+      updateItems()
+      combo
+    }
+  }
+
+
+
