@@ -125,6 +125,7 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
         onAction = _ => {
           val contestConfig = ncs.discoveryWire.contestConfig
           selectedContestConfig.value = contestConfig
+          configBorderPane.center = contestConfigPane.createContestConfigPane(selectedContestConfig).horizontal
           logger.info(s"Use clicked for ${ncs.nodeIdentity.hostIp}:${ncs.nodeIdentity.port}")
         }
     }
