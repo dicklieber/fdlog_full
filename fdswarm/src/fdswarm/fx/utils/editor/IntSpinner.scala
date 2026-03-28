@@ -2,7 +2,9 @@ package fdswarm.fx.utils.editor
 
 import scalafx.beans.property.{IntegerProperty, Property}
 import scalafx.scene.Node
-import scalafx.scene.control.Spinner
+import scalafx.scene.control.{Spinner, TextFormatter}
+import scalafx.util.StringConverter
+import scalafx.Includes.jfxTextField2sfx
 
 class IntSpinner(
                   min: Int = 1,
@@ -13,6 +15,23 @@ class IntSpinner(
     fieldProperty match
       case intProp: IntegerProperty =>
         val spinner = new Spinner[Int](min, max, intProp.value, 1)
+        spinner.editable = true
+        val converter = new StringConverter[Integer]() {
+          override def toString(value: Integer): String = 
+            if (value == null) "" else value.toString
+          override def fromString(value: String): Integer = 
+            try {
+              if (value == null || value.trim.isEmpty) null.asInstanceOf[Integer]
+              else java.lang.Integer.valueOf(java.lang.Integer.parseInt(value.trim))
+            } catch {
+              case _: NumberFormatException => null.asInstanceOf[Integer]
+            }
+        }
+        val filter = (change: TextFormatter.Change) => {
+          val newText = change.controlNewText
+          if (newText.matches("-?\\d*") ) change else null.asInstanceOf[TextFormatter.Change]
+        }
+        spinner.editor().textFormatter = TextFormatter(converter, intProp.value, filter)
 
         spinner.value.onChange { (_, _, nv) =>
             intProp.value = nv
