@@ -26,7 +26,8 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
   
   private val discovered = ArrayBuffer.empty[Ncs]
 
-  contestConfigPane.createContestConfigPane(contestManager.configProperty)
+  private val selectedContestConfig: ObjectProperty[ContestConfig] = contestManager.configProperty
+  contestConfigPane.createContestConfigPane(selectedContestConfig)
 
   private def textCol(
                        header: String,
@@ -119,10 +120,13 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
       alignment = GridColumnAlignment.Center,
       width = GridColumnWidth.fixed(110)
     ) { ncs =>
-      new Button("Connect"):
+      new Button("Use"):
         styleClass += "grid-inline-button"
-        onAction = _ =>
-          logger.info(s"Connect clicked for ${ncs.nodeIdentity.hostIp}:${ncs.nodeIdentity.port}")
+        onAction = _ => {
+          val contestConfig = ncs.discoveryWire.contestConfig
+          selectedContestConfig.value = contestConfig
+          logger.info(s"Use clicked for ${ncs.nodeIdentity.hostIp}:${ncs.nodeIdentity.port}")
+        }
     }
   )
 
