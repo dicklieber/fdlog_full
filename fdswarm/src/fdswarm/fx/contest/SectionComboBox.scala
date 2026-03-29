@@ -24,23 +24,18 @@ import scalafx.Includes.*
 import scalafx.beans.property.{Property, StringProperty}
 import scalafx.collections.ObservableBuffer
 import scalafx.scene.Node
-import scalafx.scene.control.{ComboBox, ListCell, ListView}
+import scalafx.scene.control.ComboBox
 
 class SectionComboBox(
-  sectionsProvider: SectionsProvider
-) extends CustomFieldEditor:
+                       sectionsProvider: SectionsProvider
+                     ) extends CustomFieldEditor, CompactComboBoxSupport:
   override def editor(fieldProperty: Property[?, ?]): Node =
     val stringProp = fieldProperty.asInstanceOf[StringProperty]
 
-    val combo = new ComboBox[Section]:
-      cellFactory = (lv: ListView[Section]) => new ListCell[Section]:
-        item.onChange(
-          (_, _, newValue) => text = Option(newValue).map(s => s"${s.code} - ${s.name}").getOrElse("")
-        )
-      buttonCell = new ListCell[Section]:
-        item.onChange(
-          (_, _, newValue) => text = Option(newValue).map(_.code).getOrElse("")
-        )
+    val combo = configureCompactComboBox(new ComboBox[Section])(
+      buttonText = _.code,
+      listText = s => s"${s.code} - ${s.name}"
+    )
 
     def updateItems(): Unit =
       val choices: Seq[Section] = sectionsProvider.allSections

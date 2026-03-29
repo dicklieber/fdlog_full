@@ -23,24 +23,19 @@ import scalafx.Includes.*
 import scalafx.beans.property.{ObjectProperty, Property, StringProperty}
 import scalafx.collections.ObservableBuffer
 import scalafx.scene.Node
-import scalafx.scene.control.{ComboBox, ListCell, ListView}
+import scalafx.scene.control.ComboBox
 
 class ClassComboBox(
-  catalog: ContestCatalog,
-  contestTypeProperty: ObjectProperty[ContestType]
-) extends CustomFieldEditor:
+                     catalog: ContestCatalog,
+                     contestTypeProperty: ObjectProperty[ContestType]
+                   ) extends CustomFieldEditor, CompactComboBoxSupport:
   override def editor(fieldProperty: Property[?, ?]): Node =
     val stringProp = fieldProperty.asInstanceOf[StringProperty]
 
-    val combo = new ComboBox[ClassChoice]:
-      cellFactory = (lv: ListView[ClassChoice]) => new ListCell[ClassChoice]:
-        item.onChange(
-          (_, _, newValue) => text = Option(newValue).map(_.label).getOrElse("")
-        )
-      buttonCell = new ListCell[ClassChoice]:
-        item.onChange(
-          (_, _, newValue) => text = Option(newValue).map(_.ch).getOrElse("")
-        )
+    val combo = configureCompactComboBox(new ComboBox[ClassChoice])(
+      buttonText = _.ch,
+      listText = _.label
+    )
 
     var currentChoices: Seq[String] = Nil
 
