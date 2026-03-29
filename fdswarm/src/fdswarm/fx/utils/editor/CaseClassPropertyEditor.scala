@@ -29,29 +29,36 @@ import fdswarm.util.camelToWords
 
 
 class CaseClassPropertyEditor[T <: Product](
-                                              val target: ObjectProperty[T]
-                                            ):
+  val target: T
+):
 
   require(target != null, "target must not be null")
-  require(target.value != null, "target.value must not be null")
 
-  private val initialValue: T =
-    target.value
 
   private val runtimeClass: Class[?] =
-    initialValue.getClass
+    target.getClass
 
   private val fieldNames: Vector[String] =
-    initialValue.productElementNames.toVector
+    target.productElementNames.toVector
 
   private val propertiesInOrder: Vector[(String, Property[?, ?])] =
-    buildProperties(initialValue)
+    buildProperties(target)
 
   private val propertiesByName: Map[String, Property[?, ?]] =
     propertiesInOrder.toMap
 
+  private val propertyT: ObjectProperty[T] = ObjectProperty(target)
+
   private val customEditors =
     mutable.LinkedHashMap.empty[String, CustomFieldEditor]
+
+  private def updatePropertyT(): Unit =
+    propertyT.set(rebuildTarget().asInstanceOf[T])
+
+  // Listen to changes in field properties to update propertyT
+  propertiesInOrder.foreach { case (_, prop) =>
+    prop.onChange { (_, _, _) => updatePropertyT() }
+  }
 
   def getProperty[A](propertyName: String): A =
     propertiesByName.getOrElse(
@@ -89,9 +96,7 @@ class CaseClassPropertyEditor[T <: Product](
         add(label, 0, row)
         add(nodeFor(fieldName, property), 1, row)
 
-  def finish(): Unit =
-    val rebuilt = rebuildTarget().asInstanceOf[T]
-    target.value = rebuilt
+  def finish(): T = propertyT.value
 
   private def nodeFor(fieldName: String, property: Property[?, ?]): Node =
     customEditors.get(fieldName) match

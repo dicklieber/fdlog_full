@@ -1,7 +1,7 @@
 package fdswarm.fx.discovery
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.contest.{ContestConfig, ContestConfigManager, ContestConfigPane, ContestType}
+import fdswarm.fx.contest.{ContestConfig, ContestConfigManager, ContestConfigPane, ContestType, ExchangePane}
 import fdswarm.fx.utils.{GridColumn, GridColumnAlignment, GridColumnWidth, GridRowBehavior, RadioGroup, RadioGroupBuilder, StyledDialog, TypedGridTableBuilder}
 import jakarta.inject.Inject
 import scalafx.Includes.*
@@ -11,14 +11,15 @@ import scalafx.scene.control.Button
 import scalafx.scene.control.ButtonType
 import scalafx.scene.control.Dialog
 import scalafx.scene.control.ScrollPane
-import scalafx.scene.layout.{BorderPane, Region, VBox}
+import scalafx.scene.layout.{BorderPane, HBox, Region, VBox}
 import scalafx.beans.property.ObjectProperty
 
 import scala.collection.mutable.ArrayBuffer
 
 class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
                                  contestConfigPane: ContestConfigPane,
-                                 contestManager: ContestConfigManager)
+                                 contestManager: ContestConfigManager,
+                                 exchangePane: ExchangePane)
   extends StyledDialog[ButtonType] with LazyLogging:
 
   private type Ncs = NodeContestStation
@@ -125,7 +126,13 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
         onAction = _ => {
           val contestConfig = ncs.discoveryWire.contestConfig
           selectedContestConfig.value = contestConfig
-          configBorderPane.center = contestConfigPane.createContestConfigPane(selectedContestConfig).horizontal
+          contestConfigPane.createContestConfigPane(selectedContestConfig)
+          configBorderPane.center = new HBox(spacing = 8) {
+            children ++= Seq(
+              contestConfigPane.horizontal,
+              exchangePane.pane(selectedContestConfig)
+            )
+          }
           logger.info(s"Use clicked for ${ncs.nodeIdentity.hostIp}:${ncs.nodeIdentity.port}")
         }
     }
@@ -133,7 +140,12 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
 
   val vBox = new VBox()
   val configBorderPane: BorderPane = new BorderPane {
-    center = contestConfigPane.horizontal
+    center = new HBox(spacing = 8) {
+      children ++= Seq(
+        contestConfigPane.horizontal,
+        exchangePane.pane(selectedContestConfig)
+      )
+    }
     bottom = new Button("Update"):
       onAction = _ => contestConfigPane.finish()
   }

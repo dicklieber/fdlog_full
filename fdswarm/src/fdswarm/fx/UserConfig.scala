@@ -29,6 +29,7 @@ import scalafx.beans.property.{BooleanProperty, IntegerProperty, Property}
 final class UserConfig @Inject()(directoryProvider: DirectoryProvider) {
 
   private val propertyList: List[Property[?, ?]] = List(
+    new BooleanProperty(this, "usePhonetic", true),
     new BooleanProperty(this, "developerMode", false),
     new BooleanProperty(this, "useNextField", true),
     new IntegerProperty(this, "qsoListLines", 10),

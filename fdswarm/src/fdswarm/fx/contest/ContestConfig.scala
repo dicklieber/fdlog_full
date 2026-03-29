@@ -19,8 +19,8 @@
 package fdswarm.fx.contest
 
 import fdswarm.model.Callsign
-import io.circe.Codec
 import fdswarm.util.HamPhonetic.fromString
+import io.circe.Codec
 
 /**
  * What a user can choose in a dialog.
@@ -34,6 +34,9 @@ case class ContestConfig(contestType: ContestType,
                          ourSection: String) derives Codec.AsObject:
   val exchange:String=
     s"$transmitters$ourClass $ourSection"
-  lazy val weAre:String =
-    s"We are $fromString(ourCallsign) $transmitters $fromString(ourClass) $fromString(ourSection)"
+  def weAre(usePhonetic: Boolean): String =
+    if usePhonetic then
+      s"We are ${fromString(ourCallsign.toString)} $transmitters ${fromString(ourClass)} ${fromString(ourSection)}"
+    else
+      s"We are $ourCallsign $transmitters$ourClass $ourSection"
 

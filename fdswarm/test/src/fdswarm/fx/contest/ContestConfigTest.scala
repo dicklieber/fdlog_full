@@ -32,7 +32,7 @@ class ContestConfigTest extends FunSuite:
 
   test("weAre formats with phonetics") {
     val config = ContestConfig(ContestType.WFD, Callsign("W1AW"), 2, "O", "CT")
-    val weAre = config.weAre
+    val weAre = config.weAre(true)
     assertEquals(weAre, "We are Whiskey One Alpha Whiskey 2 Oscar Charlie Tango")
   }
 
@@ -43,5 +43,5 @@ class ContestConfigTest extends FunSuite:
 
   test("weAre single transmitter") {
     val config = ContestConfig(ContestType.ARRL, Callsign("K1ABC"), 1, "1A", "NH")
-    assertEquals(config.weAre, "We are Kilo One Alpha Bravo Charlie 1 One Alpha November Hotel")
+    assertEquals(config.weAre(false), "We are Kilo One Alpha Bravo Charlie 1 One Alpha November Hotel")
   }

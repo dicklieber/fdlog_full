@@ -130,7 +130,7 @@ class GridTest extends FunSuite:
 
     // Check headers in col 0
     assert(findLabelByText("InstanceId").isDefined)
-    assert(findLabelByText("IP").isDefined)
+    assert(findLabelByText("Host").isDefined)
     assert(findLabelByText("Age").isDefined)
     assert(findLabelByText("Qso Count").isDefined)
     
