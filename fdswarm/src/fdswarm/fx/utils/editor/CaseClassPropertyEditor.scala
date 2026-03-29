@@ -69,7 +69,11 @@ class CaseClassPropertyEditor[T <: Product](
       vgap = 8
 
       for ((fieldName, property), col) <- propertiesInOrder.zipWithIndex do
-        add(new Label(camelToWords(fieldName)), col, 0)
+        val label = new Label(camelToWords(fieldName)):
+          minWidth = Region.USE_PREF_SIZE
+          hgrow = Priority.Never
+          textOverrun = OverrunStyle.Clip
+        add(label, col, 0)
         add(nodeFor(fieldName, property), col, 1)
 
   def vertical: Pane =
@@ -78,7 +82,11 @@ class CaseClassPropertyEditor[T <: Product](
       vgap = 8
 
       for ((fieldName, property), row) <- propertiesInOrder.zipWithIndex do
-        add(new Label(camelToWords(fieldName)), 0, row)
+        val label = new Label(camelToWords(fieldName)):
+          minWidth = Region.USE_PREF_SIZE
+          hgrow = Priority.Never
+          textOverrun = OverrunStyle.Clip
+        add(label, 0, row)
         add(nodeFor(fieldName, property), 1, row)
 
   def finish(): Unit =

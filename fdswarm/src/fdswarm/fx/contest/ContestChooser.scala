@@ -22,8 +22,8 @@ import fdswarm.fx.utils.editor.CustomFieldEditor
 import scalafx.beans.property.Property
 import scalafx.scene.Node
 import scalafx.beans.property.ObjectProperty
-import scalafx.scene.control.{RadioButton, ToggleGroup}
-import scalafx.scene.layout.VBox
+import scalafx.scene.control.{OverrunStyle, RadioButton, ToggleGroup}
+import scalafx.scene.layout.{Priority, Region, VBox}
 
 /**
  * A custom field editor for selecting a contest type.
@@ -63,6 +63,9 @@ class ContestChooser extends CustomFieldEditor:
           val button = new RadioButton:
             text = contestType.name
             toggleGroup = tg
+            minWidth = Region.USE_PREF_SIZE
+            hgrow = Priority.Never
+            textOverrun = OverrunStyle.Clip
           contestType -> button
       
       buttons.find(_._1 == value.value).foreach: (_, button) =>

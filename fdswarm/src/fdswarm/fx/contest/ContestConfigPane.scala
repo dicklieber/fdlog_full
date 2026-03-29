@@ -4,10 +4,11 @@ import fdswarm.fx.utils.editor.{CallsignCustomField, CaseClassPropertyEditor, In
 import jakarta.inject.Inject
 import scalafx.beans.property.ObjectProperty
 import scalafx.scene.layout.Pane
+import fdswarm.fx.sections.SectionsProvider
 
 import scala.Option
 
-class ContestConfigPane @Inject()( contestCatalog:ContestCatalog):
+class ContestConfigPane @Inject()( contestCatalog:ContestCatalog, sectionsProvider: SectionsProvider):
   private var _configEditor: Option[CaseClassPropertyEditor[ContestConfig]] = None
 
   def createContestConfigPane(contestConfig: ObjectProperty[ContestConfig]): ContestConfigPane =
@@ -17,6 +18,7 @@ class ContestConfigPane @Inject()( contestCatalog:ContestCatalog):
     configEditor.setCustomEditor("ourCallsign", new CallsignCustomField())
     val contestTypeProperty: ObjectProperty[ContestType] = configEditor.getProperty("contestType")
     configEditor.setCustomEditor("ourClass", contestCatalog.comboBox(contestTypeProperty))
+    configEditor.setCustomEditor("ourSection", new SectionComboBox(sectionsProvider))
     _configEditor = Some(configEditor)
     finish()
   def vertical: Pane =

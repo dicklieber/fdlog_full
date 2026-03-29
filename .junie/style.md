@@ -12,7 +12,7 @@
 - For `try-catch`, use `try` followed by an indented block and `catch` followed by an indented `case` block.
 - Use `for` expressions with `yield` or `do` using indentation.
 - When creating anonymous classes or extending classes with a body, use `new ClassName(...):` followed by indented members.
-- **Do not collapse text in labels or other text output** (e.g., do not use "..." or other truncation in labels produced by Junie). Ensure all text is fully visible.
+- **NEVER, EVER generate code that collapses labels or shows ellipsis ("..."). CRITICAL: Always apply minWidth=Region.USE_PREF_SIZE, hgrow=Priority.NEVER, textOverrun=OverrunStyle.CLIP to Labels and relevant controls.**
   - Always set `minWidth = scalafx.scene.layout.Region.USE_PREF_SIZE` for `Label`, `TextField`, `ComboBox`, and `Spinner`.
   - Set `textOverrun = OverrunStyle.Clip` where applicable to avoid ellipses.
   - Do not use `minWidth = 0` or any other setting that allows these controls to collapse.
@@ -42,6 +42,6 @@
 - Use `for` expressions with `yield` or `do` using indentation.
 - When creating anonymous classes or extending classes with a body, use `new ClassName(...):` followed by indented members.
 - 
-- **Do not collapse text in labels or other text output** (e.g., do not use "..." or other truncation in labels produced by Junie). Ensure all text is fully visible.
+- **NEVER, EVER generate code that collapses labels or shows ellipsis ("..."). CRITICAL: Always apply minWidth=Region.USE_PREF_SIZE, hgrow=Priority.NEVER, textOverrun=OverrunStyle.CLIP to Labels and relevant controls.**
 - ALWAYS use od-lib instead of java.File, java.nio etc.
 
