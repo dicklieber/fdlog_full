@@ -22,13 +22,13 @@ import fdswarm.fx.UserConfig
 import jakarta.inject.Inject
 import scalafx.Includes.*
 import scalafx.beans.binding.Bindings
-import scalafx.beans.property.{BooleanProperty, ObjectProperty}
+import scalafx.beans.property.{BooleanProperty, ObjectProperty, ReadOnlyObjectProperty}
 import scalafx.scene.control.{CheckBox, Label}
 import scalafx.scene.layout.HBox
 
 final class ExchangePane @Inject()(val userConfig: UserConfig) :
 
-  def pane(contestConfig: ObjectProperty[ContestConfig]): HBox = {
+  def pane(contestConfig: ReadOnlyObjectProperty[ContestConfig]): HBox = {
     val phoneticProp: BooleanProperty = userConfig.getProperty[BooleanProperty]("usePhonetic")
 
     val weAreText = Bindings.createStringBinding(

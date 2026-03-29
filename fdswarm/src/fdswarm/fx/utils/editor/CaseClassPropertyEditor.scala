@@ -55,7 +55,7 @@ class CaseClassPropertyEditor[T <: Product](
     propertiesInOrder.toMap
 
   private val propertyT: ObjectProperty[T] = ObjectProperty(target)
-  val currentValueProperty: ReadOnlyObjectProperty[T] = Bindings.createObjectBinding(() => propertyT.value, propertyT).asInstanceOf[ReadOnlyObjectProperty[T]]
+  val currentValueProperty: ReadOnlyObjectProperty[T] = propertyT
 
   private val customEditors =
     mutable.LinkedHashMap.empty[String, CustomFieldEditor]

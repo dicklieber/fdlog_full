@@ -16,10 +16,13 @@ class ContestConfigPaneProvider @Inject()(contestCatalog: ContestCatalog,
                                           sectionsProvider: SectionsProvider,
                                           contestConfigManager: ContestConfigManager):
 
+  def pane(): ContestConfigPane =
+    new ContestConfigPane()
+
   class ContestConfigPane():
-    val contestConfigProperty: ReadOnlyObjectProperty[ContestConfig] = configEditor.currentValueProperty
     private val contestConfig: ContestConfig = contestConfigManager.contestConfig
     private val configEditor: CaseClassPropertyEditor[ContestConfig] = new CaseClassPropertyEditor(contestConfig)
+    val contestConfigProperty: ReadOnlyObjectProperty[ContestConfig] = configEditor.currentValueProperty
     configEditor.setCustomEditor("contestType", new ContestChooser())
     configEditor.setCustomEditor("transmitters", new IntSpinner())
     configEditor.setCustomEditor("ourCallsign", new CallsignCustomField())
@@ -27,10 +30,12 @@ class ContestConfigPaneProvider @Inject()(contestCatalog: ContestCatalog,
     configEditor.setCustomEditor("ourClass", contestCatalog.comboBox(contestTypeProperty))
     configEditor.setCustomEditor("ourSection", new SectionComboBox(sectionsProvider))
 
-    def vertical: Pane =
-      configEditor.vertical
+    val currentContestConfigProperty: ReadOnlyObjectProperty[ContestConfig] = configEditor.currentValueProperty
 
-    def horizontal: Pane =
+    def update(contestConfig: ContestConfig): Unit =
+      configEditor.update(contestConfig)
+
+    def pane: Pane =
       configEditor.horizontal
 
     def finish(): ContestConfig =
