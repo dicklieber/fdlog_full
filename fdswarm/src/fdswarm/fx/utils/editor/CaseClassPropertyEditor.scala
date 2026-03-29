@@ -18,6 +18,8 @@
 
 package fdswarm.fx.utils.editor
 
+import fdswarm.util.camelToWords
+import scalafx.beans.binding.Bindings
 import scalafx.beans.property.*
 import scalafx.scene.Node
 import scalafx.scene.control.*
@@ -25,9 +27,14 @@ import scalafx.scene.layout.*
 
 import java.lang.reflect.Constructor
 import scala.collection.mutable
-import fdswarm.util.camelToWords
 
-
+/**
+ * Edit for an abritrary case class.
+ * 
+ * @param target what we start with.
+ * @tparam T of the case class.
+ * @tparam T of the case class.o
+ */
 class CaseClassPropertyEditor[T <: Product](
   val target: T
 ):
@@ -48,6 +55,7 @@ class CaseClassPropertyEditor[T <: Product](
     propertiesInOrder.toMap
 
   private val propertyT: ObjectProperty[T] = ObjectProperty(target)
+  val currentValueProperty: ReadOnlyObjectProperty[T] = Bindings.createObjectBinding(() => propertyT.value, propertyT).asInstanceOf[ReadOnlyObjectProperty[T]]
 
   private val customEditors =
     mutable.LinkedHashMap.empty[String, CustomFieldEditor]
@@ -98,6 +106,13 @@ class CaseClassPropertyEditor[T <: Product](
 
   def finish(): T = propertyT.value
 
+  def update(newTarget: T): Unit =
+    require(newTarget.productElementNames.toVector == fieldNames, "New target must have same product element names")
+
+    propertiesInOrder.zipWithIndex.foreach { case ((_, prop), idx) =>
+      setPropertyValue(prop, newTarget.productElement(idx))
+    }
+
   private def nodeFor(fieldName: String, property: Property[?, ?]): Node =
     customEditors.get(fieldName) match
       case Some(custom) => custom.editor(property)
@@ -118,42 +133,13 @@ class CaseClassPropertyEditor[T <: Product](
       case v: Boolean => BooleanProperty(v)
       case v          => ObjectProperty[Any](v)
 
-  private def defaultEditor(property: Property[?, ?]): Node =
-    property match
-      case p: StringProperty =>
-        new TextField:
-          text <==> p
-
-      case p: IntegerProperty =>
-        new TextField:
-          text = p.value.toString
-          text.onChange { (_, _, nv) =>
-            parseIntValue(nv).foreach(v => p.value = v)
-          }
-
-      case p: LongProperty =>
-        new TextField:
-          text = p.value.toString
-          text.onChange { (_, _, nv) =>
-            parseLongValue(nv).foreach(v => p.value = v)
-          }
-
-      case p: DoubleProperty =>
-        new TextField:
-          text = p.value.toString
-          text.onChange { (_, _, nv) =>
-            parseDoubleValue(nv).foreach(v => p.value = v)
-          }
-
-      case p: BooleanProperty =>
-        new CheckBox:
-          selected <==> p
-
-      case p: ObjectProperty[?] =>
-        new TextField:
-          text = Option(p.value).map(_.toString).getOrElse("")
-          disable = true
-          promptText = "Unsupported type for direct editing"
+  private def setPropertyValue(property: Property[?, ?], value: Any): Unit = property match
+    case p: StringProperty => p.set(value.asInstanceOf[String])
+    case p: IntegerProperty => p.set(value.asInstanceOf[Int])
+    case p: LongProperty => p.set(value.asInstanceOf[Long])
+    case p: DoubleProperty => p.set(value.asInstanceOf[Double])
+    case p: BooleanProperty => p.set(value.asInstanceOf[Boolean])
+    case p: ObjectProperty[?] => p.asInstanceOf[ObjectProperty[Any]].set(value)
 
   private def rebuildTarget(): Any =
     val ctor = primaryConstructor(runtimeClass)
@@ -170,6 +156,47 @@ class CaseClassPropertyEditor[T <: Product](
       case p: DoubleProperty    => Double.box(p.value)
       case p: BooleanProperty   => Boolean.box(p.value)
       case p: ObjectProperty[?] => p.value.asInstanceOf[Object]
+
+  private def defaultEditor(property: Property[?, ?]): Node =
+    property match
+      case p: StringProperty =>
+        new TextField:
+          text <==> p
+
+      case p: IntegerProperty =>
+        new TextField:
+          text = p.value.toString
+          text.onChange { (_, _, nv) =>
+            parseIntValue(nv).foreach(v => p.value = v)
+          }
+          p.onChange { (_, _, _) => text = p.value.toString }
+
+      case p: LongProperty =>
+        new TextField:
+          text = p.value.toString
+          text.onChange { (_, _, nv) =>
+            parseLongValue(nv).foreach(v => p.value = v)
+          }
+          p.onChange { (_, _, _) => text = p.value.toString }
+
+      case p: DoubleProperty =>
+        new TextField:
+          text = p.value.toString
+          text.onChange { (_, _, nv) =>
+            parseDoubleValue(nv).foreach(v => p.value = v)
+          }
+          p.onChange { (_, _, _) => text = p.value.toString }
+
+      case p: BooleanProperty =>
+        new CheckBox:
+          selected <==> p
+
+      case p: ObjectProperty[?] =>
+        new TextField:
+          text = Option(p.value).map(_.toString).getOrElse("")
+          disable = true
+          promptText = "Unsupported type for direct editing"
+          p.onChange { (_, _, _) => text = Option(p.value).map(_.toString).getOrElse("") }
 
   private def primaryConstructor(clazz: Class[?]): Constructor[?] =
     val ctor = clazz.getDeclaredConstructors.maxBy(_.getParameterCount)

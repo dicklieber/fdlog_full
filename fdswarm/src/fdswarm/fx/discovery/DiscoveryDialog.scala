@@ -27,8 +27,8 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
   
   private val discovered = ArrayBuffer.empty[Ncs]
 
-  private val selectedContestConfig: ObjectProperty[ContestConfig] = contestManager.configProperty
-  contestConfigPane.createContestConfigPane(selectedContestConfig)
+//  private val contestConfig: ContestConfig = contestManager.contestConfig
+  private val contestConfigPane: ContestConfigPane = contestConfigPane.createContestConfigPane(contestConfig)
 
   private def textCol(
                        header: String,
@@ -124,15 +124,14 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
       new Button("Use"):
         styleClass += "grid-inline-button"
         onAction = _ => {
-          val contestConfig = ncs.discoveryWire.contestConfig
-          selectedContestConfig.value = contestConfig
-          contestConfigPane.createContestConfigPane(selectedContestConfig)
-          configBorderPane.center = new HBox(spacing = 8) {
-            children ++= Seq(
-              contestConfigPane.horizontal,
-              exchangePane.pane(selectedContestConfig)
-            )
-          }
+          contestConfigPane.update(ncs.discoveryWire.contestConfig)
+//          contestConfigPane.createContestConfigPane(contestConfig)
+//          configBorderPane.center = new HBox(spacing = 8) {
+//            children ++= Seq(
+//              contestConfigPane.horizontal,
+//              exchangePane.pane(contestConfig)
+//            )
+//          }
           logger.info(s"Use clicked for ${ncs.nodeIdentity.hostIp}:${ncs.nodeIdentity.port}")
         }
     }
@@ -143,7 +142,7 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
     center = new HBox(spacing = 8) {
       children ++= Seq(
         contestConfigPane.horizontal,
-        exchangePane.pane(selectedContestConfig)
+        exchangePane.pane(contestConfig)
       )
     }
     bottom = new Button("Update"):
