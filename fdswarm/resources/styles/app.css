@@ -25,11 +25,18 @@
     -fx-border-width: 2;
     -fx-border-radius: 5;
 
+.grid-cell {
+    -fx-border-color: #333;
+    -fx-border-width: 0 1 1 0;
+    -fx-border-insets: 0;
+    -fx-background-insets: 0;
 }
-
 .grid-row-label {
     -fx-font-weight: normal;
     -fx-background-color: white;
+    -fx-padding: 4 8 4 8;
+    -fx-background-insets: 0;
+    -fx-border-insets: 0;
 }
 
 .grid-header {
@@ -40,6 +47,9 @@
 
 .grid-value {
     -fx-background-color: white;
+    -fx-padding: 4 8 4 8;
+    -fx-background-insets: 0;
+    -fx-border-insets: 0;
 }
 
 .gridNumber {
@@ -285,3 +295,12 @@
 .cell-ok{}
 .cell-missing{}
 .cell-warning{}
+
+.grid-container {
+    -fx-border-width: 1;
+    -fx-border-color: #333;
+    -fx-background-color: white;
+    -fx-padding: 8;
+    -fx-background-insets: 0;
+    -fx-border-insets: 0;
+}

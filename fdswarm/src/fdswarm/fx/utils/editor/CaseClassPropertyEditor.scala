@@ -80,29 +80,43 @@ class CaseClassPropertyEditor[T <: Product](
 
   def horizontal: Pane =
     new GridPane:
-      hgap = 12
-      vgap = 8
+      hgap = 0
+      vgap = 0
+      styleClass += "grid-container"
 
       for ((fieldName, property), col) <- propertiesInOrder.zipWithIndex do
         val label = new Label(camelToWords(fieldName)):
           minWidth = Region.USE_PREF_SIZE
           hgrow = Priority.Never
           textOverrun = OverrunStyle.Clip
+          styleClass += "grid-row-label"
+          styleClass += "grid-cell"
+        val editorNode = nodeFor(fieldName, property)
+        editorNode.styleClass += "grid-value"
+        if (isNumericProperty(property)) editorNode.styleClass += "gridNumber"
+        editorNode.styleClass += "grid-cell"
         add(label, col, 0)
-        add(nodeFor(fieldName, property), col, 1)
+        add(editorNode, col, 1)
 
   def vertical: Pane =
     new GridPane:
-      hgap = 8
-      vgap = 8
+      hgap = 0
+      vgap = 0
+      styleClass += "grid-container"
 
       for ((fieldName, property), row) <- propertiesInOrder.zipWithIndex do
         val label = new Label(camelToWords(fieldName)):
           minWidth = Region.USE_PREF_SIZE
           hgrow = Priority.Never
           textOverrun = OverrunStyle.Clip
+          styleClass += "grid-row-label"
+          styleClass += "grid-cell"
+        val editorNode = nodeFor(fieldName, property)
+        editorNode.styleClass += "grid-value"
+        if (isNumericProperty(property)) editorNode.styleClass += "gridNumber"
+        editorNode.styleClass += "grid-cell"
         add(label, 0, row)
-        add(nodeFor(fieldName, property), 1, row)
+        add(editorNode, 1, row)
 
   def finish(): T = propertyT.value
 
@@ -117,6 +131,11 @@ class CaseClassPropertyEditor[T <: Product](
     customEditors.get(fieldName) match
       case Some(custom) => custom.editor(property)
       case None         => defaultEditor(property)
+
+  private def isNumericProperty(property: Property[?, ?]): Boolean =
+    property.isInstanceOf[IntegerProperty] ||
+    property.isInstanceOf[LongProperty] ||
+    property.isInstanceOf[DoubleProperty]
 
   private def buildProperties(value: T): Vector[(String, Property[?, ?])] =
     val values = value.productIterator.toVector

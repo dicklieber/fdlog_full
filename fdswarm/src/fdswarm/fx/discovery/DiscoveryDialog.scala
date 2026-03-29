@@ -139,7 +139,7 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
 
   val vBox = new VBox()
   val configBorderPane: BorderPane = new BorderPane {
-    center = new HBox(spacing = 8) {
+    center = new VBox(spacing = 8) {
       children ++= Seq(
         contestConfigPane.pane,
         exchangePane.pane(contestConfigPane.currentContestConfigProperty)
