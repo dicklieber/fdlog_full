@@ -132,7 +132,7 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
   )
 
   val vBox = new VBox()
-  val configBorderPane = new BorderPane {
+  val configBorderPane: BorderPane = new BorderPane {
     center = contestConfigPane.horizontal
     bottom = new Button("Update"):
       onAction = _ => contestConfigPane.finish()
@@ -143,6 +143,13 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
   title = "Contest Configuration"
   resizable = true
   dialogPane().content = vBox
+  dialogPane().buttonTypes = Seq(ButtonType.Close)
+  onShowing.value = { (_: javafx.scene.control.DialogEvent) => Platform.runLater {
+    val btn = dialogPane().lookupButton(ButtonType.Close)
+    if (btn != null) {
+      btn.setVisible(false)
+    }
+  } }
 
   private def refreshGrid(): Unit =
     table.setItems(discovered)
