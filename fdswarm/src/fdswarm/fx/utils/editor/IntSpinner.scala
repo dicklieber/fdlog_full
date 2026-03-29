@@ -9,6 +9,7 @@ import scalafx.Includes.jfxTextField2sfx
 class IntSpinner(
                   min: Int = 1,
                   max: Int = 100,
+                  width: Double = 90.0,
                 ) extends CustomFieldEditor:
 
   override def editor(fieldProperty: Property[?, ?]): Node =
@@ -16,25 +17,29 @@ class IntSpinner(
       case intProp: IntegerProperty =>
         val spinner = new Spinner[Int](min, max, intProp.value, 1)
         spinner.editable = true
-        val converter = new StringConverter[Integer]() {
-          override def toString(value: Integer): String = 
-            if (value == null) "" else value.toString
-          override def fromString(value: String): Integer = 
-            try {
-              if (value == null || value.trim.isEmpty) null.asInstanceOf[Integer]
+        spinner.prefWidth = width
+        spinner.minWidth = width
+        spinner.maxWidth = width
+
+        val converter = new StringConverter[Integer]():
+          override def toString(value: Integer): String =
+            if value == null then "" else value.toString
+
+          override def fromString(value: String): Integer =
+            try
+              if value == null || value.trim.isEmpty then null.asInstanceOf[Integer]
               else java.lang.Integer.valueOf(java.lang.Integer.parseInt(value.trim))
-            } catch {
+            catch
               case _: NumberFormatException => null.asInstanceOf[Integer]
-            }
-        }
-        val filter = (change: TextFormatter.Change) => {
+
+        val filter = (change: TextFormatter.Change) =>
           val newText = change.controlNewText
-          if (newText.matches("-?\\d*") ) change else null.asInstanceOf[TextFormatter.Change]
-        }
+          if newText.matches("-?\\d*") then change else null.asInstanceOf[TextFormatter.Change]
+
         spinner.editor().textFormatter = TextFormatter(converter, intProp.value, filter)
 
         spinner.value.onChange { (_, _, nv) =>
-            intProp.value = nv
+          intProp.value = nv
         }
 
         intProp.onChange { (_, _, nv) =>
