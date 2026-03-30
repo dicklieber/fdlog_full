@@ -33,7 +33,7 @@ class ContestClassField @Inject() (
     with NextField:
   logger.trace("ctor")
   private val contestConfig: ContestConfig = contestManager.contestConfig
-
+  contestConfig.
   private def showHelp(): Unit =
     val contest: Option[ContestDefinition] = contestCatalog.contests.find(_.name == contestConfig)
     contest.foreach { contest =>
@@ -43,7 +43,7 @@ class ContestClassField @Inject() (
 
   focused.onChange { (_, _, newValue) =>
     val currentText = text.value
-    val classChars = contestCatalog.getContest(contestManager.contestConfig.contestType).
+    val classChars = contestCatalog.getContest(contestManager.contestConfig.contestType).get.classCharsString
     val typingPattern = "^([0-9]{1,2}[" + classChars.toUpperCase + "]|[0-9]{0,2})$"
     if newValue && !currentText.matches(typingPattern) then showHelp()
   }
@@ -53,7 +53,8 @@ class ContestClassField @Inject() (
       change.setText(change.getText.toUpperCase)
     }
     val newText = change.controlNewText
-    val classChars = contestCatalog.getContest().classChars
+    val maybeDefinition = contestCatalog.getContest()
+    val classChars: Any = maybeDefinition.classChars
     // Match partial strings during typing: empty, 1-2 digits, or 1-2 digits + 1 classChar
     val typingPattern = "^([0-9]{1,2}[" + classChars.toUpperCase + "]|[0-9]{0,2})$"
     if (newText.matches(typingPattern))
