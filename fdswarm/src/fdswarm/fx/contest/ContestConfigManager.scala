@@ -57,6 +57,7 @@ final class ContestConfigManager @Inject()(
     productionDirectory() / "contest.json"
 
   val configProperty: ObjectProperty[ContestConfig] =
+  val configProperty: ObjectProperty[ContestConfig] =
     val loaded = load()
     ObjectProperty(loaded)
 
@@ -72,7 +73,7 @@ final class ContestConfigManager @Inject()(
       val newDates = newConfig.contestType.dates(now.getYear)
       contestTimesProperty.value = ContestTimes(newDates.startUtc, newDates.endUtc)
     }
-    archiveAndPersist()
+    persist()
   }
 
   def contestConfig: ContestConfig = configProperty.value
@@ -417,7 +418,7 @@ final class ContestConfigManager @Inject()(
 
   // ---- persistence ----------------------------------------------------------
 
-  private def archiveAndPersist(): Unit =
+  private def persist(): Unit =
     try
       val timestampedFile = productionDirectory() / s"${filenameStamp.build()}.contest.json"
       val json = configProperty.value.asJson.spaces2
@@ -429,7 +430,7 @@ final class ContestConfigManager @Inject()(
 
   def archiveAndClear(): Unit =
     qsoStore.archiveAndClear()
-    archiveAndPersist()
+    persist()
 
   def load(): ContestConfig =
     try
