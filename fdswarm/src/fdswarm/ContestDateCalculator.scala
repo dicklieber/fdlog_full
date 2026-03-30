@@ -23,15 +23,10 @@ import java.time.*
 import _root_.io.circe.Codec
 import fdswarm.util.JavaTimeCirce.given
 
-final case class ContestDates(startUtc: ZonedDateTime, endUtc: ZonedDateTime) derives Codec.AsObject
+final case class ContestDates(startUtc: ZonedDateTime, endUtc: ZonedDateTime)
 
 object ContestDateCalculator:
-
-  // ---- Public API -----------------------------------------------------------
-
-  def datesFor(contest: fx.contest.ContestType, year: Int): ContestDates =
-    contest.dates(year)
-
+  
   /**
    * WFD
    * @param year for the event.
@@ -67,7 +62,7 @@ object ContestDateCalculator:
     (firstSat.plusWeeks((n - 1).toLong), firstSun.plusWeeks((n - 1).toLong))
 
   /** First full weekend (Sat/Sun both in the same month). */
-  def firstFullWeekend(year: Int, month: Month): (LocalDate, LocalDate) =
+  private def firstFullWeekend(year: Int, month: Month): (LocalDate, LocalDate) =
     val firstDay = LocalDate.of(year, month, 1)
 
     val daysToSat =

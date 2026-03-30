@@ -27,7 +27,12 @@ import scalafx.scene.layout.{Pane, VBox}
 import java.time.*
 
 enum ContestType(val name: String, val compute: Int => ContestDates) derives sttp.tapir.Schema:
-  def dates(year: Int): ContestDates = compute(year)
+  /**
+   * 
+   * @param zdt lets plugin in a differnet date, for testing
+   * @return
+   */
+  def dates(zdt: ZonedDateTime = ZonedDateTime.now()): ContestDates = compute(zdt.getYear)
 
   case WFD extends ContestType("Winter Field Day", ContestDateCalculator.lastFull)
   case ARRL extends ContestType("ARRL Field Day", ContestDateCalculator.forthFullWeekend)

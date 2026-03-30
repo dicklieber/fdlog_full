@@ -19,14 +19,14 @@
 package fdswarm.fx.discovery
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.contest.ContestConfigPaneProvider
+import fdswarm.fx.contest.{ContestConfigPane, ContestConfigPaneProvider}
 import fdswarm.fx.utils.{GridColumn, GridColumnAlignment, GridColumnWidth, GridRowBehavior, TypedGridTableBuilder}
 import scalafx.Includes.*
 import scalafx.scene.Node
 import scalafx.scene.control.Button
 import scalafx.scene.layout.Region
 
-class DiscoveryTable(contestConfigPane: ContestConfigPaneProvider#ContestConfigPane) extends LazyLogging:
+class DiscoveryTable(contestConfigPane: ContestConfigPane) extends LazyLogging:
   private type Ncs = NodeContestStation
 
   private def textCol(

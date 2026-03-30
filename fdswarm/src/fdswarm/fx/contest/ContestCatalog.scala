@@ -22,8 +22,8 @@ import com.typesafe.config.{Config, ConfigRenderOptions, ConfigValue}
 import fdswarm.fx.utils.editor.CustomFieldEditor
 import fdswarm.model.Choice
 import io.circe.Codec
-import jakarta.inject.{Inject, Singleton}
 import io.circe.parser.decode
+import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
 import scalafx.beans.property.{ObjectProperty, Property, StringProperty}
 import scalafx.collections.ObservableBuffer
@@ -66,6 +66,10 @@ final class ContestCatalog @Inject()(config: Config):
   def getContest(contestType: ContestType): Option[ContestDefinition] =
     contests.find(_.name == contestType)
 
+  def getChars(contestType: ContestType): String =
+
+    val contestDefinition: ContestDefinition = getContest(contestType).get
+    contestDefinition.classCharsString(_.classCharsString)
 
   def comboBox(contestTypeProperty: ObjectProperty[ContestType]): ClassComboBox =
     new ClassComboBox(this, contestTypeProperty)

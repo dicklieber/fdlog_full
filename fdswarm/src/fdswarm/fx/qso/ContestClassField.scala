@@ -19,7 +19,7 @@
 package fdswarm.fx.qso
 
 import fdswarm.fx.{NextField, UserConfig}
-import fdswarm.fx.contest.{ContestCatalog, ContestConfigManager}
+import fdswarm.fx.contest.{ContestCatalog, ContestConfig, ContestConfigManager, ContestDefinition, ContestType}
 import jakarta.inject.*
 import scalafx.Includes.*
 import scalafx.scene.control.{TextField, TextFormatter}
@@ -32,20 +32,20 @@ class ContestClassField @Inject() (
 ) extends TextField
     with NextField:
   logger.trace("ctor")
+  private val contestConfig: ContestConfig = contestManager.contestConfig
 
   private def showHelp(): Unit =
-    val currentContest = contestManager.contestConfig.contestType
-    val contest = contestCatalog.contests.find(_.name == currentContest)
+    val contest: Option[ContestDefinition] = contestCatalog.contests.find(_.name == contestConfig)
     contest.foreach { contest =>
       val items = contest.classChoices.map(contestClassChar => (contestClassChar.ch, contestClassChar.description))
-      dupPanel.show(s"$currentContest Classes", items)
+      dupPanel.show(s"$contestConfig Classes", items)
     }
 
-  focused.onChange { (_, _, nv) =>
+  focused.onChange { (_, _, newValue) =>
     val currentText = text.value
-    val classChars = contestManager.classChars
+    val classChars = contestCatalog.getContest(contestManager.contestConfig.contestType).
     val typingPattern = "^([0-9]{1,2}[" + classChars.toUpperCase + "]|[0-9]{0,2})$"
-    if nv && !currentText.matches(typingPattern) then showHelp()
+    if newValue && !currentText.matches(typingPattern) then showHelp()
   }
 
   textFormatter = new TextFormatter[String]((change: TextFormatter.Change) => {
@@ -53,19 +53,18 @@ class ContestClassField @Inject() (
       change.setText(change.getText.toUpperCase)
     }
     val newText = change.controlNewText
-    val classChars = contestManager.classChars
+    val classChars = contestCatalog.getContest().classChars
     // Match partial strings during typing: empty, 1-2 digits, or 1-2 digits + 1 classChar
     val typingPattern = "^([0-9]{1,2}[" + classChars.toUpperCase + "]|[0-9]{0,2})$"
-    if (newText.matches(typingPattern)) {
+    if (newText.matches(typingPattern))
       change
-    } else {
+    else
       // Only show help if the rejected character makes it clearly invalid,
       // and not just a prefix that could be valid.
       // For ContestClassField, typingPattern already allows 0-2 digits.
       // If it doesn't match, it means it's definitely wrong for the pattern.
       showHelp()
       null
-    }
   })
 
   text.onChange { (_, _, nv) =>

@@ -20,15 +20,14 @@ package fdswarm.fx.contest
 
 import com.google.inject.name.Named
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.discovery.DiscoveryWire
 import fdswarm.fx.sections.Sections
 import fdswarm.io.DirectoryProvider
 import fdswarm.model.Callsign
-import fdswarm.util.NodeIdentity
+import io.circe
 import io.circe.parser.*
 import io.circe.syntax.*
 import jakarta.inject.{Inject, Singleton}
-import scalafx.beans.property.ObjectProperty
+import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
 import scalafx.scene.control.*
 import scalafx.stage.Window
 
@@ -37,8 +36,6 @@ import java.time.*
 @Singleton
 final class ContestConfigManager @Inject()(
                                       productionDirectory: DirectoryProvider,
-                                      contestCatalog: ContestCatalog,
-                                      sections: Sections,
                                       qsoStore: fdswarm.store.QsoStore,
                                       filenameStamp: fdswarm.util.FilenameStamp,
                                       @Named("fdswarm.contestChangeIgnoreStatusSec") ignoreStatusSec: Int
@@ -49,96 +46,67 @@ final class ContestConfigManager @Inject()(
   def shouldIgnoreStatus: Boolean =
     val now = System.currentTimeMillis()
     (now - lastRestartTime) < (ignoreStatusSec * 1000L)
-
-  private val file: os.Path =
+  
+  private val contestFile: os.Path =
     productionDirectory() / "contest.json"
   /**
-   * Exposes the persisted state as an observable property so UIs can react immediately.
-   * This is the sole souce of [[ContestConfig]].
+   * Intertnal state of [[ContestConfig]].
    */
-  val configProperty: ObjectProperty[ContestConfig] = ObjectProperty(load())
+  private var maybeContestConfig: Option[ContestConfig] = load()
+  /**
+   * This is the source of [[ContestConfig]].
+   * Cannot be modified directly. Any changes must be done through [[setConfig]].
+   */
+  @throws[IllegalStateException]("If not initialized")
+  def contestConfig: ContestConfig =
+    maybeContestConfig.getOrElse(throw new IllegalStateException("ContestConfig not initialized"))
 
-  val contestTimesProperty: ObjectProperty[ContestTimes] =
-    val now = ZonedDateTime.now()
-    val initialDates = configProperty.value.contestType.dates(now.getYear)
-    ObjectProperty(ContestTimes(initialDates.startUtc, initialDates.endUtc))
-
-  // Keep persist in sync with config
-  configProperty.onChange { (prop, oldConfig, newConfig) =>
-    if (oldConfig == null || oldConfig.contestType != newConfig.contestType) {
-      val now = ZonedDateTime.now()
-      val newDates = newConfig.contestType.dates(now.getYear)
-      contestTimesProperty.value = ContestTimes(newDates.startUtc, newDates.endUtc)
-    }
-    persist()
-  }
-
-  def contestConfig: ContestConfig = configProperty.value
-
-  def configExists: Boolean = os.exists(file)
-
+  /**
+   * This is the only way to modify [[ContestConfig]].
+   */
   def setConfig(newConfig: ContestConfig): Unit =
-    configProperty.value = newConfig
+    maybeContestConfig = Option(newConfig)
+    persist()
 
-  def classChars: String =
-    contestCatalog.getContest(contestConfig.contestType).map(_.classCharsString).getOrElse("")
-  
+//  def classChars: String =
+//    contestCatalog.getContest(contestConfig.contestType).map(_.classCharsString).getOrElse("")
 
+  /**
+   * 1. Rename qsosJournal.json to timestamped.qsosJournal.json
+   * 2. Clear memory stores
+   * 3. Save new config to contest.json and timestamped old contestconfig.json file
+   *
+   */
   def handleRestartContest(newConfig: ContestConfig): Unit =
-    // 1. Rename qsosJournal.json
-    // 2. Clear memory stores
-    // 3. Save new config to contest.json and timestamped file
-    // 4. Update the local property
     lastRestartTime = System.currentTimeMillis()
     archiveAndClear()
     setConfig(newConfig)
+  
 
-  private def promptForYear(ownerWindow: Window): Option[Int] =
-    val d = new TextInputDialog(LocalDate.now().getYear.toString):
-      initOwner(ownerWindow)
-      title = "Select Year"
-      headerText = "Enter the year for the contest"
-      contentText = "Year:"
-
-    d.showAndWait().flatMap(_.toIntOption)
-
-//  private def updateZonedDateTimeControl(form: MyCaseForm[?], fieldName: String, zdt: ZonedDateTime): Unit =
-//    val field = form.fieldHandlers.find(_.name == fieldName).get
-//    field.control() match {
-//      case Some(editor: ZonedDateTimeEditor) => editor.value = zdt
-//      case _ =>
-//        // Fallback for any other control types if necessary, though currently it should be ZonedDateTimeEditor
-//        logger.warn(s"Control for $fieldName is not a ZonedDateTimeEditor")
-//    }
-
-  // ---- persistence ----------------------------------------------------------
-
-  private def persist(): Unit =
+  private def load(): Option[ContestConfig] =
     try
-      val timestampedFile = productionDirectory() / s"${filenameStamp.build()}.contest.json"
-      val json = configProperty.value.asJson.spaces2
-      os.write.over(file, json, createFolders = true)
-      os.copy.over(file, timestampedFile)
-      logger.info(s"Persisted contest config to $file and archived to $timestampedFile")
+      for
+        file <- Option.when(os.exists(contestFile))(contestFile)
+        contestConfig: ContestConfig <- decode(os.read(file)).toOption
+      yield
+        contestConfig
     catch
-      case e: Throwable => logger.error(s"Failed to persist contest config to $file", e)
+      case e:Throwable =>
+        logger.error(s"Failed to load contest config from $contestFile", e)
+        None
 
   def archiveAndClear(): Unit =
     qsoStore.archiveAndClear()
     persist()
 
-  def load(): ContestConfig =
+  private def persist(): Unit =
     try
-      if os.exists(file) then
-        val json = os.read(file)
-        decode[ContestConfig](json).toTry.get
-      else
-        defaultConfig()
+      val timestampedFile = productionDirectory() / s"${filenameStamp.build()}.contest.json"
+      assert(maybeContestConfig.isDefined, "ContestConfig not initialized, but attempting to persist!")
+      val json = maybeContestConfig.get.asJson.spaces2
+      os.write.over(contestFile, json, createFolders = true)
+      os.copy.over(contestFile, timestampedFile)
+      logger.info(s"Persisted contest config to $contestFile and archived to $timestampedFile")
     catch
-      case e: Throwable =>
-        logger.warn(s"Failed to load contest config from $file: ${e.getMessage}. Using default.")
-        defaultConfig()
+      case e: Throwable => logger.error(s"Failed to persist contest config to $contestFile", e)
 
-  def defaultConfig(): ContestConfig =
-    val sectionCode = sections.all.headOption.map(_.code).getOrElse("CT")
-    ContestConfig(ContestType.WFD, Callsign("W1AW"), 1, "O", sectionCode)

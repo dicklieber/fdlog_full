@@ -1,7 +1,7 @@
 package fdswarm.fx.discovery
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.contest.{ContestConfig, ContestConfigManager, ContestConfigPaneProvider, ContestType, ExchangePane}
+import fdswarm.fx.contest.{ContestConfig, ContestConfigManager, ContestConfigPane, ContestConfigPaneProvider, ContestType, ExchangePane}
 import fdswarm.fx.utils.{GridColumn, GridColumnAlignment, GridColumnWidth, GridRowBehavior, RadioGroup, RadioGroupBuilder, StyledDialog, TypedGridTableBuilder}
 import fdswarm.store.QsoStore
 import jakarta.inject.Inject
@@ -27,7 +27,7 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
   private val discovered = ArrayBuffer.empty[NodeContestStation]
 
 //  private val contestConfig: ContestConfig = contestManager.contestConfig
-  private val contestConfigPane: contestConfigPaneProvider.ContestConfigPane = contestConfigPaneProvider.pane()
+  private val contestConfigPane: ContestConfigPane = contestConfigPaneProvider.pane()
   private val discoveryTable = new DiscoveryTable(contestConfigPane)
 
 
