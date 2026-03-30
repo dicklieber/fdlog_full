@@ -18,12 +18,11 @@
 
 package fdswarm.exporter
 
-import fdswarm.fx.contest.ContestConfigManager
+import fdswarm.fx.contest.{ContestConfig, ContestConfigManager, ContestType}
 import fdswarm.fx.station.StationStore
 import fdswarm.io.DirectoryProvider
 import fdswarm.store.QsoStore
 import fdswarm.model.Qso
-import fdswarm.fx.contest.ContestType
 import jakarta.inject.{Inject, Singleton}
 
 @Singleton
@@ -53,7 +52,8 @@ final class ExportService @Inject()(
       case ExportFormat.CABRILLO =>
         val qsos = qsoStore.all
         val station = stationStore.station.value
-        val contest = contestManager.contestConfig.contestType
+        val value: ContestConfig = contestManager.contestConfigProperty.value
+        val contest:ContestType = value.contestType
         val header = cabrilloHeaderStore.header.value
         val cabrillo = CabrilloExporter.exportQsos(qsos, station, contest, header)
         os.write.over(path, cabrillo)

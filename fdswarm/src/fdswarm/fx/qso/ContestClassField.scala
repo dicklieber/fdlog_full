@@ -31,9 +31,7 @@ class ContestClassField @Inject() (
                                     override val userConfig: UserConfig
 ) extends TextField
     with NextField:
-  logger.trace("ctor")
-  private val contestConfig: ContestConfig = contestManager.contestConfig
-  contestConfig.
+  private val contestConfig: ContestConfig = contestManager.contestConfigProperty
   private def showHelp(): Unit =
     val contest: Option[ContestDefinition] = contestCatalog.contests.find(_.name == contestConfig)
     contest.foreach { contest =>
@@ -43,7 +41,7 @@ class ContestClassField @Inject() (
 
   focused.onChange { (_, _, newValue) =>
     val currentText = text.value
-    val classChars = contestCatalog.getContest(contestManager.contestConfig.contestType).get.classCharsString
+    val classChars = contestCatalog.getContest(contestManager.contestConfigProperty.contestType).get.classCharsString
     val typingPattern = "^([0-9]{1,2}[" + classChars.toUpperCase + "]|[0-9]{0,2})$"
     if newValue && !currentText.matches(typingPattern) then showHelp()
   }

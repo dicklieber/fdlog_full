@@ -171,7 +171,7 @@ class WebRoutes @Inject()(
           val groups = sectionsProvider.sectionGroups
 
           val now = ZonedDateTime.now()
-          val config = contestManager.contestConfig
+          val config = contestManager.contestConfigProperty
           val times = contestManager.contestTimesProperty.value
           val (msg, style) = if now.isBefore(times.start) then
             (s"${config.contestType.name} ${times.start.getYear} starts in ${DurationFormat(JDuration.between(now, times.start))}", "contest-before")
@@ -216,7 +216,7 @@ class WebRoutes @Inject()(
               val metadata = QsoMetadata(
                 station = ws.station,
                 node = nodeIdentityManager.ourNodeIdentity,
-                contest = contestManager.contestConfig.contestType
+                contest = contestManager.contestConfigProperty.contestType
               )
               val qso = Qso(
                 callsign = Callsign(callsign.toUpperCase),

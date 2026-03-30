@@ -17,12 +17,12 @@ class ContestConfigPaneProvider @Inject()(contestCatalog: ContestCatalog,
                                           contestConfigManager: ContestConfigManager):
 
   def pane(): ContestConfigPane =
-    new ContestConfigPane( contestConfigManager.contestConfig, contestCatalog, sectionsProvider)
+    new ContestConfigPane( contestConfigManager.contestConfigProperty.value, contestCatalog, sectionsProvider)
 
-class ContestConfigPane(contestConfig: ContestConfig,
+class ContestConfigPane(initialContestConfig: ContestConfig,
                         contestCatalog: ContestCatalog,
                         sectionsProvider: SectionsProvider):
-  private val configEditor: CaseClassPropertyEditor[ContestConfig] = new CaseClassPropertyEditor(contestConfig)
+  private val configEditor: CaseClassPropertyEditor[ContestConfig] = new CaseClassPropertyEditor(initialContestConfig)
   val contestConfigProperty: ReadOnlyObjectProperty[ContestConfig] = configEditor.currentValueProperty
   configEditor.setCustomEditor("contestType", new ContestChooser())
   configEditor.setCustomEditor("transmitters", new IntSpinner())
