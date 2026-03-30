@@ -3,22 +3,22 @@ package fdswarm.fx.discovery
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.contest.{ContestConfig, ContestConfigManager, ContestConfigPaneProvider, ContestType, ExchangePane}
 import fdswarm.fx.utils.{GridColumn, GridColumnAlignment, GridColumnWidth, GridRowBehavior, RadioGroup, RadioGroupBuilder, StyledDialog, TypedGridTableBuilder}
+import fdswarm.store.QsoStore
 import jakarta.inject.Inject
 import scalafx.Includes.*
 import scalafx.application.Platform
 import scalafx.scene.Node
-import scalafx.scene.control.Button
-import scalafx.scene.control.ButtonType
-import scalafx.scene.control.Dialog
-import scalafx.scene.control.ScrollPane
+import scalafx.scene.control.{Alert, Button, ButtonType, Dialog, ScrollPane}
 import scalafx.scene.layout.{BorderPane, HBox, Region, VBox}
 import scalafx.beans.property.ObjectProperty
+import scalafx.scene.control.Alert.AlertType.{Confirmation, Error, Warning}
 
 import scala.collection.mutable.ArrayBuffer
 
 class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
                                  contestConfigPaneProvider: ContestConfigPaneProvider,
                                  contestManager: ContestConfigManager,
+                                 qsoStore: QsoStore,
                                  exchangePane: ExchangePane)
   extends StyledDialog[ButtonType] with LazyLogging:
 
@@ -43,8 +43,23 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
     }
     bottom = new Button("Update"):
       onAction = _ =>
-        val updatedContestConfig = contestConfigPane.finish()
-        contestManager.setConfig(updatedContestConfig)
+        if qsoStore.hasQsos then
+          new Alert(Error, "You already have QSOs logged!", ButtonType.OK, ButtonType.Cancel) {
+            title = "Update Contest Configuration"
+            headerText = "You already have QSOs logged!"
+            buttonTypes = Seq(ButtonType.OK, ButtonType.Cancel)
+            contentText =
+                """You already have QSOs logged!
+                  |Changing contest configuration during the contest is bad.
+                  |Are you sure you want to continue?
+                  |""".stripMargin
+
+          }.showAndWait() match
+            case Some(ButtonType.OK) =>
+              val updatedContestConfig = contestConfigPane.finish()
+              contestManager.setConfig(updatedContestConfig)
+            case _ =>
+
   }
   vBox.children += configBorderPane
   vBox.children += discoveryTable.grid

@@ -83,7 +83,7 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider,
 
   def get(uuid: Id): Option[Qso] =
     map.get(uuid)
-
+  def hasQsos: Boolean = map.nonEmpty
   def potentialDups(startOfCallsign: String, bandmode: BandMode): DupInfo =
     val allPotentialDups: Seq[Qso] = map.filter { case (id, qso) =>
         val bandModeMatch = qso.bandMode == bandmode
