@@ -17,28 +17,29 @@ class ContestConfigPaneProvider @Inject()(contestCatalog: ContestCatalog,
                                           contestConfigManager: ContestConfigManager):
 
   def pane(): ContestConfigPane =
-    new ContestConfigPane()
+    new ContestConfigPane( contestConfigManager.contestConfig, contestCatalog, sectionsProvider)
 
-  class ContestConfigPane():
-    private val contestConfig: ContestConfig = contestConfigManager.contestConfig
-    private val configEditor: CaseClassPropertyEditor[ContestConfig] = new CaseClassPropertyEditor(contestConfig)
-    val contestConfigProperty: ReadOnlyObjectProperty[ContestConfig] = configEditor.currentValueProperty
-    configEditor.setCustomEditor("contestType", new ContestChooser())
-    configEditor.setCustomEditor("transmitters", new IntSpinner())
-    configEditor.setCustomEditor("ourCallsign", new CallsignCustomField())
-    val contestTypeProperty: ObjectProperty[ContestType] = configEditor.getProperty("contestType")
-    configEditor.setCustomEditor("ourClass", contestCatalog.comboBox(contestTypeProperty))
-    configEditor.setCustomEditor("ourSection", new SectionComboBox(sectionsProvider))
+class ContestConfigPane(contestConfig: ContestConfig,
+                        contestCatalog: ContestCatalog,
+                        sectionsProvider: SectionsProvider):
+  private val configEditor: CaseClassPropertyEditor[ContestConfig] = new CaseClassPropertyEditor(contestConfig)
+  val contestConfigProperty: ReadOnlyObjectProperty[ContestConfig] = configEditor.currentValueProperty
+  configEditor.setCustomEditor("contestType", new ContestChooser())
+  configEditor.setCustomEditor("transmitters", new IntSpinner())
+  configEditor.setCustomEditor("ourCallsign", new CallsignCustomField())
+  val contestTypeProperty: ObjectProperty[ContestType] = configEditor.getProperty("contestType")
+  configEditor.setCustomEditor("ourClass", contestCatalog.comboBox(contestTypeProperty))
+  configEditor.setCustomEditor("ourSection", new SectionComboBox(sectionsProvider))
 
-    val currentContestConfigProperty: ReadOnlyObjectProperty[ContestConfig] = configEditor.currentValueProperty
+  val currentContestConfigProperty: ReadOnlyObjectProperty[ContestConfig] = configEditor.currentValueProperty
 
-    def update(contestConfig: ContestConfig): Unit =
-      configEditor.update(contestConfig)
+  def update(contestConfig: ContestConfig): Unit =
+    configEditor.update(contestConfig)
 
-    def pane: Pane =
-      configEditor.horizontal
+  def pane: Pane =
+    configEditor.horizontal
 
-    def finish(): ContestConfig =
-      configEditor.finish()
-      
+  def finish(): ContestConfig =
+    configEditor.finish()
     
+  
