@@ -185,7 +185,7 @@ class StartupDialog @Inject() (
     initialChecks()
 
     // Listen for changes
-    val contestListener = contestManager.configProperty.onChange((_, _, _) => runChecks())
+    val contestListener = contestManager.contestConfigProperty.onChange((_, _, _) => runChecks())
     val stationListener = stationStore.station.onChange((_, _, _) => runChecks())
     val bandsListener = bandsManager.bands.onChange((_, _) => runChecks())
     val modesListener = modesManager.modes.onChange((_, _) => runChecks())

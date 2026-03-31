@@ -76,9 +76,7 @@ final class FdLogUi @Inject() (
                                 userConfigEditor: UserConfigEditor,
                                 meterRegistry: MeterRegistry,
                                 qsoStore: fdswarm.store.QsoStore,
-                                qsoSearchPane: fdswarm.fx.qso.QsoSearchPane,
                                 exportDialog: fdswarm.fx.tools.ExportDialog,
-                                webSessionsAdmin: fdswarm.fx.admin.WebSessionsAdmin,
                                 sectionsProvider: fdswarm.fx.sections.SectionsProvider,
                                 sectionPanel: fdswarm.fx.sections.SectionPanel,
                                 ipAddressDialogService: IpAddressDialogService,
@@ -210,12 +208,6 @@ final class FdLogUi @Inject() (
   private val adminMenu: Menu =
     new Menu("Admin"):
       items = Seq(
-        new MenuItem("Web Sessions"):
-          onAction = _ =>
-            Option(ownerWindow) match
-              case Some(w) => webSessionsAdmin.show(w)
-              case None    => ()
-        ,
         new MenuItem("Swarm Status"):
           onAction = _ =>
             Option(ownerWindow) match

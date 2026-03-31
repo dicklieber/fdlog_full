@@ -404,7 +404,6 @@ object fdswarm extends CommonSettings with ScoverageModule with BuildInfo with J
     mvn"io.github.classgraph:classgraph:4.8.179",
     mvn"net.codingwell::scala-guice:7.0.0",
 
-    mvn"com.lihaoyi::scalatags:0.13.1",
     mvn"com.google.inject:guice:7.0.0",
     mvn"com.github.andyglow::typesafe-config-scala:2.0.0",
 

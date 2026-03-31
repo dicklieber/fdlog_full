@@ -57,7 +57,7 @@ class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModu
 
     bind[fdswarm.util.NodeIdentityManager].asEagerSingleton()
 
-    val pkgs = Seq("fdswarm.api", "fdswarm.grafana", "fdswarm.web")
+    val pkgs = Seq("fdswarm.api", "fdswarm.grafana")
     val allPkgs = Seq("fdswarm")
     val fxPkgs = Seq("fdswarm.fx")
 

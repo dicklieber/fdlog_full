@@ -32,17 +32,16 @@ class ContestClassField @Inject() (
                                     override val userConfig: UserConfig
 ) extends TextField
     with NextField:
-  private val contestConfig: ReadOnlyObjectProperty[ContestConfig] = contestManager.contestConfigProperty
   private def showHelp(): Unit =
-    val contest: Option[ContestDefinition] = contestCatalog.contests.find(_.name == contestConfig)
+    val contest: Option[ContestDefinition] = contestCatalog.contests.find(_.name.eq(contestManager.contestType.name))
     contest.foreach { contest =>
       val items = contest.classChoices.map(contestClassChar => (contestClassChar.ch, contestClassChar.description))
-      dupPanel.show(s"$contestConfig Classes", items)
+      dupPanel.show(s"${contestManager.contestType.name} Classes", items)
     }
 
   focused.onChange { (_, _, newValue) =>
     val currentText = text.value
-    val classChars = contestCatalog.getChars(contestConfig.value.contestType)
+    val classChars = contestCatalog.getChars(contestManager.contestType)
     val typingPattern = "^([0-9]{1,2}[" + classChars.toUpperCase + "]|[0-9]{0,2})$"
     if newValue && !currentText.matches(typingPattern) then showHelp()
   }
@@ -52,7 +51,7 @@ class ContestClassField @Inject() (
       change.setText(change.getText.toUpperCase)
     }
     val newText = change.controlNewText
-    val classChars = contestCatalog.getChars(contestConfig.value.contestType)
+    val classChars = contestCatalog.getChars(contestManager.contestType)
     // Match partial strings during typing: empty, 1-2 digits, or 1-2 digits + 1 classChar
     val typingPattern = "^([0-9]{1,2}[" + classChars.toUpperCase + "]|[0-9]{0,2})$"
     if (newText.matches(typingPattern))
@@ -68,7 +67,7 @@ class ContestClassField @Inject() (
 
   text.onChange { (_, _, nv) =>
     validProperty.value = isValid(nv)
-    val classChars = contestCatalog.getChars(contestConfig.value.contestType)
+    val classChars = contestCatalog.getChars(contestManager.contestType)
     val typingPattern = "^([0-9]{1,2}[" + classChars.toUpperCase + "]|[0-9]{0,2})$"
     if nv.matches(typingPattern) then dupPanel.clear
   }
@@ -77,6 +76,6 @@ class ContestClassField @Inject() (
     super.isTransitionKey(key) || key.isLetterKey
 
   override def isValid(str: String): Boolean =
-    val classChars = contestCatalog.getChars(contestConfig.value.contestType)
+    val classChars = contestCatalog.getChars(contestManager.contestType)
     val pattern = "^[0-9]{1,2}[" + classChars.toUpperCase + "]$"
     str.matches(pattern)

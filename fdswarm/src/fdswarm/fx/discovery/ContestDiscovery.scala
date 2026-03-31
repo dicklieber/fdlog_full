@@ -72,7 +72,7 @@ class ContestDiscovery @Inject()(
           msg.nodeIdentity,
           response
         )
-    t.start()
+  t.start()
 
   def discoverContest(callBack: NodeContestStation => Unit): Unit =
     logger.info(s"Starting contest discovery (timeout: ${timeoutSec}s)")
