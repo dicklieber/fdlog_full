@@ -22,6 +22,13 @@ import fdswarm.model.Callsign
 import fdswarm.util.HamPhonetic.fromString
 import io.circe.Codec
 
+trait ContestConfigFields:
+  def contestType: ContestType
+  def ourCallsign: Callsign
+  def transmitters: Int
+  def ourClass: String
+  def ourSection: String
+
 /**
  * What a user can choose in a dialog.
  *
@@ -31,7 +38,7 @@ case class ContestConfig(contestType: ContestType,
                          ourCallsign: Callsign,
                          transmitters: Int,
                          ourClass: String,
-                         ourSection: String) derives Codec.AsObject:
+                         ourSection: String) extends ContestConfigFields derives Codec.AsObject:
   val exchange:String=
     s"$transmitters$ourClass $ourSection"
   def weAre(usePhonetic: Boolean): String =

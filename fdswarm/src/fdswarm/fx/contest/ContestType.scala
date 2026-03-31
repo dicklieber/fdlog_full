@@ -38,8 +38,6 @@ enum ContestType(val name: String, val compute: Int => ContestDates) derives stt
   case ARRL extends ContestType("ARRL Field Day", ContestDateCalculator.forthFullWeekend)
 
 object ContestType:
-
-      
   given Codec[ContestType] = Codec.from(
     Decoder.decodeString.emap(s =>
       try Right(ContestType.valueOf(s))

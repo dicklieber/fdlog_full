@@ -38,16 +38,17 @@ final class CabrilloHeaderDialog @Inject()(
                                           ):
 
   def show(ownerWindow: Window): Unit =
+    val contestConfig = contestManager.contestConfigProperty.value
     val currentHeader = headerStore.header.value
     val station = stationStore.station.value
     val contest = contestManager.contestConfigProperty
 
     val callsignField = new TextField {
-      text = contest.ourCallsign.toString
+      text = contestConfig.ourCallsign.toString
       editable = false
     }
     val contestField = new TextField {
-      text = contest.contestType.toString
+      text = contestConfig.contestType.toString
       editable = false
     }
     
@@ -70,11 +71,11 @@ final class CabrilloHeaderDialog @Inject()(
     val postalCodeField = new TextField { text = currentHeader.addressPostalCode }
     val countryField = new TextField { text = currentHeader.addressCountry }
     val stationClassField = new TextField {
-      text = s"${contest.transmitters}${contest.ourClass}"
+      text = s"${contestConfig.transmitters}${contestConfig.ourClass}"
       editable = false
     }
     val stationSectionField = new TextField {
-      text = contest.ourSection
+      text = contestConfig.ourSection
       editable = false
     }
     val soapboxField = new TextArea { 
@@ -151,8 +152,8 @@ final class CabrilloHeaderDialog @Inject()(
     val result = dialog.showAndWait()
     if result.contains(saveButtonType) then
       val newHeader = CabrilloHeader(
-        callsign = contest.ourCallsign.toString,
-        contest = contest.contestType.toString,
+        callsign = contestConfig.ourCallsign.toString,
+        contest = contestConfig.contestType.toString,
         categoryOperator = categoryOperatorCombo.value.value,
         categoryAssisted = categoryAssistedCombo.value.value,
         categoryBand = categoryBandCombo.value.value,
@@ -169,8 +170,8 @@ final class CabrilloHeaderDialog @Inject()(
         addressStateProvince = stateField.text.value.trim,
         addressPostalCode = postalCodeField.text.value.trim,
         addressCountry = countryField.text.value.trim,
-        stationClass = s"${contest.transmitters}${contest.ourClass}",
-        stationSection = contest.ourSection,
+        stationClass = s"${contestConfig.transmitters}${contestConfig.ourClass}",
+        stationSection = contestConfig.ourSection,
         soapbox = soapboxField.text.value.trim
       )
       headerStore.update(newHeader)

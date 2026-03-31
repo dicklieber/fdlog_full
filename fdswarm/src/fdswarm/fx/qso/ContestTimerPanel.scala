@@ -19,24 +19,35 @@
 package fdswarm.fx.qso
 
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.ContestDates
 import fdswarm.fx.GridColumns
-import fdswarm.fx.contest.ContestConfigManager
+import fdswarm.fx.contest.{ContestConfig, ContestConfigManager, ContestType}
 import fdswarm.util.DurationFormat
 import jakarta.inject.{Inject, Named, Singleton}
 import scalafx.animation.{KeyFrame, Timeline}
-import scalafx.beans.property.ObjectProperty
+import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
 import scalafx.scene.Node
 import scalafx.scene.control.Label
 import scalafx.util.Duration
-import java.time.{Duration as JDuration, ZonedDateTime}
-import scalafx.Includes.*
+
+import java.time.{ZonedDateTime, Duration as JDuration}
 
 @Singleton
 class ContestTimerPanel @Inject()(
                                    contestManager: ContestConfigManager,
                                    @Named("fdswarm.contestTimerUpdateSec") contestTimerUpdateSec: Int
                                  ) extends LazyLogging:
-
+  private val contestConfigProperty: ReadOnlyObjectProperty[ContestConfig] = contestManager.contestConfigProperty
+  private val timerTimeline = new Timeline:
+    keyFrames = Seq(
+      KeyFrame(Duration(contestTimerUpdateSec * 1000), onFinished = _ => updateContestTimeDisplay())
+    )
+    cycleCount = Timeline.Indefinite
+  var contestType: ContestType = contestConfigProperty.value.contestType
+  contestConfigProperty.onChange((_, _, newConfig) =>
+    contestType = newConfig.contestType
+    contestDates = contestType.dates()
+    updateContestTimeDisplay())
   private val contestTimerLabel = new Label:
     styleClass += "contest-timer"
     minWidth = scalafx.scene.layout.Region.USE_PREF_SIZE
@@ -44,49 +55,43 @@ class ContestTimerPanel @Inject()(
   enum TimeMode:
     case Before, During, After
 
-  val timeModeProperty = ObjectProperty[TimeMode](this, "timeMode", TimeMode.Before)
-
   private var useMockTime: Boolean = false
   private var mockTime: ZonedDateTime = ZonedDateTime.now()
+  var contestDates: ContestDates = contestType.dates()
 
   def setMockTime(useFixed: Boolean, time: ZonedDateTime): Unit =
     useMockTime = useFixed
     mockTime = time
-    updateContestTimer()
+    updateContestTimeDisplay()
 
-  private def updateContestTimer(): Unit =
+  /**
+   * show contest time stuff.
+   *
+   * @param contestDates
+   */
+  private def updateContestTimeDisplay(): Unit =
     val now = if useMockTime then mockTime else ZonedDateTime.now()
-    val config = contestManager.contestConfigProperty
-    val times = contestManager.contestTimesProperty.value
+    val configProperty: ReadOnlyObjectProperty[ContestConfig] = contestConfigProperty
 
     val mode =
-      if now.isBefore(times.start) then TimeMode.Before
-      else if now.isAfter(times.end) then TimeMode.After
+      if now.isBefore(contestDates.startUtc) then TimeMode.Before
+      else if now.isAfter(contestDates.endUtc) then TimeMode.After
       else TimeMode.During
-
-    timeModeProperty.value = mode
 
     val (msg, style) = mode match
       case TimeMode.Before =>
-        (s"${config.contestType.name} ${times.start.getYear} starts in ${DurationFormat(JDuration.between(now, times.start))}", "contest-before")
+        (s"${contestType.name} ${contestDates.startUtc.getYear} starts in ${DurationFormat(JDuration.between(now, contestDates.endUtc))}", "contest-before")
       case TimeMode.After =>
-        (s"${config.contestType.name} ${times.start.getYear} ended ${DurationFormat(JDuration.between(times.end, now))} ago.", "contest-after")
+        (s"${contestType.name} ${contestDates.startUtc.getYear} ended ${DurationFormat(JDuration.between(contestDates.endUtc, now))} ago.", "contest-after")
       case TimeMode.During =>
-        (s"${config.contestType.name} ${times.start.getYear} ends in ${DurationFormat(JDuration.between(now, times.end))}", "contest-during")
+        (s"${contestType.name} ${contestDates.startUtc.getYear} ends in ${DurationFormat(JDuration.between(now, contestDates.endUtc))}", "contest-during")
 
     contestTimerLabel.text = msg
     contestTimerLabel.styleClass.removeAll("contest-before", "contest-during", "contest-after")
     contestTimerLabel.styleClass.add(style)
-
-  private val timerTimeline = new Timeline:
-    keyFrames = Seq(
-      KeyFrame(Duration(contestTimerUpdateSec * 1000), onFinished = _ => updateContestTimer())
-    )
-    cycleCount = Timeline.Indefinite
   timerTimeline.play()
-  updateContestTimer()
+  updateContestTimeDisplay()
 
   def node: Node =
-    val config = contestManager.contestConfigProperty
-    val times = contestManager.contestTimesProperty.value
-    GridColumns.fieldSet(s"${config.contestType.name} ${times.start.getYear}", contestTimerLabel)
+    val config = contestConfigProperty
+    GridColumns.fieldSet(s"${contestType.name} ${contestDates.startUtc.getYear}", contestTimerLabel)

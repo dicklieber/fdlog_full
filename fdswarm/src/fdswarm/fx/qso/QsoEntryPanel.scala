@@ -21,7 +21,7 @@ package fdswarm.fx.qso
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.StationConfigManager
 import fdswarm.fx.bandmodes.SelectedBandModeManager
-import fdswarm.fx.contest.ContestConfigManager
+import fdswarm.fx.contest.{ContestConfigManager, ContestType}
 import fdswarm.fx.sections.Section
 import fdswarm.fx.CallSignField
 import fdswarm.fx.GridColumns
@@ -49,6 +49,7 @@ class QsoEntryPanel @Inject()(
                                nodeIdentityManager: NodeIdentityManager
                              ) extends LazyLogging:
 
+  private def contestType:ContestType = contestManager.contestConfigProperty.value.contestType
   lazy val node: Node =
     GridColumns.fieldSet("QSO", mainLayout)
   private val clearButton = new Button("\u21BA"):
@@ -75,13 +76,13 @@ class QsoEntryPanel @Inject()(
     add(sectionField, 2, 1)
 
     add(clearButton, 3, 1)
-  private val mainLayout = new VBox:
+  private val mainLayout = new VBox {
     spacing = 10
     children = Seq(
       grid,
       dupPanel.pane()
     )
-
+  }
   def callsignValidProperty: scalafx.beans.property.BooleanProperty =
     callsignField.validProperty
 
@@ -142,7 +143,7 @@ class QsoEntryPanel @Inject()(
     QsoMetadata(
       station = stationManager.station,
       node = nodeIdentityManager.ourNodeIdentity,
-      contest = contestManager.contestConfigProperty.contestType
+      contest = contestType
     )
 
   private def clearControls: Unit =

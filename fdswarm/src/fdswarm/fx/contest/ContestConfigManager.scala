@@ -3,6 +3,7 @@ package fdswarm.fx.contest
 import com.google.inject.name.Named
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.io.DirectoryProvider
+import fdswarm.model.Callsign
 import io.circe.parser.decode
 import io.circe.syntax.*
 import jakarta.inject.{Inject, Singleton}
@@ -14,7 +15,23 @@ final class ContestConfigManager @Inject()(
                                             qsoStore: fdswarm.store.QsoStore,
                                             filenameStamp: fdswarm.util.FilenameStamp,
                                             @Named("fdswarm.contestChangeIgnoreStatusSec") ignoreStatusSec: Int
-                                          ) extends LazyLogging:
+                                          ) extends ContestConfigFields with LazyLogging:
+// These override methods expose the current value of the contestConfigProperty
+  override def contestType: ContestType =
+    _contestConfig.value.contestType
+
+  override def ourCallsign: Callsign =
+    _contestConfig.value.ourCallsign
+
+  override def transmitters: Int =
+    _contestConfig.value.transmitters
+
+  override def ourClass: String =
+    _contestConfig.value.ourClass
+
+  override def ourSection: String =
+    _contestConfig.value.ourSection
+
 
   private var lastRestartTime: Long = 0L
 

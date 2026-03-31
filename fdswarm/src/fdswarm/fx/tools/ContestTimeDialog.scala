@@ -18,23 +18,26 @@
 
 package fdswarm.fx.tools
 
-import fdswarm.fx.contest.{ContestConfigManager, ContestTimes}
+import com.typesafe.scalalogging.LazyLogging
+import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.fx.qso.ContestTimerPanel
 import jakarta.inject.{Inject, Singleton}
-import scalafx.Includes.*
 import scalafx.geometry.Insets
 import scalafx.scene.Scene
 import scalafx.scene.control.*
 import scalafx.scene.layout.{GridPane, HBox, Region}
 import scalafx.stage.{Stage, Window}
-import java.time.{LocalTime, ZonedDateTime}
+
+import java.time.ZonedDateTime
 
 @Singleton
-class ContestTimeDialog @Inject()(contestManager: ContestConfigManager, contestTimerPanel: ContestTimerPanel) {
+class ContestTimeDialog @Inject()(contestManager: ContestConfigManager,
+                                  contestTimerPanel: ContestTimerPanel) extends LazyLogging{
 
   private var stage: Option[Stage] = None
 
   def show(ownerWindow: Window): Unit = {
+    val dates = contestManager.contestConfigProperty.value.contestType.dates()
     stage match {
       case Some(s) => s.requestFocus()
       case None =>
@@ -63,12 +66,12 @@ class ContestTimeDialog @Inject()(contestManager: ContestConfigManager, contestT
         mockTimeBox.disable <== useMockTimeCheckBox.selected.not()
 
         // --- Contest Times ---
-        val times = contestManager.contestTimesProperty.value
-        val startEditor = new ZonedDateTimeEditor(times.start, "Contest Start")
-        val endEditor = new ZonedDateTimeEditor(times.end, "Contest End")
+        val startEditor = new ZonedDateTimeEditor(dates.startUtc, "Contest Start")
+        val endEditor = new ZonedDateTimeEditor(dates.endUtc, "Contest End")
 
         def updateContestTimes(): Unit = {
-          contestManager.contestTimesProperty.value = ContestTimes(startEditor.value, endEditor.value)
+//          contestManager.contestType.dates().value = ContestTimes(startEditor.value, endEditor.value)
+          logger.error("ContestTimes not yet implemented, don't think its needed.")
         }
 
         startEditor.setOnAction(updateContestTimes())
