@@ -84,7 +84,8 @@ final class FdLogUi @Inject() (
                                 summaryDialog: fdswarm.fx.tools.SummaryDialog,
                                 metricsDialog: fdswarm.fx.tools.MetricsDialog,
                                 apiServer: fdswarm.api.ApiServer,
-                                discoveryDialog: DiscoveryDialog
+                                discoveryDialog: DiscoveryDialog,
+                                udpQueuesDialog: UDPQueuesDialog
 ) extends LazyLogging:
 
 
@@ -189,6 +190,10 @@ final class FdLogUi @Inject() (
         new MenuItem("Discovery"):
           onAction = _ =>
             injector.instance[DiscoveryDialog].show()
+        ,
+        new MenuItem("UDP Queues"):
+          onAction = _ =>
+            udpQueuesDialog.show()
       )
   private val developerModeMenuItem = new CheckMenuItem("Developer Mode")
   private val userConfigMenuItem: MenuItem =
