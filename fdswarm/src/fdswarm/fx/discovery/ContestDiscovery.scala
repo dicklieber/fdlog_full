@@ -57,21 +57,27 @@ class ContestDiscovery @Inject()(
         val msg: UDPHeaderData = requestQueue.take()
         discReqReceived.increment()
 
-        val contestConfig: ContestConfig =
-          contestConfigManager.contestConfigProperty.value
+        if !contestConfigManager.hasConfiguration.value then
+          logger.debug(
+            "Received DiscReq from {} but contest config is not initialized yet",
+            msg.nodeIdentity
+          )
+        else
+          val contestConfig: ContestConfig =
+            contestConfigManager.contestConfigProperty.value
 
-        val response =
-          DiscoveryWire(contestConfig, stationConfigManager.station)
+          val response =
+            DiscoveryWire(contestConfig, stationConfigManager.station)
 
-        val jsonBytes =
-          response.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+          val jsonBytes =
+            response.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
 
-        transport.send(Service.DiscResponse, jsonBytes)
-        logger.trace(
-          "Received DiscReq from {} responding with {}",
-          msg.nodeIdentity,
-          response
-        )
+          transport.send(Service.DiscResponse, jsonBytes)
+          logger.trace(
+            "Received DiscReq from {} responding with {}",
+            msg.nodeIdentity,
+            response
+          )
   t.start()
 
   def discoverContest(callBack: NodeContestStation => Unit): Unit =

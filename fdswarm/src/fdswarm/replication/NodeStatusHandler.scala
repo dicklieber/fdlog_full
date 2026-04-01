@@ -92,9 +92,14 @@ class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
                 logger.error(s"Failed to decode QSO from multicast: $sJson", error)
           case Service.DiscReq =>
             logger.debug(s"Received ContestDiscoveryRequest from ${udpHeader.nodeIdentity}")
-            val contestStation = DiscoveryWire(contestManager.contestConfigProperty.value, stationManager.station)
-            val configBytes = contestStation.asJson.noSpaces.getBytes("UTF-8")
-            transport.send(Service.DiscResponse, configBytes)
+            if !contestManager.hasConfiguration.value then
+              logger.debug(
+                s"Skipping ContestDiscoveryResponse to ${udpHeader.nodeIdentity} because contest config is not initialized"
+              )
+            else
+              val contestStation = DiscoveryWire(contestManager.contestConfigProperty.value, stationManager.station)
+              val configBytes = contestStation.asJson.noSpaces.getBytes("UTF-8")
+              transport.send(Service.DiscResponse, configBytes)
           case Service.DiscResponse =>
             // Handled by listeners in ContestDiscovery, ignore here
             logger.trace(s"Received ContestDiscoveryResponse from ${udpHeader.nodeIdentity} (ignoring in NodeStatusHandler)")
