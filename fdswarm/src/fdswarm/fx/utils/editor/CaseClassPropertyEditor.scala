@@ -77,13 +77,14 @@ class CaseClassPropertyEditor[T <: Product](val target: T):
     customEditors(fieldName) = editor
 
   def horizontal: Pane =
-    val grid = GridCells.styledGrid()
+    val grid = GridCells.styledGrid("case-class-editor-grid")
 
     for ((fieldName, fieldValue), col) <- propertiesInOrder.zipWithIndex do
       val label = new Label(camelToWords(fieldName)):
         minWidth = Region.USE_PREF_SIZE
         textOverrun = OverrunStyle.Clip
         styleClass.add("grid-row-label")
+        styleClass.add("grid-header-primary-text")
         styleClass.add("grid-cell")
 
       val editorNode = nodeFor(fieldName, fieldValue)
@@ -91,7 +92,7 @@ class CaseClassPropertyEditor[T <: Product](val target: T):
       if fieldValue.isNumeric then editorNode.styleClass.add("gridNumber")
       editorNode.styleClass.add("grid-cell")
 
-      val labelCell = GridCells.addCell(grid, col, 0, label, "grid-cell", "grid-row-label")
+      val labelCell = GridCells.addCell(grid, col, 0, label, "grid-cell", "grid-row-label", "grid-header-primary-cell")
       val valueCell = GridCells.addCell(grid, col, 1, editorNode, "grid-cell", "grid-value")
 
       if fieldValue.isNumeric then valueCell.styleClass.add("gridNumber")
@@ -102,7 +103,7 @@ class CaseClassPropertyEditor[T <: Product](val target: T):
     grid
 
   def vertical: Pane =
-    val grid = GridCells.styledGrid()
+    val grid = GridCells.styledGrid("case-class-editor-grid")
 
     for ((fieldName, fieldValue), row) <- propertiesInOrder.zipWithIndex do
       val label = new Label(camelToWords(fieldName)):

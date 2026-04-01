@@ -34,8 +34,8 @@
 }
 
 .grid-row-label {
-    -fx-font-weight: normal;
-    -fx-background-color: white;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
     -fx-padding: 4 8 4 8;
     -fx-background-insets: 0;
     -fx-border-insets: 0;
@@ -256,6 +256,20 @@
 .grid-header-cell {
     -fx-background-color: #f4f4f4;
     -fx-font-weight: bold;
+}
+
+.grid-table-cell.grid-header-primary-cell {
+    -fx-background-color: #0000ff;
+}
+
+.grid-header-primary-text {
+    -fx-text-fill: white;
+    -fx-font-weight: normal;
+    -fx-font-size: 1.1em;
+}
+
+.case-class-editor-grid .grid-table-cell {
+    -fx-padding: 3 6 3 6;
 }
 
 .grid-sortable-header-cell {
