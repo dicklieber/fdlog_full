@@ -18,6 +18,7 @@
 
 package fdswarm.fx.utils.editor
 
+import fdswarm.fx.utils.GridCells
 import fdswarm.util.camelToWords
 import scalafx.beans.property.*
 import scalafx.scene.Node
@@ -76,52 +77,54 @@ class CaseClassPropertyEditor[T <: Product](val target: T):
     customEditors(fieldName) = editor
 
   def horizontal: Pane =
-    new GridPane:
-      hgap = 0
-      vgap = 0
-      styleClass.add("grid-container")
+    val grid = GridCells.styledGrid()
 
-      for ((fieldName, fieldValue), col) <- propertiesInOrder.zipWithIndex do
-        val label = new Label(camelToWords(fieldName)):
-          minWidth = Region.USE_PREF_SIZE
-          textOverrun = OverrunStyle.Clip
-          styleClass.add("grid-row-label")
-          styleClass.add("grid-cell")
+    for ((fieldName, fieldValue), col) <- propertiesInOrder.zipWithIndex do
+      val label = new Label(camelToWords(fieldName)):
+        minWidth = Region.USE_PREF_SIZE
+        textOverrun = OverrunStyle.Clip
+        styleClass.add("grid-row-label")
+        styleClass.add("grid-cell")
 
-        val editorNode = nodeFor(fieldName, fieldValue)
-        editorNode.styleClass.add("grid-value")
-        if fieldValue.isNumeric then editorNode.styleClass.add("gridNumber")
-        editorNode.styleClass.add("grid-cell")
+      val editorNode = nodeFor(fieldName, fieldValue)
+      editorNode.styleClass.add("grid-value")
+      if fieldValue.isNumeric then editorNode.styleClass.add("gridNumber")
+      editorNode.styleClass.add("grid-cell")
 
-        GridPane.setHgrow(label, Priority.Never)
-        GridPane.setHgrow(editorNode, Priority.Always)
+      val labelCell = GridCells.addCell(grid, col, 0, label, "grid-cell", "grid-row-label")
+      val valueCell = GridCells.addCell(grid, col, 1, editorNode, "grid-cell", "grid-value")
 
-        add(label, col, 0)
-        add(editorNode, col, 1)
+      if fieldValue.isNumeric then valueCell.styleClass.add("gridNumber")
+
+      GridPane.setHgrow(labelCell, Priority.Never)
+      GridPane.setHgrow(valueCell, Priority.Always)
+
+    grid
 
   def vertical: Pane =
-    new GridPane:
-      hgap = 0
-      vgap = 0
-      styleClass.add("grid-container")
+    val grid = GridCells.styledGrid()
 
-      for ((fieldName, fieldValue), row) <- propertiesInOrder.zipWithIndex do
-        val label = new Label(camelToWords(fieldName)):
-          minWidth = Region.USE_PREF_SIZE
-          textOverrun = OverrunStyle.Clip
-          styleClass.add("grid-row-label")
-          styleClass.add("grid-cell")
+    for ((fieldName, fieldValue), row) <- propertiesInOrder.zipWithIndex do
+      val label = new Label(camelToWords(fieldName)):
+        minWidth = Region.USE_PREF_SIZE
+        textOverrun = OverrunStyle.Clip
+        styleClass.add("grid-row-label")
+        styleClass.add("grid-cell")
 
-        val editorNode = nodeFor(fieldName, fieldValue)
-        editorNode.styleClass.add("grid-value")
-        if fieldValue.isNumeric then editorNode.styleClass.add("gridNumber")
-        editorNode.styleClass.add("grid-cell")
+      val editorNode = nodeFor(fieldName, fieldValue)
+      editorNode.styleClass.add("grid-value")
+      if fieldValue.isNumeric then editorNode.styleClass.add("gridNumber")
+      editorNode.styleClass.add("grid-cell")
 
-        GridPane.setHgrow(label, Priority.Never)
-        GridPane.setHgrow(editorNode, Priority.Always)
+      val labelCell = GridCells.addCell(grid, 0, row, label, "grid-cell", "grid-row-label")
+      val valueCell = GridCells.addCell(grid, 1, row, editorNode, "grid-cell", "grid-value")
 
-        add(label, 0, row)
-        add(editorNode, 1, row)
+      if fieldValue.isNumeric then valueCell.styleClass.add("gridNumber")
+
+      GridPane.setHgrow(labelCell, Priority.Never)
+      GridPane.setHgrow(valueCell, Priority.Always)
+
+    grid
 
   def finish(): T =
     propertyT.value
