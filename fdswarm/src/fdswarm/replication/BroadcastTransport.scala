@@ -56,11 +56,9 @@ class BroadcastTransport @Inject() (
   socket.bind(new InetSocketAddress("0.0.0.0", port))
 
   val thread = new Thread(this, "Broadcast-Receiver")
-  val queue = new LiveOrDeadQueue()
 
   thread.setDaemon(true)
   thread.start()
-
 
   private val sentCounter = new java.util.concurrent.atomic.LongAdder()
   override def sentCount: Long = sentCounter.sum()
@@ -80,7 +78,7 @@ class BroadcastTransport @Inject() (
         logger.trace(s"Received UDP packet from $senderAddr:$senderPort: ${udpHeaderData.service}")
         val queue = queues.getOrElseUpdate(
           udpHeaderData.service, {
-            new LiveOrDeadQueue()
+            new LiveOrDeadQueue(udpHeaderData.service)
           }
         )
         if queue.isAlive then // if dead just ignore message no one is listening.
@@ -93,7 +91,7 @@ class BroadcastTransport @Inject() (
 
   def startQueue(service: Service): LiveOrDeadQueue =
     queues.getOrElse(service, {
-      val newQueue = new LiveOrDeadQueue()
+      val newQueue = new LiveOrDeadQueue(service)
       queues.putIfAbsent(service, newQueue).getOrElse(newQueue)
     })
 

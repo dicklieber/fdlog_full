@@ -3,6 +3,7 @@ package fdswarm.replication
 import fdswarm.replication.LiveOrDeadQueue.deadQueueInstance
 import fdswarm.replication.UDPHeaderData
 
+import java.time.Instant
 import java.util
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 import scala.jdk.CollectionConverters.*
@@ -16,7 +17,7 @@ import scala.jdk.CollectionConverters.*
  * The primary use case for this class is scenarios where the queue's availability
  * or operational state might change dynamically.
  */
-final class LiveOrDeadQueue:
+final class LiveOrDeadQueue(val service:Service, val started:Instant = Instant.now):
 
   @volatile
   private var delegate: LinkedBlockingQueue[UDPHeaderData] =
@@ -81,7 +82,7 @@ object LiveOrDeadQueue:
     override def poll(timeout: Long, unit: TimeUnit): UDPHeaderData | Null = dead()
     override def peek(): UDPHeaderData | Null = dead()
     override def clear(): Unit = dead()
-    override def size(): Int = dead()
+    override def size(): Int = 0
     override def isEmpty: Boolean = dead()
     override def remainingCapacity(): Int = dead()
     override def contains(o: Any): Boolean = dead()
