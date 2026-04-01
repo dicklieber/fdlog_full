@@ -23,10 +23,12 @@ import fdswarm.fx.contest.{ContestConfigPane, ContestConfigPaneProvider}
 import fdswarm.fx.utils.{GridColumn, GridColumnAlignment, GridColumnWidth, GridRowBehavior, TypedGridTableBuilder}
 import scalafx.Includes.*
 import scalafx.scene.Node
-import scalafx.scene.control.Button
+import scalafx.scene.control.{Button, TitledPane}
 import scalafx.scene.layout.Region
 
-class DiscoveryTable(contestConfigPane: ContestConfigPane) extends LazyLogging:
+class DiscoveryTable(contestConfigPane: ContestConfigPane) extends TitledPane with LazyLogging:
+  text = "Discovered FdSwarm Nodes"
+  collapsible = false
   private type Ncs = NodeContestStation
 
   private def textCol(
@@ -127,7 +129,7 @@ class DiscoveryTable(contestConfigPane: ContestConfigPane) extends LazyLogging:
     }
   )
 
-  def grid: Node = table.grid
+  content = table.grid
 
   def setItems(items: IterableOnce[Ncs]): Unit =
     table.setItems(items)

@@ -22,7 +22,7 @@ import fdswarm.fx.UserConfig
 import jakarta.inject.Inject
 import scalafx.Includes.*
 import scalafx.beans.binding.Bindings
-import scalafx.beans.property.{BooleanProperty, ObjectProperty, ReadOnlyObjectProperty}
+import scalafx.beans.property.{BooleanProperty, ReadOnlyObjectProperty}
 import scalafx.scene.control.{CheckBox, Label}
 import scalafx.scene.layout.HBox
 
@@ -39,12 +39,12 @@ final class ExchangePane @Inject()(val userConfig: UserConfig) :
 
     new HBox(spacing = 8) {
       children ++= Seq(
-        new Label {
-          text <== weAreText
-        },
         new CheckBox {
           text = "Use Phonetic"
           selected <==> phoneticProp
+        },
+        new Label {
+          text <== weAreText
         }
       )
     }
