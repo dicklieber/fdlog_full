@@ -119,7 +119,9 @@ class ContestDiscovery @Inject()(
  * in response to a [[fdswarm.replication.Service.DiscReq]].
  */
 case class DiscoveryWire(contestConfig: ContestConfig, stationConfig: StationConfig)
-  derives Codec.AsObject
+
+object DiscoveryWire:
+  given Codec.AsObject[DiscoveryWire] = Codec.AsObject.derived
 
 /**
  * Combines the ContestStation as received from other nodes with the NodeIdentity

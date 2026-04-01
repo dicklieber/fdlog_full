@@ -7,16 +7,15 @@ import fdswarm.fx.contest.{
   ContestConfigPaneProvider,
   ExchangePane
 }
-import fdswarm.fx.utils.StyledDialog
+import fdswarm.fx.utils.{ObservableScalaMap, StyledDialog}
 import fdswarm.store.QsoStore
+import fdswarm.util.NodeIdentity
 import jakarta.inject.Inject
 import scalafx.Includes.*
 import scalafx.application.Platform
 import scalafx.scene.control.Alert.AlertType.Error
 import scalafx.scene.control.{Alert, Button, ButtonType}
 import scalafx.scene.layout.{BorderPane, VBox}
-
-import scala.collection.mutable.ArrayBuffer
 
 class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
                                  contestConfigPaneProvider: ContestConfigPaneProvider,
@@ -27,14 +26,13 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
 
 
   
-  private val discovered = ArrayBuffer.empty[NodeContestStation]
-
+  private val discoveredNodes = new ObservableScalaMap[NodeIdentity, NodeContestStation]
   private val contestConfigPane: ContestConfigPane = contestConfigPaneProvider.pane()
   private val discoveryTable = new DiscoveryTable(contestConfigPane)
 
 
   val vBox = new VBox()
-  val configBorderPane: BorderPane = new BorderPane {
+  private val configBorderPane: BorderPane = new BorderPane {
     center = new VBox(spacing = 8) {
       children ++= Seq(
         contestConfigPane.pane,
@@ -94,15 +92,11 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
     }
   } }
 
-  private def refreshGrid(): Unit =
-    discoveryTable.setItems(discovered)
-
-  refreshGrid()
 
   contestDiscovery.discoverContest { ncs =>
-    logger.info(s"Discovery UI added: $ncs")
+    logger.debug(s"Discovery UI added: $ncs")
     Platform.runLater {
-      discovered += ncs
-      refreshGrid()
+      discoveredNodes.put(ncs.nodeIdentity, ncs)
+      discoveryTable.setItems(discoveredNodes.values)
     }
   }
