@@ -35,35 +35,47 @@ class ContestEntry @Inject()(qsoEntryPanel: QsoEntryPanel,
                              qsoSearchPane: QsoSearchPane,
                              val bandModeMatrixPane: BandModeMatrixPane,
                              sectionPanel: SectionPanel,
-                             contestTimerPanel: ContestTimerPanel
+                             contestTimerPanel: ContestTimerPanel,
+                             contestManager: fdswarm.fx.contest.ContestConfigManager
                             ) extends LazyLogging:
 
-  def node: Node =
-    new GridPane {
-      padding = Insets(10)
-      hgap = 10
-      vgap = 10
-      // Row 0: Search pane above table
-      add(child = qsoSearchPane.node, columnIndex = 0, rowIndex = 0, colspan = 2, rowspan = 1)
+  private val _node = new GridPane {
+    padding = Insets(10)
+    hgap = 10
+    vgap = 10
+    columnConstraints = Seq(
+      new ColumnConstraints() { hgrow = Priority.Always },
+      new ColumnConstraints() { hgrow = Priority.Never }
+    )
+  }
 
-      // Row 1: Table spans both columns
-      add(child = qsoTablePane.node, columnIndex = 0, rowIndex = 1, colspan = 2, rowspan = 1)
+  private def buildUi(): Unit =
+    _node.children.clear()
+    // Row 0: Search pane above table
+    _node.add(child = qsoSearchPane.node, columnIndex = 0, rowIndex = 0, colspan = 2, rowspan = 1)
 
-      // Row 2: Entry panel and Section panel
-      add(qsoEntryPanel.node, 0, 2)
-      add(sectionPanel.node, 1, 2, 1, 3) // Section panel spans 3 rows to match others
+    // Row 1: Table spans both columns
+    _node.add(child = qsoTablePane.node, columnIndex = 0, rowIndex = 1, colspan = 2, rowspan = 1)
 
-      // Row 3: Timer
-      add(contestTimerPanel.node, 0, 3)
+    // Row 2: Entry panel and Section panel
+    _node.add(qsoEntryPanel.node, 0, 2)
+    _node.add(sectionPanel.node, 1, 2, 1, 3) // Section panel spans 3 rows to match others
 
-      // Row 4: Band/Mode matrix
-      add(bandModeMatrixPane.node, 0, 4)
+    // Row 3: Timer
+    _node.add(contestTimerPanel.node, 0, 3)
 
-      columnConstraints = Seq(
-        new ColumnConstraints() { hgrow = Priority.Always },
-        new ColumnConstraints() { hgrow = Priority.Never }
-      )
-    }
+    // Row 4: Band/Mode matrix
+    _node.add(bandModeMatrixPane.node, 0, 4)
+    bandModeMatrixPane.buildGrid()
+
+  contestManager.hasConfiguration.onChange { (_, _, hasConfig) =>
+    if hasConfig then buildUi()
+    else _node.children.clear()
+  }
+
+  if contestManager.hasConfiguration.value then buildUi()
+
+  def node: Node = _node
 //    new VBox {
 //      children = Seq(
 //        qsoTablePane.node,

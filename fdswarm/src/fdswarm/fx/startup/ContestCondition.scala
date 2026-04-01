@@ -36,12 +36,18 @@ class ContestCondition @Inject()(
     throw new NotImplementedError("") //todo
 
   override def update(discovered: Map[NodeIdentity, DiscoveryWire]): Unit =
+    if !contestManager.hasConfiguration.value then
+      problems.clear()
+      problems += "No contest configuration loaded"
+      details.value = "Use the Configure button to load or create a contest"
+      return
+
     val config = contestManager.contestConfigProperty.value
     val currentDetails =
       s"Callsign: ${config.ourCallsign}, Contest: ${config.contestType.name}, Class: ${config.ourClass}, Section: ${config.ourSection}"
     
     val discoveryConsistent =
-      discovered.isEmpty || discovered.values.forall(_ == contestManager.contestConfigProperty)
+      discovered.isEmpty || discovered.values.forall(_ == config)
 
     val newProblems = scala.collection.mutable.ListBuffer[String]()
     if !discoveryConsistent then newProblems += "Inconsistent with other nodes"

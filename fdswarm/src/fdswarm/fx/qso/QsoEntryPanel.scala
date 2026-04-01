@@ -30,6 +30,7 @@ import fdswarm.replication.{Service, Transport}
 import fdswarm.store.{QsoStore, StyledMessage}
 import fdswarm.util.*
 import jakarta.inject.{Inject, Singleton}
+import scalafx.Includes.*
 import scalafx.application.Platform
 import scalafx.scene.Node
 import scalafx.scene.control.*
@@ -49,9 +50,20 @@ class QsoEntryPanel @Inject()(
                                nodeIdentityManager: NodeIdentityManager
                              ) extends LazyLogging:
 
-  private def contestType:ContestType = contestManager.contestConfigProperty.value.contestType
-  lazy val node: Node =
-    GridColumns.fieldSet("QSO", mainLayout)
+  private val _node = new VBox()
+  def node: Node = _node
+
+  private def buildUi(): Unit =
+    val contestType: ContestType = contestManager.contestConfigProperty.value.contestType
+    _node.children = Seq(GridColumns.fieldSet("QSO", mainLayout))
+
+  contestManager.hasConfiguration.onChange { (_, _, hasConfig) =>
+    if hasConfig then buildUi()
+    else _node.children = Seq.empty
+  }
+
+  if contestManager.hasConfiguration.value then buildUi()
+
   private val clearButton = new Button("\u21BA"):
     styleClass += "clear-button"
     tooltip = Tooltip("Clear fields")
@@ -140,6 +152,7 @@ class QsoEntryPanel @Inject()(
   sectionField.onAction = _ => submit()
 
   private def qsoMetadata =
+    val contestType: ContestType = contestManager.contestConfigProperty.value.contestType
     QsoMetadata(
       station = stationManager.station,
       node = nodeIdentityManager.ourNodeIdentity,

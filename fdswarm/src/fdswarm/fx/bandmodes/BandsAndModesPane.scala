@@ -42,7 +42,8 @@ import scalafx.stage.Window
 final class BandsAndModesPane @Inject()(
                                          bandCheckBoxPane: BandCheckBoxPane,
                                          modeCheckBoxPane: ModeCheckBoxPane,
-                                         matrixPane: BandModeMatrixPane
+                                         matrixPane: BandModeMatrixPane,
+                                         contestManager: fdswarm.fx.contest.ContestConfigManager
                                       ) extends GridPane:
 
   matrixPane.onConfigRequest = Some(() => {
@@ -59,6 +60,11 @@ final class BandsAndModesPane @Inject()(
   add(bandCheckBoxPane.node, 1, 0)
   matrixPane.showConfigButton.value = false
   add(matrixPane.node, 1,1)
+
+  contestManager.hasConfiguration.onChange { (_, _, hasConfig) =>
+    if hasConfig then matrixPane.buildGrid()
+  }
+  if contestManager.hasConfiguration.value then matrixPane.buildGrid()
 
   def show(ownerWindow: Window): Unit =
     val dialog = new Dialog[Unit] {

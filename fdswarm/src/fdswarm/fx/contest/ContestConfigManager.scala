@@ -7,7 +7,7 @@ import fdswarm.model.Callsign
 import io.circe.parser.decode
 import io.circe.syntax.*
 import jakarta.inject.{Inject, Singleton}
-import scalafx.beans.property.{ReadOnlyObjectProperty, ReadOnlyObjectWrapper}
+import scalafx.beans.property.{ReadOnlyBooleanProperty, ReadOnlyBooleanWrapper, ReadOnlyObjectProperty, ReadOnlyObjectWrapper}
 
 @Singleton
 final class ContestConfigManager @Inject()(
@@ -40,6 +40,10 @@ final class ContestConfigManager @Inject()(
 
   private var _contestConfig: ReadOnlyObjectWrapper[ContestConfig] | Null = load()
 
+  private val _hasConfiguration = new ReadOnlyBooleanWrapper(this, "hasConfiguration", _contestConfig != null)
+
+  def hasConfiguration: ReadOnlyBooleanProperty = _hasConfiguration.readOnlyProperty
+
   def shouldIgnoreStatus: Boolean =
     val now = System.currentTimeMillis()
     (now - lastRestartTime) < (ignoreStatusSec * 1000L)
@@ -51,6 +55,7 @@ final class ContestConfigManager @Inject()(
   def setConfig(newConfig: ContestConfig): Unit =
     if _contestConfig == null then
       _contestConfig = ReadOnlyObjectWrapper(newConfig)
+      _hasConfiguration.value = true
     else
       _contestConfig.nn.value = newConfig
     persist()
@@ -69,6 +74,7 @@ final class ContestConfigManager @Inject()(
     // update config
     if _contestConfig == null then
       _contestConfig = ReadOnlyObjectWrapper(newConfig)
+      _hasConfiguration.value = true
     else
       _contestConfig.nn.value = newConfig
 

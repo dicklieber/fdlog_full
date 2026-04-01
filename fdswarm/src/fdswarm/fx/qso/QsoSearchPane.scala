@@ -60,12 +60,9 @@ class QsoSearchPane @Inject()(
   val callsignFilter = new OptionTextField {
     promptText = "Callsign"
   }
-  def contestType: ContestType = contestManager.contestConfigProperty.value.contestType
-  val contestDefinition: ContestDefinition = contestCatalog.getContest(contestType).get
   val bandFilter = new AnyComboBox[Band](bandCatalog.hamBands)
   val modeFilter = new AnyComboBox[Mode](modeCatalog.choices)
-  val classChoices: Seq[ClassChoice] = contestDefinition.classChoices
-  val classFilter = new AnyComboBox[Char](classChoices)
+  val classFilter = new AnyComboBox[Char](Seq.empty)
   val operatorFilter = new OptionTextField() {
     promptText = "Operator"
   }
@@ -75,6 +72,7 @@ class QsoSearchPane @Inject()(
    */
   val expandedProperty = scalafx.beans.property.BooleanProperty(false)
 
+  // Initialize anyChange after defining all filters
   val anyChange: BooleanProperty = MultiChangeWatcher(callsignFilter.optionValueProperty,
     bandFilter.value,
     modeFilter.value,
@@ -84,32 +82,34 @@ class QsoSearchPane @Inject()(
     expandedProperty)
 
   anyChange.onChange((_, _, newVal) =>
-    logger.debug("anyChange: {}", newVal)
+    if contestManager.hasConfiguration.value then
+      logger.debug("anyChange: {}", newVal)
 
-    val startTime = System.nanoTime()
-    val searchResult = qsoStore.qsoCollection.filter (qso =>
-      filter(qso)
-    )
-    val durationNanos = System.nanoTime() - startTime
-    val sDuration: String = DurationFormat(Duration.ofNanos(durationNanos))
-    logger.debug("filteredQsos: {} of {} in {}", searchResult.size, qsoStore.qsoCollection.size, sDuration)
-    MetricsHelpers.recordTimerNanos(meterRegistry, "fdswarm_qso_filter_duration", durationNanos)
+      val startTime = System.nanoTime()
+      val searchResult = qsoStore.qsoCollection.filter (qso =>
+        filter(qso)
+      )
+      val durationNanos = System.nanoTime() - startTime
+      val sDuration: String = DurationFormat(Duration.ofNanos(durationNanos))
+      logger.debug("filteredQsos: {} of {} in {}", searchResult.size, qsoStore.qsoCollection.size, sDuration)
+      MetricsHelpers.recordTimerNanos(meterRegistry, "fdswarm_qso_filter_duration", durationNanos)
 
 
-    val isSearching = expandedProperty.value && (callsignFilter.value.isDefined ||
-      bandFilter.value.value.isDefined ||
-      modeFilter.value.value.isDefined ||
-      transmittersFilter.value.value.isDefined ||
-      classFilter.value.value.isDefined ||
-      operatorFilter.optionValueProperty.value.isDefined)
+      val isSearching = expandedProperty.value && (callsignFilter.value.isDefined ||
+        bandFilter.value.value.isDefined ||
+        modeFilter.value.value.isDefined ||
+        transmittersFilter.value.value.isDefined ||
+        classFilter.value.value.isDefined ||
+        operatorFilter.optionValueProperty.value.isDefined)
 
-    if isSearching then
-      qsoTablePane.showSearchResults(searchResult)
-    else
-      qsoTablePane.restoreQsoCollection()
+      if isSearching then
+        qsoTablePane.showSearchResults(searchResult)
+      else
+        qsoTablePane.restoreQsoCollection()
   )
 
   def filter(qso: Qso): Boolean = {
+    if !contestManager.hasConfiguration.value then return true
     val callSignFilterVal = callsignFilter.value.getOrElse("").toUpperCase
     val bandFilterVal = bandFilter.value.value
     val modeFilterVal = modeFilter.value.value
@@ -186,7 +186,14 @@ class QsoSearchPane @Inject()(
 
   var filteredQsosSupplier: () => Seq[Qso] = () => Seq.empty
 
-  val node: Node = 
+  val node: VBox = new VBox()
+
+  private def buildUi(): Unit =
+    val contestType: ContestType = contestManager.contestConfigProperty.value.contestType
+    val contestDefinition: ContestDefinition = contestCatalog.getContest(contestType).get
+    val classChoices: Seq[ClassChoice] = contestDefinition.classChoices
+    classFilter.setChoices(classChoices*)
+
     val titledPane = new TitledPane {
       text = "Search"
       content = new VBox {
@@ -202,7 +209,7 @@ class QsoSearchPane @Inject()(
               new VBox { children = Seq(new Label("Class"), classFilter) },
               new VBox { children = Seq(new Label("Transmitters"), transmittersFilter) },
               new VBox { children = Seq(new Label("Operator"), operatorFilter) },
-              new VBox { 
+              new VBox {
                 alignment = scalafx.geometry.Pos.BottomLeft
                 spacing = 10
                 children = Seq(
@@ -210,7 +217,7 @@ class QsoSearchPane @Inject()(
                     spacing = 10
                     children = Seq(resetButton, exportButton)
                   }
-                ) 
+                )
               }
             )
           }
@@ -219,4 +226,11 @@ class QsoSearchPane @Inject()(
       expanded <==> expandedProperty
       collapsible = true
     }
-    titledPane
+    node.children = Seq(titledPane)
+
+  contestManager.hasConfiguration.onChange { (_, _, hasConfig) =>
+    if hasConfig then buildUi()
+    else node.children = Seq.empty
+  }
+
+  if contestManager.hasConfiguration.value then buildUi()

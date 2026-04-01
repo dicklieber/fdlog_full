@@ -37,6 +37,11 @@ class ContestTimeDialog @Inject()(contestManager: ContestConfigManager,
   private var stage: Option[Stage] = None
 
   def show(ownerWindow: Window): Unit = {
+    if !contestManager.hasConfiguration.value then
+       new Alert(Alert.AlertType.Warning, "No contest configuration loaded. Please configure the contest first.") {
+         initOwner(ownerWindow)
+       }.showAndWait()
+       return
     val dates = contestManager.contestConfigProperty.value.contestType.dates()
     stage match {
       case Some(s) => s.requestFocus()

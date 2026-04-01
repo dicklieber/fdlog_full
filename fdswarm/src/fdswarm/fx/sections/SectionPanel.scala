@@ -22,6 +22,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.GridColumns
 import fdswarm.fx.qso.QsoEntryPanel
 import jakarta.inject.Inject
+import scalafx.Includes.*
 import scalafx.beans.binding.{Bindings, BooleanBinding}
 import scalafx.beans.property.StringProperty
 import scalafx.geometry.Insets
@@ -29,18 +30,32 @@ import scalafx.scene.Node
 import scalafx.scene.control.Label
 import scalafx.scene.layout.{HBox, Priority, Region, VBox}
 
-class SectionPanel @Inject()(sectionsProvider: SectionsProvider, qsoEntryPanel: QsoEntryPanel) extends LazyLogging:
+class SectionPanel @Inject()(sectionsProvider: SectionsProvider, 
+                           qsoEntryPanel: QsoEntryPanel,
+                           contestManager: fdswarm.fx.contest.ContestConfigManager
+                          ) extends LazyLogging:
 
-  def node: Node = buildNode(
-    qsoEntryPanel.sectionFieldProperty,
-    () => qsoEntryPanel.submit(),
-    Bindings.createBooleanBinding(
-      () => qsoEntryPanel.callsignValidProperty.value && qsoEntryPanel.contestClassValidProperty.value,
-      qsoEntryPanel.callsignValidProperty,
-      qsoEntryPanel.contestClassValidProperty
-    ),
-    "Sections"
-  )
+  private val _node = new VBox()
+  def node: Node = _node
+
+  private def buildUi(): Unit =
+    _node.children = Seq(buildNode(
+      qsoEntryPanel.sectionFieldProperty,
+      () => qsoEntryPanel.submit(),
+      Bindings.createBooleanBinding(
+        () => qsoEntryPanel.callsignValidProperty.value && qsoEntryPanel.contestClassValidProperty.value,
+        qsoEntryPanel.callsignValidProperty,
+        qsoEntryPanel.contestClassValidProperty
+      ),
+      "Sections"
+    ))
+
+  contestManager.hasConfiguration.onChange { (_, _, hasConfig) =>
+    if hasConfig then buildUi()
+    else _node.children = Seq.empty
+  }
+
+  if contestManager.hasConfiguration.value then buildUi()
 
   def buildNode(
       sectionField: StringProperty,

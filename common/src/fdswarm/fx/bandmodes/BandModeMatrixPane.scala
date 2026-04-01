@@ -48,7 +48,8 @@ import scala.jdk.CollectionConverters.*
 final class BandModeMatrixPane @Inject()(availableBandsStore: AvailableBandsManager,
                                          availableModesManager: AvailableModesManager,
                                          selectedStore: SelectedBandModeManager,
-                                         bandModeBuilder: BandModeBuilder) extends  LazyLogging:
+                                         bandModeBuilder: BandModeBuilder
+                                        ) extends  LazyLogging:
 
   val showConfigButton = BooleanProperty(true)
   var onConfigRequest: Option[() => Unit] = None

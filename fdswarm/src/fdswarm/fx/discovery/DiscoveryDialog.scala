@@ -1,17 +1,20 @@
 package fdswarm.fx.discovery
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.contest.{ContestConfig, ContestConfigManager, ContestConfigPane, ContestConfigPaneProvider, ContestType, ExchangePane}
-import fdswarm.fx.utils.{GridColumn, GridColumnAlignment, GridColumnWidth, GridRowBehavior, RadioGroup, RadioGroupBuilder, StyledDialog, TypedGridTableBuilder}
+import fdswarm.fx.contest.{
+  ContestConfigManager,
+  ContestConfigPane,
+  ContestConfigPaneProvider,
+  ExchangePane
+}
+import fdswarm.fx.utils.StyledDialog
 import fdswarm.store.QsoStore
 import jakarta.inject.Inject
 import scalafx.Includes.*
 import scalafx.application.Platform
-import scalafx.scene.Node
-import scalafx.scene.control.{Alert, Button, ButtonType, Dialog, ScrollPane}
-import scalafx.scene.layout.{BorderPane, HBox, Region, VBox}
-import scalafx.beans.property.ObjectProperty
-import scalafx.scene.control.Alert.AlertType.{Confirmation, Error, Warning}
+import scalafx.scene.control.Alert.AlertType.Error
+import scalafx.scene.control.{Alert, Button, ButtonType}
+import scalafx.scene.layout.{BorderPane, VBox}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -43,6 +46,7 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
     }
     bottom = new Button("Update"):
       onAction = _ =>
+        var continue = true
         if qsoStore.hasQsos then
           new Alert(Error, "You already have QSOs logged!", ButtonType.OK, ButtonType.Cancel) {
             title = "Update Contest Configuration"
@@ -56,9 +60,27 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
 
           }.showAndWait() match
             case Some(ButtonType.OK) =>
-              val updatedContestConfig = contestConfigPane.finish()
-              contestManager.setConfig(updatedContestConfig)
             case _ =>
+              continue = false
+        if continue then
+          new Alert(Error, "This will delete all QSOs!", ButtonType.OK, ButtonType.Cancel) {
+            title = "Start Contest"
+            headerText = "This will delete all QSOs!"
+            buttonTypes = Seq(ButtonType.OK, ButtonType.Cancel)
+            contentText =
+              """For all nodes this will delete all QSOs logged so far and set the new Contest Configuration.!
+                |Are you sure you want to continue?
+                |""".stripMargin
+          }.showAndWait() match {
+            case Some(value) =>
+//              continue = true
+            case None =>
+              continue = false
+          }
+          val updatedContestConfig = contestConfigPane.finish()
+          contestManager.setConfig(updatedContestConfig)
+          // todo
+
 
   }
   vBox.children += configBorderPane
