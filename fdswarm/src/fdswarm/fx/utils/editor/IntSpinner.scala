@@ -1,10 +1,10 @@
 package fdswarm.fx.utils.editor
 
-import scalafx.beans.property.{IntegerProperty, Property}
+import scalafx.beans.property.IntegerProperty
 import scalafx.scene.Node
 import scalafx.scene.control.{Spinner, TextFormatter}
 import scalafx.util.StringConverter
-import scalafx.Includes.jfxTextField2sfx
+import scalafx.Includes.*
 
 class IntSpinner(
                   min: Int = 1,
@@ -12,45 +12,44 @@ class IntSpinner(
                   width: Double = 90.0,
                 ) extends CustomFieldEditor:
 
-  override def editor(fieldProperty: Property[?, ?]): Node =
-    fieldProperty match
-      case intProp: IntegerProperty =>
-        val spinner = new Spinner[Int](min, max, intProp.value, 1)
-        spinner.editable = true
-        spinner.prefWidth = width
-        spinner.minWidth = width
-        spinner.maxWidth = width
+  override def editor(fieldProperty: Any): Node =
+    val intProp = fieldProperty.asInstanceOf[IntegerProperty]
 
-        val converter = new StringConverter[Integer]():
-          override def toString(value: Integer): String =
-            if value == null then "" else value.toString
+    val spinner = new Spinner[Int](min, max, intProp.value, 1)
+    spinner.editable = true
+    spinner.prefWidth = width
+    spinner.minWidth = width
+    spinner.maxWidth = width
 
-          override def fromString(value: String): Integer =
-            try
-              if value == null || value.trim.isEmpty then null.asInstanceOf[Integer]
-              else java.lang.Integer.valueOf(java.lang.Integer.parseInt(value.trim))
-            catch
-              case _: NumberFormatException => null.asInstanceOf[Integer]
+    val converter = new StringConverter[Integer]():
+      override def toString(value: Integer): String =
+        if value == null then "" else value.toString
 
-        val filter = (change: TextFormatter.Change) =>
-          val newText = change.controlNewText
-          if newText.matches("-?\\d*") then change else null.asInstanceOf[TextFormatter.Change]
+      override def fromString(value: String): Integer =
+        try
+          if value == null || value.trim.isEmpty then
+            Integer.valueOf(intProp.value)
+          else
+            Integer.valueOf(value.trim.toInt)
+        catch
+          case _: NumberFormatException =>
+            Integer.valueOf(intProp.value)
 
-        spinner.editor().textFormatter = TextFormatter(converter, intProp.value, filter)
+    val filter = (change: TextFormatter.Change) =>
+      val newText = change.getControlNewText
+      if newText.matches("-?\\d*") then change else null
 
-        spinner.value.onChange { (_, _, nv) =>
-          intProp.value = nv
-        }
+    spinner.getEditor.textFormatter =
+      new TextFormatter[Integer](converter, Integer.valueOf(intProp.value), filter)
 
-        intProp.onChange { (_, _, nv) =>
-          val newValue = nv.intValue
-          if spinner.getValue != newValue then
-            spinner.getValueFactory.setValue(newValue)
-        }
+    spinner.value.onChange { (_, _, nv) =>
+      intProp.value = nv
+    }
 
-        spinner
+    intProp.onChange { (_, _, nv) =>
+      val newValue = nv.intValue
+      if spinner.getValue != newValue then
+        spinner.getValueFactory.setValue(newValue)
+    }
 
-      case other =>
-        throw new IllegalArgumentException(
-          s"IntSpinner requires IntegerProperty, got: ${other.getClass.getName}"
-        )
+    spinner
