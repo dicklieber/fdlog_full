@@ -29,11 +29,8 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
   
   private val discovered = ArrayBuffer.empty[NodeContestStation]
 
-//  private val contestConfig: ContestConfig = contestManager.contestConfig
   private val contestConfigPane: ContestConfigPane = contestConfigPaneProvider.pane()
   private val discoveryTable = new DiscoveryTable(contestConfigPane)
-
-
 
 
   val vBox = new VBox()

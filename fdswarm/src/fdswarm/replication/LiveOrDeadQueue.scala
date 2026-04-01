@@ -90,7 +90,7 @@ object LiveOrDeadQueue:
     override def element(): UDPHeaderData = dead()
     override def iterator(): util.Iterator[UDPHeaderData] = dead()
     override def toArray: Array[Object] = dead()
-    override def toArray[T](a: Array[T & Object]): Array[T & Object] = dead()
+//    override def toArray[T](a: Array[T & Object]): Array[T & Object] = dead()
     override def drainTo(c: util.Collection[? >: UDPHeaderData]): Int = dead()
     override def drainTo(c: util.Collection[? >: UDPHeaderData], maxElements: Int): Int = dead()
 

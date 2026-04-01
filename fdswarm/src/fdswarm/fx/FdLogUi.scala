@@ -84,10 +84,9 @@ final class FdLogUi @Inject() (
                                 summaryDialog: fdswarm.fx.tools.SummaryDialog,
                                 metricsDialog: fdswarm.fx.tools.MetricsDialog,
                                 apiServer: fdswarm.api.ApiServer,
-                                startupDialog: fdswarm.fx.startup.StartupDialog
+                                discoveryDialog: DiscoveryDialog
 ) extends LazyLogging:
 
-  // --- ARRL Sections Map (SVG) -------------------------------------------------
 
   // NOTE: On macOS with `useSystemMenuBar = true`, `items = Seq(...)` can be finicky.
   // Using `items ++= ...` plus a stable `lazy val` is more reliable.
@@ -101,7 +100,6 @@ final class FdLogUi @Inject() (
               case None    => ()
         ,
         stationMenuItem,
-        startupMenuItem,
         new SeparatorMenuItem(),
         arrlSectionsMapMenuItem,
         labelArrlRegionsMenuItem,
@@ -142,12 +140,6 @@ final class FdLogUi @Inject() (
           case Some(w) => stationEditor.show(w)
           case None    => ()
 
-  private val startupMenuItem: MenuItem =
-    new MenuItem("Startup"):
-      onAction = _ =>
-        Option(ownerWindow) match
-          case Some(w) => startupDialog.show(w, autoStart = false)
-          case None    => ()
   private val devMenu: Menu =
     new Menu("Dev"):
       visible = false
@@ -300,8 +292,6 @@ final class FdLogUi @Inject() (
         case None    => ()
     })
 
-    if sys.env.getOrElse("SHOW_STARTUP", "true") == "true" then
-      startupDialog.show(stage)
 
     Platform.runLater {
       val duration = FdLogApp.startupDuration
@@ -313,6 +303,8 @@ final class FdLogUi @Inject() (
         durationNanos
       )
     }
+    if sys.env.getOrElse("SHOW_STARTUP", "true") == "true" then
+      discoveryDialog.showAndWait()
 
   private def setAppIcon(stage: Stage): Unit =
     try

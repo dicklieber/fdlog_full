@@ -150,7 +150,7 @@ class StatusBroadcastService @Inject()(
       val statusMessage = StatusMessage( fdDigests = qsoStore.digests(), bandModeOperator)
       val gzipBytes = statusMessage.toPacket
       logger.trace("Broadcasting status: {} bytes: {}", statusMessage, gzipBytes.length)
-//      transport.send(Service.Status, gzipBytes)
+      transport.send(Service.Status, gzipBytes)
     catch
       case e: Exception =>
         logger.error("Error broadcasting node status", e)

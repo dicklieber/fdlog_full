@@ -22,6 +22,8 @@ import fdswarm.model.Callsign
 import fdswarm.util.HamPhonetic.fromString
 import io.circe.Codec
 
+import java.time.Instant
+
 trait ContestConfigFields:
   def contestType: ContestType
   def ourCallsign: Callsign
@@ -30,15 +32,14 @@ trait ContestConfigFields:
   def ourSection: String
 
 /**
- * What a user can choose in a dialog.
- *
+ * @param transmitters number of transmitters
+ * @param ourCallsign  our callsign
+ * @param ourClass     our class
+ * @param ourSection   our section
  * @param contestType WFD or ARRL
+ * @param stamp        when the config was created. Latest is considered authorative.
  */
-case class ContestConfig(contestType: ContestType,
-                         ourCallsign: Callsign,
-                         transmitters: Int,
-                         ourClass: String,
-                         ourSection: String) extends ContestConfigFields derives Codec.AsObject:
+case class ContestConfig(contestType: ContestType, ourCallsign: Callsign, transmitters: Int, ourClass: String, ourSection: String, stamp: Instant = Instant.now()) extends ContestConfigFields derives Codec.AsObject:
   val exchange:String=
     s"$transmitters$ourClass $ourSection"
   def weAre(usePhonetic: Boolean): String =

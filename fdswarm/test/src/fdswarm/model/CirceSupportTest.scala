@@ -41,7 +41,7 @@ class CirceSupportTest extends FunSuite:
     assertEquals(decoded, band)
 
   test("ContestConfig round trip"):
-    val config = ContestConfig(ContestType.WFD, Callsign("W1AW"), 1, "O", "CT")
+    val config = ContestConfig(ContestType.WFD, Callsign("W1AW"), 1, "O", "CT", Instant.now())
     val json = config.asJson.noSpaces
     val decoded = decode[ContestConfig](json).toOption.get
     // ZonedDateTime might lose some precision or change format slightly, but should be equivalent
@@ -81,7 +81,7 @@ class CirceSupportTest extends FunSuite:
     assertEquals(decoded, status)
 
   test("Node round trip"):
-    val config = ContestConfig(ContestType.ARRL, Callsign("W1AW"), 1, "O", "CT")
+    val config = ContestConfig(ContestType.ARRL, Callsign("W1AW"), 1, "O", "CT", Instant.now())
     val node = Node(new URL("http://localhost:8080"), config, Callsign("WA9NNN"))
     val json = node.asJson.noSpaces
     val decoded = decode[Node](json).toOption.get

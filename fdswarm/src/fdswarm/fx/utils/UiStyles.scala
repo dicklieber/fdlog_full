@@ -3,6 +3,10 @@ package fdswarm.fx.utils
 import scalafx.scene.Scene
 import scalafx.scene.control.DialogPane
 
+/**
+ * Applies the app.css stylesheet to a scene, dialogPane, etc.
+ * ScalaFX stylesheets don't automatically get applied, this makes then work fairly automatically.
+ */
 object UiStyles:
 
   private val AppCssResource = "/styles/app.css"
