@@ -24,7 +24,7 @@ import scalafx.scene.control.TextField
 import fdswarm.model.Callsign
 
 class CallsignCustomField extends CustomFieldEditor:
-  override def editor(fieldProperty: Property[?, ?]): Node = fieldProperty match
+  override def editor(fieldProperty: Any): Node = fieldProperty match
     case prop: ObjectProperty[?] =>
       val callsignProp = prop.asInstanceOf[ObjectProperty[Callsign]]
       val tf = new TextField {

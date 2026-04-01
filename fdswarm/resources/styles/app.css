@@ -12,25 +12,27 @@
     -fx-padding: 3 3 3 3;
     -fx-graphic-text-gap: 0;
 }
+
 .custom-radio:selected {
     -fx-background-color: lightblue;
-    -fx-border-color: blue; /* Outline color when selected */
-    -fx-border-width: 2; /* Outline thickness */
-    -fx-border-radius: 5; /* Rounded corners for outline */
-    /*-fx-padding: 5; !* Optional: Inner padding *!*/
-}
-
-.custom-radio:hover {
-    -fx-background-color: lightgray; /* Optional: Hover effect */
+    -fx-border-color: blue;
     -fx-border-width: 2;
     -fx-border-radius: 5;
 }
+
+.custom-radio:hover {
+    -fx-background-color: lightgray;
+    -fx-border-width: 2;
+    -fx-border-radius: 5;
+}
+
 .grid-cell {
-    -fx-border-color: #333;
-    -fx-border-width: 0 1 1 0;
+    -fx-border-width: 0;
+    -fx-border-color: transparent;
     -fx-border-insets: 0;
     -fx-background-insets: 0;
 }
+
 .grid-row-label {
     -fx-font-weight: normal;
     -fx-background-color: white;
@@ -55,6 +57,7 @@
 .gridNumber {
     -fx-text-alignment: right;
 }
+
 .tooltip {
     -fx-background-color: white;
     -fx-text-fill: black;
@@ -62,6 +65,7 @@
     -fx-padding: 6;
     -fx-font-weight: normal;
 }
+
 .clear-button {
     -fx-background-color: transparent;
     -fx-padding: 0;
@@ -69,11 +73,9 @@
 }
 
 .clear-button:hover {
-    -fx-background-color: lightgray; /* Optional: Hover effect */
-    /*-fx-text-fill: lightgray;*/
+    -fx-background-color: lightgray;
     -fx-border-width: 2;
     -fx-border-radius: 5;
-
 }
 
 .delete-button {
@@ -90,16 +92,18 @@
 .dupCallsign {
     -fx-text-fill: red;
 }
+
 .dupCallsignMore {
     -fx-text-fill: red;
     -fx-font-style: italic;
 }
-.dipCallsign{
+
+.dipCallsign {
     -fx-text-fill: red;
     -fx-font-weight: bold;
 }
 
-.callSignOk{
+.callSignOk {
     -fx-text-fill: green;
     -fx-font-weight: bold;
 }
@@ -112,7 +116,7 @@
 }
 
 .qso-submit-highlight {
-    -fx-control-inner-background: #e0ffe0; /* Light green for text fields */
+    -fx-control-inner-background: #e0ffe0;
     -fx-background-color: #e0ffe0;
     -fx-border-color: green;
     -fx-border-width: 1;
@@ -120,9 +124,10 @@
     -fx-border-radius: 5;
     -fx-padding: 5;
 }
-.discardButton{
 
+.discardButton {
 }
+
 .json-pretty-print {
     -fx-font-family: "monospace";
 }
@@ -142,7 +147,6 @@
     -fx-font-weight: bold;
 }
 
-
 .happy {
     -fx-text-fill: green;
     -fx-font-weight: bold;
@@ -152,18 +156,21 @@
     -fx-text-fill: red;
 }
 
-.duplicate-qso{
+.duplicate-qso {
     -fx-text-fill: red;
     -fx-font-weight: bold;
 }
-.addQsoOk{
+
+.addQsoOk {
     -fx-text-fill: green;
     -fx-font-weight: bold;
 }
+
 .dup-label {
     -fx-text-fill: red;
     -fx-font-weight: bold;
 }
+
 .dup-callsign {
     -fx-text-fill: red;
 }
@@ -181,17 +188,19 @@
     -fx-background-color: lightblue;
 }
 
-.fresh{
+.fresh {
     -fx-background-color: lightgreen;
 }
-.recent{
+
+.recent {
     -fx-background-color: lightblue;
 }
-.stale{
+
+.stale {
     -fx-background-color: red;
 }
 
-.grid-value.ourNode{
+.grid-value.ourNode {
     -fx-background-color: #90eee6;
     -fx-text-fill: darkred;
     -fx-font-style: italic;
@@ -199,13 +208,15 @@
     -fx-font-family: "helvetica";
 }
 
-.countGood{
+.countGood {
     -fx-background-color: lightgreen;
 }
-.countOff{
+
+.countOff {
     -fx-background-color: orange;
 }
-.countBad{
+
+.countBad {
     -fx-background-color: red;
 }
 
@@ -224,20 +235,26 @@
     -fx-font-style: italic;
 }
 
-/* for TypedGridTableBuilder*/
-   .grid-table {
-       -fx-hgap: 0;
-       -fx-vgap: 0;
-   }
-
-.grid-table-cell {
-    -fx-border-color: #d0d0d0;
-    -fx-border-width: 0 1 1 0;
+/* table grid */
+.grid-table {
+    -fx-hgap: 1;
+    -fx-vgap: 1;
+    -fx-background-color: #808080;
+    -fx-padding: 1;
     -fx-background-insets: 0;
 }
 
+.grid-table-cell {
+    -fx-background-color: white;
+    -fx-border-width: 0;
+    -fx-border-color: transparent;
+    -fx-background-insets: 0;
+    -fx-border-insets: 0;
+    -fx-padding: 8;
+}
+
 .grid-header-cell {
-    -fx-background-color: #0d6efd; //#0d6efd is bootstrap primary
+    -fx-background-color: #f4f4f4;
     -fx-font-weight: bold;
 }
 
@@ -262,7 +279,7 @@
 }
 
 .grid-table-cell.row-warning {
-    -fx-border-color: #d8b100;
+    -fx-background-color: #fff3cd;
 }
 
 .grid-table-cell:hover {
@@ -271,7 +288,7 @@
 
 .grid-header-label {
     -fx-font-weight: bolder;
-    -fx-text-fill: white;
+    -fx-text-fill: black;
 }
 
 .grid-body-label {
@@ -292,9 +309,15 @@
 .grid-inline-button {
     -fx-padding: 3 8 3 8;
 }
-.cell-ok{}
-.cell-missing{}
-.cell-warning{}
+
+.cell-ok {
+}
+
+.cell-missing {
+}
+
+.cell-warning {
+}
 
 .grid-container {
     -fx-border-width: 1;
