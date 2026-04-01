@@ -79,7 +79,7 @@ class DiscoveryTable(contestConfigPane: ContestConfigPane) extends TitledPane wi
       )
     ),
     textCol(
-      header = "Host IP",
+      header = "Host",
       sortable = true,
       width = GridColumnWidth.fixed(140)
     )(_.nodeIdentity.hostIp),
