@@ -31,7 +31,7 @@ import io.circe.Codec
 import io.circe.parser.decode
 import io.circe.syntax.*
 import jakarta.inject.{Inject, Singleton, Provider}
-import scalafx.beans.property.{BooleanProperty, IntegerProperty, StringProperty}
+import scalafx.beans.property.{BooleanProperty, IntegerProperty}
 
 final case class StatusBroadcastSettings(
     periodicEnabled: Boolean = true,
@@ -103,7 +103,7 @@ class StatusBroadcastService @Inject()(
     }
 
   /** Interrupt the scheduler thread (if any) to re-evaluate its sleep period.
-    * This does NOT stop the service; it only short-circuits the current sleep
+    * This does NOT stop the service; it only short-circuits the current sleep,
     * so the next wait uses the freshly updated period. */
   private def interruptForReschedule(): Unit =
     this.synchronized {
@@ -123,15 +123,12 @@ class StatusBroadcastService @Inject()(
           catch
             case e: Exception => logger.warn("Initial status broadcast failed", e)
 
-          // Scheduler sleeps until next eligible send based on the last status send time.
-          // If interrupted and not stopping, re-check timing with the updated settings.
           while !Thread.currentThread().isInterrupted do
             try
               Thread.sleep(millisUntilNextBroadcast())
               broadcastStatus()
             catch
               case _: InterruptedException =>
-                // Distinguish between a stop request and a reschedule nudge
                 if stopRequested then
                   // Exit loop
                   Thread.currentThread().interrupt()
