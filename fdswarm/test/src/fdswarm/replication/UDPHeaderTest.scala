@@ -101,19 +101,3 @@ class UDPHeaderTest extends FunSuite:
     val headerData = s"FDSWARM|Status|8080-instance|999|\n".getBytes("UTF-8")
     val packet = new DatagramPacket(headerData, headerData.length, InetAddress.getLoopbackAddress, 1234)
     intercept[IllegalArgumentException](UDPHeader.parse(packet))
-
-//  test("UDPHeader.parse handles InstanceQuery and InstanceResponse"):
-//    val pi = PortAndInstance(8080, "other-instance")
-//    val queryPayload = "target-instance".getBytes("UTF-8")
-//    val headerData = (s"FDSWARM|InstanceQuery|$pi|${BuildInfo.dataVersion}|\n" + "target-instance").getBytes("UTF-8")
-//    val packet = new DatagramPacket(headerData, headerData.length, InetAddress.getByName("1.2.3.4"), 1234)
-//    
-//    val result = UDPHeader.parse(packet).get
-//    assertEquals(result.service, Service.InstanceQuery)
-//    assertEquals(new String(result.payload, "UTF-8"), "target-instance")
-//
-//    val responseData = (s"FDSWARM|InstanceResponse|$pi|${BuildInfo.dataVersion}|\n" + "1.2.3.4:8080-target-instance").getBytes("UTF-8")
-//    val responsePacket = new DatagramPacket(responseData, responseData.length, InetAddress.getByName("1.2.3.4"), 1234)
-//    val responseResult = UDPHeader.parse(responsePacket).get
-//    assertEquals(responseResult.service, Service.InstanceResponse)
-//    assertEquals(new String(responseResult.payload, "UTF-8"), "1.2.3.4:8080-target-instance")

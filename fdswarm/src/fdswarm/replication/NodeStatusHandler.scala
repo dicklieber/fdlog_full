@@ -26,7 +26,6 @@ import fdswarm.model.Qso
 import fdswarm.replication.status.SwarmStatus
 import fdswarm.store.ReplicationSupport
 import fdswarm.util.JavaTimeCirce.given
-import fdswarm.util.{InstanceIdManager, NodeIdentity, NodeIdentityManager}
 import io.circe.parser.decode
 import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.{Inject, Singleton, Provider}
@@ -37,10 +36,8 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
                                   statusProcessor: StatusProcessor,
                                   transport: Transport,
                                   contestDiscovery: ContestDiscovery,
-                                  nodeIdentityManager: NodeIdentityManager,
                                   swarmStatusProvider: Provider[SwarmStatus],
                                   contestManagerProvider: Provider[ContestConfigManager],
-                                  instanceIdManager: InstanceIdManager,
                                   meterRegistry: MeterRegistry) extends LazyLogging:
 
   private def replicationSupport: ReplicationSupport = replicationSupportProvider.get()
@@ -58,8 +55,6 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
   private val statusQueue = transport.startQueue(Service.Status)
   private val qsoQueue = transport.startQueue(Service.QSO)
   private val restartContestQueue = transport.startQueue(Service.RestartContest)
-//  private val instanceQueryQueue = transport.startQueue(Service.InstanceQuery)
-//  private val instanceRespQueue = transport.startQueue(Service.InstanceResponse)
 
   private val httpClient = HttpClient.newBuilder()
     .followRedirects(HttpClient.Redirect.NORMAL)
@@ -102,14 +97,6 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
                 contestManager.handleRestartContest(newConfig)
               case Left(error) =>
                 logger.error(s"Failed to decode ContestConfig from RestartContest: $sJson", error)
-          case Service.InstanceQuery =>
-            val requestedInstanceId = new String(udpHeader.payload, "UTF-8")
-            if requestedInstanceId == instanceIdManager.ourInstanceId then
-              logger.debug(s"Received InstanceQuery for our instance: $requestedInstanceId")
-              val responsePayload = nodeIdentityManager.ourNodeIdentity.toString.getBytes("UTF-8")
-              transport.send(Service.InstanceResponse, responsePayload)
-          case Service.InstanceResponse =>
-            logger.trace(s"Received InstanceResponse from ${udpHeader.nodeIdentity}")
       catch
         case _: InterruptedException => Thread.currentThread().interrupt()
         case e: Exception =>

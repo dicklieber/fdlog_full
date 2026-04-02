@@ -47,8 +47,7 @@ Artifacts are also available as GitHub Action run artifacts for every build on t
 ## Using the manager
 A manager is available to manage a bunch of instances of fdswarm, on a single host.
 ```
-./mill fdswarm.assembly
-MILL_OUTPUT_DIR=out-manager ./mill --no-server manager.run
+./run-manager.sh 
 ```
 Running `manager.run` keeps that Mill process alive. Using a dedicated `MILL_OUTPUT_DIR` prevents it from blocking other commands (for example `./mill fdswarm.compile`) in another terminal.
 
