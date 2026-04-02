@@ -23,7 +23,6 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.StartupConfig
 import fdswarm.io.DirectoryProvider
 import jakarta.inject.Inject
-import manager.FdswarmJarManager
 
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.IndexedSeqView
@@ -38,12 +37,21 @@ class Runner @Inject() (directoryProvider: DirectoryProvider)
 
   private var instances:Seq[AppInstance] = Seq.empty
   private val edebugConfigDir = directoryProvider() / "debugConfigs"
+  private val jarManager = FdswarmJarManager()
+
+  def verifyRequiredJar(): Boolean =
+    val missingJar = jarManager.jarInfo().isEmpty
+    if missingJar then
+      logger.error(
+        s"Required jar not found at ${jarManager.jarPath}. Run ./mill fdswarm.assembly to build it."
+      )
+    !missingJar
 
   def start(view: IndexedSeqView[StartupConfig]): Unit =
+    if !verifyRequiredJar() then
+      sys.exit(1)
+
     os.remove.all(edebugConfigDir)
-// todo hangs a lot, for now, run ./mill fdswarm.assembly before starting manager.
-//    val jarManager = FdswarmJarManager()
-//    jarManager.buildFdswarmJar()
 
     val ports = new AtomicInteger(8080)
     instances = (
@@ -60,5 +68,3 @@ class Runner @Inject() (directoryProvider: DirectoryProvider)
 
   def stop(): Unit =
     instances.foreach(_.stop())
-
-

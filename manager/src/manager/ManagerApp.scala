@@ -51,6 +51,8 @@ object ManagerApp extends JFXApp3 with LazyLogging :
   override def start(): Unit = {
 
     val runner = injector.instance[Runner]
+    if !runner.verifyRequiredJar() then
+      sys.exit(1)
 
     // Force all HF, VHF, and UHF bands and all modes to be available for selection in manager
     val bandCatalog = injector.instance[BandCatalog]
