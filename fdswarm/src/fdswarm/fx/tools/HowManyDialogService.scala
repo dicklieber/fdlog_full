@@ -47,9 +47,9 @@ final class HowManyDialogService @Inject() (
       promptText = "e.g. 100"
     }
 
-    val howManyPerHourField = new TextField {
-      text = "60"
-      promptText = "e.g. 60"
+    val numberOfHoursField = new TextField {
+      text = "2"
+      promptText = "1-25"
     }
 
     val prefixField = new TextField {
@@ -90,8 +90,8 @@ final class HowManyDialogService @Inject() (
       add(new Label("How many:"), 0, 0)
       add(howManyField, 1, 0)
 
-      add(new Label("How many per hour:"), 0, 1)
-      add(howManyPerHourField, 1, 1)
+      add(new Label("Number of hours:"), 0, 1)
+      add(numberOfHoursField, 1, 1)
 
       add(new Label("Callsign prefix:"), 0, 2)
       add(prefixField, 1, 2)
@@ -102,6 +102,9 @@ final class HowManyDialogService @Inject() (
     def validHowMany(s: String): Boolean =
       s.nonEmpty && s.forall(_.isDigit) && scala.util.Try(s.toInt).toOption.exists(_ > 0)
 
+    def validNumberOfHours(s: String): Boolean =
+      s.nonEmpty && s.forall(_.isDigit) && scala.util.Try(s.toInt).toOption.exists(v => v >= 1 && v <= 25)
+
     def validPrefix(s: String): Boolean =
       s.nonEmpty && s.forall(_.isLetterOrDigit)
 
@@ -110,10 +113,10 @@ final class HowManyDialogService @Inject() (
     val disableBinding = Bindings.createBooleanBinding(
       () =>
         !validHowMany(howManyField.text.value.trim) ||
-          !validHowMany(howManyPerHourField.text.value.trim) ||
+          !validNumberOfHours(numberOfHoursField.text.value.trim) ||
           !validPrefix(prefixField.text.value.trim),
       howManyField.text,
-      howManyPerHourField.text,
+      numberOfHoursField.text,
       prefixField.text
     )
     generateBtnNode.disable <== disableBinding
@@ -125,8 +128,8 @@ final class HowManyDialogService @Inject() (
     val opt = dialog.delegate.showAndWait() // java.util.Optional[ButtonType]
     if opt.isPresent && opt.get == generateButtonType then
       val howMany = howManyField.text.value.trim.toInt
-      val howManyPerHour = howManyPerHourField.text.value.trim.toInt
+      val numberOfHours = numberOfHoursField.text.value.trim.toInt
       val prefix  = prefixField.text.value.trim.toUpperCase
-      bigQsosGenerator.qsos(howMany, howManyPerHour, prefix)
+      bigQsosGenerator.qsos(howMany, numberOfHours, prefix)
   }
 }

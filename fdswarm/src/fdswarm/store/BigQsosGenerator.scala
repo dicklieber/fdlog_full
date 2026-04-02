@@ -39,13 +39,15 @@ final class BigQsosGenerator @Inject()(qsoStore: QsoStore, bandModeBuilder: Band
 
   /**
    *
-   * @param howMany        qsos to generate.
-   * @param howManyPerHour put howMany qsos per hour.
+   * @param howMany       qsos to generate.
+   * @param numberOfHours spread howMany qsos across this many hours.
    * @param prefix         for the generated callsigs.
    * @param now            allow unit test to set the starting time, so we get repeatable results.
    */
-  def qsos(howMany: Int, howManyPerHour: Int, prefix: String, now: Instant = java.time.Instant.now()): Unit =
-    val intervalMillis = (3600L * 1000L) / howManyPerHour
+  def qsos(howMany: Int, numberOfHours: Int, prefix: String, now: Instant = java.time.Instant.now()): Unit =
+    require(howMany > 0, "howMany must be greater than 0")
+    require(numberOfHours >= 1 && numberOfHours <= 25, "numberOfHours must be between 1 and 25")
+    val intervalMillis = (numberOfHours.toLong * 3600L * 1000L) / howMany
     val generatedCallsigns = CallsignGenerator.callsignIterator(prefix)
       .take(howMany)
       .zipWithIndex
@@ -73,5 +75,3 @@ final class BigQsosGenerator @Inject()(qsoStore: QsoStore, bandModeBuilder: Band
         stamp = stamp)
       ).toSeq
     qsoStore.add(batchOfQsos)
-
-
