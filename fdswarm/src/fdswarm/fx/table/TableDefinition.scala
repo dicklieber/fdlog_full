@@ -3,16 +3,11 @@ package fdswarm.fx.table
 import javafx.beans.property.SimpleObjectProperty
 import javafx.css.PseudoClass
 import scalafx.Includes.*
-import scalafx.beans.property.StringProperty
 import scalafx.collections.ObservableBuffer
 import scalafx.geometry.Pos
 import scalafx.scene.Node
 import scalafx.scene.control.*
 import scalafx.scene.layout.HBox
-
-/** Marker for objects that can supply row data to a generated TableView. */
-trait RowData:
-  def rowHeader: String
 
 /** Description of style that can be applied to rows or cells. */
 final case class CellStyle(
@@ -65,7 +60,7 @@ enum ColumnAlignment:
  * A = row type
  * B = extracted value type used for styling/rendering decisions
  */
-final case class ColumnDef[A <: RowData, B](
+final case class ColumnDef[A, B](
     header: String,
     extract: A => B,
     render: B => CellValue,
@@ -83,15 +78,9 @@ final case class ColumnDef[A <: RowData, B](
 /**
  * Implement this in the companion object of a case class to describe its table.
  */
-trait TableDefinition[A <: RowData]:
+trait TableDefinition[A]:
 
   def title(count: Int): String
-
-  def rowHeaderTitle: String = "Row"
-
-  def rowHeaderPrefWidth: Option[Double] = None
-
-  def rowHeaderStyle(row: A): CellStyle = CellStyle.Empty
 
   def rowStyle(row: A): CellStyle = CellStyle.Empty
 
@@ -111,30 +100,7 @@ trait TableDefinition[A <: RowData]:
     new Label(title(rows.size))
 
   private def buildColumns(): Seq[TableColumn[A, ?]] =
-    buildRowHeaderColumn() +: columns.map(buildTypedColumn(_))
-
-  private def buildRowHeaderColumn(): TableColumn[A, String] =
-    val col = new TableColumn[A, String](rowHeaderTitle)
-    col.cellValueFactory = { features =>
-      StringProperty(features.value.rowHeader)
-    }
-    rowHeaderPrefWidth.foreach(col.prefWidth = _)
-    col.cellFactory = { (_: TableColumn[A, String]) =>
-      new TableCell[A, String]:
-        private def refresh(item: String): Unit =
-          clearCellPresentation(this)
-          if !empty.value && item != null then
-            text = item
-            val rowItem = Option(tableRow.value).flatMap(r => Option(r.item.value))
-            rowItem.foreach(row => applyCellStyle(this, rowHeaderStyle(row)))
-        item.onChange { (_, _, newItem) =>
-          refresh(newItem)
-        }
-        empty.onChange { (_, _, _) =>
-          refresh(item.value)
-        }
-    }
-    col
+    columns.map(buildTypedColumn(_))
 
   private def buildTypedColumn[B](columnDef: ColumnDef[A, B]): TableColumn[A, B] =
     val col = new TableColumn[A, B](columnDef.header)
@@ -238,7 +204,7 @@ trait TableDefinition[A <: RowData]:
       node.pseudoClassStateChanged(PseudoClass.getPseudoClass(name), true)
     }
 
-extension [A <: RowData](tableDefinition: TableDefinition[A])
+extension [A](tableDefinition: TableDefinition[A])
   def tableView(rows: Seq[A]): TableView[A] =
     tableDefinition.buildTable(rows)
 
