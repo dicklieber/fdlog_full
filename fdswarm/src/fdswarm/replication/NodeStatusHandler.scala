@@ -31,20 +31,24 @@ import fdswarm.fx.discovery.DiscoveryWire
 import io.circe.parser.decode
 import io.circe.syntax.*
 import io.micrometer.core.instrument.MeterRegistry
-import jakarta.inject.{Inject, Singleton}
+import jakarta.inject.{Inject, Singleton, Provider}
 import java.util.concurrent.TimeUnit
 
 import java.net.http.HttpClient
 @Singleton
-class NodeStatusHandler @Inject()(replicationSupport: ReplicationSupport,
+class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[ReplicationSupport],
                                   statusProcessor: StatusProcessor,
                                   transport: Transport,
                                   nodeIdentityManager: NodeIdentityManager,
-                                  swarmStatus: SwarmStatus,
-                                  contestManager: ContestConfigManager,
+                                  swarmStatusProvider: Provider[SwarmStatus],
+                                  contestManagerProvider: Provider[ContestConfigManager],
                                   stationManager: StationConfigManager,
                                   instanceIdManager: InstanceIdManager,
                                   meterRegistry: MeterRegistry) extends LazyLogging:
+
+  private def replicationSupport: ReplicationSupport = replicationSupportProvider.get()
+  private def swarmStatus: SwarmStatus = swarmStatusProvider.get()
+  private def contestManager: ContestConfigManager = contestManagerProvider.get()
   logger.debug("Starting NodeStatusHandler")
   private val statusCounter = meterRegistry.counter("fdswarm_received_status_total")
   private val qsoCounter = meterRegistry.counter("fdswarm_received_qso_total")

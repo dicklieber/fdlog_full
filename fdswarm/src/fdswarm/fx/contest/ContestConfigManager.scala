@@ -6,16 +6,18 @@ import fdswarm.io.DirectoryProvider
 import fdswarm.model.Callsign
 import io.circe.parser.decode
 import io.circe.syntax.*
-import jakarta.inject.{Inject, Singleton}
+import jakarta.inject.{Inject, Singleton, Provider}
 import scalafx.beans.property.{ReadOnlyBooleanProperty, ReadOnlyBooleanWrapper, ReadOnlyObjectProperty, ReadOnlyObjectWrapper}
 
 @Singleton
 final class ContestConfigManager @Inject()(
                                             productionDirectory: DirectoryProvider,
-                                            qsoStore: fdswarm.store.QsoStore,
+                                            qsoStoreProvider: Provider[fdswarm.store.QsoStore],
                                             filenameStamp: fdswarm.util.FilenameStamp,
                                             @Named("fdswarm.contestChangeIgnoreStatusSec") ignoreStatusSec: Int
                                           ) extends ContestConfigFields with LazyLogging:
+
+  private def qsoStore: fdswarm.store.QsoStore = qsoStoreProvider.get()
 // These override methods expose the current value of the contestConfigProperty
   override def contestType: ContestType =
     _contestConfig.value.contestType

@@ -19,6 +19,7 @@
 package fdswarm.replication.status
 
 import fdswarm.fx.GridBuilder
+import fdswarm.fx.contest.{ContestConfig, ContestType}
 import fdswarm.fx.qso.FdHour
 import fdswarm.model.{BandMode, BandModeOperator, Callsign}
 import fdswarm.replication.{NodeDetails, ReceivedNodeStatus, StatusMessage}
@@ -30,6 +31,7 @@ import scala.jdk.CollectionConverters.*
 
 class GridTest extends FunSuite:
   private val dummyBno = BandModeOperator(Callsign("WA9NNN"), BandMode("40M", "CW"), Instant.parse("2026-03-16T20:11:04Z"))
+  private val dummyContestConfig = ContestConfig(ContestType.ARRL, Callsign("WA9NNN"), 1, "A", "IL")
 
   test("Gird should create a 2D array of IntLabels"):
     // Mock JavaFX Toolkit if not already initialized
@@ -44,10 +46,10 @@ class GridTest extends FunSuite:
     val hour1 = FdHour(10, 1)
     val hour2 = FdHour(10, 2)
 
-    val sm1 = StatusMessage(Seq(FdHourDigest(hour1, 5, "d1"), FdHourDigest(hour2, 10, "d2")), dummyBno)
+    val sm1 = StatusMessage(Seq(FdHourDigest(hour1, 5, "d1"), FdHourDigest(hour2, 10, "d2")), dummyBno, contestConfig = dummyContestConfig)
     val nd1 = ReceivedNodeStatus(sm1, ni1)
 
-    val sm2 = StatusMessage(Seq(FdHourDigest(hour1, 3, "d3")), dummyBno)
+    val sm2 = StatusMessage(Seq(FdHourDigest(hour1, 3, "d3")), dummyBno, contestConfig = dummyContestConfig)
     val nd2 = ReceivedNodeStatus(sm2, ni2)
 
     val allNodeDetails = Seq(nd1, nd2)
@@ -92,7 +94,7 @@ class GridTest extends FunSuite:
 
   test("Gird.populate should add header rows"):
     val ni1 = NodeIdentity("192.168.1.1", 8080, "111", "node1")
-    val nd1 = ReceivedNodeStatus(StatusMessage(Nil, dummyBno), ni1)
+    val nd1 = ReceivedNodeStatus(StatusMessage(Nil, dummyBno, contestConfig = dummyContestConfig), ni1)
 
     val builder = new GridBuilder()
     val nowProperty = scalafx.beans.property.LongProperty(System.currentTimeMillis())
@@ -146,7 +148,7 @@ class GridTest extends FunSuite:
     })
     // Check "Our Node" when it matches
     val niOur = NodeIdentity("127.0.0.1", 8080, "111", "our-node")
-    val ndOur = ReceivedNodeStatus(StatusMessage(Nil, dummyBno), niOur)
+    val ndOur = ReceivedNodeStatus(StatusMessage(Nil, dummyBno, contestConfig = dummyContestConfig), niOur)
     val builder2 = new GridBuilder()
     val gird2 = SwarmStatusGrid(Seq(ndOur), nowProperty, ageStyleService, "our-node", swarmStatusApi)
     gird2.populate(builder2, _ => "test-style")

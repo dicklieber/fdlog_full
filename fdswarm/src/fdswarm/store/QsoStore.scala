@@ -28,6 +28,7 @@ import fdswarm.replication.{Service, Transport}
 import fdswarm.util.Ids.Id
 import io.micrometer.core.instrument.{Counter, MeterRegistry, Timer}
 import jakarta.inject.*
+import jakarta.inject.Provider
 import io.circe.parser.decode
 import io.circe.syntax.*
 import scalafx.collections.ObservableBuffer
@@ -39,9 +40,11 @@ import scala.collection.concurrent.TrieMap
 class QsoStore @Inject()(directoryProvider: DirectoryProvider,
                          registry: MeterRegistry,
                          transport: Transport,
-                         swarmStatus: SwarmStatus,
+                         swarmStatusProvider: Provider[SwarmStatus],
                          startupInfo: StartupInfo,
                          filenameStamp: fdswarm.util.FilenameStamp) extends LazyLogging:
+
+  private def swarmStatus: SwarmStatus = swarmStatusProvider.get()
   val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()
   protected val map: TrieMap[Id, Qso] = new TrieMap
   private val journalFile = directoryProvider() / "qsosJournal.json"

@@ -31,11 +31,14 @@ import io.circe.*
 import io.circe.parser.decode
 import io.circe.syntax.*
 import jakarta.inject.*
+import jakarta.inject.Provider
 import scalafx.application.Platform
 import scalafx.beans.property.ObjectProperty
 
 import java.time.Instant
 import scala.collection.concurrent.TrieMap
+
+import fdswarm.replication.ReceivedNodeStatus
 
 /**
  * Hold 
@@ -46,10 +49,14 @@ class SwarmStatus @Inject() (
                               nodeIdentityManager: NodeIdentityManager,
                               stationManager: StationConfigManager,
                               selectedBandModeStore: SelectedBandModeManager,
-                              swarmStatusPane: SwarmStatusPane
+                              swarmStatusPaneProvider: Provider[SwarmStatusPane],
+                              contestConfigManagerProvider: Provider[fdswarm.fx.contest.ContestConfigManager]
                             ) extends SwarmStatusApi with LazyLogging:
   val nodeMap: TrieMap[NodeIdentity, ReceivedNodeStatus] = new TrieMap[NodeIdentity, ReceivedNodeStatus]
   private val statusFile = directoryProvider() / "swarmStatus.json"
+
+  private def contestConfigManager: fdswarm.fx.contest.ContestConfigManager = contestConfigManagerProvider.get()
+  private def swarmStatusPane: SwarmStatusPane = swarmStatusPaneProvider.get()
 
   /**
    * 
@@ -57,8 +64,9 @@ class SwarmStatus @Inject() (
    */
   def put(receivedNodeStatus: ReceivedNodeStatus): Unit =
     nodeMap.put(receivedNodeStatus.nodeIdentity, receivedNodeStatus)
-    if swarmStatusPane != null then
-      swarmStatusPane.update(nodeMap.values.toSeq)
+    val pane = swarmStatusPane
+    if pane != null then
+      pane.update(nodeMap.values.toSeq)
     save()
 
   // Load state on startup
@@ -80,13 +88,17 @@ class SwarmStatus @Inject() (
     val nodeIdentity = ourNodeIdentity
     val operator = stationManager.station.operator
     val bandMode = selectedBandModeStore.selected.value
-    val statusMessage = StatusMessage(digests, BandModeOperator(operator, bandMode))
+    val statusMessage = StatusMessage(
+      fdDigests = digests,
+      bandNodeOperator = BandModeOperator(operator, bandMode),
+      contestConfig =contestConfigManager.contestConfigProperty.value)
     val receivedNodeStatus = ReceivedNodeStatus(statusMessage, nodeIdentity)
     put(receivedNodeStatus)
 
   def refresh(): Unit =
-    if swarmStatusPane != null then
-      swarmStatusPane.update(nodeMap.values.toSeq)
+    val pane = swarmStatusPane
+    if pane != null then
+      pane.update(nodeMap.values.toSeq)
 
   def ourNodeIdentity: NodeIdentity = nodeIdentityManager.ourNodeIdentity
   def clear(): Unit =
@@ -94,16 +106,18 @@ class SwarmStatus @Inject() (
     nodeMap.clear()
     localStatus.foreach(status => nodeMap.put(status.nodeIdentity, status))
     save()
-    if swarmStatusPane != null then
-      swarmStatusPane.update(nodeMap.values.toSeq)
+    val pane = swarmStatusPane
+    if pane != null then
+      pane.update(nodeMap.values.toSeq)
     logger.debug("Cleared swarm status data, retaining local node.")
 
   def remove(nodeIdentity: NodeIdentity): Unit =
     if nodeIdentity != ourNodeIdentity then
       nodeMap.remove(nodeIdentity)
       save()
-      if swarmStatusPane != null then
-        swarmStatusPane.update(nodeMap.values.toSeq)
+      val pane = swarmStatusPane
+      if pane != null then
+        pane.update(nodeMap.values.toSeq)
       logger.debug(s"Removed node status for $nodeIdentity")
 
   private def save(): Unit =

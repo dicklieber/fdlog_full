@@ -22,6 +22,7 @@ import com.google.inject.name.Named
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.StationConfigManager
 import fdswarm.fx.bandmodes.SelectedBandModeManager
+import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.io.DirectoryProvider
 import fdswarm.model.BandModeOperator
 import fdswarm.store.QsoStore
@@ -29,7 +30,7 @@ import fdswarm.util.NodeIdentityManager
 import io.circe.Codec
 import io.circe.parser.decode
 import io.circe.syntax.*
-import jakarta.inject.{Inject, Singleton}
+import jakarta.inject.{Inject, Singleton, Provider}
 import scalafx.beans.property.{BooleanProperty, IntegerProperty, StringProperty}
 
 final case class StatusBroadcastSettings(
@@ -39,14 +40,17 @@ final case class StatusBroadcastSettings(
 
 @Singleton
 class StatusBroadcastService @Inject()(
-                                        qsoStore: QsoStore,
+                                        qsoStoreProvider: Provider[QsoStore],
                                         transport: Transport,
                                         stationManager: StationConfigManager,
                                         selectedBandModeStore:SelectedBandModeManager,
                                         nodeIdentityManager: NodeIdentityManager,
                                         dirProvider: DirectoryProvider,
+                                        contestConfigManager:ContestConfigManager,
                                         @Named("fdswarm.broadcastPeriodSec") val defaultBroadcastPeriodSec: Int
                                       ) extends LazyLogging:
+
+  private def qsoStore: QsoStore = qsoStoreProvider.get()
 
   private val settingsPath: os.Path = dirProvider() / "status-broadcast-settings.json"
 
@@ -143,14 +147,17 @@ class StatusBroadcastService @Inject()(
     }
 
   def broadcastStatus(): Unit =
-    try
-      val operator = stationManager.station.operator
-      val bandMode = selectedBandModeStore.selected.value
-      val bandModeOperator = BandModeOperator(operator,bandMode )
-      val statusMessage = StatusMessage( fdDigests = qsoStore.digests(), bandModeOperator)
-      val gzipBytes = statusMessage.toPacket
-      logger.trace("Broadcasting status: {} bytes: {}", statusMessage, gzipBytes.length)
-      transport.send(Service.Status, gzipBytes)
-    catch
-      case e: Exception =>
-        logger.error("Error broadcasting node status", e)
+    if contestConfigManager.hasConfiguration.value then
+      try
+        val operator = stationManager.station.operator
+        val bandMode = selectedBandModeStore.selected.value
+        val bandModeOperator = BandModeOperator(operator,bandMode )
+        val statusMessage = StatusMessage(fdDigests = qsoStore.digests(),
+          bandNodeOperator = bandModeOperator,
+          contestConfig = contestConfigManager.contestConfigProperty.value)
+        val gzipBytes = statusMessage.toPacket
+        logger.trace("Broadcasting status: {} bytes: {}", statusMessage, gzipBytes.length)
+        transport.send(Service.Status, gzipBytes)
+      catch
+        case e: Exception =>
+          logger.error("Error broadcasting node status", e)

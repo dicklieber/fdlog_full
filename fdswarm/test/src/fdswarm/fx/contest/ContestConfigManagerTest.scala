@@ -4,6 +4,7 @@ import fdswarm.io.DirectoryProvider
 import fdswarm.model.Callsign
 import fdswarm.store.QsoStore
 import fdswarm.util.FilenameStamp
+import jakarta.inject.Provider
 import munit.FunSuite
 import org.mockito.Mockito.*
 import org.mockito.ArgumentMatchers.*
@@ -18,6 +19,9 @@ class ContestConfigManagerTest extends FunSuite:
   when(directoryProvider.apply()).thenReturn(os.Path(tempDir.toAbsolutePath.toString))
 
   val qsoStore = mock(classOf[QsoStore])
+  val qsoStoreProvider = new Provider[QsoStore] {
+    override def get(): QsoStore = qsoStore
+  }
   val filenameStamp = mock(classOf[FilenameStamp])
   when(filenameStamp.build()).thenReturn("20260331-1526")
 
@@ -27,13 +31,13 @@ class ContestConfigManagerTest extends FunSuite:
     os.remove.all(os.Path(tempDir.toAbsolutePath.toString))
 
   test("hasConfiguration is false when no config exists") {
-    val manager = new ContestConfigManager(directoryProvider, qsoStore, filenameStamp, ignoreStatusSec)
+    val manager = new ContestConfigManager(directoryProvider, qsoStoreProvider, filenameStamp, ignoreStatusSec)
     assert(!manager.hasConfiguration.value)
   }
 
   test("hasConfiguration is true when config exists") {
     val config = ContestConfig(ContestType.WFD, Callsign("W1AW"), 2, "O", "CT")
-    val manager = new ContestConfigManager(directoryProvider, qsoStore, filenameStamp, ignoreStatusSec)
+    val manager = new ContestConfigManager(directoryProvider, qsoStoreProvider, filenameStamp, ignoreStatusSec)
     manager.setConfig(config)
     assert(manager.hasConfiguration.value)
   }
@@ -45,7 +49,7 @@ class ContestConfigManagerTest extends FunSuite:
     import io.circe.syntax.*
     os.write.over(contestFile, config.asJson.spaces2)
 
-    val manager = new ContestConfigManager(directoryProvider, qsoStore, filenameStamp, ignoreStatusSec)
+    val manager = new ContestConfigManager(directoryProvider, qsoStoreProvider, filenameStamp, ignoreStatusSec)
     assert(manager.hasConfiguration.value)
   }
 
@@ -55,7 +59,7 @@ class ContestConfigManagerTest extends FunSuite:
     val subDirectoryProvider = mock(classOf[DirectoryProvider])
     when(subDirectoryProvider.apply()).thenReturn(os.Path(subTempDir.toAbsolutePath.toString))
     
-    val manager = new ContestConfigManager(subDirectoryProvider, qsoStore, filenameStamp, ignoreStatusSec)
+    val manager = new ContestConfigManager(subDirectoryProvider, qsoStoreProvider, filenameStamp, ignoreStatusSec)
     assert(!manager.hasConfiguration.value)
     manager.handleRestartContest(config)
     assert(manager.hasConfiguration.value)
