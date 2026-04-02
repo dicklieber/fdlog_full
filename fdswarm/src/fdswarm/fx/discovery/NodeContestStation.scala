@@ -18,43 +18,43 @@ case class NodeContestStation(
   val exchange: String =
     discoveryWire.contestConfig.exchange
 
-object NodeContestStation extends TableDefinition[NodeContestStation]:
+object NodeContestStation extends TableDefinition[NodeContestStation, Unit]:
   override def title(count: Int): String = s"Node Contest Stations ($count)"
 
-  override def columns: Seq[ColumnDef[NodeContestStation, ?]] = Seq(
-    ColumnDef[NodeContestStation, String](
+  override def columns: Seq[ColumnDef[NodeContestStation, Unit, ?]] = Seq(
+    ColumnDef[NodeContestStation, Unit, String](
       header = "Node",
-      extract = _.nodeIdentity.short,
-      render = f => CellValue.Text(f)
+      extract = (row, _) => row.nodeIdentity.short,
+      render = (f, _) => CellValue.Text(f)
     ),
-    ColumnDef[NodeContestStation, String](
+    ColumnDef[NodeContestStation, Unit, String](
       header = "Contest",
-      extract = _.discoveryWire.contestConfig.contestType.toString,
-      render = f => CellValue.Text(f)
+      extract = (row, _) => row.discoveryWire.contestConfig.contestType.toString,
+      render = (f, _) => CellValue.Text(f)
     ),
-    ColumnDef[NodeContestStation, String](
+    ColumnDef[NodeContestStation, Unit, String](
       header = "Our Callsign",
-      extract = _.discoveryWire.contestConfig.ourCallsign.toString,
-      render = f => CellValue.Text(f)
+      extract = (row, _) => row.discoveryWire.contestConfig.ourCallsign.toString,
+      render = (f, _) => CellValue.Text(f)
     ),
-    ColumnDef[NodeContestStation, Int](
+    ColumnDef[NodeContestStation, Unit, Int](
       header = "Transmitters",
-      extract = _.discoveryWire.contestConfig.transmitters,
-      render = f => CellValue.IntValue(f)
+      extract = (row, _) => row.discoveryWire.contestConfig.transmitters,
+      render = (f, _) => CellValue.IntValue(f)
     ),
-    ColumnDef[NodeContestStation, String](
+    ColumnDef[NodeContestStation, Unit, String](
       header = "Class",
-      extract = _.discoveryWire.contestConfig.ourClass,
-      render = f => CellValue.Text(f)
+      extract = (row, _) => row.discoveryWire.contestConfig.ourClass,
+      render = (f, _) => CellValue.Text(f)
     ),
-    ColumnDef[NodeContestStation, String](
+    ColumnDef[NodeContestStation, Unit, String](
       header = "Section",
-      extract = _.discoveryWire.contestConfig.ourSection,
-      render = f => CellValue.Text(f)
+      extract = (row, _) => row.discoveryWire.contestConfig.ourSection,
+      render = (f, _) => CellValue.Text(f)
     ),
-    ColumnDef[NodeContestStation, Instant](
+    ColumnDef[NodeContestStation, Unit, Instant](
       header = "When",
-      extract = _.discoveryWire.contestConfig.stamp,
-      render = f => CellValue.NodeValue(new Label(f.toString), f.toEpochMilli.toString)
+      extract = (row, _) => row.discoveryWire.contestConfig.stamp,
+      render = (f, _) => CellValue.NodeValue(new Label(f.toString), f.toEpochMilli.toString)
     )
   )

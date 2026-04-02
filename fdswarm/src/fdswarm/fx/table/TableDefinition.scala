@@ -60,10 +60,10 @@ enum ColumnAlignment:
  * A = row type
  * B = extracted value type used for styling/rendering decisions
  */
-final case class ColumnDef[A, B](
+final case class ColumnDef[A, R, B](
     header: String,
-    extract: A => B,
-    render: B => CellValue,
+    extract: (A, R) => B,
+    render: (B, R) => CellValue,
     prefWidth: Option[Double] = None,
     minWidth: Option[Double] = None,
     maxWidth: Option[Double] = None,
@@ -71,27 +71,29 @@ final case class ColumnDef[A, B](
     sortable: Boolean = true,
     styleClasses: Seq[String] = Seq.empty,
     alignment: ColumnAlignment = ColumnAlignment.Left,
-    cellStyle: (A, B) => CellStyle = ((_: A, _: B) => CellStyle.Empty),
-    sortKey: Option[B => String] = None
+    cellStyle: (A, B, R) => CellStyle = ((_: A, _: B, _: R) => CellStyle.Empty),
+    sortKey: Option[(B, R) => String] = None
 )
 
 /**
  * Implement this in the companion object of a case class to describe its table.
+ * @param A type of the table rows.
+ * @param R type of the extra data used for rendering and styling.
  */
-trait TableDefinition[A]:
+trait TableDefinition[A, R]:
 
   def title(count: Int): String
 
   def rowStyle(row: A): CellStyle = CellStyle.Empty
 
-  def columns: Seq[ColumnDef[A, ?]]
+  def columns: Seq[ColumnDef[A, R, ?]]
 
   /**
    * Build a TableView from the supplied rows.
    */
-  final def buildTable(rows: Seq[A]): TableView[A] =
+  final def buildTable(rows: Seq[A], data: R): TableView[A] =
     val table = new TableView[A](ObservableBuffer.from(rows))
-    buildColumns().foreach(col => table.columns += col)
+    buildColumns(data).foreach(col => table.columns += col)
     table.rowFactory = { (_: TableView[A]) => buildRow() }
     table
 
@@ -99,10 +101,10 @@ trait TableDefinition[A]:
   final def buildTitleLabel(rows: Seq[A]): Label =
     new Label(title(rows.size))
 
-  private def buildColumns(): Seq[TableColumn[A, ?]] =
-    columns.map(buildTypedColumn(_))
+  private def buildColumns(data: R): Seq[TableColumn[A, ?]] =
+    columns.map(buildTypedColumn(_, data))
 
-  private def buildTypedColumn[B](columnDef: ColumnDef[A, B]): TableColumn[A, B] =
+  private def buildTypedColumn[B](columnDef: ColumnDef[A, R, B], data: R): TableColumn[A, B] =
     val col = new TableColumn[A, B](columnDef.header)
 
     columnDef.prefWidth.foreach(col.prefWidth = _)
@@ -114,12 +116,12 @@ trait TableDefinition[A]:
       col.styleClass ++= columnDef.styleClasses
 
     col.cellValueFactory = { features =>
-      new SimpleObjectProperty[B](columnDef.extract(features.value))
+      new SimpleObjectProperty[B](columnDef.extract(features.value, data))
     }
 
     col.comparator = (left: B, right: B) =>
-      val leftKey = columnDef.sortKey.map(_(left)).getOrElse(columnDef.render(left).sortText)
-      val rightKey = columnDef.sortKey.map(_(right)).getOrElse(columnDef.render(right).sortText)
+      val leftKey = columnDef.sortKey.map(_(left, data)).getOrElse(columnDef.render(left, data).sortText)
+      val rightKey = columnDef.sortKey.map(_(right, data)).getOrElse(columnDef.render(right, data).sortText)
       leftKey.compareToIgnoreCase(rightKey)
 
     col.cellFactory = { (_: TableColumn[A, B]) =>
@@ -129,10 +131,10 @@ trait TableDefinition[A]:
           if !empty.value && item != null then
             val rowItem = Option(tableRow.value).flatMap(r => Option(r.item.value))
             rowItem.foreach { row =>
-              val rendered = columnDef.render(item)
+              val rendered = columnDef.render(item, data)
               renderCellValue(this, rendered)
               applyAlignment(this, columnDef.alignment)
-              applyCellStyle(this, columnDef.cellStyle(row, item))
+              applyCellStyle(this, columnDef.cellStyle(row, item, data))
             }
         item.onChange { (_, _, newItem) =>
           refresh(newItem)
@@ -204,9 +206,9 @@ trait TableDefinition[A]:
       node.pseudoClassStateChanged(PseudoClass.getPseudoClass(name), true)
     }
 
-extension [A](tableDefinition: TableDefinition[A])
-  def tableView(rows: Seq[A]): TableView[A] =
-    tableDefinition.buildTable(rows)
+extension [A, R](tableDefinition: TableDefinition[A, R])
+  def tableView(rows: Seq[A], data: R): TableView[A] =
+    tableDefinition.buildTable(rows, data)
 
 private def clearCellPresentation[A](cell: TableCell[A, ?]): Unit =
   cell.text = null

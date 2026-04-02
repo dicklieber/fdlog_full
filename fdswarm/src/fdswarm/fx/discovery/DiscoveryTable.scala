@@ -31,4 +31,4 @@ class DiscoveryTable(contestConfigPane: ContestConfigPane) extends TitledPane wi
 
   def setItems(items: Seq[NodeContestStation]): Unit =
     val byStamp = items.sortBy(_.discoveryWire.contestConfig.stamp).reverse
-    content = NodeContestStation.buildTable(byStamp)
+    content = NodeContestStation.buildTable(byStamp, ())
