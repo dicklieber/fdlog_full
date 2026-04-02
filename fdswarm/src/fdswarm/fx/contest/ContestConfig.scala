@@ -23,6 +23,8 @@ import fdswarm.util.HamPhonetic.fromString
 import io.circe.Codec
 
 import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 trait ContestConfigFields:
   def contestType: ContestType
@@ -45,6 +47,9 @@ case class ContestConfig(contestType: ContestType,
                          ourClass: String,
                          ourSection: String,
                          stamp: Instant = Instant.now()) extends ContestConfigFields derives Codec.AsObject:
+  private val stampFormatter: DateTimeFormatter =
+    DateTimeFormatter.ofPattern("dd:HH:mm:ss").withZone(ZoneId.systemDefault())
+
   val exchange:String=
     s"$transmitters$ourClass $ourSection"
   def weAre(usePhonetic: Boolean): String =
@@ -53,3 +58,5 @@ case class ContestConfig(contestType: ContestType,
     else
       s"We are $ourCallsign $transmitters$ourClass $ourSection"
 
+  val display:String=
+    s"$exchange ${stampFormatter.format(stamp)}"

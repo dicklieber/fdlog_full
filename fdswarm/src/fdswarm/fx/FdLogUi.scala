@@ -309,7 +309,8 @@ final class FdLogUi @Inject() (
       )
     }
     if sys.env.getOrElse("SHOW_STARTUP", "true") == "true" then
-      discoveryDialog.showAndWait()
+      if !contestManager.hasConfiguration.value then
+        discoveryDialog.showAndWait()
 
   private def setAppIcon(stage: Stage): Unit =
     try

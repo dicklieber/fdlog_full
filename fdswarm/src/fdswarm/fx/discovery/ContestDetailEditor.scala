@@ -9,6 +9,7 @@ import fdswarm.store.QsoStore
 import scalafx.scene.control.Alert.AlertType.Error
 import scalafx.scene.control.{Alert, Button, ButtonType, TitledPane}
 import scalafx.scene.layout.{BorderPane, VBox}
+import javafx.stage.{Stage as JStage}
 
 class ContestDetailEditor(contestConfigPane: ContestConfigPane,
                           exchangePane: ExchangePane,
@@ -56,8 +57,17 @@ class ContestDetailEditor(contestConfigPane: ContestConfigPane,
           case None =>
             continue = false
         }
-        val updatedContestConfig = contestConfigPane.finish()
-        contestManager.setConfig(updatedContestConfig)
+        if continue then
+          val updatedContestConfig = contestConfigPane.finish()
+          contestManager.setConfig(updatedContestConfig)
+          val currentScene = borderPane.scene.value
+          if currentScene != null then
+            val window = currentScene.getWindow
+            if window != null then
+              window match
+                case stage: JStage => stage.close()
+                case _ => window.hide()
+
         // todo
   text = "Contest Details"
   content = borderPane

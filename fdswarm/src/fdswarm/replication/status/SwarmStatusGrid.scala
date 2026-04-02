@@ -74,6 +74,7 @@ class SwarmStatusGrid(allNodes: Seq[ReceivedNodeStatus],
       }
     }*)
     builder("Host", allNodes.map(_.nodeIdentity.hostIp)*)
+    builder("Contest", allNodes.map(_.statusMessage.contestConfig.display)*)
     builder("Age", allNodes.map { receivedNodeStatus =>
       if (receivedNodeStatus.nodeIdentity.instanceId == ourInstanceId) {
         new scalafx.scene.control.Label {
