@@ -2,6 +2,8 @@ package fdswarm.fx.discovery
 
 import fdswarm.fx.contest.ContestConfigPaneProvider
 import fdswarm.fx.table.{CellValue, ColumnDef, TableDefinition}
+import fdswarm.model.StationConfig
+import fdswarm.replication.{StatusMessage, UDPHeaderData}
 import fdswarm.util.NodeIdentity
 import io.circe.Codec
 import scalafx.scene.control.{Button, Label}
@@ -24,6 +26,13 @@ final class NodeContestStationProvider(private val contestConfigPaneProvider: Co
     contestConfigPaneProvider.update(row.discoveryWire.contestConfig)
 
 object NodeContestStation extends TableDefinition[NodeContestStation, NodeContestStationProvider]:
+  def fromStatus(udpHeaderData: UDPHeaderData, statusMessage: StatusMessage): NodeContestStation =
+    val discoveryWire = DiscoveryWire(
+      contestConfig = statusMessage.contestConfig,
+      stationConfig = StationConfig(operator = statusMessage.bandNodeOperator.operator)
+    )
+    NodeContestStation(udpHeaderData.nodeIdentity, discoveryWire)
+
   override def title(count: Int): String = s"Node Contest Stations ($count)"
 
   override def columns: Seq[ColumnDef[NodeContestStation, NodeContestStationProvider, ?]] = Seq(

@@ -27,7 +27,10 @@ import io.circe.Codec
 
 import java.time.Instant
 
-case class StatusMessage(fdDigests: Seq[FdHourDigest], bandNodeOperator: BandModeOperator, id: Id = Ids.generateId(), contestConfig: ContestConfig) derives Codec.AsObject:
+case class StatusMessage(fdDigests: Seq[FdHourDigest],
+                         bandNodeOperator: BandModeOperator,
+                         id: Id = Ids.generateId(),
+                         contestConfig: ContestConfig) derives Codec.AsObject:
   def toPacket: Array[Byte] = CirceGzip.encode(this)
 
   override def toString: String =

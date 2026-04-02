@@ -146,13 +146,13 @@ class StatusBroadcastService @Inject()(
       maybeThread = None
     }
 
-  def broadcastStatus(): Unit =
+  def broadcastStatus(force: Boolean = false): Unit =
     if !contestConfigManager.hasConfiguration.value then return
 
     val reservation = broadcastStateLock.synchronized {
       val nowMillis = System.currentTimeMillis()
       val previousMillis = lastStatusBroadcastAtMillis
-      val due = previousMillis == 0L || (nowMillis - previousMillis) >= currentPeriodMillis
+      val due = force || previousMillis == 0L || (nowMillis - previousMillis) >= currentPeriodMillis
       if due then
         lastStatusBroadcastAtMillis = nowMillis
         Some((previousMillis, nowMillis))

@@ -20,34 +20,32 @@ package fdswarm.fx.discovery
 
 import com.google.inject.name.Named
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.StationConfigManager
 import fdswarm.fx.contest.{ContestConfig, ContestConfigManager}
 import fdswarm.model.StationConfig
-import fdswarm.replication.{LiveOrDeadQueue, Service, Transport, UDPHeaderData}
-import fdswarm.util.NodeIdentity
+import fdswarm.replication.{LiveOrDeadQueue, Service, StatusBroadcastService, StatusMessage, Transport, UDPHeaderData}
 import io.circe.Codec
-import io.circe.syntax.*
 import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.Inject
 
-import java.nio.charset.StandardCharsets
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 
 class ContestDiscovery @Inject()(
                                   val transport: Transport,
                                   contestConfigManager: ContestConfigManager,
-                                  stationConfigManager: StationConfigManager,
+                                  statusBroadcastService: StatusBroadcastService,
                                   @Named("fdswarm.contestDiscoveryTimeoutSec") val timeoutSec: Int,
                                   meterRegistry: MeterRegistry
                                 ) extends LazyLogging:
 
-  private val discReqReceived =
+  private val sendStatusReceived =
     meterRegistry.counter("fdswarm_discovery_req_received")
+  private val discoveredStatusQueue = new LinkedBlockingQueue[NodeContestStation]()
 
   private val requestQueue: LiveOrDeadQueue =
-    transport.startQueue(Service.DiscReq)
+    transport.startQueue(Service.SendStatus)
 
-  // This thread runs forever handling Service.DiscReq messages.
+  // This thread runs forever handling Service.SendStatus messages.
   val t: Thread = new Thread:
     setDaemon(true)
     setName("ContestDiscoveryHandler")
@@ -55,71 +53,45 @@ class ContestDiscovery @Inject()(
     override def run(): Unit =
       while true do
         val msg: UDPHeaderData = requestQueue.take()
-        discReqReceived.increment()
+        sendStatusReceived.increment()
 
         if !contestConfigManager.hasConfiguration.value then
           logger.debug(
-            "Received DiscReq from {} but contest config is not initialized yet",
+            "Received SendStatus from {} but contest config is not initialized yet",
             msg.nodeIdentity
           )
         else
-          val contestConfig: ContestConfig =
-            contestConfigManager.contestConfigProperty.value
-
-          val response =
-            DiscoveryWire(contestConfig, stationConfigManager.station)
-
-          val jsonBytes =
-            response.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
-
-          transport.send(Service.DiscResponse, jsonBytes)
+          statusBroadcastService.broadcastStatus(force = true)
           logger.trace(
-            "Received DiscReq from {} responding with {}",
-            msg.nodeIdentity,
-            response
+            "Received SendStatus from {} and broadcasted StatusMessage",
+            msg.nodeIdentity
           )
   t.start()
+
+  def onStatusMessageReceived(udpHeaderData: UDPHeaderData, statusMessage: StatusMessage): Unit =
+    discoveredStatusQueue.offer(NodeContestStation.fromStatus(udpHeaderData, statusMessage))
 
   def discoverContest(callBack: NodeContestStation => Unit): Unit =
     logger.info(s"Starting contest discovery (timeout: ${timeoutSec}s)")
 
-    val responseQueue: LiveOrDeadQueue =
-      transport.startQueue(Service.DiscReq, Service.DiscResponse)
+    discoveredStatusQueue.clear()
+    transport.send(Service.SendStatus, Array.emptyByteArray)
 
     val startTime = System.currentTimeMillis()
 
     while System.currentTimeMillis() - startTime < timeoutSec * 1000L do
-      responseQueue.poll(100, TimeUnit.MILLISECONDS) match
+      discoveredStatusQueue.poll(100, TimeUnit.MILLISECONDS) match
         case null =>
-        case udpHeaderData =>
+        case discovered =>
+          callBack(discovered)
           logger.info(
-            s"Discovery handler: ${udpHeaderData.nodeIdentity} service=${udpHeaderData.service}"
+            s"Processed StatusMessage from ${discovered.nodeIdentity}"
           )
 
-          if udpHeaderData.service == Service.DiscResponse then
-            try
-              val wire: DiscoveryWire = udpHeaderData.decode[DiscoveryWire]
-              val nodeContestStation =
-                NodeContestStation(udpHeaderData.nodeIdentity, wire)
-              callBack(nodeContestStation)
-              logger.info(
-                s"Processed DiscResponse from ${udpHeaderData.nodeIdentity}"
-              )
-            catch
-              case e: Exception =>
-                logger.error(
-                  s"Failed to process DiscResponse from ${udpHeaderData.nodeIdentity}",
-                  e
-                )
-
-    transport.stopQueue(Service.DiscResponse)
-
 /**
- * What gets sent in a UDP packet of type [[fdswarm.replication.Service.DiscResponse]]
- * in response to a [[fdswarm.replication.Service.DiscReq]].
+ * What discovery UIs and startup checks consume from a remote node.
  */
 case class DiscoveryWire(contestConfig: ContestConfig, stationConfig: StationConfig)
 
 object DiscoveryWire:
   given Codec.AsObject[DiscoveryWire] = Codec.AsObject.derived
-

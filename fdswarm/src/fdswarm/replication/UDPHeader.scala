@@ -28,7 +28,7 @@ import java.nio.charset.StandardCharsets
 import scala.util.Try
 
 enum Service:
-  case Status, QSO, DiscReq, DiscResponse, InstanceQuery, InstanceResponse, RestartContest
+  case Status, SendStatus, QSO, InstanceQuery, InstanceResponse, RestartContest
 
 case class UDPHeaderData(service: Service, nodeIdentity: NodeIdentity, payload: Array[Byte]):
 
