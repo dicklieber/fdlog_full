@@ -39,7 +39,12 @@ trait ContestConfigFields:
  * @param contestType WFD or ARRL
  * @param stamp        when the config was created. Latest is considered authorative.
  */
-case class ContestConfig(contestType: ContestType, ourCallsign: Callsign, transmitters: Int, ourClass: String, ourSection: String, stamp: Instant = Instant.now()) extends ContestConfigFields derives Codec.AsObject:
+case class ContestConfig(contestType: ContestType,
+                         ourCallsign: Callsign,
+                         transmitters: Int,
+                         ourClass: String,
+                         ourSection: String,
+                         stamp: Instant = Instant.now()) extends ContestConfigFields derives Codec.AsObject:
   val exchange:String=
     s"$transmitters$ourClass $ourSection"
   def weAre(usePhonetic: Boolean): String =

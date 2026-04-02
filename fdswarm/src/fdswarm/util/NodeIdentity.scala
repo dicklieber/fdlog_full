@@ -57,7 +57,7 @@ case class NodeIdentity(hostIp: String, port: Int, hostName: String, instanceId:
   val udpHeaderPiece: String =
     s"${port}_${instanceId}_$hostName"
 
-
+  val short: String = s"$hostName:$port"
   override def compare(that: NodeIdentity): Int =
     this.hostName.compareTo(that.hostName)
 

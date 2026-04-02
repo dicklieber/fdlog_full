@@ -20,116 +20,14 @@ package fdswarm.fx.discovery
 
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.contest.{ContestConfigPane, ContestConfigPaneProvider}
-import fdswarm.fx.utils.{GridColumn, GridColumnAlignment, GridColumnWidth, GridRowBehavior, TypedGridTableBuilder}
 import scalafx.Includes.*
-import scalafx.scene.Node
 import scalafx.scene.control.{Button, TitledPane}
-import scalafx.scene.layout.Region
 
 class DiscoveryTable(contestConfigPane: ContestConfigPane) extends TitledPane with LazyLogging:
   text = "Discovered FdSwarm Nodes"
   collapsible = false
-  private type Ncs = NodeContestStation
 
-  private def textCol(
-                       header: String,
-                       sortable: Boolean = false,
-                       width: GridColumnWidth = GridColumnWidth.flexible(Region.USE_COMPUTED_SIZE),
-                       alignment: GridColumnAlignment = GridColumnAlignment.Left,
-                       cellStyleClasses: Ncs => Seq[String] = (_: Ncs) => Seq.empty[String]
-                     )(
-                       value: Ncs => String
-                     ): GridColumn[Ncs] =
-    GridColumn.text[Ncs](
-      header = header,
-      value = value,
-      cellStyleClasses = cellStyleClasses,
-      sortable = sortable,
-      alignment = alignment,
-      width = width
-    )
 
-  private def nodeCol(
-                       header: String,
-                       width: GridColumnWidth = GridColumnWidth.flexible(Region.USE_COMPUTED_SIZE),
-                       alignment: GridColumnAlignment = GridColumnAlignment.Left,
-                       cellStyleClasses: Ncs => Seq[String] = (_: Ncs) => Seq.empty[String],
-                       sortValue: Option[Ncs => String] = None
-                     )(
-                       value: Ncs => Node
-                     ): GridColumn[Ncs] =
-    GridColumn.node[Ncs](
-      header = header,
-      value = value,
-      cellStyleClasses = cellStyleClasses,
-      sortValue = sortValue,
-      alignment = alignment,
-      width = width
-    )
 
-  private val table = TypedGridTableBuilder(
-    GridRowBehavior[Ncs](
-      rowStyleClasses = ncs =>
-        if ncs.exchange.trim.isEmpty then Seq("row-warning") else Seq.empty,
-      onClick = Some(ncs =>
-        logger.info(s"Selected discovery row: $ncs")
-      ),
-      onDoubleClick = Some(ncs =>
-        logger.info(s"Double-clicked discovery row: $ncs")
-      )
-    ),
-    textCol(
-      header = "Host",
-      sortable = true,
-      width = GridColumnWidth.fixed(140)
-    )(_.nodeIdentity.hostIp),
-    textCol(
-      header = "Host Name",
-      sortable = true,
-      width = GridColumnWidth.flexible(180)
-    )(_.nodeIdentity.hostName),
-    textCol(
-      header = "Port",
-      sortable = true,
-      alignment = GridColumnAlignment.Right,
-      width = GridColumnWidth.fixed(80)
-    )(_.nodeIdentity.port.toString),
-    textCol(
-      header = "Contest",
-      sortable = true,
-      width = GridColumnWidth.flexible(120)
-    )(_.discoveryWire.contestConfig.contestType.toString),
-    textCol(
-      header = "Exchange",
-      sortable = true,
-      width = GridColumnWidth.flexible(120),
-    )(_.exchange),
-    textCol(
-      header = "Our Call",
-      sortable = true,
-      width = GridColumnWidth.flexible(120)
-    )(_.discoveryWire.contestConfig.ourCallsign.toString),
-    textCol(
-      header = "Operator",
-      sortable = true,
-      width = GridColumnWidth.flexible(150)
-    )(_.discoveryWire.stationConfig.operator.toString),
-    nodeCol(
-      header = "Action",
-      sortValue = Some(_.nodeIdentity.hostIp),
-      alignment = GridColumnAlignment.Center,
-      width = GridColumnWidth.fixed(110)
-    ) { ncs =>
-      new Button("Use"):
-        styleClass += "grid-inline-button"
-        onAction = _ => {
-          contestConfigPane.update(ncs.discoveryWire.contestConfig)
-          logger.info(s"Use clicked for ${ncs.nodeIdentity.hostIp}:${ncs.nodeIdentity.port}")
-        }
-    }
-  )
-
-  content = table.grid
-
-  def setItems(items: IterableOnce[Ncs]): Unit =
-    table.setItems(items)
+  def setItems(items: Seq[NodeContestStation]): Unit =
+    content = NodeContestStation.buildTable(items)
