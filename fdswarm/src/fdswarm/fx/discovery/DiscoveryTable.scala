@@ -19,16 +19,16 @@
 package fdswarm.fx.discovery
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.contest.{ContestConfigPane, ContestConfigPaneProvider}
-import scalafx.Includes.*
-import scalafx.scene.control.{Button, TitledPane}
+import fdswarm.fx.contest.ContestConfigPaneProvider
+import scalafx.scene.control.TitledPane
 
-class DiscoveryTable(contestConfigPane: ContestConfigPane) extends TitledPane with LazyLogging:
+class DiscoveryTable(contestConfigPaneProvider: ContestConfigPaneProvider) extends TitledPane with LazyLogging:
   text = "Discovered FdSwarm Nodes"
   collapsible = false
 
+  private val provider = new NodeContestStationProvider(contestConfigPaneProvider)
 
 
   def setItems(items: Seq[NodeContestStation]): Unit =
     val byStamp = items.sortBy(_.discoveryWire.contestConfig.stamp).reverse
-    content = NodeContestStation.buildTable(byStamp, ())
+    content = NodeContestStation.buildTable(byStamp, provider)

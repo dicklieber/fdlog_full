@@ -27,7 +27,7 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
   
   private val discoveredNodes = new ObservableScalaMap[NodeIdentity, NodeContestStation]
   private val contestConfigPane: ContestConfigPane = contestConfigPaneProvider.pane()
-  private val discoveryTable = new DiscoveryTable(contestConfigPane)
+  private val discoveryTable = new DiscoveryTable(contestConfigPaneProvider)
 
 
   val vBox = new VBox()

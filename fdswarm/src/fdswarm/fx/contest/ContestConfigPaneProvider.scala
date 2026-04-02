@@ -15,6 +15,7 @@ import scala.Option
 class ContestConfigPaneProvider @Inject()(contestCatalog: ContestCatalog,
                                           sectionsProvider: SectionsProvider,
                                           contestConfigManager: ContestConfigManager):
+  private var currentPane: ContestConfigPane | Null = null
 
   def pane(): ContestConfigPane =
     val initialConfig = if contestConfigManager.hasConfiguration.value then
@@ -22,7 +23,13 @@ class ContestConfigPaneProvider @Inject()(contestCatalog: ContestCatalog,
     else
       // Fallback to a default config if none exists
       ContestConfig(contestType = ContestType.WFD, ourCallsign = fdswarm.model.Callsign("WA9NNN"), transmitters = 1, ourClass = "A", ourSection = "IL")
-    new ContestConfigPane(initialConfig, contestCatalog, sectionsProvider)
+    val pane = new ContestConfigPane(initialConfig, contestCatalog, sectionsProvider)
+    currentPane = pane
+    pane
+
+  def update(contestConfig: ContestConfig): Unit =
+    if currentPane != null then
+      currentPane.nn.update(contestConfig)
 
 class ContestConfigPane(initialContestConfig: ContestConfig,
                         contestCatalog: ContestCatalog,
