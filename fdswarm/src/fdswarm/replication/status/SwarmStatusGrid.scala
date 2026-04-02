@@ -114,7 +114,7 @@ class SwarmStatusGrid(allNodes: Seq[ReceivedNodeStatus],
 
     val currentGrid = bodyCounts
     fdHours.zip(currentGrid).foreach { (hour, rowLabels) =>
-      val styleClass = rowStyleCallback(rowLabels)
+      val styleClass = rowStyleCallback(rowLabels.toIndexedSeq)
       if (styleClass.nonEmpty) {
         rowLabels.foreach(_.styleClass += styleClass)
       }

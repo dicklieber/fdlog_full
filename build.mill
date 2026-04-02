@@ -33,6 +33,11 @@ trait CommonSettings extends ScalaModule:
       "-Wconf:msg=Implicit parameters should be provided with a `using` clause:s"
     )
 
+  override def javacOptions =
+    Seq(
+      "-Xlint:-options"
+    )
+
 object common extends CommonSettings:
   def mvnDeps = Seq(
     mvn"io.circe::circe-core:0.14.10",

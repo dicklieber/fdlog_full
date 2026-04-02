@@ -33,6 +33,7 @@ import scalafx.scene.layout.VBox
 import scalafx.util.Duration
 
 import java.time.{ZonedDateTime, Duration as JDuration}
+import scala.compiletime.uninitialized
 
 @Singleton
 class ContestTimerPanel @Inject()(
@@ -47,8 +48,8 @@ class ContestTimerPanel @Inject()(
 
   private val _node = new VBox()
 
-  private var contestType: ContestType = _
-  private var contestDates: ContestDates = _
+  private var contestType: ContestType = uninitialized
+  private var contestDates: ContestDates = uninitialized
 
   private def refreshDisplay(): Unit =
     if contestManager.hasConfiguration.value then
