@@ -88,6 +88,19 @@ class StatusBroadcastService @Inject()(
 
   @volatile private var maybeThread: Option[Thread] = None
   @volatile private var stopRequested: Boolean = false
+  private val broadcastStateLock = new AnyRef
+  @volatile private var lastStatusBroadcastAtMillis: Long = 0L
+
+  private def currentPeriodMillis: Long =
+    broadcastPeriodSecProperty.value * 1000L
+
+  private def millisUntilNextBroadcast(nowMillis: Long = System.currentTimeMillis()): Long =
+    broadcastStateLock.synchronized {
+      if lastStatusBroadcastAtMillis == 0L then
+        currentPeriodMillis
+      else
+        math.max(0L, currentPeriodMillis - (nowMillis - lastStatusBroadcastAtMillis))
+    }
 
   /** Interrupt the scheduler thread (if any) to re-evaluate its sleep period.
     * This does NOT stop the service; it only short-circuits the current sleep
@@ -110,28 +123,18 @@ class StatusBroadcastService @Inject()(
           catch
             case e: Exception => logger.warn("Initial status broadcast failed", e)
 
-          // Scheduler: sleep for the current period, then broadcast.
-          // If interrupted and not stopping, we simply re-check the (possibly new) period
-          // and sleep again, so the next broadcast is delayed by the updated period.
-          var skipNextBroadcast = false
+          // Scheduler sleeps until next eligible send based on the last status send time.
+          // If interrupted and not stopping, re-check timing with the updated settings.
           while !Thread.currentThread().isInterrupted do
             try
-              val currentPeriod = broadcastPeriodSecProperty.value
-              Thread.sleep(currentPeriod * 1000L)
-              // Woke normally: proceed to broadcast unless a prior interrupt set skip flag
-              if !skipNextBroadcast then
-                broadcastStatus()
-              else
-                skipNextBroadcast = false
+              Thread.sleep(millisUntilNextBroadcast())
+              broadcastStatus()
             catch
               case _: InterruptedException =>
                 // Distinguish between a stop request and a reschedule nudge
                 if stopRequested then
                   // Exit loop
                   Thread.currentThread().interrupt()
-                else
-                  // Reschedule: skip the immediate broadcast; go sleep with new period
-                  skipNextBroadcast = true
         }, "Status-Broadcaster")
         t.setDaemon(true)
         t.start()
@@ -147,7 +150,20 @@ class StatusBroadcastService @Inject()(
     }
 
   def broadcastStatus(): Unit =
-    if contestConfigManager.hasConfiguration.value then
+    if !contestConfigManager.hasConfiguration.value then return
+
+    val reservation = broadcastStateLock.synchronized {
+      val nowMillis = System.currentTimeMillis()
+      val previousMillis = lastStatusBroadcastAtMillis
+      val due = previousMillis == 0L || (nowMillis - previousMillis) >= currentPeriodMillis
+      if due then
+        lastStatusBroadcastAtMillis = nowMillis
+        Some((previousMillis, nowMillis))
+      else
+        None
+    }
+
+    reservation.foreach { case (previousMillis, reservedMillis) =>
       try
         val operator = stationManager.station.operator
         val bandMode = selectedBandModeStore.selected.value
@@ -160,4 +176,10 @@ class StatusBroadcastService @Inject()(
         transport.send(Service.Status, gzipBytes)
       catch
         case e: Exception =>
+          // If send failed, roll back reservation so we do not incorrectly throttle retries.
+          broadcastStateLock.synchronized {
+            if lastStatusBroadcastAtMillis == reservedMillis then
+              lastStatusBroadcastAtMillis = previousMillis
+          }
           logger.error("Error broadcasting node status", e)
+    }
