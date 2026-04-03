@@ -20,73 +20,40 @@ package fdswarm.fx.discovery
 
 import com.google.inject.name.Named
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.contest.{ContestConfig, ContestConfigManager}
+import fdswarm.fx.contest.ContestConfig
 import fdswarm.model.StationConfig
-import fdswarm.replication.{LiveOrDeadQueue, Service, StatusBroadcastService, StatusMessage, Transport, UDPHeaderData}
+import fdswarm.replication.{ReceivedNodeStatus, Service, Transport}
+import fdswarm.replication.status.SwarmStatus
 import io.circe.Codec
-import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.Inject
 
-import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 
 class ContestDiscovery @Inject()(
                                   val transport: Transport,
-                                  contestConfigManager: ContestConfigManager,
-                                  statusBroadcastService: StatusBroadcastService,
+                                  swarmStatus: SwarmStatus,
                                   @Named("fdswarm.contestDiscoveryTimeoutSec") val timeoutSec: Int,
-                                  meterRegistry: MeterRegistry
                                 ) extends LazyLogging:
 
-  private val sendStatusReceived =
-    meterRegistry.counter("fdswarm_discovery_req_received")
-  private val discoveredStatusQueue = new LinkedBlockingQueue[NodeContestStation]()
-
-  private val requestQueue: LiveOrDeadQueue =
-    transport.startQueue(Service.SendStatus)
-
-  // This thread runs forever handling Service.SendStatus messages.
-  val t: Thread = new Thread:
-    setDaemon(true)
-    setName("ContestDiscoveryHandler")
-
-    override def run(): Unit =
-      while true do
-        val msg: UDPHeaderData = requestQueue.take()
-        sendStatusReceived.increment()
-
-        if !contestConfigManager.hasConfiguration.value then
-          logger.debug(
-            "Received SendStatus from {} but contest config is not initialized yet",
-            msg.nodeIdentity
-          )
-        else
-          statusBroadcastService.broadcastStatus(force = true)
-          logger.trace(
-            "Received SendStatus from {} and broadcasted StatusMessage",
-            msg.nodeIdentity
-          )
-  t.start()
-
-  def onStatusMessageReceived(udpHeaderData: UDPHeaderData, statusMessage: StatusMessage): Unit =
-    discoveredStatusQueue.offer(NodeContestStation.fromStatus(udpHeaderData, statusMessage))
-
-  def discoverContest(callBack: NodeContestStation => Unit): Unit =
+  def discoverContest(callBack: ReceivedNodeStatus => Unit): Unit =
     logger.info(s"Starting contest discovery (timeout: ${timeoutSec}s)")
 
-    discoveredStatusQueue.clear()
     transport.send(Service.SendStatus, Array.emptyByteArray)
 
     val startTime = System.currentTimeMillis()
+    val localNodeIdentity = swarmStatus.ourNodeIdentity
+    val emittedNodeIds = collection.mutable.Set(localNodeIdentity)
 
     while System.currentTimeMillis() - startTime < timeoutSec * 1000L do
-      discoveredStatusQueue.poll(100, TimeUnit.MILLISECONDS) match
-        case null =>
-        case discovered =>
+      swarmStatus.nodeMap.values.foreach { discovered =>
+        if !emittedNodeIds.contains(discovered.nodeIdentity) then
+          emittedNodeIds += discovered.nodeIdentity
           callBack(discovered)
           logger.info(
             s"Processed StatusMessage from ${discovered.nodeIdentity}"
           )
+      }
+      TimeUnit.MILLISECONDS.sleep(100)
 
 /**
  * What discovery UIs and startup checks consume from a remote node.

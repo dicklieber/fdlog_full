@@ -21,7 +21,6 @@ package fdswarm.replication
 import cats.effect.unsafe.implicits.global
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.contest.{ContestConfig, ContestConfigManager}
-import fdswarm.fx.discovery.ContestDiscovery
 import fdswarm.model.Qso
 import fdswarm.replication.status.SwarmStatus
 import fdswarm.store.ReplicationSupport
@@ -36,7 +35,7 @@ import java.net.http.HttpClient
 class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[ReplicationSupport],
                                   statusProcessor: StatusProcessor,
                                   transport: Transport,
-                                  contestDiscovery: ContestDiscovery,
+                                  statusBroadcastService: StatusBroadcastService,
                                   swarmStatusProvider: Provider[SwarmStatus],
                                   contestManagerProvider: Provider[ContestConfigManager],
                                   meterRegistry: MeterRegistry) extends LazyLogging:
@@ -45,6 +44,7 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
   private def swarmStatus: SwarmStatus = swarmStatusProvider.get()
   private def contestManager: ContestConfigManager = contestManagerProvider.get()
   logger.debug("Starting NodeStatusHandler")
+  private val sendStatusReceived = meterRegistry.counter("fdswarm_discovery_req_received")
   private val statusCounter = meterRegistry.counter("fdswarm_received_status_total")
   private val qsoCounter = meterRegistry.counter("fdswarm_received_qso_total")
   private var lastStatusMessagePayloadSize: Double = 0.0
@@ -68,7 +68,6 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
         udpHeader.service match
           case Service.Status =>
             val statusMessage = StatusMessage(udpHeader.payload)
-            contestDiscovery.onStatusMessageReceived(udpHeader, statusMessage)
             if (contestManager.shouldIgnoreStatus) 
               logger.debug(s"Ignoring status message from ${udpHeader.nodeIdentity} because of recent contest change")
             else 
@@ -89,7 +88,18 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
               case Left(error) =>
                 logger.error(s"Failed to decode QSO from multicast: $sJson", error)
           case Service.SendStatus =>
-            logger.trace(s"Received SendStatus from ${udpHeader.nodeIdentity} (handled by ContestDiscovery)")
+            sendStatusReceived.increment()
+            if !contestManager.hasConfiguration.value then
+              logger.debug(
+                "Received SendStatus from {} but contest config is not initialized yet",
+                udpHeader.nodeIdentity
+              )
+            else
+              statusBroadcastService.broadcastStatus(force = true)
+              logger.trace(
+                "Received SendStatus from {} and broadcasted StatusMessage",
+                udpHeader.nodeIdentity
+              )
           case Service.RestartContest =>
             logger.info(s"Received RestartContest from ${udpHeader.nodeIdentity}")
             val sJson = new String(udpHeader.payload, "UTF-8")

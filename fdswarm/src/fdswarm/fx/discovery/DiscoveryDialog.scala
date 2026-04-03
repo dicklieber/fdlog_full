@@ -8,6 +8,7 @@ import fdswarm.fx.contest.{
   ExchangePane
 }
 import fdswarm.fx.utils.{ObservableScalaMap, StyledDialog}
+import fdswarm.replication.ReceivedNodeStatus
 import fdswarm.store.QsoStore
 import fdswarm.util.NodeIdentity
 import jakarta.inject.Inject
@@ -25,7 +26,7 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
 
 
   
-  private val discoveredNodes = new ObservableScalaMap[NodeIdentity, NodeContestStation]
+  private val discoveredNodes = new ObservableScalaMap[NodeIdentity, ReceivedNodeStatus]
   private val contestConfigPane: ContestConfigPane = contestConfigPaneProvider.pane()
   private val discoveryTable = new DiscoveryTable(contestConfigPaneProvider)
 
