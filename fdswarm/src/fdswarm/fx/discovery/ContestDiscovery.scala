@@ -35,25 +35,21 @@ class ContestDiscovery @Inject()(
                                   @Named("fdswarm.contestDiscoveryTimeoutSec") val timeoutSec: Int,
                                 ) extends LazyLogging:
 
-  def discoverContest(callBack: ReceivedNodeStatus => Unit): Unit =
+  def discoverContest(): Seq[ReceivedNodeStatus] =
     logger.info(s"Starting contest discovery (timeout: ${timeoutSec}s)")
 
     transport.send(Service.SendStatus, Array.emptyByteArray)
+    TimeUnit.SECONDS.sleep(timeoutSec.toLong)
 
-    val startTime = System.currentTimeMillis()
     val localNodeIdentity = swarmStatus.ourNodeIdentity
-    val emittedNodeIds = collection.mutable.Set(localNodeIdentity)
+    val discoveredNodes = swarmStatus.nodeMap.values
+      .filterNot(_.nodeIdentity == localNodeIdentity)
+      .toSeq
 
-    while System.currentTimeMillis() - startTime < timeoutSec * 1000L do
-      swarmStatus.nodeMap.values.foreach { discovered =>
-        if !emittedNodeIds.contains(discovered.nodeIdentity) then
-          emittedNodeIds += discovered.nodeIdentity
-          callBack(discovered)
-          logger.info(
-            s"Processed StatusMessage from ${discovered.nodeIdentity}"
-          )
-      }
-      TimeUnit.MILLISECONDS.sleep(100)
+    discoveredNodes.foreach { discovered =>
+      logger.info(s"Processed StatusMessage from ${discovered.nodeIdentity}")
+    }
+    discoveredNodes
 
 /**
  * What discovery UIs and startup checks consume from a remote node.

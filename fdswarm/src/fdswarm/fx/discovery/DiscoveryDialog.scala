@@ -7,11 +7,11 @@ import fdswarm.fx.contest.{
   ContestConfigPaneProvider,
   ExchangePane
 }
-import fdswarm.fx.utils.{ObservableScalaMap, StyledDialog}
-import fdswarm.replication.ReceivedNodeStatus
+import fdswarm.fx.utils.StyledDialog
+import fdswarm.replication.status.SwarmStatus
 import fdswarm.store.QsoStore
-import fdswarm.util.NodeIdentity
 import jakarta.inject.Inject
+import javafx.stage.{Stage as JStage}
 import scalafx.Includes.*
 import scalafx.application.Platform
 import scalafx.scene.control.ButtonType
@@ -21,14 +21,13 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
                                  contestConfigPaneProvider: ContestConfigPaneProvider,
                                  contestManager: ContestConfigManager,
                                  qsoStore: QsoStore,
-                                 exchangePane: ExchangePane)
+                                 exchangePane: ExchangePane,
+                                 swarmStatus: SwarmStatus)
   extends StyledDialog[ButtonType] with LazyLogging:
 
 
-  
-  private val discoveredNodes = new ObservableScalaMap[NodeIdentity, ReceivedNodeStatus]
   private val contestConfigPane: ContestConfigPane = contestConfigPaneProvider.pane()
-  private val discoveryTable = new DiscoveryTable(contestConfigPaneProvider)
+  private val discoveryTable = new DiscoveryTable(contestConfigPaneProvider, resizeToDiscoveryTable)
 
 
   val vBox = new VBox()
@@ -45,13 +44,20 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
     if (btn != null) {
       btn.setVisible(false)
     }
+    resizeToDiscoveryTable()
   } }
 
 
-  contestDiscovery.discoverContest { receivedNodeStatus =>
+  contestDiscovery.discoverContest().foreach { receivedNodeStatus =>
     logger.debug(s"Discovery UI added: $receivedNodeStatus")
     Platform.runLater {
-      discoveredNodes.put(receivedNodeStatus.nodeIdentity, receivedNodeStatus)
-      discoveryTable.setItems(discoveredNodes.values)
+      discoveryTable.setItems(swarmStatus.nodeMap.values.toSeq)
     }
   }
+
+  private def resizeToDiscoveryTable(): Unit =
+    val scene = dialogPane().scene.value
+    if scene != null then
+      scene.getWindow match
+        case stage: JStage => stage.sizeToScene()
+        case _ => ()

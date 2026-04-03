@@ -23,7 +23,9 @@ import fdswarm.fx.contest.ContestConfigPaneProvider
 import fdswarm.replication.ReceivedNodeStatus
 import scalafx.scene.control.TitledPane
 
-class DiscoveryTable(contestConfigPaneProvider: ContestConfigPaneProvider) extends TitledPane with LazyLogging:
+class DiscoveryTable(contestConfigPaneProvider: ContestConfigPaneProvider,
+                     onTableUpdated: () => Unit = () => ())
+  extends TitledPane with LazyLogging:
   text = "Discovered FdSwarm Nodes"
   collapsible = false
 
@@ -33,3 +35,4 @@ class DiscoveryTable(contestConfigPaneProvider: ContestConfigPaneProvider) exten
   def setItems(items: Seq[ReceivedNodeStatus]): Unit =
     val byStamp = items.sortBy(_.statusMessage.contestConfig.stamp).reverse
     content = ReceivedNodeStatusTable.buildTable(byStamp, provider)
+    onTableUpdated()
