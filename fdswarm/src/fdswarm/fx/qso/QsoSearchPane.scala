@@ -188,7 +188,10 @@ class QsoSearchPane @Inject()(
 
   val node: VBox = new VBox()
 
-  private def buildUi(): Unit =
+  private var uiBuilt = false
+
+  def buildUi(): Unit =
+    if uiBuilt then return
     val contestType: ContestType = contestManager.contestConfigProperty.value.contestType
     val contestDefinition: ContestDefinition = contestCatalog.getContest(contestType).get
     val classChoices: Seq[ClassChoice] = contestDefinition.classChoices
@@ -227,10 +230,4 @@ class QsoSearchPane @Inject()(
       collapsible = true
     }
     node.children = Seq(titledPane)
-
-  contestManager.hasConfiguration.onChange { (_, _, hasConfig) =>
-    if hasConfig then buildUi()
-    else node.children = Seq.empty
-  }
-
-  if contestManager.hasConfiguration.value then buildUi()
+    uiBuilt = true

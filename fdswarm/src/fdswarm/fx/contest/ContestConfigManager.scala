@@ -16,23 +16,24 @@ final class ContestConfigManager @Inject()(
                                             filenameStamp: fdswarm.util.FilenameStamp,
                                             @Named("fdswarm.contestChangeIgnoreStatusSec") ignoreStatusSec: Int
                                           ) extends ContestConfigFields with LazyLogging:
+  private var onConfigSetListeners: Vector[ContestConfig => Unit] = Vector.empty
 
   private def qsoStore: fdswarm.store.QsoStore = qsoStoreProvider.get()
 // These override methods expose the current value of the contestConfigProperty
   override def contestType: ContestType =
-    _contestConfig.value.contestType
+    contestConfigOption.map(_.contestType).getOrElse(ContestType.ARRL)
 
   override def ourCallsign: Callsign =
-    _contestConfig.value.ourCallsign
+    contestConfigOption.map(_.ourCallsign).getOrElse(Callsign("TEMP"))
 
   override def transmitters: Int =
-    _contestConfig.value.transmitters
+    contestConfigOption.map(_.transmitters).getOrElse(1)
 
   override def ourClass: String =
-    _contestConfig.value.ourClass
+    contestConfigOption.map(_.ourClass).getOrElse("A")
 
   override def ourSection: String =
-    _contestConfig.value.ourSection
+    contestConfigOption.map(_.ourSection).getOrElse("STX")
 
 
   private var lastRestartTime: Long = 0L
@@ -44,11 +45,17 @@ final class ContestConfigManager @Inject()(
 
   private val _hasConfiguration = new ReadOnlyBooleanWrapper(this, "hasConfiguration", _contestConfig != null)
 
-  def hasConfiguration: ReadOnlyBooleanProperty = _hasConfiguration.readOnlyProperty
+  val hasConfiguration: ReadOnlyBooleanProperty = _hasConfiguration.readOnlyProperty
+
+  def onConfigSet(listener: ContestConfig => Unit): Unit =
+    onConfigSetListeners :+= listener
 
   def shouldIgnoreStatus: Boolean =
     val now = System.currentTimeMillis()
     (now - lastRestartTime) < (ignoreStatusSec * 1000L)
+
+  def contestConfigOption: Option[ContestConfig] =
+    Option(_contestConfig).map(_.value)
 
   @throws[IllegalStateException]("If not initialized")
   def contestConfigProperty: ReadOnlyObjectProperty[ContestConfig] =
@@ -61,6 +68,7 @@ final class ContestConfigManager @Inject()(
     else
       _contestConfig.nn.value = newConfig
     persist()
+    notifyConfigSet(newConfig)
 
   /**
    * 1. Rename/archive qsos journal
@@ -73,15 +81,8 @@ final class ContestConfigManager @Inject()(
     // archive + clear
     qsoStore.archiveAndClear()
 
-    // update config
-    if _contestConfig == null then
-      _contestConfig = ReadOnlyObjectWrapper(newConfig)
-      _hasConfiguration.value = true
-    else
-      _contestConfig.nn.value = newConfig
-
-    // persist new config
-    persist()
+    // update config + persist + notify
+    setConfig(newConfig)
 
   private def load(): ReadOnlyObjectWrapper[ContestConfig] | Null =
     try
@@ -122,6 +123,15 @@ final class ContestConfigManager @Inject()(
     catch
       case e: Throwable =>
         logger.error(s"Failed to persist contest config to $contestFile", e)
+
+  private def notifyConfigSet(config: ContestConfig): Unit =
+    onConfigSetListeners.foreach { listener =>
+      try
+        listener(config)
+      catch
+        case e: Throwable =>
+          logger.error("ContestConfigManager.onConfigSet listener failed", e)
+    }
 
   private def requireContestConfig(): ReadOnlyObjectWrapper[ContestConfig] =
     if _contestConfig == null then

@@ -88,12 +88,16 @@ class SwarmStatus @Inject() (
     val nodeIdentity = ourNodeIdentity
     val operator = stationManager.station.operator
     val bandMode = selectedBandModeStore.selected.value
-    val statusMessage = StatusMessage(
-      fdDigests = digests,
-      bandNodeOperator = BandModeOperator(operator, bandMode),
-      contestConfig =contestConfigManager.contestConfigProperty.value)
-    val receivedNodeStatus = ReceivedNodeStatus(statusMessage, nodeIdentity)
-    put(receivedNodeStatus)
+    contestConfigManager.contestConfigOption match
+      case Some(config) =>
+        val statusMessage = StatusMessage(
+          fdDigests = digests,
+          bandNodeOperator = BandModeOperator(operator, bandMode),
+          contestConfig = config)
+        val receivedNodeStatus = ReceivedNodeStatus(statusMessage, nodeIdentity)
+        put(receivedNodeStatus)
+      case None =>
+        logger.debug("Skipping updateLocalDigests as contestConfig is not yet initialized")
 
   def refresh(): Unit =
     val pane = swarmStatusPane

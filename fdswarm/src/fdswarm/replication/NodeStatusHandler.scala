@@ -29,6 +29,7 @@ import fdswarm.util.JavaTimeCirce.given
 import io.circe.parser.decode
 import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.{Inject, Singleton, Provider}
+import scalafx.application.Platform
 
 import java.net.http.HttpClient
 @Singleton
@@ -94,7 +95,10 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
             val sJson = new String(udpHeader.payload, "UTF-8")
             decode[ContestConfig](sJson) match
               case Right(newConfig) =>
-                contestManager.handleRestartContest(newConfig)
+                // ContestConfigManager exposes JavaFX properties; update them on the FX thread.
+                Platform.runLater {
+                  contestManager.handleRestartContest(newConfig)
+                }
               case Left(error) =>
                 logger.error(s"Failed to decode ContestConfig from RestartContest: $sJson", error)
       catch

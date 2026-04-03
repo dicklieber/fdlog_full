@@ -289,7 +289,13 @@ final class FdLogUi @Inject() (
     stage.scene = scene
 
     stage.show()
-    
+
+    contestManager.onConfigSet(_ =>
+      Platform.runLater {
+        contestEntry.buildUi()
+      }
+    )
+
     // Wire the Band/Mode matrix in ContestEntry to open the manager
     contestEntry.bandModeMatrixPane.onConfigRequest = Some(() => {
       Option(ownerWindow) match
@@ -308,6 +314,9 @@ final class FdLogUi @Inject() (
         durationNanos
       )
     }
+    if contestManager.hasConfiguration.value then
+      contestEntry.buildUi()
+
     if sys.env.getOrElse("SHOW_STARTUP", "true") == "true" then
       if !contestManager.hasConfiguration.value then
         discoveryDialog.showAndWait()

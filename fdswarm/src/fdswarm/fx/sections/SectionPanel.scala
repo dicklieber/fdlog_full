@@ -31,14 +31,16 @@ import scalafx.scene.control.Label
 import scalafx.scene.layout.{HBox, Priority, Region, VBox}
 
 class SectionPanel @Inject()(sectionsProvider: SectionsProvider, 
-                           qsoEntryPanel: QsoEntryPanel,
-                           contestManager: fdswarm.fx.contest.ContestConfigManager
+                           qsoEntryPanel: QsoEntryPanel
                           ) extends LazyLogging:
 
   private val _node = new VBox()
   def node: Node = _node
 
-  private def buildUi(): Unit =
+  private var uiBuilt = false
+
+  def buildUi(): Unit =
+    if uiBuilt then return
     _node.children = Seq(buildNode(
       qsoEntryPanel.sectionFieldProperty,
       () => qsoEntryPanel.submit(),
@@ -49,13 +51,7 @@ class SectionPanel @Inject()(sectionsProvider: SectionsProvider,
       ),
       "Sections"
     ))
-
-  contestManager.hasConfiguration.onChange { (_, _, hasConfig) =>
-    if hasConfig then buildUi()
-    else _node.children = Seq.empty
-  }
-
-  if contestManager.hasConfiguration.value then buildUi()
+    uiBuilt = true
 
   def buildNode(
       sectionField: StringProperty,
@@ -102,4 +98,3 @@ class SectionPanel @Inject()(sectionsProvider: SectionsProvider,
       mainVBox.children.add(rowContainer)
 
     GridColumns.fieldSet(title, mainVBox)
-

@@ -26,7 +26,7 @@ import fdswarm.fx.sections.SectionPanel
 import jakarta.inject.Singleton
 import scalafx.geometry.Insets
 import scalafx.scene.Node
-import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority, VBox}
+import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority}
 import fdswarm.fx.GridColumns.*
 
 @Singleton
@@ -35,8 +35,7 @@ class ContestEntry @Inject()(qsoEntryPanel: QsoEntryPanel,
                              qsoSearchPane: QsoSearchPane,
                              val bandModeMatrixPane: BandModeMatrixPane,
                              sectionPanel: SectionPanel,
-                             contestTimerPanel: ContestTimerPanel,
-                             contestManager: fdswarm.fx.contest.ContestConfigManager
+                             contestTimerPanel: ContestTimerPanel
                             ) extends LazyLogging:
 
   private val _node = new GridPane {
@@ -49,7 +48,13 @@ class ContestEntry @Inject()(qsoEntryPanel: QsoEntryPanel,
     )
   }
 
-  private def buildUi(): Unit =
+  private var uiBuilt = false
+
+  def buildUi(): Unit =
+    if uiBuilt then return
+    qsoEntryPanel.buildUi()
+    qsoSearchPane.buildUi()
+    sectionPanel.buildUi()
     _node.children.clear()
     // Row 0: Search pane above table
     _node.add(child = qsoSearchPane.node, columnIndex = 0, rowIndex = 0, colspan = 2, rowspan = 1)
@@ -67,13 +72,7 @@ class ContestEntry @Inject()(qsoEntryPanel: QsoEntryPanel,
     // Row 4: Band/Mode matrix
     _node.add(bandModeMatrixPane.node, 0, 4)
     bandModeMatrixPane.buildGrid()
-
-  contestManager.hasConfiguration.onChange { (_, _, hasConfig) =>
-    if hasConfig then buildUi()
-    else _node.children.clear()
-  }
-
-  if contestManager.hasConfiguration.value then buildUi()
+    uiBuilt = true
 
   def node: Node = _node
 //    new VBox {

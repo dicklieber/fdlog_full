@@ -53,16 +53,12 @@ class QsoEntryPanel @Inject()(
   private val _node = new VBox()
   def node: Node = _node
 
-  private def buildUi(): Unit =
-    val contestType: ContestType = contestManager.contestConfigProperty.value.contestType
+  private var uiBuilt = false
+
+  def buildUi(): Unit =
+    if uiBuilt then return
     _node.children = Seq(GridColumns.fieldSet("QSO", mainLayout))
-
-  contestManager.hasConfiguration.onChange { (_, _, hasConfig) =>
-    if hasConfig then buildUi()
-    else _node.children = Seq.empty
-  }
-
-  if contestManager.hasConfiguration.value then buildUi()
+    uiBuilt = true
 
   private val clearButton = new Button("\u21BA"):
     styleClass += "clear-button"
