@@ -26,6 +26,7 @@ import fdswarm.model.{BandMode, Callsign}
 import fdswarm.util.CallsignGenerator
 import net.codingwell.scalaguice.InjectorExtensions.*
 import scalafx.application.JFXApp3
+import scalafx.application.Platform
 import scalafx.scene.Scene
 import scalafx.scene.control.Button
 import scalafx.scene.layout.{BorderPane, HBox, StackPane}
@@ -38,6 +39,8 @@ import scalafx.scene.image.Image
 import scalafx.stage.Stage
 import javafx.embed.swing.SwingFXUtils
 
+import java.util.concurrent.atomic.AtomicBoolean
+
 /**
  * A development tool tha runs a bunch of instances of the FDSwarm application
  * on this host.
@@ -46,11 +49,15 @@ object ManagerApp extends JFXApp3 with LazyLogging :
 
   private lazy val injector: Injector =
     Guice.createInjector(new ManagerModule())
+  private lazy val runner: Runner = injector.instance[Runner]
+  private val shutdownOnce = new AtomicBoolean(false)
+  private val shutdownHook = new Thread("manager-shutdown-hook"):
+    override def run(): Unit = stopManagedInstances()
+  Runtime.getRuntime.addShutdownHook(shutdownHook)
 
 
   override def start(): Unit = {
 
-    val runner = injector.instance[Runner]
     if !runner.verifyRequiredJar() then
       sys.exit(1)
 
@@ -70,9 +77,8 @@ object ManagerApp extends JFXApp3 with LazyLogging :
 
     stage = new JFXApp3.PrimaryStage {
       title = "Debug Configuration Manager"
-      //      onCloseRequest = _ => {
-      //        injector.instance[Runner].stopAll()
-      //      }
+      onCloseRequest = _ => shutdownAndExit()
+      onHiding = _ => stopManagedInstances()
     }
 
     setAppIcon(stage)
@@ -120,6 +126,23 @@ object ManagerApp extends JFXApp3 with LazyLogging :
       root = borderPane
     }
   }
+
+  override def stopApp(): Unit =
+    stopManagedInstances()
+
+  private def shutdownAndExit(): Unit =
+    stopManagedInstances()
+    Platform.exit()
+    System.exit(0)
+
+  private def stopManagedInstances(): Unit =
+    if shutdownOnce.compareAndSet(false, true) then
+      try
+        logger.info("Stopping managed instances")
+        runner.stop()
+      catch
+        case e: Exception =>
+          logger.warn("Failed to stop managed instances during shutdown", e)
 
   private def setAppIcon(stage: Stage): Unit = {
       try {

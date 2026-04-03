@@ -42,7 +42,16 @@ class AppInstance(debugConfigJsonPath: String, startupConfig: StartupConfig, por
   println()
   val proc = os.proc(args)
   val subProcess: SubProcess = proc.spawn(env = Map("PORT" -> port.toString))
+  private val processHandle = subProcess.wrapped.toHandle
+
   def stop(): Unit =
-    subProcess.destroy()
+    if processHandle.isAlive then
+      logger.info(s"Stopping instance ${startupConfig.id} pid=${processHandle.pid()}")
+
+      // Kill descendants first to avoid orphan helper processes.
+      processHandle.descendants().forEach { child =>
+        if child.isAlive then child.destroyForcibly()
+      }
+      processHandle.destroyForcibly()
 object AppInstance:
   val jarPath: String = "out/fdswarm/assembly.dest/fdswarm-all.jar"
