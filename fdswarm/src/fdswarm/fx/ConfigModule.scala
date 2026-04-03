@@ -101,9 +101,7 @@ class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModu
     bind(new TypeLiteral[Reporter[IO]](){}).toInstance(reporter)
 
     bind[fdswarm.fx.tools.MetricsDialog].asEagerSingleton()
-    bind[fdswarm.fx.startup.StartupDialog].asEagerSingleton()
 
-    bind[fdswarm.fx.startup.ContestCondition].asEagerSingleton()
     bind[fdswarm.fx.startup.StationCondition].asEagerSingleton()
 
     val entries = fullConfig.entrySet().asScala.toSeq

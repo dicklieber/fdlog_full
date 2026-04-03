@@ -48,10 +48,10 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
   } }
 
 
-  contestDiscovery.discoverContest { ncs =>
-    logger.debug(s"Discovery UI added: $ncs")
+  contestDiscovery.discoverContest { receivedNodeStatus =>
+    logger.debug(s"Discovery UI added: $receivedNodeStatus")
     Platform.runLater {
-      discoveredNodes.put(ncs.nodeIdentity, ncs)
+      discoveredNodes.put(receivedNodeStatus.nodeIdentity, receivedNodeStatus)
       discoveryTable.setItems(discoveredNodes.values)
     }
   }
