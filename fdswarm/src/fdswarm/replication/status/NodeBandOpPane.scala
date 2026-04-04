@@ -37,8 +37,11 @@ class NodeBandOpPane @Inject()(swarmStatus: SwarmStatus):
   private def buildGrid() =
     val builder = GridBuilder()
     val nodes = swarmStatus.nodeMap.toSeq.sortBy(_._1)
+    val ourNodeColumnIndex = nodes.indexWhere(_._1 == swarmStatus.ourNodeIdentity)
+    if ourNodeColumnIndex >= 0 then
+      builder.setColumnClass(ourNodeColumnIndex + 1, "ourNode")
 
-    builder("id", nodes.map(_._1)*)
+//    builder("id", nodes.map(_._1)*)
     builder("operator", nodes.map(_._2.statusMessage.bandNodeOperator.operator.toString)*)
     builder("bandMode", nodes.map(_._2.statusMessage.bandNodeOperator.bandMode.toString)*)
     builder("hostName", nodes.map(_._1.hostName)*)
