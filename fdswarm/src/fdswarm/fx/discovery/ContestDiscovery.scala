@@ -51,10 +51,3 @@ class ContestDiscovery @Inject()(
     }
     discoveredNodes
 
-/**
- * What discovery UIs and startup checks consume from a remote node.
- */
-case class DiscoveryWire(contestConfig: ContestConfig, stationConfig: StationConfig)
-
-object DiscoveryWire:
-  given Codec.AsObject[DiscoveryWire] = Codec.AsObject.derived

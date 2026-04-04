@@ -82,7 +82,7 @@ jobs:
           name: Test-Report-HTML
           path: out/reports/test-report.html
           if-no-files-found: error
-          retention-days: 5
+          retention-days: 3
 
       - name: Generate Scoverage reports
         if: always()
@@ -97,7 +97,7 @@ jobs:
           name: Coverage-Report-HTML
           path: out/fdswarm/scoverage/htmlReport.dest/
           if-no-files-found: error
-          retention-days: 5
+          retention-days: 3
 
       - name: Update Coverage Badge
         if: github.ref == 'refs/heads/main'
@@ -124,7 +124,7 @@ jobs:
           name: FdSwarm-Assembly-JAR
           path: out/fdswarm/assembly.dest/fdswarm-all.jar
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 3
 
   package-windows:
     name: Package Windows (MSI)
@@ -175,7 +175,7 @@ jobs:
           name: FdSwarm-Windows-MSI
           path: out/fdswarm/winMsi.dest/jpackage-win-*/*.msi
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 3
 
   package-macos:
     name: Package macOS (PKG)
@@ -229,7 +229,7 @@ jobs:
           name: FdSwarm-macOS-PKG
           path: out/fdswarm/macPkg.dest/jpackage/*.pkg
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 3
 
   create-release:
     name: Create GitHub Release
