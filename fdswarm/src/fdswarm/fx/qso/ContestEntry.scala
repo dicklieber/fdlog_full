@@ -23,6 +23,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.GridColumns
 import fdswarm.fx.bandmodes.BandModeMatrixPane
 import fdswarm.fx.sections.SectionPanel
+import fdswarm.replication.status.NodeBandOpPane
 import jakarta.inject.Singleton
 import scalafx.geometry.Insets
 import scalafx.scene.Node
@@ -35,7 +36,8 @@ class ContestEntry @Inject()(qsoEntryPanel: QsoEntryPanel,
                              qsoSearchPane: QsoSearchPane,
                              val bandModeMatrixPane: BandModeMatrixPane,
                              sectionPanel: SectionPanel,
-                             contestTimerPanel: ContestTimerPanel
+                             contestTimerPanel: ContestTimerPanel,
+                             nodeBandOpPane: NodeBandOpPane
                             ) extends LazyLogging:
 
   private val _node = new GridPane {
@@ -72,6 +74,10 @@ class ContestEntry @Inject()(qsoEntryPanel: QsoEntryPanel,
     // Row 4: Band/Mode matrix
     _node.add(bandModeMatrixPane.node, 0, 4)
     bandModeMatrixPane.buildGrid()
+
+    // Row 5: Swarm operator/band/host grid
+    nodeBandOpPane.refresh()
+    _node.add(child = nodeBandOpPane.node, columnIndex = 0, rowIndex = 5, colspan = 2, rowspan = 1)
     uiBuilt = true
 
   def node: Node = _node

@@ -27,7 +27,9 @@ import sttp.tapir.Schema
  * Details about this station.
  *
  */
-final case class StationConfig(operator: Callsign = Callsign(""), rig: String = "", antenna: String = "") derives  Codec.AsObject, Schema
+final case class StationConfig(operator: Callsign = Callsign(""),
+                               rig: String = "",
+                               antenna: String = "") derives  Codec.AsObject, Schema
 //
 //object Station:
 //
