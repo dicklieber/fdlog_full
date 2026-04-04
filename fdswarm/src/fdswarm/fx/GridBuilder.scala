@@ -48,7 +48,6 @@ class GridBuilder(header: Option[String] = None):
   _grid.vgap = 2
   _grid.padding = Insets(5)
   def gridLinesVisible: Boolean = _grid.gridLinesVisible.value
-  def gridLinesVisible_=(v: Boolean): Unit = _grid.gridLinesVisible = v
 
   def hgap: Double = _grid.hgap.value
   def hgap_=(v: Double): Unit = _grid.hgap = v
