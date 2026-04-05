@@ -22,8 +22,9 @@ import _root_.io.circe.Printer
 import _root_.io.circe.parser.decode
 import _root_.io.circe.syntax.*
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.fx.station.StationConfig
 import fdswarm.io.DirectoryProvider
-import fdswarm.model.{Callsign, StationConfig}
+import fdswarm.model.Callsign
 import jakarta.inject.{Inject, Singleton}
 import scalafx.beans.property.ObjectProperty
 

@@ -20,6 +20,7 @@ package fdswarm.exporter
 
 import munit.FunSuite
 import fdswarm.model.*
+
 import java.time.Instant
 import os.*
 import io.circe.syntax.*
@@ -27,6 +28,7 @@ import fdswarm.StationConfigManager
 import fdswarm.MockStartupInfo
 import fdswarm.io.DirectoryProvider
 import fdswarm.exporter.AdifExporter
+import fdswarm.fx.station.StationConfig
 
 class AdifExporterTest extends FunSuite:
   val qsoMetadata = fdswarm.model.QsoMetadata.testQsoMetadata

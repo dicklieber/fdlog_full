@@ -19,7 +19,6 @@
 package fdswarm.fx.station
 
 import fdswarm.StationConfigManager
-import fdswarm.model.StationConfig
 import jakarta.inject.{Inject, Singleton}
 import scalafx.beans.property.ObjectProperty
 

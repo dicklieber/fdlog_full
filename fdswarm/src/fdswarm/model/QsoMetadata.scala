@@ -21,6 +21,7 @@ package fdswarm.model
 
 import com.organization.BuildInfo
 import fdswarm.fx.contest.ContestType
+import fdswarm.fx.station.StationConfig
 import fdswarm.util.NodeIdentity
 import io.circe.Codec
 

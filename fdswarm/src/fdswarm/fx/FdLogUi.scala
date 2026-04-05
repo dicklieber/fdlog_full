@@ -135,7 +135,6 @@ final class FdLogUi @Inject() (
 ////          case None    => ()
   private val stationMenuItem: MenuItem =
     new MenuItem("Station"):
-      disable = true
       onAction = _ =>
         Option(ownerWindow) match
           case Some(w) => stationEditor.show(w)

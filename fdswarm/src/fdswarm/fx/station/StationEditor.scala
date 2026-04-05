@@ -18,7 +18,7 @@
 
 package fdswarm.fx.station
 
-import fdswarm.model.{Callsign, StationConfig}
+import fdswarm.model.Callsign
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
 import scalafx.beans.binding.Bindings

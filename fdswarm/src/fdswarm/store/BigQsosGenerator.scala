@@ -20,6 +20,7 @@ package fdswarm.store
 
 import fdswarm.fx.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
 import fdswarm.fx.contest.ContestType.WFD
+import fdswarm.fx.station.StationConfig
 import fdswarm.model.*
 import fdswarm.util.{CallsignGenerator, NodeIdentityManager}
 import jakarta.inject.*

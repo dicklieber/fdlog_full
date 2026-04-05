@@ -15,11 +15,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package fdswarm.model
+package fdswarm.fx.station
 
-import fdswarm.fx.bands.HamBand
-import fdswarm.fx.caseForm.ChoiceField
-import fdswarm.model.BandMode.*
+import fdswarm.model.Callsign
 import io.circe.Codec
 import sttp.tapir.Schema
 
@@ -30,10 +28,4 @@ import sttp.tapir.Schema
 final case class StationConfig(operator: Callsign = Callsign(""),
                                rig: String = "",
                                antenna: String = "") derives  Codec.AsObject, Schema
-//
-//object Station:
-//
-//  import Callsign.given_Conversion_String_Callsign
-//  
-//  
 

@@ -25,6 +25,7 @@ import fdswarm.fx.contest.ContestType
 
 import java.time.Instant
 import fdswarm.fx.qso.FdHour
+import fdswarm.fx.station.StationConfig
 import fdswarm.util.NodeIdentity
 
 class QsoCirceTest extends FunSuite:

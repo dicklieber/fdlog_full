@@ -21,7 +21,7 @@ package fdswarm.fx.discovery
 import com.google.inject.name.Named
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.contest.ContestConfig
-import fdswarm.model.StationConfig
+import fdswarm.fx.station.StationConfig
 import fdswarm.replication.{ReceivedNodeStatus, Service, Transport}
 import fdswarm.replication.status.SwarmStatus
 import io.circe.Codec
