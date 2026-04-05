@@ -25,7 +25,9 @@ import _root_.io.circe.Printer
 import _root_.io.circe.generic.auto.*
 import _root_.io.circe.syntax.*
 
-class ManagedNode(config: StartupConfig, directoryProvider: DirectoryProvider, jarPath: os.Path) extends LazyLogging:
+class ManagedNode(config: StartupConfig,
+                  directoryProvider: DirectoryProvider,
+                  jarPath: os.Path) extends LazyLogging:
   private var process: Option[os.SubProcess] = None
   private val printer = Printer.spaces2.copy(dropNullValues = true)
 

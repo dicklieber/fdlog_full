@@ -18,6 +18,7 @@
 
 package fdswarm.util
 
+import fdswarm.StartupInfo
 import fdswarm.io.DirectoryProvider
 import fdswarm.util.Ids.Id
 import io.circe.*
@@ -26,11 +27,17 @@ import jakarta.inject.{Inject, Singleton}
 import com.typesafe.scalalogging.LazyLogging
 
 @Singleton
-class InstanceIdManager @Inject()(directoryProvider: DirectoryProvider) extends LazyLogging:
+class InstanceIdManager @Inject()(directoryProvider: DirectoryProvider,
+                                  startupInfo: StartupInfo) extends LazyLogging:
   private val dir = directoryProvider()
   private val file = dir / "instance.json"
 
-  var ourInstanceId: Id = loadOrCreate()
+  var ourInstanceId: Id = startupInfo.info match
+    case Some(config) =>
+      logger.info(s"Using instance ID from StartupInfo: ${config.id}")
+      config.id
+    case None =>
+      loadOrCreate()
 
   private def loadOrCreate(): Id =
     if os.exists(file) then

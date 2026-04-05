@@ -23,7 +23,9 @@ import manager.AppInstance.jarPath
 import os.SubProcess
 import fdswarm.StartupConfig
 
-class AppInstance(debugConfigJsonPath: String, startupConfig: StartupConfig, port: Int) extends LazyLogging:
+class AppInstance(debugConfigJsonPath: String,
+                  startupConfig: StartupConfig,
+                  port: Int) extends LazyLogging:
   private val debugOpt: Option[String] = startupConfig.debugMode.javaOpt
 
   val args =

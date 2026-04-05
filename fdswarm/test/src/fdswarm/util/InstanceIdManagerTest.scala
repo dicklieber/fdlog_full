@@ -18,6 +18,8 @@
 
 package fdswarm.util
 
+import fdswarm.{DebugMode, StartupConfig, StartupInfo}
+import fdswarm.model.{BandMode, Callsign}
 import munit.FunSuite
 import fdswarm.io.DirectoryProvider
 import io.circe.syntax.*
@@ -30,7 +32,7 @@ class InstanceIdManagerTest extends FunSuite:
       def apply(): os.Path = tmpDir
 
     // First initialization
-    val manager1 = new InstanceIdManager(provider)
+    val manager1 = new InstanceIdManager(provider, new StartupInfo(Array.empty))
     val id1 = manager1.ourInstanceId
     assert(id1.nonEmpty)
     assert(os.exists(tmpDir / "instance.json"))
@@ -41,14 +43,14 @@ class InstanceIdManagerTest extends FunSuite:
     assert(savedJson.contains("instanceId"))
 
     // Second initialization (reloading)
-    val manager2 = new InstanceIdManager(provider)
+    val manager2 = new InstanceIdManager(provider, new StartupInfo(Array.empty))
     val id2 = manager2.ourInstanceId
     assertEquals(id1, id2)
 
     // Modification of the file
     val customConfig = InstanceConfig("custom-id")
     os.write.over(tmpDir / "instance.json", customConfig.asJson.noSpaces)
-    val manager3 = new InstanceIdManager(provider)
+    val manager3 = new InstanceIdManager(provider, new StartupInfo(Array.empty))
     assertEquals(manager3.ourInstanceId, "custom-id")
 
   test("generates new ID if JSON is invalid"):
@@ -57,6 +59,24 @@ class InstanceIdManagerTest extends FunSuite:
       def apply(): os.Path = tmpDir
 
     os.write.over(tmpDir / "instance.json", "invalid json")
-    val manager = new InstanceIdManager(provider)
+    val manager = new InstanceIdManager(provider, new StartupInfo(Array.empty))
     assert(manager.ourInstanceId.nonEmpty)
     assert(manager.ourInstanceId != "invalid json")
+
+  test("uses instanceId from StartupInfo when provided"):
+    val tmpDir = os.temp.dir()
+    val provider = new DirectoryProvider:
+      def apply(): os.Path = tmpDir
+
+    val startupJson = tmpDir / "startup.json"
+    val startupConfig = StartupConfig(
+      operator = Callsign("WA9NNN"),
+      bandMode = BandMode("20m", "CW"),
+      debugMode = DebugMode.Off,
+      id = "startup-instance-id"
+    )
+    os.write.over(startupJson, startupConfig.asJson.noSpaces)
+    val startupInfo = new StartupInfo(Array("--startupInfo", startupJson.toString))
+
+    val manager = new InstanceIdManager(provider, startupInfo)
+    assertEquals(manager.ourInstanceId, "startup-instance-id")
