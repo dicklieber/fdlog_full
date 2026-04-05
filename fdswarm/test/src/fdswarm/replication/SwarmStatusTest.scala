@@ -146,7 +146,7 @@ class SwarmStatusTest extends FunSuite:
     // 1. Create SwarmStatus, put data, and it should save
     val swarmStatusPaneProvider: Provider[status.SwarmStatusPane] = () => null
     val contestConfigManagerProvider: Provider[fdswarm.fx.contest.ContestConfigManager] = () => null
-    val swarmStatus1 = new SwarmStatus(testDir, MockNodeIdentityManager(), stationManager, selectedBandModeStore, swarmStatusPaneProvider, contestConfigManagerProvider)
+    val swarmStatus1 = new SwarmStatus(testDir, MockNodeIdentityManager(), stationManager, selectedBandModeStore, swarmStatusPaneProvider, contestConfigManagerProvider, statusPersist = true)
     swarmStatus1.put(nodeStuff)
     
     // 2. verify file exists

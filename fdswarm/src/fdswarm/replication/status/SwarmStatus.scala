@@ -50,7 +50,8 @@ class SwarmStatus @Inject() (
                               stationManager: StationConfigManager,
                               selectedBandModeStore: SelectedBandModeManager,
                               swarmStatusPaneProvider: Provider[SwarmStatusPane],
-                              contestConfigManagerProvider: Provider[fdswarm.fx.contest.ContestConfigManager]
+                              contestConfigManagerProvider: Provider[fdswarm.fx.contest.ContestConfigManager],
+                              @Named("swarm.statusPersist") statusPersist: Boolean = false
                             ) extends SwarmStatusApi with LazyLogging:
   val nodeMap: TrieMap[NodeIdentity, ReceivedNodeStatus] = new TrieMap[NodeIdentity, ReceivedNodeStatus]
   private val statusFile = directoryProvider() / "swarmStatus.json"
@@ -69,20 +70,23 @@ class SwarmStatus @Inject() (
       pane.update(nodeMap.values.toSeq)
     save()
 
-  // Load state on startup
-  try
-    if os.exists(statusFile) then
-      val json = os.read(statusFile)
-      decode[Seq[ReceivedNodeStatus]](json) match
-        case Right(statuses) =>
-          statuses.foreach { status =>
-            nodeMap.put(status.nodeIdentity, status)
-          }
-        case Left(error) =>
-          logger.error(s"Error decoding swarm status: $error")
-  catch
-    case e: Exception =>
-      logger.error(s"Error loading swarm status: ${e.getMessage}")
+  // Load state on startup when persistence is enabled.
+  if statusPersist then
+    try
+      if os.exists(statusFile) then
+        val json = os.read(statusFile)
+        decode[Seq[ReceivedNodeStatus]](json) match
+          case Right(statuses) =>
+            statuses.foreach { status =>
+              nodeMap.put(status.nodeIdentity, status)
+            }
+          case Left(error) =>
+            logger.error(s"Error decoding swarm status: $error")
+    catch
+      case e: Exception =>
+        logger.error(s"Error loading swarm status: ${e.getMessage}")
+  else
+    logger.debug("Swarm status persistence disabled; skipping load.")
 
   def updateLocalDigests(digests: Seq[FdHourDigest]): Unit =
     val nodeIdentity = ourNodeIdentity
@@ -125,6 +129,8 @@ class SwarmStatus @Inject() (
       logger.debug(s"Removed node status for $nodeIdentity")
 
   private def save(): Unit =
+    if !statusPersist then
+      return
     try
       val json = nodeMap.values.asJson.noSpaces
       os.write.over(statusFile, json, createFolders = true)
