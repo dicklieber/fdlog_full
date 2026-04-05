@@ -18,12 +18,9 @@
 
 package fdswarm.replication.status
 
-import fdswarm.StationConfigManager
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.bandmodes.SelectedBandModeManager
 import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
-import fdswarm.model.BandModeOperator
 import fdswarm.replication.*
 import fdswarm.store.FdHourDigest
 import fdswarm.util.{JavaTimeCirce, NodeIdentity, NodeIdentityManager}
@@ -32,13 +29,10 @@ import io.circe.parser.decode
 import io.circe.syntax.*
 import jakarta.inject.*
 import jakarta.inject.Provider
-import scalafx.application.Platform
 import scalafx.beans.property.ObjectProperty
 
 import java.time.Instant
 import scala.collection.concurrent.TrieMap
-
-import fdswarm.replication.ReceivedNodeStatus
 
 /**
  * Hold 
@@ -47,24 +41,21 @@ import fdswarm.replication.ReceivedNodeStatus
 class SwarmStatus @Inject() (
                               directoryProvider: DirectoryProvider,
                               nodeIdentityManager: NodeIdentityManager,
-                              stationManager: StationConfigManager,
-                              selectedBandModeStore: SelectedBandModeManager,
+                              localNodeStatus: LocalNodeStatus,
                               swarmStatusPaneProvider: Provider[SwarmStatusPane],
-                              contestConfigManagerProvider: Provider[fdswarm.fx.contest.ContestConfigManager],
                               @Named("swarm.statusPersist") statusPersist: Boolean = false
                             ) extends SwarmStatusApi with LazyLogging:
-  val nodeMap: TrieMap[NodeIdentity, ReceivedNodeStatus] = new TrieMap[NodeIdentity, ReceivedNodeStatus]
+  val nodeMap: TrieMap[NodeIdentity, NodeStatus] = new TrieMap[NodeIdentity, NodeStatus]
   private val statusFile = directoryProvider() / "swarmStatus.json"
 
-  private def contestConfigManager: fdswarm.fx.contest.ContestConfigManager = contestConfigManagerProvider.get()
   private def swarmStatusPane: SwarmStatusPane = swarmStatusPaneProvider.get()
 
   /**
    * 
-   * @param receivedNodeStatus as received from a node
+   * @param nodeStatus as received from a node
    */
-  def put(receivedNodeStatus: ReceivedNodeStatus): Unit =
-    nodeMap.put(receivedNodeStatus.nodeIdentity, receivedNodeStatus)
+  def put(nodeStatus: NodeStatus): Unit =
+    nodeMap.put(nodeStatus.nodeIdentity, nodeStatus)
     val pane = swarmStatusPane
     if pane != null then
       pane.update(nodeMap.values.toSeq)
@@ -75,7 +66,7 @@ class SwarmStatus @Inject() (
     try
       if os.exists(statusFile) then
         val json = os.read(statusFile)
-        decode[Seq[ReceivedNodeStatus]](json) match
+        decode[Seq[NodeStatus]](json) match
           case Right(statuses) =>
             statuses.foreach { status =>
               nodeMap.put(status.nodeIdentity, status)
@@ -88,20 +79,10 @@ class SwarmStatus @Inject() (
   else
     logger.debug("Swarm status persistence disabled; skipping load.")
 
+  localNodeStatus.onUpdate(put)
+
   def updateLocalDigests(digests: Seq[FdHourDigest]): Unit =
-    val nodeIdentity = ourNodeIdentity
-    val operator = stationManager.station.operator
-    val bandMode = selectedBandModeStore.selected.value
-    contestConfigManager.contestConfigOption match
-      case Some(config) =>
-        val statusMessage = StatusMessage(
-          fdDigests = digests,
-          bandNodeOperator = BandModeOperator(operator, bandMode),
-          contestConfig = config)
-        val receivedNodeStatus = ReceivedNodeStatus(statusMessage, nodeIdentity)
-        put(receivedNodeStatus)
-      case None =>
-        logger.debug("Skipping updateLocalDigests as contestConfig is not yet initialized")
+    localNodeStatus.updateDigests(digests)
 
   def refresh(): Unit =
     val pane = swarmStatusPane

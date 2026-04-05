@@ -74,7 +74,7 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
               statusCounter.increment()
               lastStatusMessagePayloadSize = udpHeader.payload.length.toDouble
               lastStatusMessageDigestCount = statusMessage.fdDigests.size
-              val receivedNodeStatus = ReceivedNodeStatus(statusMessage, udpHeader.nodeIdentity)
+              val receivedNodeStatus = NodeStatus(statusMessage, udpHeader.nodeIdentity, isLocal = false)
               swarmStatus.put(receivedNodeStatus)
               logger.trace("StatusHandle: StatusMessage  {}.", statusMessage)
               statusProcessor.processStatus(receivedNodeStatus).unsafeRunAndForget()

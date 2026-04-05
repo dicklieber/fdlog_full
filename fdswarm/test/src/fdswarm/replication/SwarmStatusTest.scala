@@ -52,14 +52,14 @@ class SwarmStatusTest extends FunSuite:
     val modeCatalog = new ModeCatalog(config)
     val bandModeBuilder = new BandModeBuilder(bandCatalog, modeCatalog)
     val selectedBandModeStore = new SelectedBandModeManager(testDir, bandModeBuilder, MockStartupInfo)
+    val localNodeStatus = new LocalNodeStatus(MockNodeIdentityManager(), stationManager, selectedBandModeStore, () => null)
     val swarmStatusPaneProvider: Provider[status.SwarmStatusPane] = () => null
-    val contestConfigManagerProvider: Provider[fdswarm.fx.contest.ContestConfigManager] = () => null
-    val swarmStatus = new SwarmStatus(testDir, MockNodeIdentityManager(), stationManager, selectedBandModeStore, swarmStatusPaneProvider, contestConfigManagerProvider)
+    val swarmStatus = new SwarmStatus(testDir, MockNodeIdentityManager(), localNodeStatus, swarmStatusPaneProvider)
     val hp = NodeIdentity("192.168.1.100", 8080, "test-instance", "xxx")
     val hour = FdHour(15, 12)
     val digest = FdHourDigest(hour, 10, "abc")
     val statusMessage = StatusMessage(Seq(digest), dummyBno, contestConfig = dummyContestConfig)
-    val nodeStuff = ReceivedNodeStatus(statusMessage, hp)
+    val nodeStuff = NodeStatus(statusMessage, hp, isLocal = false)
 
     swarmStatus.put(nodeStuff)
 
@@ -88,18 +88,18 @@ class SwarmStatusTest extends FunSuite:
     val localNi = NodeIdentity("127.0.0.1", 8080, "local-instance", "xxx")
     val remoteNi = NodeIdentity("192.168.1.100", 8080, "remote-instance", "yyy")
     val mockNodeIdentityManager = new MockNodeIdentityManager(localNi)
+    val localNodeStatus = new LocalNodeStatus(mockNodeIdentityManager, stationManager, selectedBandModeStore, () => null)
     val swarmStatusPaneProvider: Provider[status.SwarmStatusPane] = () => null
-    val contestConfigManagerProvider: Provider[fdswarm.fx.contest.ContestConfigManager] = () => null
-    val swarmStatus = new SwarmStatus(testDir, mockNodeIdentityManager, stationManager, selectedBandModeStore, swarmStatusPaneProvider, contestConfigManagerProvider)
+    val swarmStatus = new SwarmStatus(testDir, mockNodeIdentityManager, localNodeStatus, swarmStatusPaneProvider)
 
     val hour = FdHour(15, 12)
     val digest = FdHourDigest(hour, 10, "abc")
     val statusMessage = StatusMessage(Seq(digest), dummyBno, contestConfig = dummyContestConfig)
 
     // Put local node data
-    swarmStatus.put(ReceivedNodeStatus(statusMessage, localNi))
+    swarmStatus.put(NodeStatus(statusMessage, localNi, isLocal = false))
     // Put remote node data
-    swarmStatus.put(ReceivedNodeStatus(statusMessage, remoteNi))
+    swarmStatus.put(NodeStatus(statusMessage, remoteNi, isLocal = false))
 
     assertEquals(swarmStatus.nodeMap.size, 2)
 
@@ -107,7 +107,7 @@ class SwarmStatusTest extends FunSuite:
     assertEquals(swarmStatus.nodeMap.size, 1, "nodeMap should have 1 node after clear")
 
     // Test remove
-    swarmStatus.put(ReceivedNodeStatus(statusMessage, remoteNi))
+    swarmStatus.put(NodeStatus(statusMessage, remoteNi, isLocal = false))
     assertEquals(swarmStatus.nodeMap.size, 2)
     swarmStatus.remove(remoteNi)
     assertEquals(swarmStatus.nodeMap.size, 1)
@@ -137,16 +137,16 @@ class SwarmStatusTest extends FunSuite:
     val modeCatalog = new ModeCatalog(config)
     val bandModeBuilder = new BandModeBuilder(bandCatalog, modeCatalog)
     val selectedBandModeStore = new SelectedBandModeManager(testDir, bandModeBuilder, MockStartupInfo)
+    val localNodeStatus = new LocalNodeStatus(MockNodeIdentityManager(), stationManager, selectedBandModeStore, () => null)
     val hp = NodeIdentity("192.168.1.101", 9090, "test-instance-2", "xxx")
     val hour = FdHour(16, 13)
     val digest = FdHourDigest(hour, 5, "def")
     val statusMessage = StatusMessage(Seq(digest), dummyBno, contestConfig = dummyContestConfig)
-    val nodeStuff = ReceivedNodeStatus(statusMessage, hp)
+    val nodeStuff = NodeStatus(statusMessage, hp, isLocal = false)
 
     // 1. Create SwarmStatus, put data, and it should save
     val swarmStatusPaneProvider: Provider[status.SwarmStatusPane] = () => null
-    val contestConfigManagerProvider: Provider[fdswarm.fx.contest.ContestConfigManager] = () => null
-    val swarmStatus1 = new SwarmStatus(testDir, MockNodeIdentityManager(), stationManager, selectedBandModeStore, swarmStatusPaneProvider, contestConfigManagerProvider, statusPersist = true)
+    val swarmStatus1 = new SwarmStatus(testDir, MockNodeIdentityManager(), localNodeStatus, swarmStatusPaneProvider, statusPersist = true)
     swarmStatus1.put(nodeStuff)
     
     // 2. verify file exists

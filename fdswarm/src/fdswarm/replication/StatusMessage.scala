@@ -39,5 +39,3 @@ case class StatusMessage(fdDigests: Seq[FdHourDigest],
 object StatusMessage:
   def apply(gzipped: Array[Byte]): StatusMessage =
     CirceGzip.decode[StatusMessage](gzipped).toTry.get
-   
-class NodeStatus(val lastStatusMessage:StatusMessage, val statusReceievdCount:Int, val lastStatusReceived:Instant)

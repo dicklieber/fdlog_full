@@ -25,7 +25,7 @@ import fdswarm.api.ReplEndpoints
 import fdswarm.fx.qso.FdHour
 import fdswarm.replication.status.NodeBandOpPane
 import fdswarm.store.{FdHourIds, FdHourRequest, ReplicationSupport}
-import fdswarm.util.{CirceGzip, NodeIdentity}
+import fdswarm.util.NodeIdentity
 import io.circe.Codec
 import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.{Inject, Singleton}
@@ -52,17 +52,17 @@ class StatusProcessor @Inject()(qsoStore: ReplicationSupport,
    *
    * @return IO completing after the HTTP call finishes
    */
-  def processStatus(receivedNodeStatus: ReceivedNodeStatus): IO[Unit] =
-    val needed = receivedNodeStatus.statusMessage.fdDigests.flatMap(qsoStore.isFdHourNeeded)
+  def processStatus(nodeStatus: NodeStatus): IO[Unit] =
+    val needed = nodeStatus.statusMessage.fdDigests.flatMap(qsoStore.isFdHourNeeded)
     IO(nodeBandOpPane.refreshIfDue()) >>
       (if needed.nonEmpty then
          // Record at least one timing sample to indicate processing occurred
          IO(timer.record(1L, TimeUnit.NANOSECONDS)) >>
-           processStatusInternal(receivedNodeStatus, needed).handleError(_ => IO.unit)
+           processStatusInternal(nodeStatus, needed).handleError(_ => IO.unit)
        else
          IO.unit)
 
-  private def processStatusInternal(nodeStuff: ReceivedNodeStatus, needed: Seq[FdHour]): IO[Unit] =
+  private def processStatusInternal(nodeStuff: NodeStatus, needed: Seq[FdHour]): IO[Unit] =
     given NodeIdentity = nodeStuff.nodeIdentity
     needed.traverse_ { fdHour =>
       for
@@ -93,15 +93,17 @@ class StatusProcessor @Inject()(qsoStore: ReplicationSupport,
  * @param statusMessage the actual Node Status as sent by a node.
  * @param nodeIdentity  the node that sent it.
  * @param received      when we got it.
+ * @param isLocal       true if this is a local node. i.e. not from another node.
  */
-case class ReceivedNodeStatus(statusMessage: StatusMessage,
-                              nodeIdentity: NodeIdentity,
-                              received: Instant = Instant.now) extends Ordered[ReceivedNodeStatus] derives Codec.AsObject:
+case class NodeStatus(statusMessage: StatusMessage,
+                      nodeIdentity: NodeIdentity,
+                      received: Instant = Instant.now,
+                      isLocal: Boolean) extends Ordered[NodeStatus] derives Codec.AsObject:
   val qsoCount: Int = statusMessage.fdDigests.map(_.count).sum
   // Allow .l ;p -p09l
   private lazy val countByFdHourMap: Map[FdHour, Int] = statusMessage.fdDigests.map(fdDigest => fdDigest.fdHour -> fdDigest.count).toMap
   def getQsoCount(fdHour:FdHour): Int =
     statusMessage.fdDigests.find(_.fdHour == fdHour).map(_.count).getOrElse(0)
 
-  override def compare(that: ReceivedNodeStatus): Int =
+  override def compare(that: NodeStatus): Int =
     that.nodeIdentity.instanceId.compareTo(that.nodeIdentity.instanceId)

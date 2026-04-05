@@ -22,7 +22,7 @@ import com.google.inject.name.Named
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.contest.ContestConfig
 import fdswarm.fx.station.StationConfig
-import fdswarm.replication.{ReceivedNodeStatus, Service, Transport}
+import fdswarm.replication.{NodeStatus, Service, Transport}
 import fdswarm.replication.status.SwarmStatus
 import io.circe.Codec
 import jakarta.inject.Inject
@@ -35,7 +35,7 @@ class ContestDiscovery @Inject()(
                                   @Named("fdswarm.contestDiscoveryTimeoutSec") val timeoutSec: Int,
                                 ) extends LazyLogging:
 
-  def discoverContest(): Seq[ReceivedNodeStatus] =
+  def discoverContest(): Seq[NodeStatus] =
     logger.info(s"Starting contest discovery (timeout: ${timeoutSec}s)")
 
     transport.send(Service.SendStatus, Array.emptyByteArray)

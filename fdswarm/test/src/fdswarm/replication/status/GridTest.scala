@@ -22,7 +22,7 @@ import fdswarm.fx.GridBuilder
 import fdswarm.fx.contest.{ContestConfig, ContestType}
 import fdswarm.fx.qso.FdHour
 import fdswarm.model.{BandMode, BandModeOperator, Callsign}
-import fdswarm.replication.{NodeDetails, ReceivedNodeStatus, StatusMessage}
+import fdswarm.replication.{NodeDetails, NodeStatus, StatusMessage}
 import fdswarm.store.FdHourDigest
 import fdswarm.util.NodeIdentity
 import munit.FunSuite
@@ -47,10 +47,10 @@ class GridTest extends FunSuite:
     val hour2 = FdHour(10, 2)
 
     val sm1 = StatusMessage(Seq(FdHourDigest(hour1, 5, "d1"), FdHourDigest(hour2, 10, "d2")), dummyBno, contestConfig = dummyContestConfig)
-    val nd1 = ReceivedNodeStatus(sm1, ni1)
+    val nd1 = NodeStatus(sm1, ni1, isLocal = false)
 
     val sm2 = StatusMessage(Seq(FdHourDigest(hour1, 3, "d3")), dummyBno, contestConfig = dummyContestConfig)
-    val nd2 = ReceivedNodeStatus(sm2, ni2)
+    val nd2 = NodeStatus(sm2, ni2, isLocal = false)
 
     val allNodeDetails = Seq(nd1, nd2)
     val nowProperty = scalafx.beans.property.LongProperty(System.currentTimeMillis())
@@ -94,7 +94,7 @@ class GridTest extends FunSuite:
 
   test("Gird.populate should add header rows"):
     val ni1 = NodeIdentity("192.168.1.1", 8080, "111", "node1")
-    val nd1 = ReceivedNodeStatus(StatusMessage(Nil, dummyBno, contestConfig = dummyContestConfig), ni1)
+    val nd1 = NodeStatus(StatusMessage(Nil, dummyBno, contestConfig = dummyContestConfig), ni1, isLocal = false)
 
     val builder = new GridBuilder()
     val nowProperty = scalafx.beans.property.LongProperty(System.currentTimeMillis())
@@ -148,7 +148,7 @@ class GridTest extends FunSuite:
     })
     // Check "Our Node" when it matches
     val niOur = NodeIdentity("127.0.0.1", 8080, "111", "our-node")
-    val ndOur = ReceivedNodeStatus(StatusMessage(Nil, dummyBno, contestConfig = dummyContestConfig), niOur)
+    val ndOur = NodeStatus(StatusMessage(Nil, dummyBno, contestConfig = dummyContestConfig), niOur, isLocal = false)
     val builder2 = new GridBuilder()
     val gird2 = SwarmStatusGrid(Seq(ndOur), nowProperty, ageStyleService, "our-node", swarmStatusApi)
     gird2.populate(builder2, _ => "test-style")

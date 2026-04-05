@@ -21,7 +21,7 @@ package fdswarm.replication.status
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.GridBuilder
 import fdswarm.fx.utils.IntLabel
-import fdswarm.replication.ReceivedNodeStatus
+import fdswarm.replication.NodeStatus
 import fdswarm.util.{AgeStyleService, NodeIdentityManager}
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
@@ -99,12 +99,12 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
    *
    * @param allNodeDetails the whole swarm.
    */
-  def update(allNodeDetails: Seq[ReceivedNodeStatus]): Unit =
+  def update(allNodeDetails: Seq[NodeStatus]): Unit =
     Platform.runLater {
       buildGrid(allNodeDetails)
     }
 
-  private def buildGrid(receivedNodeStatuses: Seq[ReceivedNodeStatus]): Unit =
+  private def buildGrid(nodeStatuses: Seq[NodeStatus]): Unit =
     val builder = GridBuilder()
     builder.hgap = 1
     builder.vgap = 1
@@ -126,7 +126,7 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
       }
     }
 
-    val gird: SwarmStatusGrid = SwarmStatusGrid(receivedNodeStatuses, nowProperty, ageStyleService, nodeIdentityManager.ourNodeIdentity.instanceId, swarmStatusApi)
+    val gird: SwarmStatusGrid = SwarmStatusGrid(nodeStatuses, nowProperty, ageStyleService, nodeIdentityManager.ourNodeIdentity.instanceId, swarmStatusApi)
     gird.populate(builder, rowStyleCallback)
     val gridPane = builder.result
     VBox.setVgrow(gridPane, Priority.Always)

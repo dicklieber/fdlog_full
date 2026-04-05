@@ -21,7 +21,7 @@ package fdswarm.replication.status
 import fdswarm.fx.GridBuilder
 import fdswarm.fx.qso.FdHour
 import fdswarm.fx.utils.{BootstrapIcons, IntLabel}
-import fdswarm.replication.{NodeDetails, ReceivedNodeStatus}
+import fdswarm.replication.{NodeDetails, NodeStatus}
 import fdswarm.util.{AgeStyleService, DurationFormat, NodeIdentity, NodeIdentityManager}
 import scalafx.Includes.*
 import scalafx.beans.property.LongProperty
@@ -31,7 +31,7 @@ import scalafx.scene.text.{Font, FontPosture, FontWeight}
 
 import java.time.Instant
 
-class SwarmStatusGrid(allNodes: Seq[ReceivedNodeStatus],
+class SwarmStatusGrid(allNodes: Seq[NodeStatus],
                       nowProperty: LongProperty,
                       ageStyleService: AgeStyleService,
                       ourInstanceId: String,

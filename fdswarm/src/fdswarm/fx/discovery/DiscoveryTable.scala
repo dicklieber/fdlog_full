@@ -20,7 +20,7 @@ package fdswarm.fx.discovery
 
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.contest.ContestConfigPaneProvider
-import fdswarm.replication.ReceivedNodeStatus
+import fdswarm.replication.NodeStatus
 import scalafx.scene.control.TitledPane
 
 class DiscoveryTable(contestConfigPaneProvider: ContestConfigPaneProvider,
@@ -32,7 +32,7 @@ class DiscoveryTable(contestConfigPaneProvider: ContestConfigPaneProvider,
   private val provider = new ReceivedNodeStatusProvider(contestConfigPaneProvider)
 
 
-  def setItems(items: Seq[ReceivedNodeStatus]): Unit =
+  def setItems(items: Seq[NodeStatus]): Unit =
     val byStamp = items.sortBy(_.statusMessage.contestConfig.stamp).reverse
     content = ReceivedNodeStatusTable.buildTable(byStamp, provider)
     onTableUpdated()
