@@ -18,12 +18,20 @@
 
 package fdswarm.replication.status
 
+import com.google.inject.name.Named
 import fdswarm.fx.GridBuilder
 import jakarta.inject.{Inject, Singleton}
+import scalafx.application.Platform
 import scalafx.scene.control.TitledPane
 
+import java.util.concurrent.atomic.AtomicLong
+
 @Singleton
-class NodeBandOpPane @Inject()(swarmStatus: SwarmStatus):
+class NodeBandOpPane @Inject()(swarmStatus: SwarmStatus,
+                               @Named("fdswarm.nodeBandOpRefreshSeconds") nodeBandOpRefreshSeconds: Int):
+
+  private val refreshIntervalMillis = math.max(0L, nodeBandOpRefreshSeconds.toLong * 1000L)
+  private val lastRefreshMillis = AtomicLong(0L)
 
   val node: TitledPane = new TitledPane {
     text = "Swarm"
@@ -32,7 +40,31 @@ class NodeBandOpPane @Inject()(swarmStatus: SwarmStatus):
   }
 
   def refresh(): Unit =
-    node.content = buildGrid()
+    refreshInternal(force = true)
+
+  def refreshIfDue(): Unit =
+    refreshInternal(force = false)
+
+  private def refreshInternal(force: Boolean): Unit =
+    val now = System.currentTimeMillis()
+    if force then
+      lastRefreshMillis.set(now)
+      Platform.runLater {
+        node.content = buildGrid()
+      }
+    else if markRefreshDue(now) then
+      Platform.runLater {
+        node.content = buildGrid()
+      }
+
+  private def markRefreshDue(now: Long): Boolean =
+    if refreshIntervalMillis <= 0 then return true
+    var retry = true
+    while retry do
+      val last = lastRefreshMillis.get()
+      if now - last < refreshIntervalMillis then return false
+      if lastRefreshMillis.compareAndSet(last, now) then return true
+    false
 
   private def buildGrid() =
     val builder = GridBuilder()

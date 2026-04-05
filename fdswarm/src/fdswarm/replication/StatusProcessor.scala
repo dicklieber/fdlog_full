@@ -23,6 +23,7 @@ import cats.syntax.all.*
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.api.ReplEndpoints
 import fdswarm.fx.qso.FdHour
+import fdswarm.replication.status.NodeBandOpPane
 import fdswarm.store.{FdHourIds, FdHourRequest, ReplicationSupport}
 import fdswarm.util.{CirceGzip, NodeIdentity}
 import io.circe.Codec
@@ -40,7 +41,8 @@ import java.util.concurrent.TimeUnit
 class StatusProcessor @Inject()(qsoStore: ReplicationSupport,
                                 replEndpoints: ReplEndpoints,
                                 callEndpoint: CallEndpoint,
-                                meterRegistry: MeterRegistry) extends LazyLogging:
+                                meterRegistry: MeterRegistry,
+                                nodeBandOpPane: NodeBandOpPane) extends LazyLogging:
 
   private val timer = meterRegistry.timer("fdswarm_process_status_duration")
 
@@ -52,12 +54,13 @@ class StatusProcessor @Inject()(qsoStore: ReplicationSupport,
    */
   def processStatus(receivedNodeStatus: ReceivedNodeStatus): IO[Unit] =
     val needed = receivedNodeStatus.statusMessage.fdDigests.flatMap(qsoStore.isFdHourNeeded)
-    if needed.nonEmpty then
-      // Record at least one timing sample to indicate processing occurred
-      IO(timer.record(1L, TimeUnit.NANOSECONDS)) >>
-        processStatusInternal(receivedNodeStatus, needed).handleError(_ => IO.unit)
-    else
-      IO.unit
+    IO(nodeBandOpPane.refreshIfDue()) >>
+      (if needed.nonEmpty then
+         // Record at least one timing sample to indicate processing occurred
+         IO(timer.record(1L, TimeUnit.NANOSECONDS)) >>
+           processStatusInternal(receivedNodeStatus, needed).handleError(_ => IO.unit)
+       else
+         IO.unit)
 
   private def processStatusInternal(nodeStuff: ReceivedNodeStatus, needed: Seq[FdHour]): IO[Unit] =
     given NodeIdentity = nodeStuff.nodeIdentity
@@ -102,4 +105,3 @@ case class ReceivedNodeStatus(statusMessage: StatusMessage,
 
   override def compare(that: ReceivedNodeStatus): Int =
     that.nodeIdentity.instanceId.compareTo(that.nodeIdentity.instanceId)
-
