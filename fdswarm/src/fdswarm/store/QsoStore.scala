@@ -31,6 +31,7 @@ import jakarta.inject.*
 import jakarta.inject.Provider
 import io.circe.parser.decode
 import io.circe.syntax.*
+import javafx.application.Platform
 import scalafx.collections.ObservableBuffer
 
 import scala.collection.concurrent.TrieMap
@@ -56,6 +57,12 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider,
     .register(registry)
   private var fdHourDigests: Map[FdHour, FdHourDigest] = Map.empty
 
+  private def mutateQsoCollection(mutation: => Unit): Unit =
+    if Platform.isFxApplicationThread then
+      mutation
+    else
+      Platform.runLater(() => mutation)
+
   def add(qso: Qso): StyledMessage =
     val isDuplicateInStore = map.values.exists(existing =>
       existing.dupCriterion == qso.dupCriterion
@@ -67,7 +74,9 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider,
       os.write.append(journalFile, jsonString + "\n", createFolders = true)
 
       addToMap(qso)
-      qsoCollection.prepend(qso)
+      mutateQsoCollection {
+        qsoCollection.prepend(qso)
+      }
       buildFdHourDigests()
       val bytes: Array[Byte] = jsonString.getBytes("UTF-8")
       transport.send(Service.QSO, bytes)
@@ -119,7 +128,9 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider,
         decode[Qso](line) match
           case Right(qso) =>
             if (map.putIfAbsent(qso.uuid, qso).isEmpty) {
-              qsoCollection.prepend(qso)
+              mutateQsoCollection {
+                qsoCollection.prepend(qso)
+              }
             }
           case Left(error) =>
             logger.error(s"Failed to decode Qso from line: $line", error)
@@ -135,7 +146,9 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider,
     map.clear()
     fdHourDigests = Map.empty
     swarmStatus.updateLocalDigests(Nil)
-    qsoCollection.clear()
+    mutateQsoCollection {
+      qsoCollection.clear()
+    }
 
   private def doAdd(batch: Seq[Qso]): Unit =
     val thread = Thread.currentThread().getName
@@ -152,7 +165,9 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider,
     if toAdd.nonEmpty then
       val lines = toAdd.map(_.asJsonCompact + "\n").mkString
       os.write.append(journalFile, lines, createFolders = true)
-      qsoCollection.prependAll(toAdd)
+      mutateQsoCollection {
+        qsoCollection.prependAll(toAdd)
+      }
       buildFdHourDigests()
 
   private def buildFdHourDigests(): Unit =

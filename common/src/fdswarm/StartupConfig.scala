@@ -35,8 +35,9 @@ case class StartupConfig(enable: Boolean = true,
                          operator: Callsign,
                          bandMode: BandMode,
                          clearQsos: Boolean = false,
+                         skipInitDiscover: Boolean = false,
                          debugMode: DebugMode = DebugMode.Off,
                          id: Id = Ids.generateInstanceId()) derives Codec.AsObject {
   override def toString: String =
-    s"DebugConfig(operator=$operator, bandMode=$bandMode, clearQsos=$clearQsos, id=$id)"
+    s"DebugConfig(operator=$operator, bandMode=$bandMode, clearQsos=$clearQsos, skipInitDiscover=$skipInitDiscover, id=$id)"
 }

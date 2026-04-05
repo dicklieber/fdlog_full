@@ -22,6 +22,7 @@ import cats.effect.unsafe.implicits.global
 import com.google.inject.Injector
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.FdLogApp
+import fdswarm.StartupInfo
 import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.bandmodes.BandsAndModesPane
 import fdswarm.fx.contest.ContestConfigManager
@@ -85,7 +86,8 @@ final class FdLogUi @Inject() (
                                 metricsDialog: fdswarm.fx.tools.MetricsDialog,
                                 apiServer: fdswarm.api.ApiServer,
                                 discoveryDialog: DiscoveryDialog,
-                                udpQueuesDialog: UDPQueuesDialog
+                                udpQueuesDialog: UDPQueuesDialog,
+                                startupInfo: StartupInfo
 ) extends LazyLogging:
 
 
@@ -316,7 +318,7 @@ final class FdLogUi @Inject() (
     if contestManager.hasConfiguration.value then
       contestEntry.buildUi()
 
-    if sys.env.getOrElse("SHOW_STARTUP", "true") == "true" then
+    if !startupInfo.info.exists(_.skipInitDiscover) then
       if !contestManager.hasConfiguration.value then
         discoveryDialog.showAndWait()
 

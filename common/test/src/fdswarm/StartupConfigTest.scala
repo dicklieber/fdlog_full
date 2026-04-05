@@ -41,6 +41,7 @@ class StartupConfigTest extends FunSuite {
     assert(jsonStr.contains("\"operator\":\"W1AW\""))
     assert(jsonStr.contains("\"bandMode\":\"20m CW\""))
     assert(jsonStr.contains("\"clearQsos\":false"))
+    assert(jsonStr.contains("\"skipInitDiscover\":false"))
     assert(jsonStr.contains("\"debugMode\":\"Off\""))
     assert(jsonStr.contains("\"id\":\"ABC\""))
     val parsed = parse(jsonStr).flatMap(_.as[StartupConfig])
@@ -53,6 +54,7 @@ class StartupConfigTest extends FunSuite {
       operator = testOperator,
       bandMode = testBandMode,
       clearQsos = true,
+      skipInitDiscover = true,
       debugMode = DebugMode.Debug,
       id = testId
     )
@@ -60,6 +62,7 @@ class StartupConfigTest extends FunSuite {
     // Verify correct JSON structure generated
     assert(jsonStr.startsWith("{\"enable\":false"))
     assert(jsonStr.contains("\"clearQsos\":true"))
+    assert(jsonStr.contains("\"skipInitDiscover\":true"))
     assert(jsonStr.contains("\"debugMode\":\"Debug\""))
     val parsed = parse(jsonStr).flatMap(_.as[StartupConfig])
     assertEquals(parsed, Right(original))
@@ -78,10 +81,12 @@ class StartupConfigTest extends FunSuite {
                             |  "operator" : "W1AW",
                             |  "bandMode" : "20m CW",
                             |  "clearQsos" : false,
+                            |  "skipInitDiscover" : false,
                             |  "debugMode" : "Wait",
                             |  "id" : "ABC"
                             |}""".stripMargin)
     val parsed = parse(jsonStr).flatMap(_.as[StartupConfig])
     assertEquals(parsed, Right(original))
   }
+
 }

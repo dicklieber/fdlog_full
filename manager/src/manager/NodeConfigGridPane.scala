@@ -67,6 +67,9 @@ final class NodeConfigGridPane(
       ,
       new ColumnConstraints:
         hgrow = Priority.Never
+      ,
+      new ColumnConstraints:
+        hgrow = Priority.Never
     )
 
   children = Seq(grid)
@@ -79,7 +82,8 @@ final class NodeConfigGridPane(
       ("BandMode", 3),
       ("Debug", 4),
       ("Clear QSOs", 5),
-      ("Delete", 6)
+      ("Skip Init Discover", 6),
+      ("Delete", 7)
     ).foreach { case (title, col) =>
       val header =
         if col == 1 then
@@ -180,6 +184,16 @@ final class NodeConfigGridPane(
           val old = nodeConfigManager.observableBuffer(index)
           nodeConfigManager.observableBuffer(index) = old.copy(debugMode = newValue)
       }
+
+  private def skipInitDiscoverCheckBox(index: Int, config: StartupConfig): CheckBox =
+    new CheckBox:
+      selected = config.skipInitDiscover
+      selected.onChange { (_, _, newValue) =>
+        if index < nodeConfigManager.observableBuffer.size then
+          val old = nodeConfigManager.observableBuffer(index)
+          if old.skipInitDiscover != newValue then
+            nodeConfigManager.observableBuffer(index) = old.copy(skipInitDiscover = newValue)
+      }
   
   private def toggleAllEnables(): Unit =
     val target = enableBulkNext
@@ -218,6 +232,7 @@ final class NodeConfigGridPane(
       )
       grid.add(debugCombo(index, config), 4, row)
       grid.add(clearQsosCheckBox(index, config), 5, row)
+      grid.add(skipInitDiscoverCheckBox(index, config), 6, row)
       grid.add(
         new Button("Delete"):
           ellipsisString = ""
@@ -225,7 +240,7 @@ final class NodeConfigGridPane(
             if index < nodeConfigManager.observableBuffer.size then
               nodeConfigManager.observableBuffer.remove(index)
         ,
-        6,
+        7,
         row
       )
     }
