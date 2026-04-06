@@ -80,7 +80,7 @@ class NodeBandOpPane @Inject()(swarmStatus: SwarmStatus,
     builder(
       "operator",
       nodes.zipWithIndex.map((entry, idx) =>
-        stationConfigCell(entry._2.statusMessage.bandNodeOperator.operator.toString, idx == ourNodeColumnIndex)
+        operatorCallsignEditor(entry._2.statusMessage.bandNodeOperator.operator.toString, idx == ourNodeColumnIndex)
       )*
     )
     builder(
@@ -93,7 +93,7 @@ class NodeBandOpPane @Inject()(swarmStatus: SwarmStatus,
 
     builder.result
 
-  private def stationConfigCell(value: String, isLocalNode: Boolean): Label =
+  private def operatorCallsignEditor(value: String, isLocalNode: Boolean): Label =
     val label = new Label(value)
     if isLocalNode then
       label.tooltip = new Tooltip("Change this node's operator.")
