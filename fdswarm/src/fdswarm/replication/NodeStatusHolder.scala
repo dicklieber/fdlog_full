@@ -20,6 +20,7 @@ package fdswarm.replication
 
 import fdswarm.store.FdHourDigest
 import fdswarm.util.NodeIdentity
+import jakarta.inject.{Inject, Singleton}
 import scalafx.beans.property.{BooleanProperty, ObjectProperty, StringProperty}
 import scalafx.collections.ObservableBuffer
 
@@ -28,7 +29,9 @@ import java.time.Instant
 /**
  * Holds NodeStatus fields as observable properties for UI consumers.
  */
-final class NodeStatusHolder(val nodeIdentity: NodeIdentity):
+@Singleton
+final class NodeStatusHolder @Inject()(localNodeStatus: LocalNodeStatus):
+  val nodeIdentity: NodeIdentity = localNodeStatus.ourNodeIdentity
   val received: ObjectProperty[Instant] = ObjectProperty[Instant](Instant.EPOCH)
   val bandNode: StringProperty = StringProperty("")
   val operator: StringProperty = StringProperty("")
@@ -37,6 +40,7 @@ final class NodeStatusHolder(val nodeIdentity: NodeIdentity):
   val fdHoursSizeChanged: BooleanProperty = BooleanProperty(false)
 
   @volatile private var heldStatus: Option[NodeStatus] = None
+  localNodeStatus.onUpdate(update)
 
   def current: Option[NodeStatus] = heldStatus
 

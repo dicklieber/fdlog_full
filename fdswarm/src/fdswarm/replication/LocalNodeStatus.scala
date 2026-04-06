@@ -24,7 +24,7 @@ import fdswarm.fx.bandmodes.SelectedBandModeManager
 import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.model.BandModeOperator
 import fdswarm.store.FdHourDigest
-import fdswarm.util.NodeIdentityManager
+import fdswarm.util.{NodeIdentity, NodeIdentityManager}
 import jakarta.inject.{Inject, Provider, Singleton}
 
 @Singleton
@@ -36,7 +36,7 @@ final class LocalNodeStatus @Inject()(
                                      ) extends LazyLogging:
 
   @volatile private var heldDigests: Seq[FdHourDigest] = Nil
-  private val localNodeStatusHolder = NodeStatusHolder(nodeIdentityManager.ourNodeIdentity)
+  @volatile private var heldStatus: Option[NodeStatus] = None
   private var listeners: Vector[NodeStatus => Unit] = Vector.empty
 
   stationManager.stationProperty.onChange { (_, _, _) =>
@@ -58,12 +58,13 @@ final class LocalNodeStatus @Inject()(
 
   def onUpdate(listener: NodeStatus => Unit): Unit =
     listeners = listeners :+ listener
-    localNodeStatusHolder.current.foreach(listener)
+    heldStatus.foreach(listener)
 
-  def current: Option[NodeStatus] = localNodeStatusHolder.current
+  def current: Option[NodeStatus] = heldStatus
+  def ourNodeIdentity: NodeIdentity = nodeIdentityManager.ourNodeIdentity
 
   def update(nodeStatus: NodeStatus): Unit =
-    localNodeStatusHolder.update(nodeStatus)
+    heldStatus = Some(nodeStatus)
     listeners.foreach(_.apply(nodeStatus))
 
   private def rebuildAndNotify(reason: String): Unit =

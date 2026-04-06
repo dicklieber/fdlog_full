@@ -60,8 +60,8 @@ class StatusProcessor @Inject()(qsoStore: ReplicationSupport,
        else
          IO.unit)
 
-  private def processStatusInternal(nodeStuff: NodeStatus, needed: Seq[FdHour]): IO[Unit] =
-    given NodeIdentity = nodeStuff.nodeIdentity
+  private def processStatusInternal(nodeStatus: NodeStatus, needed: Seq[FdHour]): IO[Unit] =
+    given NodeIdentity = nodeStatus.nodeIdentity
     needed.traverse_ { fdHour =>
       for
         // 1. Ask remote for all IDs in this hour
