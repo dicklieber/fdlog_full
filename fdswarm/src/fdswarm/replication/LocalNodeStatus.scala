@@ -36,7 +36,7 @@ final class LocalNodeStatus @Inject()(
                                      ) extends LazyLogging:
 
   @volatile private var heldDigests: Seq[FdHourDigest] = Nil
-  @volatile private var heldStatus: Option[NodeStatus] = None
+  private val localNodeStatusHolder = NodeStatusHolder(nodeIdentityManager.ourNodeIdentity)
   private var listeners: Vector[NodeStatus => Unit] = Vector.empty
 
   stationManager.stationProperty.onChange { (_, _, _) =>
@@ -58,9 +58,13 @@ final class LocalNodeStatus @Inject()(
 
   def onUpdate(listener: NodeStatus => Unit): Unit =
     listeners = listeners :+ listener
-    heldStatus.foreach(listener)
+    localNodeStatusHolder.current.foreach(listener)
 
-  def current: Option[NodeStatus] = heldStatus
+  def current: Option[NodeStatus] = localNodeStatusHolder.current
+
+  def update(nodeStatus: NodeStatus): Unit =
+    localNodeStatusHolder.update(nodeStatus)
+    listeners.foreach(_.apply(nodeStatus))
 
   private def rebuildAndNotify(reason: String): Unit =
     Option(contestConfigManagerProvider.get()).flatMap(_.contestConfigOption) match
@@ -76,7 +80,6 @@ final class LocalNodeStatus @Inject()(
           nodeIdentity = nodeIdentityManager.ourNodeIdentity,
           isLocal = true
         )
-        heldStatus = Some(next)
-        listeners.foreach(_.apply(next))
+        update(next)
       case None =>
         logger.debug(s"Skipping local status rebuild ($reason): contest config not initialized")
