@@ -68,7 +68,7 @@ class NodeBandOpPane @Inject()(swarmStatus: SwarmStatus,
 
   private def buildGrid() =
     val builder = GridBuilder()
-    val nodes = swarmStatus.nodeMap.toSeq.sortBy(_._1)
+    val nodes = swarmStatus.nodeMap.toSeq.sortBy(_._2)
     val ourNodeColumnIndex = nodes.indexWhere(_._1 == swarmStatus.ourNodeIdentity)
     if ourNodeColumnIndex >= 0 then
       builder.setColumnClass(ourNodeColumnIndex + 1, "ourNode")

@@ -40,6 +40,7 @@ final class NodeConfigGridPane(
 
   private var enableBulkNext: Boolean = false
   private var clearQsosBulkNext: Boolean = false
+  private var skipInitDiscoverBulkNext: Boolean = false
   private val grid = new GridPane:
     hgap = 10
     vgap = 8
@@ -96,6 +97,12 @@ final class NodeConfigGridPane(
           new Button("Clear QSOs") {
             style = "-fx-font-weight: bold; -fx-background-color: transparent; -fx-border-color: transparent; -fx-cursor: hand;"
             onAction = _ => toggleAllClearQsos()
+            ellipsisString = ""
+          }
+        else if col == 6 then
+          new Button("Skip Init Discover") {
+            style = "-fx-font-weight: bold; -fx-background-color: transparent; -fx-border-color: transparent; -fx-cursor: hand;"
+            onAction = _ => toggleAllSkipInitDiscover()
             ellipsisString = ""
           }
         else
@@ -210,6 +217,14 @@ final class NodeConfigGridPane(
       buffer(i) = buffer(i).copy(clearQsos = target)
     }
     clearQsosBulkNext = !clearQsosBulkNext
+
+  private def toggleAllSkipInitDiscover(): Unit =
+    val target = skipInitDiscoverBulkNext
+    val buffer = nodeConfigManager.observableBuffer
+    for (i <- 0 until buffer.size) {
+      buffer(i) = buffer(i).copy(skipInitDiscover = target)
+    }
+    skipInitDiscoverBulkNext = !skipInitDiscoverBulkNext
   
   private def refreshGrid(): Unit =
     grid.children.clear()

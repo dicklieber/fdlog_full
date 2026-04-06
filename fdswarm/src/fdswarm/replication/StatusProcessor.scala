@@ -26,11 +26,9 @@ import fdswarm.fx.qso.FdHour
 import fdswarm.replication.status.NodeBandOpPane
 import fdswarm.store.{FdHourIds, FdHourRequest, ReplicationSupport}
 import fdswarm.util.NodeIdentity
-import io.circe.Codec
 import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.{Inject, Singleton}
 
-import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 /**
@@ -86,24 +84,3 @@ class StatusProcessor @Inject()(qsoStore: ReplicationSupport,
 
       yield ()
     }
-
-/**
- * This is what we get from a remote node.
- *
- * @param statusMessage the actual Node Status as sent by a node.
- * @param nodeIdentity  the node that sent it.
- * @param received      when we got it.
- * @param isLocal       true if this is a local node. i.e. not from another node.
- */
-case class NodeStatus(statusMessage: StatusMessage,
-                      nodeIdentity: NodeIdentity,
-                      received: Instant = Instant.now,
-                      isLocal: Boolean) extends Ordered[NodeStatus] derives Codec.AsObject:
-  val qsoCount: Int = statusMessage.fdDigests.map(_.count).sum
-  // Allow .l ;p -p09l
-  private lazy val countByFdHourMap: Map[FdHour, Int] = statusMessage.fdDigests.map(fdDigest => fdDigest.fdHour -> fdDigest.count).toMap
-  def getQsoCount(fdHour:FdHour): Int =
-    statusMessage.fdDigests.find(_.fdHour == fdHour).map(_.count).getOrElse(0)
-
-  override def compare(that: NodeStatus): Int =
-    that.nodeIdentity.instanceId.compareTo(that.nodeIdentity.instanceId)
