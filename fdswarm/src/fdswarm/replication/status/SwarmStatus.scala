@@ -34,6 +34,13 @@ import scalafx.beans.property.ObjectProperty
 import java.time.Instant
 import scala.collection.concurrent.TrieMap
 
+private case class PersistedNodeStatus(
+                                        statusMessage: StatusMessage,
+                                        nodeIdentity: NodeIdentity,
+                                        received: Instant,
+                                        isLocal: Boolean
+                                      ) derives Codec.AsObject
+
 /**
  * Hold 
  */
@@ -66,10 +73,18 @@ class SwarmStatus @Inject() (
     try
       if os.exists(statusFile) then
         val json = os.read(statusFile)
-        decode[Seq[NodeStatus]](json) match
+        decode[Seq[PersistedNodeStatus]](json) match
           case Right(statuses) =>
             statuses.foreach { status =>
-              nodeMap.put(status.nodeIdentity, status)
+              nodeMap.put(
+                status.nodeIdentity,
+                NodeStatus(
+                  statusMessage = status.statusMessage,
+                  nodeIdentity = status.nodeIdentity,
+                  received = status.received,
+                  isLocal = status.isLocal
+                )
+              )
             }
           case Left(error) =>
             logger.error(s"Error decoding swarm status: $error")
@@ -113,7 +128,17 @@ class SwarmStatus @Inject() (
     if !statusPersist then
       return
     try
-      val json = nodeMap.values.asJson.noSpaces
+      val json = nodeMap.values
+        .map(status =>
+          PersistedNodeStatus(
+            statusMessage = status.statusMessage,
+            nodeIdentity = status.nodeIdentity,
+            received = status.received,
+            isLocal = status.isLocal
+          )
+        )
+        .asJson
+        .noSpaces
       os.write.over(statusFile, json, createFolders = true)
       logger.trace(s"Saved swarm status to $statusFile")
     catch

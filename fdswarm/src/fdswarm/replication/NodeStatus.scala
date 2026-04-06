@@ -20,7 +20,6 @@ package fdswarm.replication
 
 import fdswarm.fx.qso.FdHour
 import fdswarm.util.NodeIdentity
-import io.circe.Codec
 
 import java.time.Instant
 
@@ -40,7 +39,7 @@ case class NodeStatus(
     nodeIdentity: NodeIdentity,
     received: Instant = Instant.now,
     isLocal: Boolean
-) extends Ordered[NodeStatus] derives Codec.AsObject:
+) extends Ordered[NodeStatus]:
   // Allow quick lookup when needed by FdHour.
   private lazy val countByFdHourMap: Map[FdHour, Int] = statusMessage.fdDigests
     .map(fdDigest => fdDigest.fdHour -> fdDigest.count)
