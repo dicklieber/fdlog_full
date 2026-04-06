@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-./mill fdswarm.assembly manager.assembly
+./mill fdswarm.assembly + manager.assembly
 
 MANAGER_JAR="out/manager/assembly.dest/out.jar"
 if [[ ! -f "$MANAGER_JAR" ]]; then
