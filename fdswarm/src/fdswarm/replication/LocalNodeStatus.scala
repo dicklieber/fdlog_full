@@ -50,6 +50,7 @@ final class LocalNodeStatus @Inject()(
   Option(contestConfigManagerProvider.get()).foreach(_.onConfigSet { _ =>
     rebuildAndNotify("contest-config-set")
   })
+  rebuildAndNotify("init")
 
   def updateDigests(digests: Seq[FdHourDigest]): Unit =
     heldDigests = digests

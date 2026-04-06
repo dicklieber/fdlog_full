@@ -29,6 +29,38 @@ import munit.FunSuite
 class LocalNodeStatusTest extends FunSuite:
   private val dummyContestConfig = ContestConfig(ContestType.ARRL, Callsign("WA9NNN"), 1, "A", "IL")
 
+  test("LocalNodeStatus initializes immediately when contest config already exists"):
+    val testDir = new fdswarm.TestDirectory
+    val stationManager = new fdswarm.StationConfigManager(testDir, fdswarm.MockStartupInfo)
+    val config = com.typesafe.config.ConfigFactory.parseString(
+      """
+        |fdswarm {
+        |  hamBands = [
+        |    { bandName = "20m", startFrequencyHz = 14000000, endFrequencyHz = 14350000, bandClass = "HF", regions = ["ALL"] },
+        |    { bandName = "40m", startFrequencyHz = 7000000, endFrequencyHz = 7300000, bandClass = "HF", regions = ["ALL"] }
+        |  ]
+        |  modes = ["CW", "PH", "DIGI"]
+        |}
+        |""".stripMargin)
+    val bandCatalog = new fdswarm.fx.bands.BandCatalog(config)
+    val modeCatalog = new fdswarm.fx.bands.ModeCatalog(config)
+    val bandModeBuilder = new fdswarm.fx.bands.BandModeBuilder(bandCatalog, modeCatalog)
+    val selectedBandModeStore = new fdswarm.fx.bandmodes.SelectedBandModeManager(testDir, bandModeBuilder, fdswarm.MockStartupInfo)
+    val contestManager = new fdswarm.fx.contest.ContestConfigManager(testDir, () => null, new fdswarm.util.FilenameStamp(), 1)
+    contestManager.setConfig(dummyContestConfig)
+    val nodeIdentityManager = new fdswarm.util.MockNodeIdentityManager(NodeIdentity("127.0.0.1", 8080, "local-instance", "x"))
+    val localNodeStatus = new LocalNodeStatus(nodeIdentityManager, stationManager, selectedBandModeStore, () => contestManager)
+
+    var updates: Vector[NodeStatus] = Vector.empty
+    localNodeStatus.onUpdate(ns => updates = updates :+ ns)
+
+    assertEquals(updates.size, 1)
+    assertEquals(updates.head.isLocal, true)
+    assertEquals(updates.head.statusMessage.fdDigests, Seq.empty)
+    assertEquals(updates.head.statusMessage.contestConfig, dummyContestConfig)
+
+    testDir.cleanup()
+
   test("LocalNodeStatus updates on digests, station config, and band mode with isLocal=true"):
     val testDir = new fdswarm.TestDirectory
     val stationManager = new fdswarm.StationConfigManager(testDir, fdswarm.MockStartupInfo)

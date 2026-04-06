@@ -20,14 +20,17 @@ package fdswarm.replication.status
 
 import com.google.inject.name.Named
 import fdswarm.fx.GridBuilder
+import fdswarm.fx.station.StationEditor
 import jakarta.inject.{Inject, Singleton}
+import scalafx.Includes.*
 import scalafx.application.Platform
-import scalafx.scene.control.TitledPane
+import scalafx.scene.control.{Label, TitledPane, Tooltip}
 
 import java.util.concurrent.atomic.AtomicLong
 
 @Singleton
 class NodeBandOpPane @Inject()(swarmStatus: SwarmStatus,
+                               stationEditor: StationEditor,
                                @Named("fdswarm.nodeBandOpRefreshSeconds") nodeBandOpRefreshSeconds: Int):
 
   private val refreshIntervalMillis = math.max(0L, nodeBandOpRefreshSeconds.toLong * 1000L)
@@ -74,8 +77,29 @@ class NodeBandOpPane @Inject()(swarmStatus: SwarmStatus,
       builder.setColumnClass(ourNodeColumnIndex + 1, "ourNode")
 
 //    builder("id", nodes.map(_._1)*)
-    builder("operator", nodes.map(_._2.statusMessage.bandNodeOperator.operator.toString)*)
-    builder("bandMode", nodes.map(_._2.statusMessage.bandNodeOperator.bandMode.toString)*)
+    builder(
+      "operator",
+      nodes.zipWithIndex.map((entry, idx) =>
+        stationConfigCell(entry._2.statusMessage.bandNodeOperator.operator.toString, idx == ourNodeColumnIndex)
+      )*
+    )
+    builder(
+      "bandMode",
+      nodes.zipWithIndex.map((entry, idx) =>
+        new Label(entry._2.statusMessage.bandNodeOperator.bandMode.toString)
+      )*
+    )
     builder("hostName", nodes.map(_._1.hostName)*)
 
     builder.result
+
+  private def stationConfigCell(value: String, isLocalNode: Boolean): Label =
+    val label = new Label(value)
+    if isLocalNode then
+      label.tooltip = new Tooltip("Change this node's operator.")
+      label.style = "-fx-cursor: hand;"
+      label.onMouseClicked = _ =>
+        Option(node.scene.value)
+          .flatMap(scene => Option(scene.window.value))
+          .foreach(w => stationEditor.show(w))
+    label
