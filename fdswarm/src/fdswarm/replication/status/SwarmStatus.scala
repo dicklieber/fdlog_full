@@ -20,13 +20,10 @@ package fdswarm.replication.status
 
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.qso.FdHour
-import fdswarm.io.DirectoryProvider
 import fdswarm.replication.*
 import fdswarm.store.FdHourDigest
 import fdswarm.util.{JavaTimeCirce, NodeIdentity, NodeIdentityManager}
 import io.circe.*
-import io.circe.parser.decode
-import io.circe.syntax.*
 import jakarta.inject.*
 import jakarta.inject.Provider
 import scalafx.beans.property.ObjectProperty
@@ -34,26 +31,16 @@ import scalafx.beans.property.ObjectProperty
 import java.time.Instant
 import scala.collection.concurrent.TrieMap
 
-private case class PersistedNodeStatus(
-                                        statusMessage: StatusMessage,
-                                        nodeIdentity: NodeIdentity,
-                                        received: Instant,
-                                        isLocal: Boolean
-                                      ) derives Codec.AsObject
-
 /**
  * Hold 
  */
 @Singleton
 class SwarmStatus @Inject() (
-                              directoryProvider: DirectoryProvider,
                               nodeIdentityManager: NodeIdentityManager,
                               localNodeStatus: LocalNodeStatus,
-                              swarmStatusPaneProvider: Provider[SwarmStatusPane],
-                              @Named("swarm.statusPersist") statusPersist: Boolean = false
+                              swarmStatusPaneProvider: Provider[SwarmStatusPane]
                             ) extends SwarmStatusApi with LazyLogging:
   val nodeMap: TrieMap[NodeIdentity, NodeStatus] = new TrieMap[NodeIdentity, NodeStatus]
-  private val statusFile = directoryProvider() / "swarmStatus.json"
 
   private def swarmStatusPane: SwarmStatusPane = swarmStatusPaneProvider.get()
 
@@ -66,33 +53,6 @@ class SwarmStatus @Inject() (
     val pane = swarmStatusPane
     if pane != null then
       pane.update(nodeMap.values.toSeq)
-    save()
-
-  // Load state on startup when persistence is enabled.
-  if statusPersist then
-    try
-      if os.exists(statusFile) then
-        val json = os.read(statusFile)
-        decode[Seq[PersistedNodeStatus]](json) match
-          case Right(statuses) =>
-            statuses.foreach { status =>
-              nodeMap.put(
-                status.nodeIdentity,
-                NodeStatus(
-                  statusMessage = status.statusMessage,
-                  nodeIdentity = status.nodeIdentity,
-                  received = status.received,
-                  isLocal = status.isLocal
-                )
-              )
-            }
-          case Left(error) =>
-            logger.error(s"Error decoding swarm status: $error")
-    catch
-      case e: Exception =>
-        logger.error(s"Error loading swarm status: ${e.getMessage}")
-  else
-    logger.debug("Swarm status persistence disabled; skipping load.")
 
   localNodeStatus.onUpdate(put)
 
@@ -109,7 +69,6 @@ class SwarmStatus @Inject() (
     val localStatus = nodeMap.get(ourNodeIdentity)
     nodeMap.clear()
     localStatus.foreach(status => nodeMap.put(status.nodeIdentity, status))
-    save()
     val pane = swarmStatusPane
     if pane != null then
       pane.update(nodeMap.values.toSeq)
@@ -118,32 +77,10 @@ class SwarmStatus @Inject() (
   def remove(nodeIdentity: NodeIdentity): Unit =
     if nodeIdentity != ourNodeIdentity then
       nodeMap.remove(nodeIdentity)
-      save()
       val pane = swarmStatusPane
       if pane != null then
         pane.update(nodeMap.values.toSeq)
       logger.debug(s"Removed node status for $nodeIdentity")
-
-  private def save(): Unit =
-    if !statusPersist then
-      return
-    try
-      val json = nodeMap.values
-        .map(status =>
-          PersistedNodeStatus(
-            statusMessage = status.statusMessage,
-            nodeIdentity = status.nodeIdentity,
-            received = status.received,
-            isLocal = status.isLocal
-          )
-        )
-        .asJson
-        .noSpaces
-      os.write.over(statusFile, json, createFolders = true)
-      logger.trace(s"Saved swarm status to $statusFile")
-    catch
-      case e: Exception =>
-        logger.error(s"Error saving swarm status: ${e.getMessage}")
 
 case class LHData(fdHourDigest: FdHourDigest, lastSeen: Instant = Instant.EPOCH)
 object LHData:
