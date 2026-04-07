@@ -22,7 +22,7 @@ import cats.effect.unsafe.implicits.global
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.contest.{ContestConfig, ContestConfigManager}
 import fdswarm.model.Qso
-import fdswarm.replication.status.{NodeData, SwarmStatus}
+import fdswarm.replication.status.{SwarmData, SwarmStatus}
 import fdswarm.store.ReplicationSupport
 import io.circe.generic.auto.deriveDecoder
 import io.circe.parser.decode
@@ -34,7 +34,7 @@ import java.net.http.HttpClient
 @Singleton
 class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[ReplicationSupport],
                                   statusProcessor: StatusProcessor,
-                                  nodeData:NodeData,
+                                  swarmData:SwarmData,
                                   transport: Transport,
                                   statusBroadcastService: StatusBroadcastService,
                                   swarmStatusProvider: Provider[SwarmStatus],
@@ -76,7 +76,7 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
               lastStatusMessagePayloadSize = udpHeader.payload.length.toDouble
               lastStatusMessageDigestCount = statusMessage.fdDigests.size
               val nodeStatus = NodeStatus(statusMessage, udpHeader.nodeIdentity, isLocal = false)
-              nodeData.update(nodeStatus)
+              swarmData.update(nodeStatus)
               logger.trace("nodeStatus:  {}.", nodeStatus)
               //              swarmStatusProviders.put(receivedNodeStatus)
               statusProcessor.processStatus(nodeStatus).unsafeRunAndForget()

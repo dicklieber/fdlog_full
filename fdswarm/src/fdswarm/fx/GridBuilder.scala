@@ -18,6 +18,7 @@
 
 package fdswarm.fx
 
+import fdswarm.util.camelToWords
 import scalafx.Includes.*
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.Node
@@ -27,7 +28,6 @@ import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority, Region}
 import java.text.NumberFormat
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.Locale
-
 /**
  * A builder for creating a GridPane with label-value pairs.
  *
@@ -107,7 +107,7 @@ class GridBuilder(header: Option[String] = None):
     maxValues = maxValues.max(value.length)
     val row = rowIdx.getAndIncrement()
     if label.nonEmpty then
-      val rowLabel = new Label(label):
+      val rowLabel = new Label(camelToWords(label)):
         styleClass += "grid-row-label"
         maxWidth = Double.MaxValue
         maxHeight = Double.MaxValue

@@ -105,7 +105,7 @@ object NodeDataField:
   )
 
 @Singleton
-class NodeData @Inject() ():
+class SwarmData @Inject() ():
   val knownNodeIdentity: ObservableBuffer[NodeIdentity] = ObservableBuffer.empty[NodeIdentity]
 
   private val lastStatusByNode = TrieMap.empty[NodeIdentity, NodeStatus]

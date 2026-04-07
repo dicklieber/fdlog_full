@@ -34,8 +34,9 @@
 }
 
 .grid-row-label {
-    -fx-font-weight: bold;
+    -fx-font-weight: medium;
     -fx-text-fill: white;
+    -fx-background-color: blue;
     -fx-padding: 4 8 4 8;
     -fx-background-insets: 0;
     -fx-border-insets: 0;

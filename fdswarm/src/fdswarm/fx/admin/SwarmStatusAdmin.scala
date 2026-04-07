@@ -18,14 +18,14 @@
 
 package fdswarm.fx.admin
 
-import fdswarm.replication.status.SwarmStatusPane
+import fdswarm.replication.status.{SwarmData, NodeDataField}
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
 import scalafx.scene.Scene
 import scalafx.stage.{Stage, Window}
 
 @Singleton
-class SwarmStatusAdmin @Inject()(swarmStatusPane: SwarmStatusPane):
+class SwarmStatusAdmin @Inject()(swarmData: SwarmData):
 
   private var stage: Option[Stage] = None
 
@@ -37,13 +37,13 @@ class SwarmStatusAdmin @Inject()(swarmStatusPane: SwarmStatusPane):
         val newStage = new Stage {
           initOwner(ownerWindow)
           title = "Swarm Status"
-          scene = new Scene(swarmStatusPane.node) {
+          scene = new Scene(swarmData.buildGridPane(NodeDataField.staticFields)) {
             stylesheets = Seq(getClass.getResource("/styles/app.css").toExternalForm)
           }
           sizeToScene()
         }
         newStage.onCloseRequest = _ =>
-          newStage.scene.value.root = new javafx.scene.layout.Region() // Detach swarmStatusPane.node
+          newStage.scene.value.root = new javafx.scene.layout.Region() // Detach nodeData grid
           stage = None
         newStage.show()
         stage = Some(newStage)
