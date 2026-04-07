@@ -19,243 +19,67 @@
 package fdswarm.fx
 
 import cats.effect.unsafe.implicits.global
-import com.google.inject.Injector
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.{FdLogApp, StartupInfo}
 import fdswarm.fx.FdLogUi.isMac
-import fdswarm.fx.bandmodes.BandsAndModesPane
-import fdswarm.fx.discovery.DiscoveryDialog
 import fdswarm.fx.qso.ContestEntry
-import fdswarm.fx.station.StationEditor
-import fdswarm.fx.tools.*
 import fdswarm.fx.utils.UiStyles
-import fdswarm.replication.status.SwarmStatusPane
 import fdswarm.replication.{NodeStatusHandler, StatusBroadcastService}
 import fdswarm.util.{DurationFormat, NodeIdentityManager}
-import io.circe.parser.decode
-import io.circe.syntax.*
 import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.Inject
-import javafx.concurrent.Worker
 import javafx.embed.swing.SwingFXUtils
-import net.codingwell.scalaguice.InjectorExtensions.*
-import netscape.javascript.JSObject
 import scalafx.application.Platform
-import scalafx.beans.binding.Bindings
-import scalafx.beans.property.{BooleanProperty, StringProperty}
-import scalafx.scene.control.*
 import scalafx.scene.image.Image
-import scalafx.scene.layout.*
+import scalafx.scene.layout.{BorderPane, StackPane}
 import scalafx.scene.paint.Color
 import scalafx.scene.shape.SVGPath
-import scalafx.scene.web.WebView
 import scalafx.scene.{Node, Scene, SnapshotParameters}
-import scalafx.stage.{Stage, Window}
-
-import scala.io.Source
+import scalafx.stage.Stage
 
 final class FdLogUi @Inject() (
-                                injector: Injector,
-                                contestEntry: ContestEntry,
-                                bandModeManagerPane: BandsAndModesPane,
-                                stationEditor: StationEditor,
-                                howManyDialogService: HowManyDialogService,
-                                fdHourDialogService: FdHourDialogService,
-                                statusBroadcastDialog: StatusBroadcastDialog,
-                                loggingDialog: LoggingDialog,
-                                contestTimeDialog: ContestTimeDialog,
-                                fdHourDigestsPane: FdHourDigestsPane,
-                                repl: NodeStatusHandler,
-                                swarmStatusPane: SwarmStatusPane,
-                                statusBroadcastService: StatusBroadcastService,
-                                aboutMenuItem: AboutMenuItem,
-                                nodeIdentityManager: NodeIdentityManager,
-                                userConfig: UserConfig,
-                                userConfigEditor: UserConfigEditor,
-                                meterRegistry: MeterRegistry,
-                                qsoStore: fdswarm.store.QsoStore,
-                                exportDialog: fdswarm.fx.tools.ExportDialog,
-                                sectionsProvider: fdswarm.fx.sections.SectionsProvider,
-                                sectionPanel: fdswarm.fx.sections.SectionPanel,
-                                ipAddressDialogService: IpAddressDialogService,
-                                swarmStatusAdmin: fdswarm.fx.admin.SwarmStatusAdmin,
-                                summaryDialog: fdswarm.fx.tools.SummaryDialog,
-                                metricsDialog: fdswarm.fx.tools.MetricsDialog,
-                                apiServer: fdswarm.api.ApiServer,
-                                udpQueuesDialog: UDPQueuesDialog,
-                                startupInfo: StartupInfo
+  contestEntry: ContestEntry,
+  menus: FdLogMenus,
+  repl: NodeStatusHandler,
+  statusBroadcastService: StatusBroadcastService,
+  nodeIdentityManager: NodeIdentityManager,
+  meterRegistry: MeterRegistry,
+  qsoStore: fdswarm.store.QsoStore,
+  apiServer: fdswarm.api.ApiServer,
+  startupInfo: StartupInfo
 ) extends LazyLogging:
 
-
-  // NOTE: On macOS with `useSystemMenuBar = true`, `items = Seq(...)` can be finicky.
-  // Using `items ++= ...` plus a stable `lazy val` is more reliable.
-  private lazy val configMenu: Menu =
-    new Menu("Config"):
-      items ++= Seq(
-        new MenuItem("Band / Mode Manager"):
-          onAction = _ =>
-            Option(ownerWindow) match
-              case Some(w) => bandModeManagerPane.show(w)
-              case None    => ()
-        ,
-        stationMenuItem,
-        new SeparatorMenuItem(),
-        arrlSectionsMapMenuItem,
-        labelArrlRegionsMenuItem,
-        new SeparatorMenuItem(),
-        userConfigMenuItem,
-        developerModeMenuItem
-      )
-  private val labelArrlRegionsMenuItem = new CheckMenuItem(
-    "Label ARRL Regions"
-  ):
-    selected = false
-  // Persist the region->section mapping as JSON next to where you run the app.
-  // You can move this to a user config directory later.
-  private val arrlRegionMapPath: os.Path = os.pwd / "arrl-region-map.json"
-  private val arrlSectionsMapMenuItem: MenuItem =
-    new MenuItem("ARRL Sections Map"):
-      onAction = _ =>
-        Option(ownerWindow) match
-          case Some(w) => showArrlSectionsMap(w)
-          case None    => ()
   private val qsoNode: Node =
     contestEntry.node
   private val centerPane = new StackPane:
     children = List(qsoNode)
-  private val stationMenuItem: MenuItem =
-    new MenuItem("Station"):
-      onAction = _ =>
-        Option(ownerWindow) match
-          case Some(w) => stationEditor.show(w)
-          case None    => ()
-
-  private val devMenu: Menu =
-    new Menu("Dev"):
-      visible = false
-      items = Seq(
-        new MenuItem("Generate QSOs"):
-          onAction = _ =>
-            Option(ownerWindow) match
-              case Some(w) => howManyDialogService.showAndGenerate(w)
-              case None    => ()
-        ,
-        new MenuItem("Send FdHour"):
-          onAction = _ =>
-            Option(ownerWindow) match
-              case Some(w) => fdHourDialogService.show(w)
-              case None    => ()
-        ,
-        new MenuItem("FdHours"):
-          onAction = _ =>
-            Option(ownerWindow) match
-              case Some(w) => fdHourDigestsPane.show(w)
-              case None    => ()
-        ,
-        new MenuItem("Status Broadcast Settings"):
-          onAction = _ =>
-            Option(ownerWindow) match
-              case Some(w) => statusBroadcastDialog.show(w)
-              case None    => ()
-        ,
-        new MenuItem("Logging"):
-          onAction = _ =>
-            Option(ownerWindow) match
-              case Some(w) => loggingDialog.show(w)
-              case None    => ()
-        ,
-        new MenuItem("Contest Time"):
-          onAction = _ =>
-            Option(ownerWindow) match
-              case Some(w) => contestTimeDialog.show(w)
-              case None    => ()
-        ,
-        new MenuItem("Set IP Address"):
-          onAction = _ =>
-            Option(ownerWindow) match
-              case Some(w) => ipAddressDialogService.show(w)
-              case None    => ()
-        ,
-        new MenuItem("Discovery"):
-          onAction = _ =>
-            injector.instance[DiscoveryDialog].show()
-        ,
-        new MenuItem("UDP Queues"):
-          onAction = _ =>
-            udpQueuesDialog.show()
-      )
-  private val developerModeMenuItem = new CheckMenuItem("Developer Mode")
-  private val userConfigMenuItem: MenuItem =
-    new MenuItem("User Config"):
-      onAction = _ =>
-        Option(ownerWindow) match
-          case Some(w) => userConfigEditor.show(w)
-          case None    => ()
-  private val adminMenu: Menu =
-    new Menu("Admin"):
-      items = Seq(
-        new MenuItem("Swarm Status"):
-          onAction = _ =>
-            Option(ownerWindow) match
-              case Some(w) => swarmStatusAdmin.show(w)
-              case None    => ()
-      )
-  developerModeMenuItem.selected <==> userConfig.getProperty[BooleanProperty](
-    "developerMode"
-  )
-
-  devMenu.visible <== developerModeMenuItem.selected
-  private val reportsMenu: Menu =
-    new Menu("Reports"):
-      items = Seq(
-        new MenuItem("Summary"):
-          onAction = _ =>
-            Option(ownerWindow) match
-              case Some(w) => summaryDialog.show(w)
-              case None    => ()
-        ,
-        new MenuItem("Metrics"):
-          onAction = _ =>
-            Option(ownerWindow) match
-              case Some(w) => metricsDialog.show(w)
-              case None    => ()
-      )
-  private val menuBar = new MenuBar:
-    useSystemMenuBar = isMac
-    menus = Seq(
-      fileMenu,
-      reportsMenu,
-      configMenu,
-      adminMenu,
-      devMenu,
-      helpMenu
-    )
   private val root = new BorderPane:
-    top = menuBar
+    top = menus.menuBar
     center = centerPane
-  private var arrlRegionToSection: Map[String, String] = loadArrlRegionMap()
-  private var ownerWindow: Window = null.asInstanceOf[Window]
 
-  def start(stage: Stage): Unit =
+  def start(
+    stage: Stage
+  ): Unit =
     setAppIcon(stage)
     stage.title = "FdSwarm"
     statusBroadcastService.start()
     apiServer.start().unsafeRunAndForget()
 
-    ownerWindow = stage
-    aboutMenuItem.setOwner(stage)
+    menus.setOwnerWindow(stage)
 
     if isMac then
       try
-        // Set the application name for AWT (often needed for macOS integration)
-        System.setProperty("apple.awt.application.name", "FdSwarm")
+        System.setProperty(
+          "apple.awt.application.name",
+          "FdSwarm"
+        )
 
         if java.awt.Desktop.isDesktopSupported then
           val desktop = java.awt.Desktop.getDesktop
           if desktop.isSupported(java.awt.Desktop.Action.APP_ABOUT) then
             desktop.setAboutHandler(_ =>
               Platform.runLater {
-                aboutMenuItem.showAboutDialog(ownerWindow)
+                menus.showAboutDialog()
               }
             )
             logger.debug("Successfully registered macOS About handler")
@@ -270,22 +94,26 @@ final class FdLogUi @Inject() (
             )
             logger.debug("Successfully registered macOS Quit handler")
         else logger.debug("Desktop API not supported on this platform")
-      catch case e: Exception => logger.warn("Could not set macOS handlers", e)
+      catch case e: Exception =>
+        logger.warn(
+          "Could not set macOS handlers",
+          e
+        )
 
     stage.title = s"FdSwarm@${nodeIdentityManager.ourNodeIdentity.toString}"
-    val scene = new Scene(root, 1100, 800)
+    val scene = new Scene(
+      root,
+      1100,
+      800
+    )
     UiStyles.applyTo(scene)
     stage.scene = scene
 
     stage.show()
 
-    // Wire the Band/Mode matrix in ContestEntry to open the manager
-    contestEntry.bandModeMatrixPane.onConfigRequest = Some(() => {
-      Option(ownerWindow) match
-        case Some(w) => bandModeManagerPane.show(w)
-        case None    => ()
-    })
-
+    contestEntry.bandModeMatrixPane.onConfigRequest = Some(
+      () => menus.showBandModeManager()
+    )
 
     Platform.runLater {
       val duration = FdLogApp.startupDuration
@@ -299,17 +127,13 @@ final class FdLogUi @Inject() (
     }
     contestEntry.buildUi()
 
-
-  private def setAppIcon(stage: Stage): Unit =
+  private def setAppIcon(
+    stage: Stage
+  ): Unit =
     try
-      // Use the SVG data from fdswarm.svg to create a Stage icon.
-      // Since JavaFX Stage icons must be Images, we'll try to render it.
       val resource = getClass.getResource("/icons/fdswarm.svg")
       if resource != null then
-        // Prefer loading as a direct Image if the runtime supports it (some modern JavaFX versions do for SVG)
-        // But our manual snapshot approach is safer for older versions.
-        val svgContent =
-          scala.io.Source.fromResource("icons/fdswarm.svg").mkString
+        val svgContent = scala.io.Source.fromResource("icons/fdswarm.svg").mkString
         val pathRegex = "d=\"([^\"]+)\"".r
         val paths = pathRegex.findAllMatchIn(svgContent).map(_.group(1)).toList
         if paths.nonEmpty then
@@ -320,22 +144,25 @@ final class FdLogUi @Inject() (
             stroke = Color.Black
             strokeWidth = 2.5
 
-          // Create a small icon image via snapshot
           val params = new SnapshotParameters:
             fill = Color.Transparent
 
-          // Need to wrap in a Pane to ensure it's rendered if just a raw node snapshot is finicky
           val stackPane = new StackPane:
             children = Seq(svgPath)
-          val iconImage = stackPane.snapshot(params, null)
+          val iconImage = stackPane.snapshot(
+            params,
+            null
+          )
           stage.getIcons.add(iconImage)
 
-          // On macOS and some other platforms, try to set the dock/taskbar icon specifically using AWT Taskbar
           try
             if java.awt.Taskbar.isTaskbarSupported then
               val taskbar = java.awt.Taskbar.getTaskbar
               if taskbar.isSupported(java.awt.Taskbar.Feature.ICON_IMAGE) then
-                val bufferedImage = SwingFXUtils.fromFXImage(iconImage, null)
+                val bufferedImage = SwingFXUtils.fromFXImage(
+                  iconImage,
+                  null
+                )
                 taskbar.setIconImage(bufferedImage)
                 logger.debug("Successfully set app icon via Taskbar")
           catch
@@ -345,246 +172,27 @@ final class FdLogUi @Inject() (
                 e
               )
 
-      // Fallback: Add the PNG icon as well, JavaFX will pick the best resolution.
       val pngResource = getClass.getResource("/icons/icon_256.png")
       if pngResource != null then
         val pngImage = new Image(pngResource.toExternalForm)
         stage.getIcons.add(pngImage)
 
-        // Also try setting taskbar icon from PNG if Taskbar hasn't been set yet or as another attempt
         try
           if java.awt.Taskbar.isTaskbarSupported then
             val taskbar = java.awt.Taskbar.getTaskbar
             if taskbar.isSupported(java.awt.Taskbar.Feature.ICON_IMAGE) then
-              val bufferedImage = SwingFXUtils.fromFXImage(pngImage, null)
+              val bufferedImage = SwingFXUtils.fromFXImage(
+                pngImage,
+                null
+              )
               taskbar.setIconImage(bufferedImage)
         catch
-          case _: Exception => // Silently ignore second attempt
-    catch case e: Exception => logger.warn("Could not set application icon", e)
-
-  private def loadArrlRegionMap(): Map[String, String] =
-    if os.exists(arrlRegionMapPath) then
-      val txt = os.read(arrlRegionMapPath)
-      decode[Map[String, String]](txt) match
-        case Right(m) => m
-        case Left(err) =>
-          logger.warn(
-            s"Could not parse ${arrlRegionMapPath.toString}: ${err.getMessage}"
-          )
-          Map.empty
-    else Map.empty
-
-  private def fileMenu: Menu =
-    new Menu("File"):
-      private val exportItem = new MenuItem("Export"):
-        onAction = _ =>
-          Option(ownerWindow) match
-            case Some(w) => exportDialog.show(w)
-            case None    => ()
-      private val exitItem = new MenuItem("Exit"):
-        onAction = _ => Platform.exit()
-
-      items = if isMac then Seq(exportItem) else Seq(exportItem, exitItem)
-
-  private def showArrlSectionsMap(parentWindow: Window): Unit =
-    val svgText =
-      // Prefer bundling the SVG as a resource in your app jar:
-      //   src/resources/maps/arrl_sections_autotrace.svg
-      val res =
-        getClass.getResourceAsStream("/maps/arrl_sections_autotrace.svg")
-      if res != null then
-        val s = Source.fromInputStream(res, "UTF-8")
-        try s.mkString
-        finally s.close()
-      else
-        // Dev fallback: if you’re running from the repo and haven’t moved it into resources yet.
-        val dev = os.pwd / "arrl_sections_autotrace.svg"
-        if os.exists(dev) then os.read(dev)
-        else
-          """<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"800\" height=\"200\">
-            <rect width=\"100%\" height=\"100%\" fill=\"#f7f7f7\"/>
-            <text x=\"20\" y=\"110\" font-size=\"20\" fill=\"#333\" font-family=\"system-ui\">
-              Missing /maps/arrl_sections_autotrace.svg (bundle it in resources)
-            </text>
-          </svg>""".stripMargin
-
-    val webView = new WebView()
-
-    // Scala <-> JS bridge (hook for future code)
-    final class JsBridge:
-      private val allArrlSectionCodes: Seq[String] =
-        sectionsProvider.allSections.map(_.code).distinct.sorted
-      private var activeRegionId: Option[String] = None
-
-      def getMappings: String =
-        arrlRegionToSection.asJson.noSpaces
-
-      def getAllSections: String =
-        allArrlSectionCodes.asJson.noSpaces
-
-      def isLabelingMode: Boolean =
-        labelArrlRegionsMenuItem.selected.value
-
-      def getActiveRegionId: Option[String] = activeRegionId
-
-      def updateMapping(regionId: String, sectionCode: String): Unit =
-        Platform.runLater {
-          val section = sectionCode.trim.toUpperCase
-          if section.nonEmpty then
-            arrlRegionToSection = arrlRegionToSection.updated(regionId, section)
-            saveArrlRegionMap(arrlRegionToSection)
-            logger.info(
-              s"ARRL region mapped via SectionPanel: $regionId -> $section"
-            )
-            webView.engine.executeScript("refreshLabels();")
-        }
-
-      def sectionClicked(id: String): Unit =
-        Platform.runLater {
-          val mapped = arrlRegionToSection.get(id)
-          logger.info(
-            s"ARRL map clicked: $id${mapped.fold("")(s => s" -> $s")}"
-          )
-          if labelArrlRegionsMenuItem.selected.value then
-            activeRegionId = Some(id)
-            // Visual feedback in JS that this region is selected for mapping
-            webView.engine.executeScript(s"highlightRegion('$id');")
-          webView.engine.executeScript("refreshLabels();")
-        }
-
-    val bridge = new JsBridge
-
-    val mappingSectionField = new StringProperty("")
-    val mappingCanSubmit = Bindings.createBooleanBinding(() =>
-      true
-    ) // Always allowed to map in this view
-
-    mappingSectionField.onChange { (_, _, newValue) =>
-      if newValue != null && newValue.nonEmpty then
-        bridge.getActiveRegionId.foreach { regionId =>
-          bridge.updateMapping(regionId, newValue)
-        }
-    }
-
-    val sectionPanelNode = sectionPanel.buildNode(
-      mappingSectionField,
-      () => (), // No extra submit action needed
-      mappingCanSubmit,
-      "Select ARRL Section to Map"
-    )
-
-    def wrap(svg: String): String =
-      s"""<!doctype html>
-         |<html><head><meta charset=\"utf-8\"/>
-         |<style>
-         |  html, body { margin:0; padding:0; background:#ffffff; overflow: hidden; }
-         |  svg { width:100vw; height:100vh; display:block; }
-         |  .section-label {
-         |    font-family: sans-serif;
-         |    font-size: 14px;
-         |    font-weight: bold;
-         |    fill: black;
-         |    pointer-events: none;
-         |    text-anchor: middle;
-         |    dominant-baseline: middle;
-         |  }
-         |  .section { cursor: pointer; }
-         |  .section:hover { opacity: 0.8; }
-         |  .active-region { stroke: red; stroke-width: 3px; }
-         |</style>
-         |</head><body>
-         |$svg
-         |<script>
-         |  function highlightRegion(id) {
-         |    document.querySelectorAll('.active-region').forEach(el => el.classList.remove('active-region'));
-         |    const el = document.getElementById(id);
-         |    if (el) el.classList.add('active-region');
-         |  }
-         |
-         |  function refreshLabels() {
-         |    if (!window.app) return;
-         |    const mappings = JSON.parse(window.app.getMappings());
-         |    const svg = document.querySelector('svg');
-         |
-         |    // Remove existing labels
-         |    document.querySelectorAll('.section-label').forEach(el => el.remove());
-         |
-         |    for (const [regionId, sectionCode] of Object.entries(mappings)) {
-         |      const path = document.getElementById(regionId);
-         |      if (path) {
-         |        const bbox = path.getBBox();
-         |        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-         |        text.setAttribute('x', bbox.x + bbox.width / 2);
-         |        text.setAttribute('y', bbox.y + bbox.height / 2);
-         |        text.setAttribute('class', 'section-label');
-         |        text.textContent = sectionCode;
-         |        svg.appendChild(text);
-         |
-         |        // Also update title for tooltip
-         |        let title = path.querySelector('title');
-         |        if (!title) {
-         |          title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-         |          path.appendChild(title);
-         |        }
-         |        title.textContent = sectionCode;
-         |      }
-         |    }
-         |  }
-         |
-         |  // Fallback: attach click handlers to anything with class=\"section\".
-         |  function wireSectionClicks() {
-         |    const els = document.querySelectorAll('.section');
-         |    els.forEach(el => {
-         |      el.addEventListener('click', (e) => {
-         |        const id = el.id || el.getAttribute('data-section') || '';
-         |        if (window.app && typeof window.app.sectionClicked === 'function') {
-         |          window.app.sectionClicked(id);
-         |        }
-         |      });
-         |    });
-         |  }
-         |</script>
-         |</body></html>""".stripMargin
-
-    webView.engine.loadContent(wrap(svgText))
-    webView.engine.getLoadWorker.stateProperty.addListener { (_, _, state) =>
-      if state == Worker.State.SUCCEEDED then
-        val window =
-          webView.engine.executeScript("window").asInstanceOf[JSObject]
-        window.setMember("app", bridge)
-        // If the SVG already has onclick handlers, this is harmless.
-        webView.engine.executeScript("wireSectionClicks();")
-        webView.engine.executeScript("refreshLabels();")
-    }
-
-    val stage = new Stage:
-      initOwner(parentWindow)
-      title = "ARRL Sections Map"
-      scene = new Scene(
-        new VBox:
-          children = Seq(
-            webView,
-            sectionPanelNode
-          )
-          VBox.setVgrow(webView, Priority.Always)
-        ,
-        1000,
-        850
+          case _: Exception => ()
+    catch case e: Exception =>
+      logger.warn(
+        "Could not set application icon",
+        e
       )
-
-    stage.show()
-
-  private def saveArrlRegionMap(m: Map[String, String]): Unit =
-    try
-      val json = m.asJson.spaces2
-      os.write.over(arrlRegionMapPath, json)
-    catch
-      case e: Exception =>
-        logger.warn(s"Could not write ${arrlRegionMapPath.toString}", e)
-
-  private def helpMenu: Menu =
-    new Menu("Help"):
-      items = Seq(aboutMenuItem)
 
 object FdLogUi:
   lazy val isMac: Boolean =
