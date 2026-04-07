@@ -36,7 +36,7 @@ class ContestEntry @Inject()(qsoEntryPanel: QsoEntryPanel,
                              qsoSearchPane: QsoSearchPane,
                              val bandModeMatrixPane: BandModeMatrixPane,
                              sectionPanel: SectionPanel,
-                             contestTimerPanel: ContestTimerPanel,
+                             contestDetailPanel: ContestDetailPanel,
                              nodeBandOpPane: NodeBandOpPane
                             ) extends LazyLogging:
 
@@ -69,7 +69,7 @@ class ContestEntry @Inject()(qsoEntryPanel: QsoEntryPanel,
     _node.add(sectionPanel.node, 1, 2, 1, 3) // Section panel spans 3 rows to match others
 
     // Row 3: Timer
-    _node.add(contestTimerPanel.node, 0, 3)
+    _node.add(contestDetailPanel.node, 0, 3)
 
     // Row 4: Band/Mode matrix
     _node.add(bandModeMatrixPane.node, 0, 4)

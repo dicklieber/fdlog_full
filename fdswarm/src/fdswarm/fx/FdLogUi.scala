@@ -21,8 +21,7 @@ package fdswarm.fx
 import cats.effect.unsafe.implicits.global
 import com.google.inject.Injector
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.FdLogApp
-import fdswarm.StartupInfo
+import fdswarm.{FdLogApp, StartupInfo}
 import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.bandmodes.BandsAndModesPane
 import fdswarm.fx.discovery.DiscoveryDialog
@@ -83,7 +82,6 @@ final class FdLogUi @Inject() (
                                 summaryDialog: fdswarm.fx.tools.SummaryDialog,
                                 metricsDialog: fdswarm.fx.tools.MetricsDialog,
                                 apiServer: fdswarm.api.ApiServer,
-                                discoveryDialog: DiscoveryDialog,
                                 udpQueuesDialog: UDPQueuesDialog,
                                 startupInfo: StartupInfo
 ) extends LazyLogging:
@@ -301,8 +299,6 @@ final class FdLogUi @Inject() (
     }
     contestEntry.buildUi()
 
-    if !startupInfo.info.exists(_.skipInitDiscover) then
-      discoveryDialog.showAndWait()
 
   private def setAppIcon(stage: Stage): Unit =
     try

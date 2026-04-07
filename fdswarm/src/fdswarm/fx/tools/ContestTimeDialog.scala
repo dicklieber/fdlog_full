@@ -20,7 +20,7 @@ package fdswarm.fx.tools
 
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.contest.ContestConfigManager
-import fdswarm.fx.qso.ContestTimerPanel
+import fdswarm.fx.qso.ContestDetailPanel
 import jakarta.inject.{Inject, Singleton}
 import scalafx.geometry.Insets
 import scalafx.scene.Scene
@@ -32,7 +32,7 @@ import java.time.ZonedDateTime
 
 @Singleton
 class ContestTimeDialog @Inject()(contestManager: ContestConfigManager,
-                                  contestTimerPanel: ContestTimerPanel) extends LazyLogging{
+                                  contestDetailPanel: ContestDetailPanel) extends LazyLogging{
 
   private var stage: Option[Stage] = None
 
@@ -61,7 +61,7 @@ class ContestTimeDialog @Inject()(contestManager: ContestConfigManager,
         val mockTimeEditor = new ZonedDateTimeEditor(now, "Mock Time")
 
         def updatePanel(): Unit = {
-          contestTimerPanel.setMockTime(useMockTimeCheckBox.selected.value, mockTimeEditor.value)
+          contestDetailPanel.setMockTime(useMockTimeCheckBox.selected.value, mockTimeEditor.value)
         }
 
         useMockTimeCheckBox.onAction = _ => updatePanel()

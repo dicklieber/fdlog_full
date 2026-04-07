@@ -36,7 +36,7 @@ import java.time.{ZonedDateTime, Duration as JDuration}
 import scala.compiletime.uninitialized
 
 @Singleton
-class ContestTimerPanel @Inject()(
+class ContestDetailPanel @Inject()(
                                    contestManager: ContestConfigManager,
                                    @Named("fdswarm.contestTimerUpdateSec") contestTimerUpdateSec: Int
                                  ) extends LazyLogging:

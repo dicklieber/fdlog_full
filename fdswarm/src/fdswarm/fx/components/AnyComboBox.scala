@@ -25,6 +25,24 @@ import scalafx.scene.control.{ComboBox, ListCell, ListView}
 import scalafx.scene.layout.Region
 import scalafx.util.StringConverter
 
+object AnyComboBox:
+  def formatValue[T](
+                      opt: Option[T],
+                      anyText: String
+                    ): String = opt match
+    case null => ""
+    case None => anyText
+    case Some(v) => v.toString
+
+  def parseValue[T](
+                     s: String,
+                     anyText: String,
+                     choices: Seq[Choice[T]]
+                   ): Option[T] =
+    if s == null then None
+    else if s == anyText then None
+    else choices.find(_.value.toString == s).map(_.value)
+
 /**
  * A ComboBox that includes an "-any-" option as None, and formats other options as "value - label".
  * It is sized based on the rendered value (T or "-any-"), while the dropdown can be wider.
@@ -60,13 +78,18 @@ class AnyComboBox[T](initialChoices: Seq[Choice[T]]) extends ComboBox[Option[T]]
     }
 
   converter = new StringConverter[Option[T]] {
-    override def toString(opt: Option[T]): String = opt match {
-      case None => anyText
-      case Some(v) => v.toString
-    }
+    override def toString(opt: Option[T]): String =
+      AnyComboBox.formatValue(
+        opt,
+        anyText
+      )
+
     override def fromString(s: String): Option[T] =
-      if (s == anyText) None
-      else choicesInternal.find(_.value.toString == s).map(c => Some(c.value)).flatten
+      AnyComboBox.parseValue(
+        s,
+        anyText,
+        choicesInternal
+      )
   }
 
   // buttonCell is used for rendering the ComboBox itself (the button part).

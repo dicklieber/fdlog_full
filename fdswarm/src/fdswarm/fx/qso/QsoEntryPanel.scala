@@ -36,6 +36,47 @@ import scalafx.scene.Node
 import scalafx.scene.control.*
 import scalafx.scene.layout.{GridPane, VBox}
 
+/**
+ * A user interface panel for handling QSO (contact) entry in an amateur radio logging application.
+ *
+ * This panel facilitates the input, validation, and submission of QSO data, including the callsign,
+ * contest class, and received section. It manages user interactions and integrates necessary services
+ * for dupe checking, metadata handling, and QSO storage.
+ *
+ * Dependencies:
+ * - `QsoStore`: Handles storage and retrieval of QSO data.
+ * - `Transport`: Facilitates communication or messaging, if applicable.
+ * - `SelectedBandModeManager`: Manages the selected band and mode for operation.
+ * - `StationConfigManager`: Provides station configuration details.
+ * - `ContestConfigManager`: Manages configuration data for the current contest.
+ * - `CallSignField`: Input field for the loggable callsign.
+ * - `ContestClassField`: Input field for the contest class.
+ * - `sectionField`: Input field for the received section.
+ * - `DupPanel`: Displays potential duplicate QSO information.
+ * - `NodeIdentityManager`: Manages node identity for distributed logging configurations.
+ *
+ * Features:
+ * - Builds the UI dynamically and ensures it is initialized only once.
+ * - Provides live validation and entry property bindings for input fields.
+ * - Integrates with QSO storage for checking duplicate entries based on callsign and band/mode.
+ * - Automatically handles focus traversal between fields during data entry.
+ * - Clears fields and resets focus after QSO submission.
+ * - Supports metadata management, including contest type, station, and node identity.
+ *
+ * Primary Methods:
+ * - `buildUi`: Builds the user interface if it hasn't already been initialized.
+ * - `node`: Returns the main visual node representing the panel.
+ * - `callsignValidProperty`: Exposes a boolean property indicating the validity of the callsign field.
+ * - `contestClassValidProperty`: Exposes a boolean property indicating the validity of the contest class field.
+ * - `sectionFieldProperty`: Provides a property for accessing/modifying the section field text.
+ * - `sectionFieldFocusedProperty`: Indicates whether the section field currently has focus.
+ * - `submit`: Compiles and submits a QSO entry based on the input data, clears fields, and updates the dupe panel.
+ *
+ * Internal Behavior:
+ * - Input fields trigger event-driven validation and focus shifting to facilitate smooth data entry.
+ * - Duplicate detection is performed dynamically based on callsign input.
+ * - Clears all input controls upon submission to prepare for the next entry.
+ */
 @Singleton
 class QsoEntryPanel @Inject()(
                                qsoStore: QsoStore,
