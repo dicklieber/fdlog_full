@@ -6,6 +6,7 @@
 - Use `:` to start a template body (class, trait, object, enum, or `new` with body).
 - For methods with a single expression, use `def method: Type = expression`.
 - For multi-line method bodies, use `def method: Type =` followed by an indented block.
+- Always put method/function parameters on separate lines in both definitions and calls.
 - Use `if ... then ... else ...` without parentheses for the condition where appropriate.
 - Use `while ... do ...` without parentheses for the condition.
 - Use `match` and `case` without braces around the `match` body.
@@ -44,4 +45,3 @@
 - 
 - **NEVER, EVER generate code that collapses labels or shows ellipsis ("..."). CRITICAL: Always apply minWidth=Region.USE_PREF_SIZE, hgrow=Priority.NEVER, textOverrun=OverrunStyle.CLIP to Labels and relevant controls.**
 - ALWAYS use od-lib instead of java.File, java.nio etc.
-
