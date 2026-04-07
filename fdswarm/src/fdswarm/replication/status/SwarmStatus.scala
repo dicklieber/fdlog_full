@@ -89,7 +89,6 @@ object LHData:
 
 case class FdHourNodeCellDTO(fdHour: FdHour, lhData: LHData)
     derives Codec.AsObject
-case class NodeDetailsDTO(cells: Seq[FdHourNodeCellDTO]) derives Codec.AsObject
 
 case class FdHourNodeCell(nideIdentity: NodeIdentity, fdHour: FdHour):
   val lhData: ObjectProperty[LHData] =

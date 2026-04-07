@@ -40,27 +40,6 @@ package fdswarm.fx
 import _root_.scalafx.beans.property.StringProperty
 import _root_.scalafx.scene.control.TextInputControl
 
-import scala.util.matching.Regex
-
-
-object ContestSectionValidator extends FieldValidator :
-
-  def valid(value: String): Option[String] = 
-//    if  Sections.byCode(value).isEmpty then //todo what is logic here?
-//      None
-//    else
-//      Option(errMessage)
-    throw new NotImplementedError("") //todo
-
-  override def errMessage = "ARRL Section"
-
-object AlwaysValid extends FieldValidator :
-  override def valid(value: String): Option[String] = None
-
-  override def errMessage = ""
-
-  override def valid(textField: TextInputControl): Option[String] = None
-
 
 trait FieldValidator {
   protected def errMessage: String

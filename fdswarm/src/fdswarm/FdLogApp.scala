@@ -21,7 +21,6 @@ package fdswarm
 import com.google.inject.{Guice, Injector}
 import fdswarm.fx.{ConfigModule, FdLogUi}
 import fdswarm.replication.StatusBroadcastService
-import mainargs.{ParserForClass, arg}
 import net.codingwell.scalaguice.InjectorExtensions.*
 import scalafx.application.JFXApp3
 import fdswarm.StartupConfig
@@ -32,12 +31,7 @@ import java.time.{Duration, Instant}
   *   - builds the Guice injector
   *   - runs startup validation checks
   *   - delegates all UI construction to [[FdLogUi]]
-  */ 
-
-case class StartupArgs(
-  @arg(name = "startupInfo")
-  startupInfo: Option[String] = None
-)
+  */
 
 object FdLogApp extends JFXApp3:
   private val startTime = Instant.now()
@@ -78,5 +72,4 @@ object FdLogApp extends JFXApp3:
   override def stopApp(): Unit =
     log.debug("stopApp")
     statusBroadcastService.foreach(_.stop())
-
 
