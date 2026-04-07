@@ -190,12 +190,39 @@ class QsoSearchPane @Inject()(
 
   private var uiBuilt = false
 
+  private def updateClassChoices(
+                                  contestType: ContestType
+                                ): Unit =
+    if contestType == ContestType.NONE then
+      classFilter.setChoices()
+      classFilter.value = None
+      return
+
+    contestCatalog.getContest(
+      contestType
+    ) match
+      case Some(contestDefinition) =>
+        val classChoices: Seq[ClassChoice] = contestDefinition.classChoices
+        classFilter.setChoices(classChoices*)
+      case None =>
+        logger.warn(
+          s"Missing contest definition for $contestType; clearing class choices"
+        )
+        classFilter.setChoices()
+        classFilter.value = None
+
+  contestManager.contestConfigProperty.onChange(
+    (_, _, newConfig) =>
+      updateClassChoices(
+        newConfig.contestType
+      )
+  )
+
   def buildUi(): Unit =
     if uiBuilt then return
-    val contestType: ContestType = contestManager.contestConfigProperty.value.contestType
-    val contestDefinition: ContestDefinition = contestCatalog.getContest(contestType).get
-    val classChoices: Seq[ClassChoice] = contestDefinition.classChoices
-    classFilter.setChoices(classChoices*)
+    updateClassChoices(
+      contestManager.contestConfigProperty.value.contestType
+    )
 
     val titledPane = new TitledPane {
       text = "Search"

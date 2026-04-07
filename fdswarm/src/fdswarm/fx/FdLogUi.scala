@@ -25,7 +25,6 @@ import fdswarm.FdLogApp
 import fdswarm.StartupInfo
 import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.bandmodes.BandsAndModesPane
-import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.fx.discovery.DiscoveryDialog
 import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.station.StationEditor
@@ -61,7 +60,6 @@ final class FdLogUi @Inject() (
                                 contestEntry: ContestEntry,
                                 bandModeManagerPane: BandsAndModesPane,
                                 stationEditor: StationEditor,
-                                contestManager: ContestConfigManager,
                                 howManyDialogService: HowManyDialogService,
                                 fdHourDialogService: FdHourDialogService,
                                 statusBroadcastDialog: StatusBroadcastDialog,
@@ -127,14 +125,6 @@ final class FdLogUi @Inject() (
     contestEntry.node
   private val centerPane = new StackPane:
     children = List(qsoNode)
-//  private val contestMenuItem: MenuItem =
-//    new MenuItem("Contest"):
-//      disable = true
-//      onAction = _ =>
-//        discoveryDialog.show(ownerWindow)
-////        Option(ownerWindow) match
-////          case Some(w) => contestManager.show(w)
-////          case None    => ()
   private val stationMenuItem: MenuItem =
     new MenuItem("Station"):
       onAction = _ =>
@@ -291,12 +281,6 @@ final class FdLogUi @Inject() (
 
     stage.show()
 
-    contestManager.onConfigSet(_ =>
-      Platform.runLater {
-        contestEntry.buildUi()
-      }
-    )
-
     // Wire the Band/Mode matrix in ContestEntry to open the manager
     contestEntry.bandModeMatrixPane.onConfigRequest = Some(() => {
       Option(ownerWindow) match
@@ -315,12 +299,10 @@ final class FdLogUi @Inject() (
         durationNanos
       )
     }
-    if contestManager.hasConfiguration.value then
-      contestEntry.buildUi()
+    contestEntry.buildUi()
 
     if !startupInfo.info.exists(_.skipInitDiscover) then
-      if !contestManager.hasConfiguration.value then
-        discoveryDialog.showAndWait()
+      discoveryDialog.showAndWait()
 
   private def setAppIcon(stage: Stage): Unit =
     try
