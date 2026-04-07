@@ -48,6 +48,12 @@ enum FdHours(val fdHour: FdHour):
 object FdHours:
   def apply(fdHour: FdHour): FdHours = Value(fdHour)
 
+/**
+ * Holds data about each node in the swarm.
+ * @param nodeIdentityManager
+ * @param localNodeStatus
+ * @param swarmStatusPaneProvider
+ */
 @Singleton
 class SwarmData @Inject() (
                             nodeIdentityManager: NodeIdentityManager,
@@ -218,6 +224,7 @@ class SwarmData @Inject() (
       NodeDataField.Operator -> bno.operator.toString,
       NodeDataField.Band -> bno.bandMode.band,
       NodeDataField.Mode -> bno.bandMode.mode,
+      NodeDataField.BandMode -> bno.bandMode.toString,
       NodeDataField.BandModeStamp -> stampFormatter.format(bno.stamp),
       NodeDataField.ContestType -> contest.contestType.toString,
       NodeDataField.ContestCallsign -> contest.ourCallsign.toString,

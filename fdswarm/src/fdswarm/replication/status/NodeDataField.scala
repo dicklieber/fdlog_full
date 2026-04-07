@@ -30,6 +30,7 @@ enum NodeDataField:
   case Operator
   case Band
   case Mode
+  case BandMode
   case BandModeStamp
   case ContestType
   case ContestCallsign
@@ -51,6 +52,7 @@ enum NodeDataField:
     case Operator => "operator"
     case Band => "band"
     case Mode => "mode"
+    case BandMode => "bandMode"
     case BandModeStamp => "bandModeStamp"
     case ContestType => "contestType"
     case ContestCallsign => "contestCallsign"
@@ -73,6 +75,7 @@ object NodeDataField:
     NodeDataField.Operator,
     NodeDataField.Band,
     NodeDataField.Mode,
+    NodeDataField.BandMode,
     NodeDataField.BandModeStamp,
     NodeDataField.ContestType,
     NodeDataField.ContestCallsign,

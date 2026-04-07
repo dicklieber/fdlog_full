@@ -19,19 +19,15 @@
 package fdswarm.replication.status
 
 import com.google.inject.name.Named
-import fdswarm.fx.GridBuilder
-import fdswarm.fx.station.StationEditor
 import jakarta.inject.{Inject, Singleton}
-import scalafx.Includes.*
 import scalafx.application.Platform
-import scalafx.scene.control.{Label, TitledPane, Tooltip}
+import scalafx.scene.control.TitledPane
 
 import java.util.concurrent.atomic.AtomicLong
 
 @Singleton
 class NodeBandOpPane @Inject()(
                                 swarmData: SwarmData,
-                                stationEditor: StationEditor,
                                 @Named("fdswarm.nodeBandOpRefreshSeconds") nodeBandOpRefreshSeconds: Int
                               ):
 
@@ -72,36 +68,10 @@ class NodeBandOpPane @Inject()(
     false
 
   private def buildGrid() =
-    val builder = GridBuilder()
-    val nodes = swarmData.nodeMap.toSeq.sortBy(_._2)
-    val ourNodeColumnIndex = nodes.indexWhere(_._1 == swarmData.ourNodeIdentity)
-    if ourNodeColumnIndex >= 0 then
-      builder.setColumnClass(ourNodeColumnIndex + 1, "ourNode")
-
-//    builder("id", nodes.map(_._1)*)
-    builder(
-      "operator",
-      nodes.zipWithIndex.map((entry, idx) =>
-        operatorCallsignEditor(entry._2.statusMessage.bandNodeOperator.operator.toString, idx == ourNodeColumnIndex)
-      )*
+    swarmData.buildGridPane(
+      Seq(
+        NodeDataField.HostName,
+        NodeDataField.Operator,
+        NodeDataField.BandMode
+      )
     )
-    builder(
-      "bandMode",
-      nodes.zipWithIndex.map((entry, idx) =>
-        new Label(entry._2.statusMessage.bandNodeOperator.bandMode.toString)
-      )*
-    )
-    builder("hostName", nodes.map(_._1.hostName)*)
-
-    builder.result
-
-  private def operatorCallsignEditor(value: String, isLocalNode: Boolean): Label =
-    val label = new Label(value)
-    if isLocalNode then
-      label.tooltip = new Tooltip("Change this node's operator.")
-      label.style = "-fx-cursor: hand;"
-      label.onMouseClicked = _ =>
-        Option(node.scene.value)
-          .flatMap(scene => Option(scene.window.value))
-          .foreach(w => stationEditor.show(w))
-    label
