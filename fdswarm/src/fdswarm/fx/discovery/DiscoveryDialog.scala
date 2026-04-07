@@ -8,7 +8,7 @@ import fdswarm.fx.contest.{
   ExchangePane
 }
 import fdswarm.fx.utils.StyledDialog
-import fdswarm.replication.status.SwarmStatus
+import fdswarm.replication.status.SwarmData
 import fdswarm.store.QsoStore
 import jakarta.inject.Inject
 import javafx.stage.{Stage as JStage}
@@ -22,7 +22,7 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
                                  contestManager: ContestConfigManager,
                                  qsoStore: QsoStore,
                                  exchangePane: ExchangePane,
-                                 swarmStatus: SwarmStatus)
+                                 swarmData: SwarmData)
   extends StyledDialog[ButtonType] with LazyLogging:
 
 
@@ -51,7 +51,7 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
   contestDiscovery.discoverContest().foreach { receivedNodeStatus =>
     logger.debug(s"Discovery UI added: $receivedNodeStatus")
     Platform.runLater {
-      discoveryTable.setItems(swarmStatus.nodeMap.values.toSeq)
+      discoveryTable.setItems(swarmData.nodeMap.values.toSeq)
     }
   }
 

@@ -18,11 +18,15 @@
 
 package fdswarm.replication.status
 
+import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.GridBuilder
 import fdswarm.fx.qso.FdHour
+import fdswarm.replication.LocalNodeStatus
 import fdswarm.replication.NodeStatus
+import fdswarm.store.FdHourDigest
 import fdswarm.util.NodeIdentity
-import jakarta.inject.{Inject, Singleton}
+import fdswarm.util.NodeIdentityManager
+import jakarta.inject.{Inject, Provider, Singleton}
 import javafx.beans.value.ChangeListener
 import scalafx.application.Platform
 import scalafx.beans.property.StringProperty
@@ -31,9 +35,9 @@ import scalafx.scene.Parent
 import scalafx.scene.layout.GridPane
 import scalafx.scene.layout.StackPane
 
+import javafx.collections.ListChangeListener
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import javafx.collections.ListChangeListener
 import scala.collection.concurrent.TrieMap
 
 enum FdHours(val fdHour: FdHour):
@@ -45,22 +49,74 @@ object FdHours:
   def apply(fdHour: FdHour): FdHours = Value(fdHour)
 
 @Singleton
-class SwarmData @Inject() ():
+class SwarmData @Inject() (
+                            nodeIdentityManager: NodeIdentityManager,
+                            localNodeStatus: LocalNodeStatus,
+                            swarmStatusPaneProvider: Provider[SwarmStatusPane]
+                          ) extends LazyLogging:
   val knownNodeIdentity: ObservableBuffer[NodeIdentity] = ObservableBuffer.empty[NodeIdentity]
   private val knownFdHoursBuffer: ObservableBuffer[FdHours] = ObservableBuffer.empty[FdHours]
 
-  private val lastStatusByNode = TrieMap.empty[NodeIdentity, NodeStatus]
+  val nodeMap: TrieMap[NodeIdentity, NodeStatus] = TrieMap.empty[NodeIdentity, NodeStatus]
   private val valueProperties = TrieMap.empty[(NodeIdentity, NodeDataField), StringProperty]
   private val knownFdHourValues = TrieMap.empty[FdHour, FdHour]
 
   private val stampFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("MM-dd HH:mm:ss").withZone(ZoneId.systemDefault())
 
+  private def swarmStatusPane: SwarmStatusPane = swarmStatusPaneProvider.get()
+
+  def ourNodeIdentity: NodeIdentity =
+    nodeIdentityManager.ourNodeIdentity
+
+  Option(localNodeStatus.current.get()).foreach(
+    nodeStatus =>
+      update(nodeStatus)
+  )
+  localNodeStatus.current.addListener(
+    (
+      _: javafx.beans.value.ObservableValue[? <: NodeStatus],
+      _: NodeStatus,
+      newStatus: NodeStatus
+    ) =>
+      if newStatus != null then
+        update(newStatus)
+  )
+
+  def updateLocalDigests(digests: Seq[FdHourDigest]): Unit =
+    localNodeStatus.updateDigests(digests)
+
+  def refresh(): Unit =
+    val pane = swarmStatusPane
+    if pane != null then
+      pane.update(nodeMap.values.toSeq)
+
+  def clear(): Unit =
+    val localStatus = nodeMap.get(ourNodeIdentity)
+    nodeMap.clear()
+    localStatus.foreach(
+      status =>
+        nodeMap.put(
+          status.nodeIdentity,
+          status
+        )
+    )
+    updateKnownCollectionsFromNodeMap()
+    refresh()
+    logger.debug("Cleared swarm status data, retaining local node.")
+
+  def remove(nodeIdentity: NodeIdentity): Unit =
+    if nodeIdentity != ourNodeIdentity then
+      nodeMap.remove(nodeIdentity)
+      updateKnownCollectionsFromNodeMap()
+      refresh()
+      logger.debug(s"Removed node status for $nodeIdentity")
+
   def knownFdHours: Seq[FdHours] = knownFdHoursBuffer.toSeq
 
   def update(nodeStatus: NodeStatus): Unit =
     val nodeIdentity = nodeStatus.nodeIdentity
-    lastStatusByNode.put(nodeIdentity, nodeStatus)
+    nodeMap.put(nodeIdentity, nodeStatus)
     val newlyDiscoveredFdHours = nodeStatus.statusMessage.fdDigests
       .flatMap(fd => if knownFdHourValues.putIfAbsent(fd.fdHour, fd.fdHour).isEmpty then Some(fd.fdHour) else None)
       .distinct
@@ -87,6 +143,7 @@ class SwarmData @Inject() ():
         propertyFor(nodeIdentity, field).value = value
       }
     }
+    refresh()
 
   def buildGridPane(fields: Seq[NodeDataField | FdHours.type]): Parent =
     val container = new StackPane()
@@ -178,3 +235,18 @@ class SwarmData @Inject() ():
       action
     else
       Platform.runLater(() => action)
+
+  private def updateKnownCollectionsFromNodeMap(): Unit =
+    val nodeStatuses = nodeMap.values.toSeq
+    val nodes = nodeStatuses.map(_.nodeIdentity).distinct.sorted
+    val mergedFdHours = nodeStatuses
+      .flatMap(_.statusMessage.fdDigests.map(_.fdHour))
+      .distinct
+      .sorted
+      .map(FdHours.apply)
+    updateOnFxThread {
+      knownNodeIdentity.clear()
+      knownNodeIdentity ++= nodes
+      knownFdHoursBuffer.clear()
+      knownFdHoursBuffer ++= mergedFdHours
+    }

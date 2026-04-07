@@ -21,21 +21,22 @@ package fdswarm.replication.status
 import fdswarm.fx.GridBuilder
 import fdswarm.fx.qso.FdHour
 import fdswarm.fx.utils.{BootstrapIcons, IntLabel}
-import fdswarm.replication.{NodeDetails, NodeStatus}
-import fdswarm.util.{AgeStyleService, DurationFormat, NodeIdentity, NodeIdentityManager}
+import fdswarm.replication.NodeStatus
+import fdswarm.util.{AgeStyleService, DurationFormat, NodeIdentity}
 import scalafx.Includes.*
 import scalafx.beans.property.LongProperty
 import scalafx.scene.control.{Button, Label, Tooltip}
-import scalafx.scene.layout.{GridPane, HBox, Priority}
-import scalafx.scene.text.{Font, FontPosture, FontWeight}
+import scalafx.scene.layout.HBox
 
 import java.time.Instant
 
-class SwarmStatusGrid(allNodes: Seq[NodeStatus],
-                      nowProperty: LongProperty,
-                      ageStyleService: AgeStyleService,
-                      ourInstanceId: String,
-                      swarmStatusApi: SwarmStatusApi):
+class SwarmStatusGrid(
+  allNodes: Seq[NodeStatus],
+  nowProperty: LongProperty,
+  ageStyleService: AgeStyleService,
+  ourInstanceId: String,
+  removeNode: NodeIdentity => Unit
+):
 
   val fdHours: Seq[FdHour] =
     val allFdHours = for
@@ -65,7 +66,7 @@ class SwarmStatusGrid(allNodes: Seq[NodeStatus],
           graphic = BootstrapIcons.svgPath("trash-fill", size = 12, color = scalafx.scene.paint.Color.White)
           tooltip = Tooltip("Remove")
           styleClass += "delete-button"
-          onAction = _ => swarmStatusApi.remove(node.nodeIdentity)
+          onAction = _ => removeNode(node.nodeIdentity)
         }
         new HBox {
           spacing = 5

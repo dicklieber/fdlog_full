@@ -23,7 +23,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.contest.ContestConfig
 import fdswarm.fx.station.StationConfig
 import fdswarm.replication.{NodeStatus, Service, Transport}
-import fdswarm.replication.status.SwarmStatus
+import fdswarm.replication.status.SwarmData
 import io.circe.Codec
 import jakarta.inject.Inject
 
@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit
 
 class ContestDiscovery @Inject()(
                                   val transport: Transport,
-                                  swarmStatus: SwarmStatus,
+                                  swarmData: SwarmData,
                                   @Named("fdswarm.contestDiscoveryTimeoutSec") val timeoutSec: Int,
                                 ) extends LazyLogging:
 
@@ -41,8 +41,8 @@ class ContestDiscovery @Inject()(
     transport.send(Service.SendStatus, Array.emptyByteArray)
     TimeUnit.SECONDS.sleep(timeoutSec.toLong)
 
-    val localNodeIdentity = swarmStatus.ourNodeIdentity
-    val discoveredNodes = swarmStatus.nodeMap.values
+    val localNodeIdentity = swarmData.ourNodeIdentity
+    val discoveredNodes = swarmData.nodeMap.values
       .filterNot(_.nodeIdentity == localNodeIdentity)
       .toSeq
 
@@ -50,4 +50,3 @@ class ContestDiscovery @Inject()(
       logger.info(s"Processed StatusMessage from ${discovered.nodeIdentity}")
     }
     discoveredNodes
-

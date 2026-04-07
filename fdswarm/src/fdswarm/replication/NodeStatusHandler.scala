@@ -22,7 +22,7 @@ import cats.effect.unsafe.implicits.global
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.contest.{ContestConfig, ContestConfigManager}
 import fdswarm.model.Qso
-import fdswarm.replication.status.{SwarmData, SwarmStatus}
+import fdswarm.replication.status.SwarmData
 import fdswarm.store.ReplicationSupport
 import io.circe.generic.auto.deriveDecoder
 import io.circe.parser.decode
@@ -37,12 +37,10 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
                                   swarmData:SwarmData,
                                   transport: Transport,
                                   statusBroadcastService: StatusBroadcastService,
-                                  swarmStatusProvider: Provider[SwarmStatus],
                                   contestManagerProvider: Provider[ContestConfigManager],
                                   meterRegistry: MeterRegistry) extends LazyLogging:
 
   private def replicationSupport: ReplicationSupport = replicationSupportProvider.get()
-  private def swarmStatus: SwarmStatus = swarmStatusProvider.get()
   private def contestManager: ContestConfigManager = contestManagerProvider.get()
   logger.debug("Starting NodeStatusHandler")
   private val sendStatusReceived = meterRegistry.counter("fdswarm_discovery_req_received")

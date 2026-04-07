@@ -24,14 +24,13 @@ import fdswarm.fx.bandmodes.SelectedBandModeManager
 import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.model.BandModeOperator
 import fdswarm.store.FdHourDigest
-import fdswarm.util.{NodeIdentity, NodeIdentityManager}
+import fdswarm.util.NodeIdentityManager
 import jakarta.inject.{Inject, Provider, Singleton}
 import javafx.beans.property.{ReadOnlyObjectProperty, ReadOnlyObjectWrapper}
-import javafx.collections.{FXCollections, ObservableList}
-import scalafx.collections.ObservableBuffer
 
 /**
- * Manages the status of the local node and publishes updates to an observable, read-only list. This class is responsible
+ * Manages the status of the local node and publishes the latest value through a read-only object property.
+ * This class is responsible
  * for maintaining and rebuilding the local node's status based on a combination of system configurations,
  * selected band modes, and contest configurations, as well as notifying listeners about the updates.
  *
@@ -47,11 +46,8 @@ import scalafx.collections.ObservableBuffer
  * - When the contest configuration becomes available or changes.
  * - When digests are explicitly updated via {@code updateDigests}.
  *
- * This class appends each emitted local node status to an observable, read-only list.
- *
  * Thread Safety:
  * - The held digests and node status are maintained as volatile variables to ensure thread-safe access.
- * - Updates are appended to an observable list so consumers can react to list changes.
  *
  * Error Handling:
  * - If the contest configuration is unavailable during a status rebuild event, the rebuild is skipped,
@@ -73,10 +69,8 @@ final class LocalNodeStatus @Inject()(
                                      ) extends LazyLogging:
 
   @volatile private var heldDigests: Seq[FdHourDigest] = Nil
-  @volatile private var maybeNodeStatus: Option[NodeStatus] = None
-  private val updatesBuffer: ObservableBuffer[NodeStatus] = ObservableBuffer.empty[NodeStatus]
   private val currentBuffer: ReadOnlyObjectWrapper[NodeStatus] = new ReadOnlyObjectWrapper[NodeStatus](null)
-  val updates: ObservableList[NodeStatus] = FXCollections.unmodifiableObservableList(updatesBuffer.delegate)
+  val current: ReadOnlyObjectProperty[NodeStatus] = currentBuffer.getReadOnlyProperty
 
   stationManager.stationProperty.onChange { (_, _, _) =>
     rebuildAndNotify("station-change")
@@ -96,9 +90,7 @@ final class LocalNodeStatus @Inject()(
     rebuildAndNotify("digest-update")
 
   def update(nodeStatus: NodeStatus): Unit =
-    maybeNodeStatus = Some(nodeStatus)
     currentBuffer.set(nodeStatus)
-    updatesBuffer += nodeStatus
 
   private def rebuildAndNotify(reason: String): Unit =
     Option(contestConfigManagerProvider.get()).flatMap(_.contestConfigOption) match

@@ -50,11 +50,12 @@ class LocalNodeStatusTest extends FunSuite:
     contestManager.setConfig(dummyContestConfig)
     val nodeIdentityManager = new fdswarm.util.MockNodeIdentityManager(NodeIdentity("127.0.0.1", 8080, "local-instance", "x"))
     val localNodeStatus = new LocalNodeStatus(nodeIdentityManager, stationManager, selectedBandModeStore, () => contestManager)
+    val currentStatus = localNodeStatus.current.get()
 
-    assertEquals(localNodeStatus.updates.size(), 1)
-    assertEquals(localNodeStatus.updates.get(0).isLocal, true)
-    assertEquals(localNodeStatus.updates.get(0).statusMessage.fdDigests, Seq.empty)
-    assertEquals(localNodeStatus.updates.get(0).statusMessage.contestConfig, dummyContestConfig)
+    assert(currentStatus != null, "current status should be initialized")
+    assertEquals(currentStatus.isLocal, true)
+    assertEquals(currentStatus.statusMessage.fdDigests, Seq.empty)
+    assertEquals(currentStatus.statusMessage.contestConfig, dummyContestConfig)
 
     testDir.cleanup()
 
@@ -78,30 +79,40 @@ class LocalNodeStatusTest extends FunSuite:
     val contestManager = new fdswarm.fx.contest.ContestConfigManager(testDir, () => null, new fdswarm.util.FilenameStamp(), 1)
     val nodeIdentityManager = new fdswarm.util.MockNodeIdentityManager(NodeIdentity("127.0.0.1", 8080, "local-instance", "x"))
     val localNodeStatus = new LocalNodeStatus(nodeIdentityManager, stationManager, selectedBandModeStore, () => contestManager)
+    var emitted: Vector[NodeStatus] = Vector.empty
+    localNodeStatus.current.addListener(
+      (
+        _: javafx.beans.value.ObservableValue[? <: NodeStatus],
+        _: NodeStatus,
+        newStatus: NodeStatus
+      ) =>
+        if newStatus != null then
+          emitted = emitted :+ newStatus
+    )
 
     val digest = FdHourDigest(FdHour(15, 12), 10, "abc")
     localNodeStatus.updateDigests(Seq(digest))
-    assertEquals(localNodeStatus.updates.size(), 0, "No status should be emitted before contest config exists")
+    assertEquals(emitted.size, 0, "No status should be emitted before contest config exists")
 
     contestManager.setConfig(dummyContestConfig)
-    assertEquals(localNodeStatus.updates.size(), 1)
-    assertEquals(localNodeStatus.updates.get(localNodeStatus.updates.size() - 1).isLocal, true)
-    assertEquals(localNodeStatus.updates.get(localNodeStatus.updates.size() - 1).statusMessage.fdDigests, Seq(digest))
+    assertEquals(emitted.size, 1)
+    assertEquals(emitted.last.isLocal, true)
+    assertEquals(emitted.last.statusMessage.fdDigests, Seq(digest))
 
-    val t1 = localNodeStatus.updates.get(localNodeStatus.updates.size() - 1).received
+    val t1 = emitted.last.received
     Thread.sleep(2)
     stationManager.setStation(StationConfig(operator = Callsign("K1ABC"), rig = "Rig", antenna = "Wire"))
-    assertEquals(localNodeStatus.updates.size(), 2)
-    assertEquals(localNodeStatus.updates.get(localNodeStatus.updates.size() - 1).isLocal, true)
-    assertEquals(localNodeStatus.updates.get(localNodeStatus.updates.size() - 1).statusMessage.bandNodeOperator.operator, Callsign("K1ABC"))
-    assert(localNodeStatus.updates.get(localNodeStatus.updates.size() - 1).received.isAfter(t1), "received should advance for each new local status")
+    assertEquals(emitted.size, 2)
+    assertEquals(emitted.last.isLocal, true)
+    assertEquals(emitted.last.statusMessage.bandNodeOperator.operator, Callsign("K1ABC"))
+    assert(emitted.last.received.isAfter(t1), "received should advance for each new local status")
 
-    val t2 = localNodeStatus.updates.get(localNodeStatus.updates.size() - 1).received
+    val t2 = emitted.last.received
     Thread.sleep(2)
     selectedBandModeStore.save(bandModeBuilder("40m", "CW"))
-    assertEquals(localNodeStatus.updates.size(), 3)
-    assertEquals(localNodeStatus.updates.get(localNodeStatus.updates.size() - 1).isLocal, true)
-    assertEquals(localNodeStatus.updates.get(localNodeStatus.updates.size() - 1).statusMessage.bandNodeOperator.bandMode.toString, "40m CW")
-    assert(localNodeStatus.updates.get(localNodeStatus.updates.size() - 1).received.isAfter(t2), "received should advance for each new local status")
+    assertEquals(emitted.size, 3)
+    assertEquals(emitted.last.isLocal, true)
+    assertEquals(emitted.last.statusMessage.bandNodeOperator.bandMode.toString, "40m CW")
+    assert(emitted.last.received.isAfter(t2), "received should advance for each new local status")
 
     testDir.cleanup()

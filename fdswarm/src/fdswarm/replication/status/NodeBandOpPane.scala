@@ -29,9 +29,11 @@ import scalafx.scene.control.{Label, TitledPane, Tooltip}
 import java.util.concurrent.atomic.AtomicLong
 
 @Singleton
-class NodeBandOpPane @Inject()(swarmStatus: SwarmStatus,
-                               stationEditor: StationEditor,
-                               @Named("fdswarm.nodeBandOpRefreshSeconds") nodeBandOpRefreshSeconds: Int):
+class NodeBandOpPane @Inject()(
+                                swarmData: SwarmData,
+                                stationEditor: StationEditor,
+                                @Named("fdswarm.nodeBandOpRefreshSeconds") nodeBandOpRefreshSeconds: Int
+                              ):
 
   private val refreshIntervalMillis = math.max(0L, nodeBandOpRefreshSeconds.toLong * 1000L)
   private val lastRefreshMillis = AtomicLong(0L)
@@ -71,8 +73,8 @@ class NodeBandOpPane @Inject()(swarmStatus: SwarmStatus,
 
   private def buildGrid() =
     val builder = GridBuilder()
-    val nodes = swarmStatus.nodeMap.toSeq.sortBy(_._2)
-    val ourNodeColumnIndex = nodes.indexWhere(_._1 == swarmStatus.ourNodeIdentity)
+    val nodes = swarmData.nodeMap.toSeq.sortBy(_._2)
+    val ourNodeColumnIndex = nodes.indexWhere(_._1 == swarmData.ourNodeIdentity)
     if ourNodeColumnIndex >= 0 then
       builder.setColumnClass(ourNodeColumnIndex + 1, "ourNode")
 

@@ -67,12 +67,13 @@ class GridTest extends FunSuite:
         |]
       """.stripMargin)
     val ageStyleService = new fdswarm.util.AgeStyleService(config)
-    val swarmStatusApi = new SwarmStatusApi {
-      override def clear(): Unit = ()
-      override def refresh(): Unit = ()
-      override def remove(nodeIdentity: NodeIdentity): Unit = ()
-    }
-    val gird = SwarmStatusGrid(allNodeDetails, nowProperty, ageStyleService, "some-id", swarmStatusApi)
+    val gird = SwarmStatusGrid(
+      allNodeDetails,
+      nowProperty,
+      ageStyleService,
+      "some-id",
+      _ => ()
+    )
 
     // FdHour is sorted, so hour1 then hour2
     assertEquals(gird.fdHours.length, 2)
@@ -111,12 +112,13 @@ class GridTest extends FunSuite:
         |]
       """.stripMargin)
     val ageStyleService = new fdswarm.util.AgeStyleService(config)
-    val swarmStatusApi = new SwarmStatusApi {
-      override def clear(): Unit = ()
-      override def refresh(): Unit = ()
-      override def remove(nodeIdentity: NodeIdentity): Unit = ()
-    }
-    val grid = SwarmStatusGrid(Seq(nd1), nowProperty, ageStyleService, "some-id", swarmStatusApi)
+    val grid = SwarmStatusGrid(
+      Seq(nd1),
+      nowProperty,
+      ageStyleService,
+      "some-id",
+      _ => ()
+    )
 
     grid.populate(builder, _ => "test-style")
     
@@ -150,7 +152,13 @@ class GridTest extends FunSuite:
     val niOur = NodeIdentity("127.0.0.1", 8080, "111", "our-node")
     val ndOur = NodeStatus(StatusMessage(Nil, dummyBno, contestConfig = dummyContestConfig), niOur, isLocal = false)
     val builder2 = new GridBuilder()
-    val gird2 = SwarmStatusGrid(Seq(ndOur), nowProperty, ageStyleService, "our-node", swarmStatusApi)
+    val gird2 = SwarmStatusGrid(
+      Seq(ndOur),
+      nowProperty,
+      ageStyleService,
+      "our-node",
+      _ => ()
+    )
     gird2.populate(builder2, _ => "test-style")
     val gridPane2 = builder2.result
     

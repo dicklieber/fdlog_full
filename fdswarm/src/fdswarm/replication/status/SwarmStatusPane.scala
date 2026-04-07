@@ -23,7 +23,7 @@ import fdswarm.fx.GridBuilder
 import fdswarm.fx.utils.IntLabel
 import fdswarm.replication.NodeStatus
 import fdswarm.util.{AgeStyleService, NodeIdentityManager}
-import jakarta.inject.{Inject, Singleton}
+import jakarta.inject.{Inject, Provider, Singleton}
 import scalafx.Includes.*
 import scalafx.animation.{KeyFrame, Timeline}
 import scalafx.application.Platform
@@ -34,17 +34,20 @@ import scalafx.scene.layout.*
 import scalafx.util.Duration
 
 @Singleton
-class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
-                                swarmStatusApi: SwarmStatusApi,
-                                nodeIdentityManager: NodeIdentityManager) extends LazyLogging:
+class SwarmStatusPane @Inject()(
+  ageStyleService: AgeStyleService,
+  swarmDataProvider: Provider[SwarmData],
+  nodeIdentityManager: NodeIdentityManager
+) extends LazyLogging:
 
   private val nowProperty = LongProperty(System.currentTimeMillis())
+  private def swarmData: SwarmData = swarmDataProvider.get()
 
   private val timeline = new Timeline {
     cycleCount = Timeline.Indefinite
     keyFrames = Seq(
       KeyFrame(Duration(3000), onFinished = _ => {
-        swarmStatusApi.refresh()
+        swarmData.refresh()
         nowProperty.value = System.currentTimeMillis()
       })
     )
@@ -59,7 +62,7 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
     }
 
     alert.showAndWait() match {
-      case Some(ButtonType.OK) => swarmStatusApi.clear()
+      case Some(ButtonType.OK) => swarmData.clear()
       case _ =>
     }
 
@@ -127,7 +130,13 @@ class SwarmStatusPane @Inject()(ageStyleService: AgeStyleService,
       }
     }
 
-    val gird: SwarmStatusGrid = SwarmStatusGrid(sortedNodeStatuses, nowProperty, ageStyleService, nodeIdentityManager.ourNodeIdentity.instanceId, swarmStatusApi)
+    val gird: SwarmStatusGrid = SwarmStatusGrid(
+      sortedNodeStatuses,
+      nowProperty,
+      ageStyleService,
+      nodeIdentityManager.ourNodeIdentity.instanceId,
+      nodeIdentity => swarmData.remove(nodeIdentity)
+    )
     gird.populate(builder, rowStyleCallback)
     val gridPane = builder.result
     VBox.setVgrow(gridPane, Priority.Always)

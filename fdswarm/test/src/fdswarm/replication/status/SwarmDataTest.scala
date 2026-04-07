@@ -18,12 +18,55 @@
 
 package fdswarm.replication.status
 
+import fdswarm.{MockStartupInfo, StationConfigManager, TestDirectory}
+import fdswarm.fx.bandmodes.SelectedBandModeManager
+import fdswarm.fx.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
 import fdswarm.fx.qso.FdHour
+import fdswarm.replication.LocalNodeStatus
+import fdswarm.util.MockNodeIdentityManager
+import jakarta.inject.Provider
 import munit.FunSuite
 
 class SwarmDataTest extends FunSuite:
   test("resolveFields with FdHours expands known and newly discovered hours"):
-    val swarmData = SwarmData()
+    val testDir = new TestDirectory
+    val stationManager = new StationConfigManager(
+      testDir,
+      MockStartupInfo
+    )
+    val config = com.typesafe.config.ConfigFactory.parseString(
+      """
+        |fdswarm {
+        |  hamBands = [
+        |    { bandName = "20m", startFrequencyHz = 14000000, endFrequencyHz = 14350000, bandClass = "HF", regions = ["ALL"] }
+        |  ]
+        |  modes = ["CW", "PH", "DIGI"]
+        |}
+        |""".stripMargin
+    )
+    val bandCatalog = new BandCatalog(config)
+    val modeCatalog = new ModeCatalog(config)
+    val bandModeBuilder = new BandModeBuilder(
+      bandCatalog,
+      modeCatalog
+    )
+    val selectedBandModeStore = new SelectedBandModeManager(
+      testDir,
+      bandModeBuilder,
+      MockStartupInfo
+    )
+    val localNodeStatus = new LocalNodeStatus(
+      MockNodeIdentityManager(),
+      stationManager,
+      selectedBandModeStore,
+      () => null
+    )
+    val swarmStatusPaneProvider: Provider[SwarmStatusPane] = () => null
+    val swarmData = new SwarmData(
+      MockNodeIdentityManager(),
+      localNodeStatus,
+      swarmStatusPaneProvider
+    )
     val hour1 = FdHour(10, 1)
     val hour2 = FdHour(10, 2)
 
@@ -31,12 +74,32 @@ class SwarmDataTest extends FunSuite:
 
     swarmData.addKnownFdHours(Seq(hour1))
     val resolvedAfterFirstUpdate = swarmData.resolveFields(fields)
-    assert(resolvedAfterFirstUpdate.contains(NodeDataField.HostName))
-    assert(resolvedAfterFirstUpdate.contains(NodeDataField.FdHoursField(FdHours(hour1))))
-    assert(!resolvedAfterFirstUpdate.contains(NodeDataField.FdHoursField(FdHours(hour2))))
+    assert(
+      resolvedAfterFirstUpdate.contains(NodeDataField.HostName),
+      "expected HostName"
+    )
+    assert(
+      resolvedAfterFirstUpdate.contains(NodeDataField.FdHoursField(FdHours(hour1))),
+      "expected first FdHour field"
+    )
+    assert(
+      !resolvedAfterFirstUpdate.contains(NodeDataField.FdHoursField(FdHours(hour2))),
+      "did not expect second FdHour field yet"
+    )
 
     swarmData.addKnownFdHours(Seq(hour1, hour2))
     val resolvedAfterSecondUpdate = swarmData.resolveFields(fields)
-    assert(resolvedAfterSecondUpdate.contains(NodeDataField.HostName))
-    assert(resolvedAfterSecondUpdate.contains(NodeDataField.FdHoursField(FdHours(hour1))))
-    assert(resolvedAfterSecondUpdate.contains(NodeDataField.FdHoursField(FdHours(hour2))))
+    assert(
+      resolvedAfterSecondUpdate.contains(NodeDataField.HostName),
+      "expected HostName after second update"
+    )
+    assert(
+      resolvedAfterSecondUpdate.contains(NodeDataField.FdHoursField(FdHours(hour1))),
+      "expected first FdHour after second update"
+    )
+    assert(
+      resolvedAfterSecondUpdate.contains(NodeDataField.FdHoursField(FdHours(hour2))),
+      "expected second FdHour after second update"
+    )
+
+    testDir.cleanup()
