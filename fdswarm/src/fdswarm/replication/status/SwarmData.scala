@@ -23,13 +23,17 @@ import fdswarm.fx.qso.FdHour
 import fdswarm.replication.NodeStatus
 import fdswarm.util.NodeIdentity
 import jakarta.inject.{Inject, Singleton}
+import javafx.beans.value.ChangeListener
 import scalafx.application.Platform
 import scalafx.beans.property.StringProperty
 import scalafx.collections.ObservableBuffer
+import scalafx.scene.Parent
 import scalafx.scene.layout.GridPane
+import scalafx.scene.layout.StackPane
 
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import javafx.collections.ListChangeListener
 import scala.collection.concurrent.TrieMap
 
 enum FdHours(val fdHour: FdHour):
@@ -139,7 +143,32 @@ class SwarmData @Inject() ():
       }
     }
 
-  def buildGridPane(fields: Seq[NodeDataField]): GridPane =
+  def buildGridPane(fields: Seq[NodeDataField]): Parent =
+    val container = new StackPane()
+
+    def rebuildGrid(): Unit =
+      container.children.setAll(buildGrid(fields))
+
+    rebuildGrid()
+    val nodeListener: ListChangeListener[NodeIdentity] =
+      (_: ListChangeListener.Change[? <: NodeIdentity]) => rebuildGrid()
+    knownNodeIdentity.delegate.addListener(nodeListener)
+
+    // Remove listener once the wrapper leaves the scene graph.
+    val sceneListener: ChangeListener[javafx.scene.Scene] = new ChangeListener[javafx.scene.Scene]:
+      override def changed(
+          observable: javafx.beans.value.ObservableValue[? <: javafx.scene.Scene],
+          oldScene: javafx.scene.Scene,
+          newScene: javafx.scene.Scene
+      ): Unit =
+        if newScene == null then
+          knownNodeIdentity.delegate.removeListener(nodeListener)
+          container.delegate.sceneProperty.removeListener(this)
+    container.delegate.sceneProperty.addListener(sceneListener)
+
+    container
+
+  private def buildGrid(fields: Seq[NodeDataField]): GridPane =
     val builder = GridBuilder()
     val nodes = knownNodeIdentity.toSeq.sorted
     builder("", nodes.map(_.hostName)*)
