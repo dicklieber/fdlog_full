@@ -348,7 +348,7 @@ object fdswarm extends CommonSettings with ScoverageModule with BuildInfo with J
   )
 
   override def assembly = Task {
-    val dest = Task.dest / "fdswarm-all.jar"
+    val dest = Task.dest / "fdswarm-all.jar"//todo change to "fdswarm-assembly.jar" here and in manager launcher.
     val assemblyRes = super.assembly()
     os.copy.over(assemblyRes.path, dest, replaceExisting = true)
     PathRef(dest)

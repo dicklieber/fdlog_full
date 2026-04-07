@@ -22,18 +22,19 @@ import cats.effect.unsafe.implicits.global
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.contest.{ContestConfig, ContestConfigManager}
 import fdswarm.model.Qso
-import fdswarm.replication.status.SwarmStatus
+import fdswarm.replication.status.{NodeData, SwarmStatus}
 import fdswarm.store.ReplicationSupport
-import fdswarm.util.JavaTimeCirce.given
+import io.circe.generic.auto.deriveDecoder
 import io.circe.parser.decode
 import io.micrometer.core.instrument.MeterRegistry
-import jakarta.inject.{Inject, Singleton, Provider}
+import jakarta.inject.{Inject, Provider, Singleton}
 import scalafx.application.Platform
 
 import java.net.http.HttpClient
 @Singleton
 class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[ReplicationSupport],
                                   statusProcessor: StatusProcessor,
+                                  nodeData:NodeData,
                                   transport: Transport,
                                   statusBroadcastService: StatusBroadcastService,
                                   swarmStatusProvider: Provider[SwarmStatus],
@@ -74,10 +75,11 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
               statusCounter.increment()
               lastStatusMessagePayloadSize = udpHeader.payload.length.toDouble
               lastStatusMessageDigestCount = statusMessage.fdDigests.size
-              val receivedNodeStatus = NodeStatus(statusMessage, udpHeader.nodeIdentity, isLocal = false)
-              swarmStatus.put(receivedNodeStatus)
-              logger.trace("StatusHandle: StatusMessage  {}.", statusMessage)
-              statusProcessor.processStatus(receivedNodeStatus).unsafeRunAndForget()
+              val nodeStatus = NodeStatus(statusMessage, udpHeader.nodeIdentity, isLocal = false)
+              nodeData.update(nodeStatus)
+              logger.trace("nodeStatus:  {}.", nodeStatus)
+              //              swarmStatusProviders.put(receivedNodeStatus)
+              statusProcessor.processStatus(nodeStatus).unsafeRunAndForget()
           case Service.QSO =>
             qsoCounter.increment()
             val sJson = new String(udpHeader.payload, "UTF-8")
