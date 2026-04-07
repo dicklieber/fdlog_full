@@ -7,7 +7,7 @@ import fdswarm.model.Callsign
 import io.circe.parser.decode
 import io.circe.syntax.*
 import jakarta.inject.{Inject, Singleton, Provider}
-import scalafx.beans.property.{ReadOnlyBooleanProperty, ReadOnlyBooleanWrapper, ReadOnlyObjectProperty, ReadOnlyObjectWrapper}
+import scalafx.beans.property.{ObjectProperty, ReadOnlyBooleanProperty, ReadOnlyBooleanWrapper}
 
 @Singleton
 final class ContestConfigManager @Inject()(
@@ -21,19 +21,19 @@ final class ContestConfigManager @Inject()(
   private def qsoStore: fdswarm.store.QsoStore = qsoStoreProvider.get()
 // These override methods expose the current value of the contestConfigProperty
   override def contestType: ContestType =
-    contestConfigOption.map(_.contestType).getOrElse(ContestType.ARRL)
+    contestConfigProperty.value.contestType
 
   override def ourCallsign: Callsign =
-    contestConfigOption.map(_.ourCallsign).getOrElse(Callsign("TEMP"))
+    contestConfigProperty.value.ourCallsign
 
   override def transmitters: Int =
-    contestConfigOption.map(_.transmitters).getOrElse(1)
+    contestConfigProperty.value.transmitters
 
   override def ourClass: String =
-    contestConfigOption.map(_.ourClass).getOrElse("A")
+    contestConfigProperty.value.ourClass
 
   override def ourSection: String =
-    contestConfigOption.map(_.ourSection).getOrElse("STX")
+    contestConfigProperty.value.ourSection
 
 
   private var lastRestartTime: Long = 0L
@@ -41,13 +41,27 @@ final class ContestConfigManager @Inject()(
   private val contestFile: os.Path =
     productionDirectory() / "contest.json"
 
-  private var _contestConfig: ReadOnlyObjectWrapper[ContestConfig] | Null = load()
+  private val _contestConfig: ObjectProperty[ContestConfig] =
+    ObjectProperty(
+      load()
+    )
 
-  private val _hasConfiguration = new ReadOnlyBooleanWrapper(this, "hasConfiguration", _contestConfig != null)
+  private val _hasConfiguration = new ReadOnlyBooleanWrapper(
+    this,
+    "hasConfiguration",
+    _contestConfig.value.contestType != ContestType.NONE
+  )
+
+  _contestConfig.onChange(
+    (_, _, config) =>
+      _hasConfiguration.value = config.contestType != ContestType.NONE
+  )
 
   val hasConfiguration: ReadOnlyBooleanProperty = _hasConfiguration.readOnlyProperty
 
-  def onConfigSet(listener: ContestConfig => Unit): Unit =
+  def onConfigSet(
+                   listener: ContestConfig => Unit
+                 ): Unit =
     onConfigSetListeners :+= listener
 
   def shouldIgnoreStatus: Boolean =
@@ -55,85 +69,120 @@ final class ContestConfigManager @Inject()(
     (now - lastRestartTime) < (ignoreStatusSec * 1000L)
 
   def contestConfigOption: Option[ContestConfig] =
-    Option(_contestConfig).map(_.value)
+    Some(
+      _contestConfig.value
+    )
 
-  @throws[IllegalStateException]("If not initialized")
-  def contestConfigProperty: ReadOnlyObjectProperty[ContestConfig] =
-    requireContestConfig().readOnlyProperty
+  def contestConfigProperty: ObjectProperty[ContestConfig] =
+    _contestConfig
 
-  def setConfig(newConfig: ContestConfig): Unit =
-    if _contestConfig == null then
-      _contestConfig = ReadOnlyObjectWrapper(newConfig)
-      _hasConfiguration.value = true
-    else
-      _contestConfig.nn.value = newConfig
+  def setConfig(
+                 newConfig: ContestConfig
+               ): Unit =
+    _contestConfig.value = newConfig
     persist()
-    notifyConfigSet(newConfig)
+    notifyConfigSet(
+      newConfig
+    )
 
   /**
    * 1. Rename/archive qsos journal
    * 2. Clear in-memory stores
    * 3. Save new config
    */
-  def handleRestartContest(newConfig: ContestConfig): Unit =
+  def handleRestartContest(
+                           newConfig: ContestConfig
+                         ): Unit =
     lastRestartTime = System.currentTimeMillis()
 
     // archive + clear
     qsoStore.archiveAndClear()
 
     // update config + persist + notify
-    setConfig(newConfig)
+    setConfig(
+      newConfig
+    )
 
-  private def load(): ReadOnlyObjectWrapper[ContestConfig] | Null =
+  private def load(): ContestConfig =
     try
-      (for
-        file <- Option.when(os.exists(contestFile))(contestFile)
-        jsonString = os.read(file)
-        cfg <- decode[ContestConfig](jsonString) match
-          case Right(value) =>
-            Some(value)
-          case Left(err) =>
-            logger.error(
-              s"""Failed to decode ContestConfig from $contestFile
-                 |Error: ${err.getMessage}
-                 |JSON:
-                 |$jsonString
-                 |""".stripMargin
+      Option
+        .when(
+          os.exists(
+            contestFile
+          )
+        )(
+          contestFile
+        )
+        .map(
+          file =>
+            val jsonString = os.read(
+              file
             )
-            None
-      yield ReadOnlyObjectWrapper(cfg)).orNull
+            decode[ContestConfig](
+              jsonString
+            ) match
+            case Right(value) =>
+              value
+            case Left(err) =>
+              logger.error(
+                s"""Failed to decode ContestConfig from $contestFile
+                   |Error: ${err.getMessage}
+                   |JSON:
+                   |$jsonString
+                   |""".stripMargin
+              )
+              ContestConfig.noContest
+        )
+        .getOrElse(
+          ContestConfig.noContest
+        )
     catch
       case e: Throwable =>
-        logger.error(s"Failed to load contest config from $contestFile", e)
-        null
+        logger.error(
+          s"Failed to load contest config from $contestFile",
+          e
+        )
+        ContestConfig.noContest
 
   private def persist(): Unit =
     try
-      val cfg = requireContestConfig().value
+      val cfg = _contestConfig.value
       val json = cfg.asJson.spaces2
       val timestampedFile =
         productionDirectory() / s"${filenameStamp.build()}.contest.json"
 
-      os.write.over(contestFile, json, createFolders = true)
-      os.copy.over(contestFile, timestampedFile)
+      os.write.over(
+        contestFile,
+        json,
+        createFolders = true
+      )
+      os.copy.over(
+        contestFile,
+        timestampedFile
+      )
 
       logger.info(
         s"Persisted contest config to $contestFile and archived to $timestampedFile"
       )
     catch
       case e: Throwable =>
-        logger.error(s"Failed to persist contest config to $contestFile", e)
+        logger.error(
+          s"Failed to persist contest config to $contestFile",
+          e
+        )
 
-  private def notifyConfigSet(config: ContestConfig): Unit =
+  private def notifyConfigSet(
+                               config: ContestConfig
+                             ): Unit =
     onConfigSetListeners.foreach { listener =>
       try
-        listener(config)
+        listener(
+          config
+        )
       catch
         case e: Throwable =>
-          logger.error("ContestConfigManager.onConfigSet listener failed", e)
+          logger.error(
+            "ContestConfigManager.onConfigSet listener failed",
+            e
+          )
     }
-
-  private def requireContestConfig(): ReadOnlyObjectWrapper[ContestConfig] =
-    if _contestConfig == null then
-      throw new IllegalStateException("contestConfig not initialized")
-    _contestConfig.nn

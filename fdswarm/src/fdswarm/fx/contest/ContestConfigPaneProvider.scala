@@ -18,11 +18,7 @@ class ContestConfigPaneProvider @Inject()(contestCatalog: ContestCatalog,
   private var currentPane: ContestConfigPane | Null = null
 
   def pane(): ContestConfigPane =
-    val initialConfig = if contestConfigManager.hasConfiguration.value then
-      contestConfigManager.contestConfigProperty.value
-    else
-      // Fallback to a default config if none exists
-      ContestConfig(contestType = ContestType.WFD, ourCallsign = fdswarm.model.Callsign("WA9NNN"), transmitters = 1, ourClass = "A", ourSection = "IL")
+    val initialConfig =   contestConfigManager.contestConfigProperty.value
     val pane = new ContestConfigPane(initialConfig, contestCatalog, sectionsProvider)
     currentPane = pane
     pane
