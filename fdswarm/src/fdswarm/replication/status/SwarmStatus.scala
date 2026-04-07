@@ -26,6 +26,7 @@ import fdswarm.util.{JavaTimeCirce, NodeIdentity, NodeIdentityManager}
 import io.circe.*
 import jakarta.inject.*
 import jakarta.inject.Provider
+import javafx.collections.ListChangeListener
 import scalafx.beans.property.ObjectProperty
 
 import java.time.Instant
@@ -54,7 +55,12 @@ class SwarmStatus @Inject() (
     if pane != null then
       pane.update(nodeMap.values.toSeq)
 
-  localNodeStatus.onUpdate(put)
+  localNodeStatus.updates.forEach(ns => put(ns))
+  localNodeStatus.updates.addListener((change: ListChangeListener.Change[? <: NodeStatus]) =>
+    while change.next() do
+      if change.wasAdded() then
+        change.getAddedSubList.forEach(ns => put(ns))
+  )
 
   def updateLocalDigests(digests: Seq[FdHourDigest]): Unit =
     localNodeStatus.updateDigests(digests)

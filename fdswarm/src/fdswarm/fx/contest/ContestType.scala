@@ -20,22 +20,30 @@ package fdswarm.fx.contest
 
 import fdswarm.{ContestDateCalculator, ContestDates}
 import io.circe.{Codec, Decoder, Encoder}
-import scalafx.beans.property.ObjectProperty
-import scalafx.scene.control.{RadioButton, ToggleGroup}
-import scalafx.scene.layout.{Pane, VBox}
 
 import java.time.*
 
-enum ContestType(val name: String, val compute: Int => ContestDates) derives sttp.tapir.Schema:
-  /**
-   * 
-   * @param zdt lets plugin in a differnet date, for testing
-   * @return
-   */
-  def dates(zdt: ZonedDateTime = ZonedDateTime.now()): ContestDates = compute(zdt.getYear)
+enum ContestType(
+    val name: String,
+    val compute: Int => ContestDates,
+    val allowChosing: Boolean = true)
+    derives sttp.tapir.Schema:
+  /** @param zdt
+    *   lets plugin in a differnet date, for testing
+    * @return
+    */
+  def dates(
+      zdt: ZonedDateTime = ZonedDateTime.now()
+    ): ContestDates = compute(zdt.getYear)
+  case NONE extends ContestType("None", ContestDateCalculator.none, false)
 
-  case WFD extends ContestType("Winter Field Day", ContestDateCalculator.lastFull)
-  case ARRL extends ContestType("ARRL Field Day", ContestDateCalculator.forthFullWeekend)
+  case WFD
+      extends ContestType("Winter Field Day", ContestDateCalculator.lastFull)
+  case ARRL
+      extends ContestType(
+        "ARRL Field Day",
+        ContestDateCalculator.forthFullWeekend
+      )
 
 object ContestType:
   given Codec[ContestType] = Codec.from(
@@ -46,4 +54,6 @@ object ContestType:
     Encoder.encodeString.contramap(_.toString)
   )
 
-case class ContestTimes(start: ZonedDateTime, end: ZonedDateTime)
+case class ContestTimes(
+    start: ZonedDateTime,
+    end: ZonedDateTime)

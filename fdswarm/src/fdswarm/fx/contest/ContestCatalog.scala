@@ -39,7 +39,7 @@ case class ClassChoice(
 
 /**
  * As defined in [[application.conf]]
- * @param contestType [[WFD]] or [[ARRL]]
+ * @param contestType  [[fdswarm.fx.contest.ContestType.WFD]] or [[fdswarm.fx.contest.ContestType.ARRL]]
  * @param classChoices what classes are allowed in this contest
  */
 case class ContestDefinition(

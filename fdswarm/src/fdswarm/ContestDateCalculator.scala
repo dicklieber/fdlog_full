@@ -26,6 +26,14 @@ import fdswarm.util.JavaTimeCirce.given
 final case class ContestDates(startUtc: ZonedDateTime, endUtc: ZonedDateTime)
 
 object ContestDateCalculator:
+  val Epoch: ContestDates =
+    ContestDates(
+      startUtc = Instant.EPOCH.atZone(ZoneOffset.UTC),
+      endUtc = Instant.EPOCH.atZone(ZoneOffset.UTC)
+    )
+
+  def none(year: Int): ContestDates = Epoch
+
   
   /**
    * WFD

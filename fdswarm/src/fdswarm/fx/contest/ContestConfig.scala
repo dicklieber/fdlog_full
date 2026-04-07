@@ -39,7 +39,7 @@ trait ContestConfigFields:
  * @param ourClass     our class
  * @param ourSection   our section
  * @param contestType WFD or ARRL
- * @param stamp        when the config was created. Latest is considered authorative.
+ * @param stamp        when the config was created. The latest is considered authorative.
  */
 case class ContestConfig(contestType: ContestType,
                          ourCallsign: Callsign,
@@ -60,3 +60,12 @@ case class ContestConfig(contestType: ContestType,
 
   val display:String=
     s"$exchange ${stampFormatter.format(stamp)}"
+
+object ContestConfig:
+  val noContest: ContestConfig = ContestConfig(
+    contestType = ContestType.NONE,
+    ourCallsign = Callsign("N0CALL"),
+    transmitters = 0,
+    ourClass = "-",
+    ourSection = "-"
+  )

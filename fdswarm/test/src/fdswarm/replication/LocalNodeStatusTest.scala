@@ -51,13 +51,10 @@ class LocalNodeStatusTest extends FunSuite:
     val nodeIdentityManager = new fdswarm.util.MockNodeIdentityManager(NodeIdentity("127.0.0.1", 8080, "local-instance", "x"))
     val localNodeStatus = new LocalNodeStatus(nodeIdentityManager, stationManager, selectedBandModeStore, () => contestManager)
 
-    var updates: Vector[NodeStatus] = Vector.empty
-    localNodeStatus.onUpdate(ns => updates = updates :+ ns)
-
-    assertEquals(updates.size, 1)
-    assertEquals(updates.head.isLocal, true)
-    assertEquals(updates.head.statusMessage.fdDigests, Seq.empty)
-    assertEquals(updates.head.statusMessage.contestConfig, dummyContestConfig)
+    assertEquals(localNodeStatus.updates.size(), 1)
+    assertEquals(localNodeStatus.updates.get(0).isLocal, true)
+    assertEquals(localNodeStatus.updates.get(0).statusMessage.fdDigests, Seq.empty)
+    assertEquals(localNodeStatus.updates.get(0).statusMessage.contestConfig, dummyContestConfig)
 
     testDir.cleanup()
 
@@ -82,32 +79,29 @@ class LocalNodeStatusTest extends FunSuite:
     val nodeIdentityManager = new fdswarm.util.MockNodeIdentityManager(NodeIdentity("127.0.0.1", 8080, "local-instance", "x"))
     val localNodeStatus = new LocalNodeStatus(nodeIdentityManager, stationManager, selectedBandModeStore, () => contestManager)
 
-    var updates: Vector[NodeStatus] = Vector.empty
-    localNodeStatus.onUpdate(ns => updates = updates :+ ns)
-
     val digest = FdHourDigest(FdHour(15, 12), 10, "abc")
     localNodeStatus.updateDigests(Seq(digest))
-    assertEquals(updates.size, 0, "No status should be emitted before contest config exists")
+    assertEquals(localNodeStatus.updates.size(), 0, "No status should be emitted before contest config exists")
 
     contestManager.setConfig(dummyContestConfig)
-    assertEquals(updates.size, 1)
-    assertEquals(updates.last.isLocal, true)
-    assertEquals(updates.last.statusMessage.fdDigests, Seq(digest))
+    assertEquals(localNodeStatus.updates.size(), 1)
+    assertEquals(localNodeStatus.updates.get(localNodeStatus.updates.size() - 1).isLocal, true)
+    assertEquals(localNodeStatus.updates.get(localNodeStatus.updates.size() - 1).statusMessage.fdDigests, Seq(digest))
 
-    val t1 = updates.last.received
+    val t1 = localNodeStatus.updates.get(localNodeStatus.updates.size() - 1).received
     Thread.sleep(2)
     stationManager.setStation(StationConfig(operator = Callsign("K1ABC"), rig = "Rig", antenna = "Wire"))
-    assertEquals(updates.size, 2)
-    assertEquals(updates.last.isLocal, true)
-    assertEquals(updates.last.statusMessage.bandNodeOperator.operator, Callsign("K1ABC"))
-    assert(updates.last.received.isAfter(t1), "received should advance for each new local status")
+    assertEquals(localNodeStatus.updates.size(), 2)
+    assertEquals(localNodeStatus.updates.get(localNodeStatus.updates.size() - 1).isLocal, true)
+    assertEquals(localNodeStatus.updates.get(localNodeStatus.updates.size() - 1).statusMessage.bandNodeOperator.operator, Callsign("K1ABC"))
+    assert(localNodeStatus.updates.get(localNodeStatus.updates.size() - 1).received.isAfter(t1), "received should advance for each new local status")
 
-    val t2 = updates.last.received
+    val t2 = localNodeStatus.updates.get(localNodeStatus.updates.size() - 1).received
     Thread.sleep(2)
     selectedBandModeStore.save(bandModeBuilder("40m", "CW"))
-    assertEquals(updates.size, 3)
-    assertEquals(updates.last.isLocal, true)
-    assertEquals(updates.last.statusMessage.bandNodeOperator.bandMode.toString, "40m CW")
-    assert(updates.last.received.isAfter(t2), "received should advance for each new local status")
+    assertEquals(localNodeStatus.updates.size(), 3)
+    assertEquals(localNodeStatus.updates.get(localNodeStatus.updates.size() - 1).isLocal, true)
+    assertEquals(localNodeStatus.updates.get(localNodeStatus.updates.size() - 1).statusMessage.bandNodeOperator.bandMode.toString, "40m CW")
+    assert(localNodeStatus.updates.get(localNodeStatus.updates.size() - 1).received.isAfter(t2), "received should advance for each new local status")
 
     testDir.cleanup()
