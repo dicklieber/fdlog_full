@@ -47,6 +47,7 @@ object FdHours:
 @Singleton
 class SwarmData @Inject() ():
   val knownNodeIdentity: ObservableBuffer[NodeIdentity] = ObservableBuffer.empty[NodeIdentity]
+  private val knownFdHoursBuffer: ObservableBuffer[FdHours] = ObservableBuffer.empty[FdHours]
 
   private val lastStatusByNode = TrieMap.empty[NodeIdentity, NodeStatus]
   private val valueProperties = TrieMap.empty[(NodeIdentity, NodeDataField), StringProperty]
@@ -55,14 +56,22 @@ class SwarmData @Inject() ():
   private val stampFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("MM-dd HH:mm:ss").withZone(ZoneId.systemDefault())
 
-  def knownFdHours: Seq[FdHours] = knownFdHourValues.keys.toSeq.sorted.map(FdHours.apply)
+  def knownFdHours: Seq[FdHours] = knownFdHoursBuffer.toSeq
 
   def update(nodeStatus: NodeStatus): Unit =
     val nodeIdentity = nodeStatus.nodeIdentity
     lastStatusByNode.put(nodeIdentity, nodeStatus)
-    nodeStatus.statusMessage.fdDigests.foreach(fd => knownFdHourValues.getOrElseUpdate(fd.fdHour, fd.fdHour))
+    val newlyDiscoveredFdHours = nodeStatus.statusMessage.fdDigests
+      .flatMap(fd => if knownFdHourValues.putIfAbsent(fd.fdHour, fd.fdHour).isEmpty then Some(fd.fdHour) else None)
+      .distinct
+      .sorted
 
     updateOnFxThread {
+      if newlyDiscoveredFdHours.nonEmpty then
+        val mergedFdHours = (knownFdHoursBuffer.map(_.fdHour) ++ newlyDiscoveredFdHours).distinct.sorted.map(FdHours.apply)
+        knownFdHoursBuffer.clear()
+        knownFdHoursBuffer ++= mergedFdHours
+
       if !knownNodeIdentity.contains(nodeIdentity) then
         knownNodeIdentity += nodeIdentity
 
@@ -79,16 +88,22 @@ class SwarmData @Inject() ():
       }
     }
 
-  def buildGridPane(fields: Seq[NodeDataField]): Parent =
+  def buildGridPane(fields: Seq[NodeDataField | FdHours.type]): Parent =
     val container = new StackPane()
+    val includeAllFdHours = fields.contains(FdHours)
 
     def rebuildGrid(): Unit =
-      container.children.setAll(buildGrid(fields))
+      container.children.setAll(buildGrid(resolveFields(fields)))
 
     rebuildGrid()
     val nodeListener: ListChangeListener[NodeIdentity] =
       (_: ListChangeListener.Change[? <: NodeIdentity]) => rebuildGrid()
     knownNodeIdentity.delegate.addListener(nodeListener)
+
+    val fdHoursListener: ListChangeListener[FdHours] =
+      (_: ListChangeListener.Change[? <: FdHours]) => rebuildGrid()
+    if includeAllFdHours then
+      knownFdHoursBuffer.delegate.addListener(fdHoursListener)
 
     // Remove listener once the wrapper leaves the scene graph.
     val sceneListener: ChangeListener[javafx.scene.Scene] = new ChangeListener[javafx.scene.Scene]:
@@ -99,6 +114,8 @@ class SwarmData @Inject() ():
       ): Unit =
         if newScene == null then
           knownNodeIdentity.delegate.removeListener(nodeListener)
+          if includeAllFdHours then
+            knownFdHoursBuffer.delegate.removeListener(fdHoursListener)
           container.delegate.sceneProperty.removeListener(this)
     container.delegate.sceneProperty.addListener(sceneListener)
 
@@ -113,6 +130,21 @@ class SwarmData @Inject() ():
       builder(field.label, values*)
     }
     builder.result
+
+  private[status] def addKnownFdHours(fdHours: Seq[FdHour]): Unit =
+    if fdHours.nonEmpty then
+      fdHours.foreach(fdHour => knownFdHourValues.putIfAbsent(fdHour, fdHour))
+      val mergedFdHours = (knownFdHoursBuffer.map(_.fdHour) ++ fdHours).distinct.sorted.map(FdHours.apply)
+      knownFdHoursBuffer.clear()
+      knownFdHoursBuffer ++= mergedFdHours
+
+  private[status] def resolveFields(fields: Seq[NodeDataField | FdHours.type]): Seq[NodeDataField] =
+    fields
+      .flatMap {
+        case nodeDataField: NodeDataField => Seq(nodeDataField)
+        case FdHours => knownFdHours.map(NodeDataField.FdHoursField.apply)
+      }
+      .distinct
 
   private def staticFieldValues(nodeStatus: NodeStatus): Map[NodeDataField, String] =
     val bno = nodeStatus.statusMessage.bandNodeOperator

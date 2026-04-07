@@ -54,7 +54,7 @@ class SwarmStatusTest extends FunSuite:
     val selectedBandModeStore = new SelectedBandModeManager(testDir, bandModeBuilder, MockStartupInfo)
     val localNodeStatus = new LocalNodeStatus(MockNodeIdentityManager(), stationManager, selectedBandModeStore, () => null)
     val swarmStatusPaneProvider: Provider[status.SwarmStatusPane] = () => null
-    val swarmStatus = new SwarmStatus(testDir, MockNodeIdentityManager(), localNodeStatus, swarmStatusPaneProvider)
+    val swarmStatus = new SwarmStatus(MockNodeIdentityManager(), localNodeStatus, swarmStatusPaneProvider)
     val hp = NodeIdentity("192.168.1.100", 8080, "test-instance", "xxx")
     val hour = FdHour(15, 12)
     val digest = FdHourDigest(hour, 10, "abc")
@@ -90,7 +90,7 @@ class SwarmStatusTest extends FunSuite:
     val mockNodeIdentityManager = new MockNodeIdentityManager(localNi)
     val localNodeStatus = new LocalNodeStatus(mockNodeIdentityManager, stationManager, selectedBandModeStore, () => null)
     val swarmStatusPaneProvider: Provider[status.SwarmStatusPane] = () => null
-    val swarmStatus = new SwarmStatus(testDir, mockNodeIdentityManager, localNodeStatus, swarmStatusPaneProvider)
+    val swarmStatus = new SwarmStatus(mockNodeIdentityManager, localNodeStatus, swarmStatusPaneProvider)
 
     val hour = FdHour(15, 12)
     val digest = FdHourDigest(hour, 10, "abc")
@@ -121,7 +121,7 @@ class SwarmStatusTest extends FunSuite:
 
     testDir.cleanup()
 
-  test("SwarmStatus should persist state"):
+  test("SwarmStatus.refresh should run with current node state"):
     val testDir = new TestDirectory
     val stationManager = new StationConfigManager(testDir, MockStartupInfo)
     val config = com.typesafe.config.ConfigFactory.parseString(
@@ -144,12 +144,12 @@ class SwarmStatusTest extends FunSuite:
     val statusMessage = StatusMessage(Seq(digest), dummyBno, contestConfig = dummyContestConfig)
     val nodeStuff = NodeStatus(statusMessage, hp, isLocal = false)
 
-    // 1. Create SwarmStatus, put data, and it should save
+    // Create SwarmStatus, put data, then refresh/clear should be safe with null pane provider.
     val swarmStatusPaneProvider: Provider[status.SwarmStatusPane] = () => null
-    val swarmStatus1 = new SwarmStatus(testDir, MockNodeIdentityManager(), localNodeStatus, swarmStatusPaneProvider, statusPersist = true)
+    val swarmStatus1 = new SwarmStatus(MockNodeIdentityManager(), localNodeStatus, swarmStatusPaneProvider)
     swarmStatus1.put(nodeStuff)
-    
-    // 2. verify file exists
-    assert(os.exists(testDir() / "swarmStatus.json"))
+    swarmStatus1.refresh()
+    assert(swarmStatus1.nodeMap.contains(hp))
+    swarmStatus1.clear()
 
     testDir.cleanup()
