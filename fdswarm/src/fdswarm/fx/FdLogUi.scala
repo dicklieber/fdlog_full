@@ -41,7 +41,6 @@ final class FdLogUi @Inject() (
   contestEntry: ContestEntry,
   menus: FdLogMenus,
   repl: NodeStatusHandler,
-  statusBroadcastService: StatusBroadcastService,
   nodeIdentityManager: NodeIdentityManager,
   meterRegistry: MeterRegistry,
   qsoStore: fdswarm.store.QsoStore,

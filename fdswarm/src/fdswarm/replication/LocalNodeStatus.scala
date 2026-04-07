@@ -77,7 +77,6 @@ final class LocalNodeStatus @Inject()(
   private val updatesBuffer: ObservableBuffer[NodeStatus] = ObservableBuffer.empty[NodeStatus]
   private val currentBuffer: ReadOnlyObjectWrapper[NodeStatus] = new ReadOnlyObjectWrapper[NodeStatus](null)
   val updates: ObservableList[NodeStatus] = FXCollections.unmodifiableObservableList(updatesBuffer.delegate)
-  val current: ReadOnlyObjectProperty[NodeStatus] = currentBuffer.getReadOnlyProperty
 
   stationManager.stationProperty.onChange { (_, _, _) =>
     rebuildAndNotify("station-change")
@@ -95,9 +94,6 @@ final class LocalNodeStatus @Inject()(
   def updateDigests(digests: Seq[FdHourDigest]): Unit =
     heldDigests = digests
     rebuildAndNotify("digest-update")
-
-  def currentOption: Option[NodeStatus] = maybeNodeStatus
-  def ourNodeIdentity: NodeIdentity = nodeIdentityManager.ourNodeIdentity
 
   def update(nodeStatus: NodeStatus): Unit =
     maybeNodeStatus = Some(nodeStatus)
