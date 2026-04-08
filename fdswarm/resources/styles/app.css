@@ -209,6 +209,12 @@
     -fx-font-family: "helvetica";
 }
 
+.grid-value.operatorLink {
+    -fx-text-fill: derive(-fx-accent, -20%);
+    -fx-underline: true;
+    -fx-cursor: hand;
+}
+
 .countGood {
     -fx-background-color: lightgreen;
 }

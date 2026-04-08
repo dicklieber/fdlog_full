@@ -21,6 +21,7 @@ package fdswarm.replication.status
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.GridBuilder
 import fdswarm.fx.qso.FdHour
+import fdswarm.fx.station.StationEditor
 import fdswarm.replication.LocalNodeStatus
 import fdswarm.replication.NodeStatus
 import fdswarm.store.FdHourDigest
@@ -28,6 +29,9 @@ import fdswarm.util.NodeIdentity
 import fdswarm.util.NodeIdentityManager
 import jakarta.inject.{Inject, Singleton}
 import javafx.beans.value.ChangeListener
+import javafx.event.EventHandler
+import javafx.scene.input.MouseEvent
+import scalafx.Includes.*
 import scalafx.application.Platform
 import scalafx.beans.property.StringProperty
 import scalafx.collections.ObservableBuffer
@@ -58,7 +62,8 @@ object FdHours:
 @Singleton
 class SwarmData @Inject() (
                             nodeIdentityManager: NodeIdentityManager,
-                            localNodeStatus: LocalNodeStatus
+                            localNodeStatus: LocalNodeStatus,
+                            stationEditor: StationEditor
                           ) extends LazyLogging:
   type CellNodeListener = (
     NodeStatus,
@@ -83,6 +88,8 @@ class SwarmData @Inject() (
   private val nodeStatusListenerId = AtomicLong(0L)
   private val cellNodeListenerId = AtomicLong(0L)
   private val ourNodeStyleClass = "ourNode"
+  private val operatorLinkStyleClass = "operatorLink"
+  private val operatorFieldName = NodeDataField.Operator.label
 
   private val stampFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("MM-dd HH:mm:ss").withZone(ZoneId.systemDefault())
@@ -209,7 +216,6 @@ class SwarmData @Inject() (
     val container = new StackPane()
     val includeAllFdHours = fields.contains(FdHours)
     var renderedByThisPane = Map.empty[(NodeIdentity, NodeDataField), Seq[Node]]
-    var removeNodeStatusStyleListener = () => ()
 
     def rebuildGrid(): Unit =
       unregisterRenderedCells(
@@ -234,16 +240,6 @@ class SwarmData @Inject() (
     if includeAllFdHours then
       knownFdHoursBuffer.delegate.addListener(fdHoursListener)
 
-    removeNodeStatusStyleListener = addNodeStatusListener(
-      statuses =>
-        updateOnFxThread {
-          applyOurNodeStyles(
-            statuses,
-            renderedByThisPane
-          )
-        }
-    )
-
     // Remove listener once the wrapper leaves the scene graph.
     val sceneListener: ChangeListener[javafx.scene.Scene] = new ChangeListener[javafx.scene.Scene]:
       override def changed(
@@ -259,7 +255,6 @@ class SwarmData @Inject() (
             renderedByThisPane
           )
           renderedByThisPane = Map.empty
-          removeNodeStatusStyleListener()
           container.delegate.sceneProperty.removeListener(this)
     container.delegate.sceneProperty.addListener(sceneListener)
 
@@ -396,10 +391,6 @@ class SwarmData @Inject() (
                 )
             )
         )
-        applyOurNodeStyleForIdentity(
-          key._1,
-          cells
-        )
     }
 
   private def unregisterRenderedCells(
@@ -431,9 +422,14 @@ class SwarmData @Inject() (
                                        field: NodeDataField,
                                        targetCells: Seq[Node]
                                      ): Unit =
-    if cellNodeListeners.nonEmpty then
-      targetCells.foreach(
-        cell =>
+    targetCells.foreach(
+      cell =>
+        doStyle(
+          nodeStatus,
+          field.label,
+          cell
+        )
+        if cellNodeListeners.nonEmpty then
           cellNodeListeners.values.foreach(
             listener =>
               listener(
@@ -442,7 +438,7 @@ class SwarmData @Inject() (
                 cell
               )
           )
-      )
+    )
 
   private def notifyCellNodeListeners(
                                        nodeStatus: NodeStatus,
@@ -458,46 +454,60 @@ class SwarmData @Inject() (
       cells
     )
 
-  private def applyOurNodeStyles(
-                                  statuses: Seq[NodeStatus],
-                                  renderedCells: Map[(NodeIdentity, NodeDataField), Seq[Node]]
-                                ): Unit =
-    val styledNodeIdentities = statuses.collect {
-      case status if status.nodeIdentity == ourNodeIdentity =>
-        status.nodeIdentity
-    }.toSet
-    renderedCells.foreach {
-      case ((nodeIdentity, _), cells) =>
-        val shouldStyle = styledNodeIdentities.contains(nodeIdentity)
-        cells.foreach(
-          cell =>
-            updateOurNodeStyleClass(
-              cell,
-              shouldStyle
-            )
-        )
-    }
-
-  private def applyOurNodeStyleForIdentity(
-                                            nodeIdentity: NodeIdentity,
-                                            cells: Seq[Node]
-                                          ): Unit =
-    val shouldStyle =
-      nodeIdentity == ourNodeIdentity && nodeMap.contains(ourNodeIdentity)
-    cells.foreach(
-      cell =>
-        updateOurNodeStyleClass(
-          cell,
-          shouldStyle
-        )
+  /**
+   * Applies the appropriate styling and behavior to a given node based on its status and field name.
+   *
+   * @param nodeStatus the status of the node, providing context about its state and whether it is local
+   * @param fieldName  the name of the field associated with the node, used to determine specific styling rules
+   * @param node       the node to which the styling rules and behaviors will be applied
+   * @return Unit this method does not return a value; it modifies the node's style and event handlers directly
+   */
+  private def doStyle(
+                       nodeStatus: NodeStatus,
+                       fieldName: String,
+                       node: Node
+                     ): Unit =
+    // Keep all current and future styling rules in one place.
+    setStyleClass(
+      node,
+      ourNodeStyleClass,
+      nodeStatus.isLocal
     )
 
-  private def updateOurNodeStyleClass(
-                                       cell: Node,
-                                       shouldStyle: Boolean
-                                     ): Unit =
-    if shouldStyle then
-      if !cell.styleClass.contains(ourNodeStyleClass) then
-        cell.styleClass += ourNodeStyleClass
+    val isLocalOperatorField = nodeStatus.isLocal && fieldName == operatorFieldName
+    setStyleClass(
+      node,
+      operatorLinkStyleClass,
+      isLocalOperatorField
+    )
+    if isLocalOperatorField then
+      node.delegate.setOnMouseClicked(
+        new EventHandler[MouseEvent]:
+          override def handle(
+                               event: MouseEvent
+                             ): Unit =
+            Option(node.scene.value)
+              .flatMap(scene => Option(scene.delegate.getWindow))
+              .foreach(
+                window =>
+                  stationEditor.show(
+                    window
+                  )
+              )
+      )
     else
-      cell.styleClass -= ourNodeStyleClass
+      node.delegate.setOnMouseClicked(
+        null
+      )
+
+  private def setStyleClass(
+                             node: Node,
+                             styleClassName: String,
+                             enabled: Boolean
+                           ): Unit =
+    if enabled then
+      if !node.styleClass.contains(styleClassName) then
+        node.styleClass += styleClassName
+    else
+      while node.styleClass.contains(styleClassName) do
+        node.styleClass -= styleClassName
