@@ -19,8 +19,9 @@
 package fdswarm.fx
 
 import cats.effect.unsafe.implicits.global
+import com.google.inject.{Guice, Injector}
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.{FdLogApp, StartupInfo}
+import fdswarm.StartupInfo
 import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.utils.UiStyles
@@ -37,9 +38,11 @@ import scalafx.scene.shape.SVGPath
 import scalafx.scene.{Node, Scene, SnapshotParameters}
 import scalafx.stage.Stage
 
+import java.time.{Duration, Instant}
+
 final class FdLogUi @Inject() (
   contestEntry: ContestEntry,
-  menus: FdLogMenus,
+  menusFactory: FdLogMenus.Factory,
   repl: NodeStatusHandler,
   statusBroadcastService: StatusBroadcastService,
   nodeIdentityManager: NodeIdentityManager,
@@ -49,23 +52,23 @@ final class FdLogUi @Inject() (
   startupInfo: StartupInfo
 ) extends LazyLogging:
 
-  private val qsoNode: Node =
-    contestEntry.node
-  private val centerPane = new StackPane:
-    children = List(qsoNode)
-  private val root = new BorderPane:
-    top = menus.menuBar
-    center = centerPane
-
   def start(
     stage: Stage
   ): Unit =
+    val menus = menusFactory.create(
+      stage
+    )
+    val qsoNode: Node = contestEntry.node
+    val centerPane = new StackPane:
+      children = List(qsoNode)
+    val root = new BorderPane:
+      top = menus.menuBar
+      center = centerPane
+
     setAppIcon(stage)
     stage.title = "FdSwarm"
     statusBroadcastService.start()
     apiServer.start().unsafeRunAndForget()
-
-    menus.setOwnerWindow(stage)
 
     if isMac then
       try
@@ -116,7 +119,7 @@ final class FdLogUi @Inject() (
     )
 
     Platform.runLater {
-      val duration = FdLogApp.startupDuration
+      val duration = FdLogUi.startupDuration
       val durationNanos = duration.toNanos
       logger.info(s"UI responsive in ${DurationFormat(duration)}")
       fdswarm.util.MetricsHelpers.recordTimerNanos(
@@ -194,6 +197,56 @@ final class FdLogUi @Inject() (
         e
       )
 
+  def stopApp(): Unit =
+    statusBroadcastService.stop()
+
 object FdLogUi:
+  private val startTime = Instant.now()
+  private var rawArgs: Array[String] = Array.empty
+  private lazy val injector: Injector = Guice.createInjector(
+    new ConfigModule(
+      rawArgs
+    )
+  )
+
+  def initialize(
+    args: Array[String]
+  ): Unit =
+    rawArgs = args
+    System.setProperty(
+      "apple.laf.useScreenMenuBar",
+      "true"
+    )
+    if isMac then
+      System.setProperty(
+        "apple.awt.application.name",
+        "FdSwarm"
+      )
+      System.setProperty(
+        "com.apple.mrj.application.apple.menu.about.name",
+        "FdSwarm"
+      )
+      // Some versions of Java/JavaFX also look for this.
+      System.setProperty(
+        "apple.awt.application.appearance",
+        "system"
+      )
+
+    System.setProperty(
+      "javafx.embed.singleThread",
+      "true"
+    )
+
+  def build(): FdLogUi =
+    injector.getInstance(
+      classOf[FdLogUi]
+    )
+
+  def startupDuration: Duration =
+    Duration.between(
+      startTime,
+      Instant.now()
+    )
+
   lazy val isMac: Boolean =
     System.getProperty("os.name").toLowerCase.contains("mac")

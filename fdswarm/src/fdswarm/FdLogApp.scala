@@ -18,58 +18,45 @@
 
 package fdswarm
 
-import com.google.inject.{Guice, Injector}
-import fdswarm.fx.{ConfigModule, FdLogUi}
-import fdswarm.replication.StatusBroadcastService
-import net.codingwell.scalaguice.InjectorExtensions.*
+import fdswarm.fx.FdLogUi
 import scalafx.application.JFXApp3
-import fdswarm.StartupConfig
-
-import java.time.{Duration, Instant}
 
 /** Minimal app bootstrap:
-  *   - builds the Guice injector
-  *   - runs startup validation checks
+  *   - applies process startup settings
   *   - delegates all UI construction to [[FdLogUi]]
   */
 
 object FdLogApp extends JFXApp3:
-  private val startTime = Instant.now()
-  private var rawArgs: Array[String] = Array.empty
+  private var ui: Option[FdLogUi] = None
 
-  override def main(args: Array[String]): Unit =
-    println(s"Starting FdSwarm with args: ${args.mkString(" ")}")
-    rawArgs = args
-    System.setProperty("apple.laf.useScreenMenuBar", "true")
-    if (System.getProperty("os.name").toLowerCase.contains("mac")) {
-      System.setProperty("apple.awt.application.name", "FdSwarm")
-      System.setProperty("com.apple.mrj.application.apple.menu.about.name", "FdSwarm")
-      // Some versions of Java/JavaFX also look for this
-      System.setProperty("apple.awt.application.appearance", "system")
-    }
-    System.setProperty("javafx.embed.singleThread", "true")
-
-    super.main(args)
+  override def main(
+    args: Array[String]
+  ): Unit =
+    println(
+      s"Starting FdSwarm with args: ${args.mkString(
+        " "
+      )}"
+    )
+    FdLogUi.initialize(
+      args
+    )
+    super.main(
+      args
+    )
 
   private val log = org.slf4j.LoggerFactory.getLogger(getClass)
 
-  lazy val startupDuration: Duration = Duration.between(startTime, Instant.now())
-
-  private lazy val injector: Injector = Guice.createInjector(new ConfigModule(rawArgs))
-  
-
-  var statusBroadcastService: Option[StatusBroadcastService] = None
-
   override def start(): Unit =
-    val ui = injector.instance[FdLogUi]
-
+    val builtUi = FdLogUi.build()
+    ui = Some(builtUi)
 
     // Create the primary stage, let the UI configure it, then publish it
     val s = new JFXApp3.PrimaryStage
-    ui.start(s)
+    builtUi.start(s)
     stage = s
 
   override def stopApp(): Unit =
     log.debug("stopApp")
-    statusBroadcastService.foreach(_.stop())
-
+    ui.foreach(
+      _.stopApp()
+    )
