@@ -42,7 +42,10 @@ import java.net.InetAddress
  *                   - `toURI`: Converts the node's information into a URI instance using the scheme "http".
  *                   - `compare`: Compares two `NodeIdentity` instances first by host, then by port.
  */
-case class NodeIdentity(hostIp: String, port: Int, hostName: String, instanceId: Id)
+case class NodeIdentity(hostIp: String,
+                        port: Int,
+                        hostName: String,
+                        instanceId: Id)
   extends Ordered[NodeIdentity] derives Codec.AsObject, Schema:
   /**
    * String representation.
