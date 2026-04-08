@@ -42,12 +42,17 @@ class SwarmStatusPane @Inject()(
 
   private val nowProperty = LongProperty(System.currentTimeMillis())
   private def swarmData: SwarmData = swarmDataProvider.get()
+  private val removeSwarmDataListener = swarmData.addNodeStatusListener(
+    allNodeDetails =>
+      update(
+        allNodeDetails
+      )
+  )
 
   private val timeline = new Timeline {
     cycleCount = Timeline.Indefinite
     keyFrames = Seq(
       KeyFrame(Duration(3000), onFinished = _ => {
-        swarmData.refresh()
         nowProperty.value = System.currentTimeMillis()
       })
     )

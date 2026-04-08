@@ -26,7 +26,7 @@ import fdswarm.replication.NodeStatus
 import fdswarm.store.FdHourDigest
 import fdswarm.util.NodeIdentity
 import fdswarm.util.NodeIdentityManager
-import jakarta.inject.{Inject, Provider, Singleton}
+import jakarta.inject.{Inject, Singleton}
 import javafx.beans.value.ChangeListener
 import scalafx.application.Platform
 import scalafx.beans.property.StringProperty
@@ -38,6 +38,7 @@ import scalafx.scene.layout.StackPane
 import javafx.collections.ListChangeListener
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.atomic.AtomicLong
 import scala.collection.concurrent.TrieMap
 
 enum FdHours(val fdHour: FdHour):
@@ -52,13 +53,11 @@ object FdHours:
  * Holds data about each node in the swarm.
  * @param nodeIdentityManager
  * @param localNodeStatus
- * @param swarmStatusPaneProvider
  */
 @Singleton
 class SwarmData @Inject() (
                             nodeIdentityManager: NodeIdentityManager,
-                            localNodeStatus: LocalNodeStatus,
-                            swarmStatusPaneProvider: Provider[SwarmStatusPane]
+                            localNodeStatus: LocalNodeStatus
                           ) extends LazyLogging:
   val knownNodeIdentity: ObservableBuffer[NodeIdentity] = ObservableBuffer.empty[NodeIdentity]
   private val knownFdHoursBuffer: ObservableBuffer[FdHours] = ObservableBuffer.empty[FdHours]
@@ -66,14 +65,27 @@ class SwarmData @Inject() (
   val nodeMap: TrieMap[NodeIdentity, NodeStatus] = TrieMap.empty[NodeIdentity, NodeStatus]
   private val valueProperties = TrieMap.empty[(NodeIdentity, NodeDataField), StringProperty]
   private val knownFdHourValues = TrieMap.empty[FdHour, FdHour]
+  private val nodeStatusListeners = TrieMap.empty[Long, Seq[NodeStatus] => Unit]
+  private val nodeStatusListenerId = AtomicLong(0L)
 
   private val stampFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("MM-dd HH:mm:ss").withZone(ZoneId.systemDefault())
 
-  private def swarmStatusPane: SwarmStatusPane = swarmStatusPaneProvider.get()
-
   def ourNodeIdentity: NodeIdentity =
     nodeIdentityManager.ourNodeIdentity
+
+  def allNodeStatuses: Seq[NodeStatus] =
+    nodeMap.values.toSeq
+
+  def addNodeStatusListener(
+                             listener: Seq[NodeStatus] => Unit
+                           ): () => Unit =
+    val id = nodeStatusListenerId.incrementAndGet()
+    nodeStatusListeners.put(id, listener)
+    listener(
+      allNodeStatuses
+    )
+    () => nodeStatusListeners.remove(id)
 
   Option(localNodeStatus.current.get()).foreach(
     nodeStatus =>
@@ -92,11 +104,6 @@ class SwarmData @Inject() (
   def updateLocalDigests(digests: Seq[FdHourDigest]): Unit =
     localNodeStatus.updateDigests(digests)
 
-  def refresh(): Unit =
-    val pane = swarmStatusPane
-    if pane != null then
-      pane.update(nodeMap.values.toSeq)
-
   def clear(): Unit =
     val localStatus = nodeMap.get(ourNodeIdentity)
     nodeMap.clear()
@@ -108,14 +115,14 @@ class SwarmData @Inject() (
         )
     )
     updateKnownCollectionsFromNodeMap()
-    refresh()
+    notifyNodeStatusListeners()
     logger.debug("Cleared swarm status data, retaining local node.")
 
   def remove(nodeIdentity: NodeIdentity): Unit =
     if nodeIdentity != ourNodeIdentity then
       nodeMap.remove(nodeIdentity)
       updateKnownCollectionsFromNodeMap()
-      refresh()
+      notifyNodeStatusListeners()
       logger.debug(s"Removed node status for $nodeIdentity")
 
   def knownFdHours: Seq[FdHours] = knownFdHoursBuffer.toSeq
@@ -149,7 +156,7 @@ class SwarmData @Inject() (
         propertyFor(nodeIdentity, field).value = value
       }
     }
-    refresh()
+    notifyNodeStatusListeners()
 
   def buildGridPane(fields: Seq[NodeDataField | FdHours.type]): Parent =
     val container = new StackPane()
@@ -257,3 +264,12 @@ class SwarmData @Inject() (
       knownFdHoursBuffer.clear()
       knownFdHoursBuffer ++= mergedFdHours
     }
+
+  private def notifyNodeStatusListeners(): Unit =
+    val statuses = allNodeStatuses
+    nodeStatusListeners.values.foreach(
+      listener =>
+        listener(
+          statuses
+        )
+    )

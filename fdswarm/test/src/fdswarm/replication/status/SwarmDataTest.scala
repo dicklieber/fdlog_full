@@ -24,7 +24,6 @@ import fdswarm.fx.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
 import fdswarm.fx.qso.FdHour
 import fdswarm.replication.LocalNodeStatus
 import fdswarm.util.MockNodeIdentityManager
-import jakarta.inject.Provider
 import munit.FunSuite
 
 class SwarmDataTest extends FunSuite:
@@ -61,11 +60,9 @@ class SwarmDataTest extends FunSuite:
       selectedBandModeStore,
       () => null
     )
-    val swarmStatusPaneProvider: Provider[SwarmStatusPane] = () => null
     val swarmData = new SwarmData(
       MockNodeIdentityManager(),
-      localNodeStatus,
-      swarmStatusPaneProvider
+      localNodeStatus
     )
     val hour1 = FdHour(10, 1)
     val hour2 = FdHour(10, 2)
