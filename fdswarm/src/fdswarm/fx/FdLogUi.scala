@@ -19,8 +19,8 @@
 package fdswarm.fx
 
 import cats.effect.unsafe.implicits.global
-import com.google.inject.{Guice, Injector}
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.FdLogApp
 import fdswarm.StartupInfo
 import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.qso.ContestEntry
@@ -42,7 +42,7 @@ import java.time.{Duration, Instant}
 
 final class FdLogUi @Inject() (
   contestEntry: ContestEntry,
-  menusFactory: FdLogMenus.Factory,
+  menus: FdLogMenus,
   repl: NodeStatusHandler,
   statusBroadcastService: StatusBroadcastService,
   nodeIdentityManager: NodeIdentityManager,
@@ -55,8 +55,8 @@ final class FdLogUi @Inject() (
   def start(
     stage: Stage
   ): Unit =
-    val menus = menusFactory.create(
-      stage
+    FdLogApp.primaryStage = Some(
+      stage.delegate
     )
     val qsoNode: Node = contestEntry.node
     val centerPane = new StackPane:
@@ -202,45 +202,6 @@ final class FdLogUi @Inject() (
 
 object FdLogUi:
   private val startTime = Instant.now()
-  private var rawArgs: Array[String] = Array.empty
-  private lazy val injector: Injector = Guice.createInjector(
-    new ConfigModule(
-      rawArgs
-    )
-  )
-
-  def initialize(
-    args: Array[String]
-  ): Unit =
-    rawArgs = args
-    System.setProperty(
-      "apple.laf.useScreenMenuBar",
-      "true"
-    )
-    if isMac then
-      System.setProperty(
-        "apple.awt.application.name",
-        "FdSwarm"
-      )
-      System.setProperty(
-        "com.apple.mrj.application.apple.menu.about.name",
-        "FdSwarm"
-      )
-      // Some versions of Java/JavaFX also look for this.
-      System.setProperty(
-        "apple.awt.application.appearance",
-        "system"
-      )
-
-    System.setProperty(
-      "javafx.embed.singleThread",
-      "true"
-    )
-
-  def build(): FdLogUi =
-    injector.getInstance(
-      classOf[FdLogUi]
-    )
 
   def startupDuration: Duration =
     Duration.between(

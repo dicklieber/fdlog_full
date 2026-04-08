@@ -18,6 +18,7 @@
 
 package fdswarm
 
+import com.google.inject.{Guice, Injector}
 import fdswarm.fx.FdLogUi
 import scalafx.application.JFXApp3
 
@@ -28,17 +29,43 @@ import scalafx.application.JFXApp3
 
 object FdLogApp extends JFXApp3:
   private var ui: Option[FdLogUi] = None
+  var primaryStage: Option[javafx.stage.Window] = None
+  private var rawArgs: Array[String] = Array.empty
+  private lazy val injector: Injector = Guice.createInjector(
+    new fdswarm.fx.ConfigModule(
+      rawArgs
+    )
+  )
 
   override def main(
     args: Array[String]
   ): Unit =
+    rawArgs = args
     println(
       s"Starting FdSwarm with args: ${args.mkString(
         " "
       )}"
     )
-    FdLogUi.initialize(
-      args
+    System.setProperty(
+      "apple.laf.useScreenMenuBar",
+      "true"
+    )
+    if FdLogUi.isMac then
+      System.setProperty(
+        "apple.awt.application.name",
+        "FdSwarm"
+      )
+      System.setProperty(
+        "com.apple.mrj.application.apple.menu.about.name",
+        "FdSwarm"
+      )
+      System.setProperty(
+        "apple.awt.application.appearance",
+        "system"
+      )
+    System.setProperty(
+      "javafx.embed.singleThread",
+      "true"
     )
     super.main(
       args
@@ -47,11 +74,16 @@ object FdLogApp extends JFXApp3:
   private val log = org.slf4j.LoggerFactory.getLogger(getClass)
 
   override def start(): Unit =
-    val builtUi = FdLogUi.build()
+    val builtUi = injector.getInstance(
+      classOf[FdLogUi]
+    )
     ui = Some(builtUi)
 
     // Create the primary stage, let the UI configure it, then publish it
     val s = new JFXApp3.PrimaryStage
+    primaryStage = Some(
+      s.delegate
+    )
     builtUi.start(s)
     stage = s
 

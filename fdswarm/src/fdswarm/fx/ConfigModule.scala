@@ -20,7 +20,6 @@
 package fdswarm.fx
 
 import com.google.inject.{AbstractModule, Provides, Injector}
-import com.google.inject.assistedinject.FactoryModuleBuilder
 import com.google.inject.name.Names
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.LazyLogging
@@ -45,13 +44,6 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
 class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModule with LazyLogging:
 
   override def configure(): Unit =
-    install(
-      new FactoryModuleBuilder()
-        .build(
-          classOf[FdLogMenus.Factory]
-        )
-    )
-
     val productionDirectory = new ProductionDirectory
     //
     val loggingManager = new fdswarm.util.LoggingManager(new ProductionDirectory)

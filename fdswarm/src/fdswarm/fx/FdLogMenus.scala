@@ -19,8 +19,8 @@
 package fdswarm.fx
 
 import com.google.inject.Injector
-import com.google.inject.assistedinject.{Assisted, AssistedInject}
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.FdLogApp
 import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.bandmodes.BandsAndModesPane
 import fdswarm.fx.discovery.DiscoveryDialog
@@ -28,9 +28,11 @@ import fdswarm.fx.station.StationEditor
 import fdswarm.fx.tools.*
 import io.circe.parser.decode
 import io.circe.syntax.*
+import jakarta.inject.Inject
 import javafx.concurrent.Worker
 import net.codingwell.scalaguice.InjectorExtensions.*
 import netscape.javascript.JSObject
+import scalafx.Includes.*
 import scalafx.application.Platform
 import scalafx.beans.binding.Bindings
 import scalafx.beans.property.{BooleanProperty, StringProperty}
@@ -42,7 +44,7 @@ import scalafx.stage.{Stage, Window}
 
 import scala.io.Source
 
-final class FdLogMenus @AssistedInject() (
+final class FdLogMenus @Inject() (
   injector: Injector,
   bandModeManagerPane: BandsAndModesPane,
   stationEditor: StationEditor,
@@ -62,12 +64,9 @@ final class FdLogMenus @AssistedInject() (
   swarmStatusAdmin: fdswarm.fx.admin.SwarmStatusAdmin,
   summaryDialog: SummaryDialog,
   metricsDialog: MetricsDialog,
-  udpQueuesDialog: UDPQueuesDialog,
-  @Assisted ownerWindow: Window
+  udpQueuesDialog: UDPQueuesDialog
 ) extends LazyLogging:
-  aboutMenuItem.setOwner(
-    ownerWindow
-  )
+  aboutMenuItem.onAction = _ => showAboutDialog()
 
   private val arrlRegionMapPath: os.Path = os.pwd / "arrl-region-map.json"
   private var arrlRegionToSection: Map[String, String] = loadArrlRegionMap()
@@ -82,13 +81,19 @@ final class FdLogMenus @AssistedInject() (
   )
 
   def showAboutDialog(): Unit =
-    aboutMenuItem.showAboutDialog(
-      ownerWindow
+    FdLogApp.primaryStage.foreach(
+      window =>
+        aboutMenuItem.showAboutDialog(
+          window
+        )
     )
 
   def showBandModeManager(): Unit =
-    bandModeManagerPane.show(
-      ownerWindow
+    FdLogApp.primaryStage.foreach(
+      window =>
+        bandModeManagerPane.show(
+          window
+        )
     )
 
   private lazy val configMenu: Menu =
@@ -98,21 +103,30 @@ final class FdLogMenus @AssistedInject() (
           onAction = _ => showBandModeManager()
         ,
         new MenuItem("Station"):
-          onAction = _ => stationEditor.show(
-            ownerWindow
+          onAction = _ => FdLogApp.primaryStage.foreach(
+            window =>
+              stationEditor.show(
+                window
+              )
           )
         ,
         new SeparatorMenuItem(),
         new MenuItem("ARRL Sections Map"):
-          onAction = _ => showArrlSectionsMap(
-            ownerWindow
+          onAction = _ => FdLogApp.primaryStage.foreach(
+            window =>
+              showArrlSectionsMap(
+                window
+              )
           )
         ,
         labelArrlRegionsMenuItem,
         new SeparatorMenuItem(),
         new MenuItem("User Config"):
-          onAction = _ => userConfigEditor.show(
-            ownerWindow
+          onAction = _ => FdLogApp.primaryStage.foreach(
+            window =>
+              userConfigEditor.show(
+                window
+              )
           )
         ,
         developerModeMenuItem
@@ -123,38 +137,59 @@ final class FdLogMenus @AssistedInject() (
       visible = false
       items = Seq(
         new MenuItem("Generate QSOs"):
-          onAction = _ => howManyDialogService.showAndGenerate(
-            ownerWindow
+          onAction = _ => FdLogApp.primaryStage.foreach(
+            window =>
+              howManyDialogService.showAndGenerate(
+                window
+              )
           )
         ,
         new MenuItem("Send FdHour"):
-          onAction = _ => fdHourDialogService.show(
-            ownerWindow
+          onAction = _ => FdLogApp.primaryStage.foreach(
+            window =>
+              fdHourDialogService.show(
+                window
+              )
           )
         ,
         new MenuItem("FdHours"):
-          onAction = _ => fdHourDigestsPane.show(
-            ownerWindow
+          onAction = _ => FdLogApp.primaryStage.foreach(
+            window =>
+              fdHourDigestsPane.show(
+                window
+              )
           )
         ,
         new MenuItem("Status Broadcast Settings"):
-          onAction = _ => statusBroadcastDialog.show(
-            ownerWindow
+          onAction = _ => FdLogApp.primaryStage.foreach(
+            window =>
+              statusBroadcastDialog.show(
+                window
+              )
           )
         ,
         new MenuItem("Logging"):
-          onAction = _ => loggingDialog.show(
-            ownerWindow
+          onAction = _ => FdLogApp.primaryStage.foreach(
+            window =>
+              loggingDialog.show(
+                window
+              )
           )
         ,
         new MenuItem("Contest Time"):
-          onAction = _ => contestTimeDialog.show(
-            ownerWindow
+          onAction = _ => FdLogApp.primaryStage.foreach(
+            window =>
+              contestTimeDialog.show(
+                window
+              )
           )
         ,
         new MenuItem("Set IP Address"):
-          onAction = _ => ipAddressDialogService.show(
-            ownerWindow
+          onAction = _ => FdLogApp.primaryStage.foreach(
+            window =>
+              ipAddressDialogService.show(
+                window
+              )
           )
         ,
         new MenuItem("Discovery"):
@@ -168,8 +203,11 @@ final class FdLogMenus @AssistedInject() (
     new Menu("Admin"):
       items = Seq(
         new MenuItem("Swarm Status"):
-          onAction = _ => swarmStatusAdmin.show(
-            ownerWindow
+          onAction = _ => FdLogApp.primaryStage.foreach(
+            window =>
+              swarmStatusAdmin.show(
+                window
+              )
           )
       )
 
@@ -177,21 +215,30 @@ final class FdLogMenus @AssistedInject() (
     new Menu("Reports"):
       items = Seq(
         new MenuItem("Summary"):
-          onAction = _ => summaryDialog.show(
-            ownerWindow
+          onAction = _ => FdLogApp.primaryStage.foreach(
+            window =>
+              summaryDialog.show(
+                window
+              )
           )
         ,
         new MenuItem("Metrics"):
-          onAction = _ => metricsDialog.show(
-            ownerWindow
+          onAction = _ => FdLogApp.primaryStage.foreach(
+            window =>
+              metricsDialog.show(
+                window
+              )
           )
       )
 
   private def fileMenu: Menu =
     new Menu("File"):
       private val exportItem = new MenuItem("Export"):
-        onAction = _ => exportDialog.show(
-          ownerWindow
+        onAction = _ => FdLogApp.primaryStage.foreach(
+          window =>
+            exportDialog.show(
+              window
+            )
         )
       private val exitItem = new MenuItem("Exit"):
         onAction = _ => Platform.exit()
@@ -456,9 +503,3 @@ final class FdLogMenus @AssistedInject() (
       )
 
     stage.show()
-
-object FdLogMenus:
-  trait Factory:
-    def create(
-      ownerWindow: Window
-    ): FdLogMenus

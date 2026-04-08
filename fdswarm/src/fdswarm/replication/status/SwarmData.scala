@@ -19,6 +19,7 @@
 package fdswarm.replication.status
 
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.FdLogApp
 import fdswarm.fx.GridBuilder
 import fdswarm.fx.qso.FdHour
 import fdswarm.fx.station.StationEditor
@@ -486,14 +487,18 @@ class SwarmData @Inject() (
           override def handle(
                                event: MouseEvent
                              ): Unit =
-            Option(node.scene.value)
-              .flatMap(scene => Option(scene.delegate.getWindow))
-              .foreach(
-                window =>
-                  stationEditor.show(
-                    window
-                  )
-              )
+            val ownerWindow: Option[javafx.stage.Window] =
+              FdLogApp.primaryStage
+                .orElse(
+                  Option(node.scene.value)
+                    .flatMap(scene => Option(scene.delegate.getWindow))
+                )
+            ownerWindow.foreach(
+              window =>
+                stationEditor.show(
+                  window
+                )
+            )
       )
     else
       node.delegate.setOnMouseClicked(
