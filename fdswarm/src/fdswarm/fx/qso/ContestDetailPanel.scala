@@ -22,13 +22,14 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.ContestDates
 import fdswarm.fx.GridColumns
 import fdswarm.fx.contest.{ContestConfig, ContestConfigManager, ContestType}
+import fdswarm.fx.discovery.ContestDialog
 import fdswarm.util.DurationFormat
 import jakarta.inject.{Inject, Named, Singleton}
 import scalafx.animation.{KeyFrame, Timeline}
 import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
 import scalafx.Includes.*
 import scalafx.scene.Node
-import scalafx.scene.control.Label
+import scalafx.scene.control.{Button, Label}
 import scalafx.scene.layout.VBox
 import scalafx.util.Duration
 
@@ -38,6 +39,7 @@ import scala.compiletime.uninitialized
 @Singleton
 class ContestDetailPanel @Inject()(
                                    contestManager: ContestConfigManager,
+                                   contestDialog: ContestDialog,
                                    @Named("fdswarm.contestTimerUpdateSec") contestTimerUpdateSec: Int
                                  ) extends LazyLogging:
   private val timerTimeline = new Timeline:
@@ -50,18 +52,43 @@ class ContestDetailPanel @Inject()(
 
   private var contestType: ContestType = uninitialized
   private var contestDates: ContestDates = uninitialized
+  private val setupContestLabel = new Label:
+    text = "Contest has not been setup."
+    styleClass += "contest-timer"
+    styleClass += "contest-before"
+    minWidth = scalafx.scene.layout.Region.USE_PREF_SIZE
+
+  private val setupContestButton = new Button("Setup Contest"):
+    onAction = _ => contestDialog.show()
+
+  private val setupContestContent = new VBox:
+    spacing = 8
+    children = Seq(
+      setupContestLabel,
+      setupContestButton
+    )
 
   private def refreshDisplay(): Unit =
-    if contestManager.hasConfiguration.value then
-      val config = contestManager.contestConfigProperty.value
-      contestType = config.contestType
+    val config = contestManager.contestConfigProperty.value
+    contestType = config.contestType
+    if contestType == ContestType.NONE then
+      _node.children = Seq(
+        GridColumns.fieldSet(
+          "Contest ?",
+          setupContestContent
+        )
+      )
+      timerTimeline.stop()
+    else
       contestDates = contestType.dates()
       updateContestTimeDisplay()
-      _node.children = Seq(GridColumns.fieldSet(s"${contestType.name} ${contestDates.startUtc.getYear}", contestTimerLabel))
+      _node.children = Seq(
+        GridColumns.fieldSet(
+          s"${contestType.name} ${contestDates.startUtc.getYear}",
+          contestTimerLabel
+        )
+      )
       timerTimeline.play()
-    else
-      _node.children = Seq.empty
-      timerTimeline.stop()
 
   contestManager.hasConfiguration.onChange((_, _, hasConfig) => refreshDisplay())
   // Listen to config changes only if we actually have a config manager that is ready.

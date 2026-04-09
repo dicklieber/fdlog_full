@@ -51,20 +51,33 @@ case class ContestConfig(contestType: ContestType,
     DateTimeFormatter.ofPattern("dd:HH:mm:ss").withZone(ZoneId.systemDefault())
 
   val exchange:String=
-    s"$transmitters$ourClass $ourSection"
+    s"${safeValue(transmitters.toString)}${safeValue(ourClass)} ${safeValue(ourSection)}"
   def weAre(usePhonetic: Boolean): String =
+    val callsignValue = safeCallsignValue
+    val classValue = safeValue(ourClass)
+    val sectionValue = safeValue(ourSection)
     if usePhonetic then
-      s"We are ${fromString(ourCallsign.toString)} $transmitters ${fromString(ourClass)} ${fromString(ourSection)}"
+      s"We are ${fromString(callsignValue)} $transmitters ${fromString(classValue)} ${fromString(sectionValue)}"
     else
-      s"We are $ourCallsign $transmitters$ourClass $ourSection"
+      s"We are $callsignValue $transmitters$classValue $sectionValue"
 
   val display:String=
     s"$exchange ${stampFormatter.format(stamp)}"
 
+  private def safeCallsignValue: String =
+    if ourCallsign == null then ""
+    else safeValue(ourCallsign.toString)
+
+  private def safeValue(
+    value: String
+  ): String =
+    if value == null then ""
+    else value
+
 object ContestConfig:
   val noContest: ContestConfig = ContestConfig(
     contestType = ContestType.NONE,
-    ourCallsign = Callsign("N0CALL"),
+    ourCallsign = Callsign(""),
     transmitters = 0,
     ourClass = "-",
     ourSection = "-"

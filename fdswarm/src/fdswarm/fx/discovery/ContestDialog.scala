@@ -9,43 +9,51 @@ import fdswarm.fx.contest.{
 import fdswarm.fx.utils.StyledDialog
 import fdswarm.store.QsoStore
 import jakarta.inject.Inject
-import javafx.stage.{Stage as JStage}
 import scalafx.Includes.*
-import scalafx.application.Platform
-import scalafx.scene.control.ButtonType
+import scalafx.scene.control.{ButtonBar, ButtonType}
 import scalafx.scene.layout.VBox
 
-class ContestDialog @Inject()(contestConfigPaneProvider: ContestConfigPaneProvider,
-                              contestManager: ContestConfigManager,
-                              qsoStore: QsoStore,
-                              exchangePane: ExchangePane)
+class ContestDialog @Inject()(
+  contestConfigPaneProvider: ContestConfigPaneProvider,
+  contestManager: ContestConfigManager,
+  qsoStore: QsoStore,
+  exchangePane: ExchangePane
+)
   extends StyledDialog[ButtonType]:
 
 
   private val contestConfigPane: ContestConfigPane = contestConfigPaneProvider.pane()
-  private val discoveryTable = new DiscoveryTable(contestConfigPaneProvider, resizeToDiscoveryTable)
 
 
   val vBox = new VBox()
-  private val configBorderPane = new ContestDetailEditor(contestConfigPane, exchangePane, qsoStore, contestManager)
+  private val configBorderPane = new ContestDetailEditor(
+    contestConfigPane,
+    exchangePane,
+    qsoStore,
+    contestManager
+  )
   vBox.children += configBorderPane
-  vBox.children += discoveryTable
 
   title = "Contest Configuration"
   resizable = true
   dialogPane().content = vBox
-  dialogPane().buttonTypes = Seq(ButtonType.Close)
-  onShowing.value = { (_: javafx.scene.control.DialogEvent) => Platform.runLater {
-    val btn = dialogPane().lookupButton(ButtonType.Close)
-    if (btn != null) {
-      btn.setVisible(false)
-    }
-    resizeToDiscoveryTable()
-  } }
 
-  private def resizeToDiscoveryTable(): Unit =
-    val scene = dialogPane().scene.value
-    if scene != null then
-      scene.getWindow match
-        case stage: JStage => stage.sizeToScene()
-        case _ => ()
+  private val updateButtonType = new ButtonType(
+    "Update",
+    ButtonBar.ButtonData.OKDone
+  )
+
+  dialogPane().buttonTypes = Seq(
+    updateButtonType,
+    ButtonType.Cancel
+  )
+
+  private val updateButton = dialogPane().lookupButton(updateButtonType)
+  if updateButton != null then
+    updateButton.disableProperty().bind(configBorderPane.isValid.delegate.not())
+    updateButton.addEventFilter(
+      javafx.event.ActionEvent.ACTION,
+      (event: javafx.event.ActionEvent) =>
+        if !configBorderPane.updateContestConfig() then
+          event.consume()
+    )
