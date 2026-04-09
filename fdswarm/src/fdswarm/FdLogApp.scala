@@ -1,17 +1,17 @@
 /*
  * Copyright (c) 2026. Dick Lieber, WA9NNN
  *
- * This program is free software: you can redistribute it and/or modify 
- * it under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, or    
- * (at your option) any later version.                                  
- *                                                                      
- * This program is distributed in the hope that it will be useful,      
- * but WITHOUT ANY WARRANTY; without even the implied warranty of       
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the        
- * GNU General Public License for more details.                         
- *                                                                      
- * You should have received a copy of the GNU General Public License    
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
@@ -29,23 +29,26 @@ import scalafx.stage.Stage
   */
 
 object FdLogApp extends JFXApp3:
-  private var ui: Option[FdLogUi] = None
-  val primaryStage: Stage = stage
-  private var rawArgs: Array[String] = Array.empty
+  lazy val  primaryStage: Stage =
+    stage
+
   private lazy val injector: Injector = Guice.createInjector(
     new fdswarm.fx.ConfigModule(
       rawArgs
     )
   )
+  private val log = org.slf4j.LoggerFactory.getLogger(getClass)
+  private var ui: Option[FdLogUi] = None
+  private var rawArgs: Array[String] = Array.empty
 
   override def main(
-    args: Array[String]
-  ): Unit =
+      args: Array[String]
+    ): Unit =
     rawArgs = args
     println(
       s"Starting FdSwarm with args: ${args.mkString(
-        " "
-      )}"
+          " "
+        )}"
     )
     System.setProperty(
       "apple.laf.useScreenMenuBar",
@@ -72,18 +75,14 @@ object FdLogApp extends JFXApp3:
       args
     )
 
-  private val log = org.slf4j.LoggerFactory.getLogger(getClass)
-
   override def start(): Unit =
+    stage = new JFXApp3.PrimaryStage
+
     val builtUi = injector.getInstance(
       classOf[FdLogUi]
     )
     ui = Some(builtUi)
-
-    // Create and publish the stage before UI startup so cross-cutting code can read it.
-    val s = new JFXApp3.PrimaryStage
-    stage = s
-    builtUi.start(s)
+    builtUi.start()
 
   override def stopApp(): Unit =
     log.debug("stopApp")

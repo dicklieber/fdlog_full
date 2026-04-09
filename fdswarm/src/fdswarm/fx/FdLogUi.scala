@@ -20,6 +20,7 @@ package fdswarm.fx
 
 import cats.effect.unsafe.implicits.global
 import com.typesafe.scalalogging.LazyLogging
+import fdswarm.FdLogApp
 import fdswarm.StartupInfo
 import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.qso.ContestEntry
@@ -35,7 +36,6 @@ import scalafx.scene.layout.{BorderPane, StackPane}
 import scalafx.scene.paint.Color
 import scalafx.scene.shape.SVGPath
 import scalafx.scene.{Node, Scene, SnapshotParameters}
-import scalafx.stage.Stage
 
 import java.time.{Duration, Instant}
 
@@ -51,9 +51,8 @@ final class FdLogUi @Inject() (
   startupInfo: StartupInfo
 ) extends LazyLogging:
 
-  def start(
-    stage: Stage
-  ): Unit =
+  def start(): Unit =
+    val stage = FdLogApp.primaryStage
     val qsoNode: Node = contestEntry.node
     val centerPane = new StackPane:
       children = List(qsoNode)
@@ -61,7 +60,7 @@ final class FdLogUi @Inject() (
       top = menus.menuBar
       center = centerPane
 
-    setAppIcon(stage)
+    setAppIcon()
     stage.title = "FdSwarm"
     statusBroadcastService.start()
     apiServer.start().unsafeRunAndForget()
@@ -126,9 +125,8 @@ final class FdLogUi @Inject() (
     }
     contestEntry.buildUi()
 
-  private def setAppIcon(
-    stage: Stage
-  ): Unit =
+  private def setAppIcon(): Unit =
+    val stage = FdLogApp.primaryStage
     try
       val resource = getClass.getResource("/icons/fdswarm.svg")
       if resource != null then

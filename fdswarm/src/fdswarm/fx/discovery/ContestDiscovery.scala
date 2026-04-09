@@ -46,7 +46,7 @@ import java.util.concurrent.TimeUnit
  * @param timeout              Specifies the discovery timeout duration in milliseconds, defining
  *                             the period after which discovery will terminate.
  */
-class ContestDisc1`overy @Inject()(
+class ContestDiscovery @Inject()(
                                   val transport: Transport,
                                   contestConfigManager: ContestConfigManager,
                                   swarmData: SwarmData,
