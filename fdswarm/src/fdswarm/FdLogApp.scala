@@ -30,7 +30,7 @@ import scalafx.stage.Stage
 
 object FdLogApp extends JFXApp3:
   private var ui: Option[FdLogUi] = None
-  def primaryStage: Stage = stage
+  val primaryStage: Stage = stage
   private var rawArgs: Array[String] = Array.empty
   private lazy val injector: Injector = Guice.createInjector(
     new fdswarm.fx.ConfigModule(
