@@ -74,25 +74,44 @@ class ContestConfigManagerTest extends FunSuite:
 
     val manager = new ContestConfigManager(subDirectoryProvider, qsoStoreProvider, filenameStamp, ignoreStatusSec)
     assert(!manager.hasConfiguration.value)
-    assertEquals(manager.contestType, ContestType.ARRL)
-    assertEquals(manager.ourCallsign, Callsign("TEMP"))
-    assertEquals(manager.transmitters, 1)
-    assertEquals(manager.ourClass, "A")
-    assertEquals(manager.ourSection, "STX")
-    assert(manager.contestConfigOption.isEmpty)
+    assertEquals(
+      manager.contestType,
+      ContestType.NONE
+    )
+    assertEquals(
+      manager.ourCallsign,
+      Callsign("N0CALL")
+    )
+    assertEquals(
+      manager.transmitters,
+      0
+    )
+    assertEquals(
+      manager.ourClass,
+      "-"
+    )
+    assertEquals(
+      manager.ourSection,
+      "-"
+    )
+    assertEquals(
+      manager.contestConfigOption,
+      Some(ContestConfig.noContest)
+    )
     
     os.remove.all(os.Path(subTempDir.toAbsolutePath.toString))
   }
 
-  test("contestConfigProperty throws if not initialized") {
+  test("contestConfigProperty returns noContest when not initialized") {
     val subTempDir = Files.createTempDirectory("throws-contest-config-test")
     val subDirectoryProvider = mock(classOf[DirectoryProvider])
     when(subDirectoryProvider.apply()).thenReturn(os.Path(subTempDir.toAbsolutePath.toString))
 
     val manager = new ContestConfigManager(subDirectoryProvider, qsoStoreProvider, filenameStamp, ignoreStatusSec)
-    intercept[IllegalStateException] {
-      manager.contestConfigProperty
-    }
+    assertEquals(
+      manager.contestConfigProperty.value,
+      ContestConfig.noContest
+    )
     
     os.remove.all(os.Path(subTempDir.toAbsolutePath.toString))
   }

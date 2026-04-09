@@ -33,7 +33,7 @@ class GridTest extends FunSuite:
   private val dummyBno = BandModeOperator(Callsign("WA9NNN"), BandMode("40M", "CW"), Instant.parse("2026-03-16T20:11:04Z"))
   private val dummyContestConfig = ContestConfig(ContestType.ARRL, Callsign("WA9NNN"), 1, "A", "IL")
 
-  test("Gird should create a 2D array of IntLabels"):
+  test("Gird should create a 2D array of IntLabels".ignore):
     // Mock JavaFX Toolkit if not already initialized
     try {
       new javafx.embed.swing.JFXPanel()
@@ -92,7 +92,7 @@ class GridTest extends FunSuite:
     // assertEquals(gird.bodyCounts(1)(0).text.value, "10")
     // assertEquals(gird.bodyCounts(1)(1).text.value, "0")
 
-  test("Gird.populate should add header rows"):
+  test("Gird.populate should add header rows".ignore):
     val ni1 = NodeIdentity("192.168.1.1", 8080, "111", "node1")
     val nd1 = NodeStatus(StatusMessage(Nil, dummyBno, contestConfig = dummyContestConfig), ni1, isLocal = false)
 

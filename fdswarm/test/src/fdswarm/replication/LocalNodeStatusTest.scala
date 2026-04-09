@@ -92,17 +92,35 @@ class LocalNodeStatusTest extends FunSuite:
 
     val digest = FdHourDigest(FdHour(15, 12), 10, "abc")
     localNodeStatus.updateDigests(Seq(digest))
-    assertEquals(emitted.size, 0, "No status should be emitted before contest config exists")
+    assertEquals(
+      emitted.size,
+      1,
+      "A status is emitted with noContest config before explicit contest setup"
+    )
+    assertEquals(
+      emitted.last.statusMessage.contestConfig,
+      ContestConfig.noContest
+    )
+    assertEquals(
+      emitted.last.statusMessage.fdDigests,
+      Seq(digest)
+    )
 
     contestManager.setConfig(dummyContestConfig)
-    assertEquals(emitted.size, 1)
+    assertEquals(
+      emitted.size,
+      2
+    )
     assertEquals(emitted.last.isLocal, true)
     assertEquals(emitted.last.statusMessage.fdDigests, Seq(digest))
 
     val t1 = emitted.last.received
     Thread.sleep(2)
     stationManager.setStation(StationConfig(operator = Callsign("K1ABC"), rig = "Rig", antenna = "Wire"))
-    assertEquals(emitted.size, 2)
+    assertEquals(
+      emitted.size,
+      3
+    )
     assertEquals(emitted.last.isLocal, true)
     assertEquals(emitted.last.statusMessage.bandNodeOperator.operator, Callsign("K1ABC"))
     assert(emitted.last.received.isAfter(t1), "received should advance for each new local status")
@@ -110,7 +128,10 @@ class LocalNodeStatusTest extends FunSuite:
     val t2 = emitted.last.received
     Thread.sleep(2)
     selectedBandModeStore.save(bandModeBuilder("40m", "CW"))
-    assertEquals(emitted.size, 3)
+    assertEquals(
+      emitted.size,
+      4
+    )
     assertEquals(emitted.last.isLocal, true)
     assertEquals(emitted.last.statusMessage.bandNodeOperator.bandMode.toString, "40m CW")
     assert(emitted.last.received.isAfter(t2), "received should advance for each new local status")

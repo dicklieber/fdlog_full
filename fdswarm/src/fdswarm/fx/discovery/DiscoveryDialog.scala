@@ -1,6 +1,5 @@
 package fdswarm.fx.discovery
 
-import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.contest.{
   ContestConfigManager,
   ContestConfigPane,
@@ -8,7 +7,6 @@ import fdswarm.fx.contest.{
   ExchangePane
 }
 import fdswarm.fx.utils.StyledDialog
-import fdswarm.replication.status.SwarmData
 import fdswarm.store.QsoStore
 import jakarta.inject.Inject
 import javafx.stage.{Stage as JStage}
@@ -17,13 +15,11 @@ import scalafx.application.Platform
 import scalafx.scene.control.ButtonType
 import scalafx.scene.layout.VBox
 
-class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
-                                 contestConfigPaneProvider: ContestConfigPaneProvider,
+class DiscoveryDialog @Inject() (contestConfigPaneProvider: ContestConfigPaneProvider,
                                  contestManager: ContestConfigManager,
                                  qsoStore: QsoStore,
-                                 exchangePane: ExchangePane,
-                                 swarmData: SwarmData)
-  extends StyledDialog[ButtonType] with LazyLogging:
+                                 exchangePane: ExchangePane)
+  extends StyledDialog[ButtonType]:
 
 
   private val contestConfigPane: ContestConfigPane = contestConfigPaneProvider.pane()
@@ -46,14 +42,6 @@ class DiscoveryDialog @Inject() (contestDiscovery: ContestDiscovery,
     }
     resizeToDiscoveryTable()
   } }
-
-
-  contestDiscovery.discoverContest().foreach { receivedNodeStatus =>
-    logger.debug(s"Discovery UI added: $receivedNodeStatus")
-    Platform.runLater {
-      discoveryTable.setItems(swarmData.nodeMap.values.toSeq)
-    }
-  }
 
   private def resizeToDiscoveryTable(): Unit =
     val scene = dialogPane().scene.value
