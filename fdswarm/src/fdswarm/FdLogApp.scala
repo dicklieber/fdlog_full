@@ -21,6 +21,7 @@ package fdswarm
 import com.google.inject.{Guice, Injector}
 import fdswarm.fx.FdLogUi
 import scalafx.application.JFXApp3
+import scalafx.stage.Stage
 
 /** Minimal app bootstrap:
   *   - applies process startup settings
@@ -29,7 +30,7 @@ import scalafx.application.JFXApp3
 
 object FdLogApp extends JFXApp3:
   private var ui: Option[FdLogUi] = None
-  var primaryStage: Option[javafx.stage.Window] = None
+  def primaryStage: Stage = stage
   private var rawArgs: Array[String] = Array.empty
   private lazy val injector: Injector = Guice.createInjector(
     new fdswarm.fx.ConfigModule(
@@ -79,13 +80,10 @@ object FdLogApp extends JFXApp3:
     )
     ui = Some(builtUi)
 
-    // Create the primary stage, let the UI configure it, then publish it
+    // Create and publish the stage before UI startup so cross-cutting code can read it.
     val s = new JFXApp3.PrimaryStage
-    primaryStage = Some(
-      s.delegate
-    )
-    builtUi.start(s)
     stage = s
+    builtUi.start(s)
 
   override def stopApp(): Unit =
     log.debug("stopApp")

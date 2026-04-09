@@ -81,19 +81,13 @@ final class FdLogMenus @Inject() (
   )
 
   def showAboutDialog(): Unit =
-    FdLogApp.primaryStage.foreach(
-      window =>
-        aboutMenuItem.showAboutDialog(
-          window
-        )
+    aboutMenuItem.showAboutDialog(
+      FdLogApp.primaryStage
     )
 
   def showBandModeManager(): Unit =
-    FdLogApp.primaryStage.foreach(
-      window =>
-        bandModeManagerPane.show(
-          window
-        )
+    bandModeManagerPane.show(
+      FdLogApp.primaryStage
     )
 
   private lazy val configMenu: Menu =
@@ -103,30 +97,21 @@ final class FdLogMenus @Inject() (
           onAction = _ => showBandModeManager()
         ,
         new MenuItem("Station"):
-          onAction = _ => FdLogApp.primaryStage.foreach(
-            window =>
-              stationEditor.show(
-                window
-              )
+          onAction = _ => stationEditor.show(
+            FdLogApp.primaryStage
           )
         ,
         new SeparatorMenuItem(),
         new MenuItem("ARRL Sections Map"):
-          onAction = _ => FdLogApp.primaryStage.foreach(
-            window =>
-              showArrlSectionsMap(
-                window
-              )
+          onAction = _ => showArrlSectionsMap(
+            FdLogApp.primaryStage
           )
         ,
         labelArrlRegionsMenuItem,
         new SeparatorMenuItem(),
         new MenuItem("User Config"):
-          onAction = _ => FdLogApp.primaryStage.foreach(
-            window =>
-              userConfigEditor.show(
-                window
-              )
+          onAction = _ => userConfigEditor.show(
+            FdLogApp.primaryStage
           )
         ,
         developerModeMenuItem
@@ -137,59 +122,38 @@ final class FdLogMenus @Inject() (
       visible = false
       items = Seq(
         new MenuItem("Generate QSOs"):
-          onAction = _ => FdLogApp.primaryStage.foreach(
-            window =>
-              howManyDialogService.showAndGenerate(
-                window
-              )
+          onAction = _ => howManyDialogService.showAndGenerate(
+            FdLogApp.primaryStage
           )
         ,
         new MenuItem("Send FdHour"):
-          onAction = _ => FdLogApp.primaryStage.foreach(
-            window =>
-              fdHourDialogService.show(
-                window
-              )
+          onAction = _ => fdHourDialogService.show(
+            FdLogApp.primaryStage
           )
         ,
         new MenuItem("FdHours"):
-          onAction = _ => FdLogApp.primaryStage.foreach(
-            window =>
-              fdHourDigestsPane.show(
-                window
-              )
+          onAction = _ => fdHourDigestsPane.show(
+            FdLogApp.primaryStage
           )
         ,
         new MenuItem("Status Broadcast Settings"):
-          onAction = _ => FdLogApp.primaryStage.foreach(
-            window =>
-              statusBroadcastDialog.show(
-                window
-              )
+          onAction = _ => statusBroadcastDialog.show(
+            FdLogApp.primaryStage
           )
         ,
         new MenuItem("Logging"):
-          onAction = _ => FdLogApp.primaryStage.foreach(
-            window =>
-              loggingDialog.show(
-                window
-              )
+          onAction = _ => loggingDialog.show(
+            FdLogApp.primaryStage
           )
         ,
         new MenuItem("Contest Time"):
-          onAction = _ => FdLogApp.primaryStage.foreach(
-            window =>
-              contestTimeDialog.show(
-                window
-              )
+          onAction = _ => contestTimeDialog.show(
+            FdLogApp.primaryStage
           )
         ,
         new MenuItem("Set IP Address"):
-          onAction = _ => FdLogApp.primaryStage.foreach(
-            window =>
-              ipAddressDialogService.show(
-                window
-              )
+          onAction = _ => ipAddressDialogService.show(
+            FdLogApp.primaryStage
           )
         ,
         new MenuItem("Discovery"):
@@ -203,11 +167,8 @@ final class FdLogMenus @Inject() (
     new Menu("Admin"):
       items = Seq(
         new MenuItem("Swarm Status"):
-          onAction = _ => FdLogApp.primaryStage.foreach(
-            window =>
-              swarmStatusAdmin.show(
-                window
-              )
+          onAction = _ => swarmStatusAdmin.show(
+            FdLogApp.primaryStage
           )
       )
 
@@ -215,30 +176,21 @@ final class FdLogMenus @Inject() (
     new Menu("Reports"):
       items = Seq(
         new MenuItem("Summary"):
-          onAction = _ => FdLogApp.primaryStage.foreach(
-            window =>
-              summaryDialog.show(
-                window
-              )
+          onAction = _ => summaryDialog.show(
+            FdLogApp.primaryStage
           )
         ,
         new MenuItem("Metrics"):
-          onAction = _ => FdLogApp.primaryStage.foreach(
-            window =>
-              metricsDialog.show(
-                window
-              )
+          onAction = _ => metricsDialog.show(
+            FdLogApp.primaryStage
           )
       )
 
   private def fileMenu: Menu =
     new Menu("File"):
       private val exportItem = new MenuItem("Export"):
-        onAction = _ => FdLogApp.primaryStage.foreach(
-          window =>
-            exportDialog.show(
-              window
-            )
+        onAction = _ => exportDialog.show(
+          FdLogApp.primaryStage
         )
       private val exitItem = new MenuItem("Exit"):
         onAction = _ => Platform.exit()

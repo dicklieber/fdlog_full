@@ -20,7 +20,6 @@ package fdswarm.fx
 
 import cats.effect.unsafe.implicits.global
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.FdLogApp
 import fdswarm.StartupInfo
 import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.qso.ContestEntry
@@ -55,9 +54,6 @@ final class FdLogUi @Inject() (
   def start(
     stage: Stage
   ): Unit =
-    FdLogApp.primaryStage = Some(
-      stage.delegate
-    )
     val qsoNode: Node = contestEntry.node
     val centerPane = new StackPane:
       children = List(qsoNode)
