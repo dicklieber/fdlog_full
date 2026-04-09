@@ -20,33 +20,86 @@ package fdswarm.fx.discovery
 
 import com.google.inject.name.Named
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.fx.contest.ContestConfig
-import fdswarm.fx.station.StationConfig
-import fdswarm.replication.{NodeStatus, Service, Transport}
+import fdswarm.fx.contest.{ContestConfigManager, ContestType}
 import fdswarm.replication.status.SwarmData
-import io.circe.Codec
+import fdswarm.replication.{Service, Transport}
+import fdswarm.util.TimeHelpers
 import jakarta.inject.Inject
 
+import java.time.Duration
 import java.util.concurrent.TimeUnit
 
-class ContestDiscovery @Inject()(
+/**
+ * ContestDiscovery is responsible for determining the contest configuration
+ * within a distributed swarm environment. It attempts to identify and select a
+ * valid contest configuration by querying all nodes in the swarm and picking
+ * the most recent configuration that is not set to NONE. If no such configuration
+ * is found, it logs the absence of a valid contest configuration.
+ *
+ * @constructor Creates a ContestDiscovery instance with the provided dependencies.
+ * @param transport            Facilitates communication within the swarm to exchange information
+ *                             related to contest discovery.
+ * @param contestConfigManager Manages the configuration of the contest, allowing
+ *                             updates to the active contest configuration.
+ * @param swarmData            Stores node-level data required for contest discovery, including
+ *                             status information for each node.
+ * @param timeout              Specifies the discovery timeout duration in milliseconds, defining
+ *                             the period after which discovery will terminate.
+ */
+class ContestDisc1`overy @Inject()(
                                   val transport: Transport,
+                                  contestConfigManager: ContestConfigManager,
                                   swarmData: SwarmData,
-                                  @Named("fdswarm.contestDiscoveryTimeoutSec") val timeoutSec: Int,
+                                  @Named("fdswarm.contestDiscoveryTimeout") val timeout: Duration,
                                 ) extends LazyLogging:
 
-  def discoverContest(): Seq[NodeStatus] =
-    logger.info(s"Starting contest discovery (timeout: ${timeoutSec}s)")
+  def start(): Unit =
+    val currentConfig = contestConfigManager.contestConfigProperty.value
+    if currentConfig.contestType != ContestType.NONE then
+      logger.debug(
+        "Skipping contest discovery because contest config is already set to {}",
+        currentConfig.contestType
+      )
+      return
 
-    transport.send(Service.SendStatus, Array.emptyByteArray)
-    TimeUnit.SECONDS.sleep(timeoutSec.toLong)
+    logger.info(
+      "Starting contest discovery (timeout: {} ms)",
+      timeout.toMillis
+    )
 
-    val localNodeIdentity = swarmData.ourNodeIdentity
-    val discoveredNodes = swarmData.nodeMap.values
-      .filterNot(_.nodeIdentity == localNodeIdentity)
-      .toSeq
+    swarmData.clear()
+    transport.send(
+      Service.SendStatus,
+      Array.emptyByteArray
+    )
+    TimeUnit.MILLISECONDS.sleep(
+      timeout.toMillis
+    )
 
-    discoveredNodes.foreach { discovered =>
-      logger.info(s"Processed StatusMessage from ${discovered.nodeIdentity}")
-    }
-    discoveredNodes
+    val selectedStatus = swarmData.allNodeStatuses
+      .filter(
+        nodeStatus =>
+          nodeStatus.statusMessage.contestConfig.contestType != ContestType.NONE
+      )
+      .sortBy(
+        _.statusMessage.contestConfig.stamp
+      )
+      .headOption
+
+    selectedStatus.foreach(
+      nodeStatus =>
+        val selectedConfig = nodeStatus.statusMessage.contestConfig
+        contestConfigManager.setConfig(
+          selectedConfig
+        )
+        logger.info(
+          "Contest discovery selected config {} from {} (stamp: {})",
+          selectedConfig.contestType,
+          nodeStatus.nodeIdentity,
+          TimeHelpers.instantToString(selectedConfig.stamp)
+        )
+    )
+    if selectedStatus.isEmpty then
+      logger.info(
+        "Contest discovery did not find a non-NONE contest config in swarm data."
+      )
