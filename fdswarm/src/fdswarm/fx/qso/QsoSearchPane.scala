@@ -57,6 +57,13 @@ class QsoSearchPane @Inject()(
                                qsoStore: QsoStore,
                                qsoTablePane: QsoTablePane
 ) extends LazyLogging:
+  private def comboSelection[T](
+                                combo: AnyComboBox[T]
+                              ): Option[T] =
+    Option(
+      combo.value.value
+    ).flatten
+
   val callsignFilter = new OptionTextField {
     promptText = "Callsign"
   }
@@ -96,10 +103,16 @@ class QsoSearchPane @Inject()(
 
 
       val isSearching = expandedProperty.value && (callsignFilter.value.isDefined ||
-        bandFilter.value.value.isDefined ||
-        modeFilter.value.value.isDefined ||
+        comboSelection(
+          bandFilter
+        ).isDefined ||
+        comboSelection(
+          modeFilter
+        ).isDefined ||
         transmittersFilter.value.value.isDefined ||
-        classFilter.value.value.isDefined ||
+        comboSelection(
+          classFilter
+        ).isDefined ||
         operatorFilter.optionValueProperty.value.isDefined)
 
       if isSearching then
@@ -111,9 +124,15 @@ class QsoSearchPane @Inject()(
   def filter(qso: Qso): Boolean = {
     if !contestManager.hasConfiguration.value then return true
     val callSignFilterVal = callsignFilter.value.getOrElse("").toUpperCase
-    val bandFilterVal = bandFilter.value.value
-    val modeFilterVal = modeFilter.value.value
-    val classFilterVal = classFilter.value.value
+    val bandFilterVal = comboSelection(
+      bandFilter
+    )
+    val modeFilterVal = comboSelection(
+      modeFilter
+    )
+    val classFilterVal = comboSelection(
+      classFilter
+    )
     val operatorFilterVal = Option(operatorFilter.text.value).getOrElse("").toUpperCase
 
     val matchesCallsign = callSignFilterVal.isEmpty || qso.callsign.value.toUpperCase.contains(callSignFilterVal)

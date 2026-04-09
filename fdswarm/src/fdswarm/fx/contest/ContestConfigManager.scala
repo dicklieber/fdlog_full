@@ -80,9 +80,17 @@ final class ContestConfigManager @Inject()(
                  newConfig: ContestConfig
                ): Unit =
     _contestConfig.value = newConfig
-    persist()
+    if newConfig.contestType == ContestType.NONE then
+      removePersistedConfig()
+    else
+      persist()
     notifyConfigSet(
       newConfig
+    )
+
+  def clearContestConfig(): Unit =
+    setConfig(
+      ContestConfig.noContest
     )
 
   /**
@@ -168,6 +176,24 @@ final class ContestConfigManager @Inject()(
       case e: Throwable =>
         logger.error(
           s"Failed to persist contest config to $contestFile",
+          e
+        )
+
+  private def removePersistedConfig(): Unit =
+    try
+      if os.exists(
+          contestFile
+        ) then
+        os.remove(
+          contestFile
+        )
+        logger.info(
+          s"Removed contest config file $contestFile"
+        )
+    catch
+      case e: Throwable =>
+        logger.error(
+          s"Failed to remove contest config file $contestFile",
           e
         )
 

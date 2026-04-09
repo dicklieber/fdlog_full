@@ -22,6 +22,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fdswarm.FdLogApp
 import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.bandmodes.BandsAndModesPane
+import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.fx.discovery.ContestDialog
 import fdswarm.fx.station.StationEditor
 import fdswarm.fx.tools.*
@@ -63,7 +64,8 @@ final class FdLogMenus @Inject() (
   summaryDialog: SummaryDialog,
   metricsDialog: MetricsDialog,
   udpQueuesDialog: UDPQueuesDialog,
-  contestDialog: ContestDialog
+  contestDialog: ContestDialog,
+  contestConfigManager: ContestConfigManager
 ) extends LazyLogging:
   aboutMenuItem.onAction = _ => showAboutDialog()
 
@@ -160,6 +162,9 @@ final class FdLogMenus @Inject() (
         ,
         new MenuItem("UDP Queues"):
           onAction = _ => udpQueuesDialog.show()
+        ,
+        new MenuItem("Clear Contest"):
+          onAction = _ => contestConfigManager.clearContestConfig()
       )
 
   private val adminMenu: Menu =

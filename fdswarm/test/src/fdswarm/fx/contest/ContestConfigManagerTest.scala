@@ -122,3 +122,61 @@ class ContestConfigManagerTest extends FunSuite:
     manager.setConfig(config)
     assertEquals(manager.contestConfigOption, Some(config))
   }
+
+  test("clearContestConfig removes contest.json file") {
+    val config = ContestConfig(
+      ContestType.WFD,
+      Callsign("W1AW"),
+      2,
+      "O",
+      "CT"
+    )
+    val subTempDir = Files.createTempDirectory("clear-contest-config-test")
+    val subDirectoryProvider = mock(classOf[DirectoryProvider])
+    when(
+      subDirectoryProvider.apply()
+    ).thenReturn(
+      os.Path(
+        subTempDir.toAbsolutePath.toString
+      )
+    )
+    val contestFile = os.Path(
+      subTempDir.toAbsolutePath.toString
+    ) / "contest.json"
+
+    val manager = new ContestConfigManager(
+      subDirectoryProvider,
+      qsoStoreProvider,
+      filenameStamp,
+      ignoreStatusSec
+    )
+    manager.setConfig(
+      config
+    )
+    assert(
+      os.exists(
+        contestFile
+      )
+    )
+
+    manager.clearContestConfig()
+
+    assert(
+      !os.exists(
+        contestFile
+      )
+    )
+    assertEquals(
+      manager.contestConfigProperty.value,
+      ContestConfig.noContest
+    )
+    assert(
+      !manager.hasConfiguration.value
+    )
+
+    os.remove.all(
+      os.Path(
+        subTempDir.toAbsolutePath.toString
+      )
+    )
+  }

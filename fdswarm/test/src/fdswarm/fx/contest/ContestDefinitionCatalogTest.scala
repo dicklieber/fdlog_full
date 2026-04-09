@@ -29,4 +29,13 @@ class ContestDefinitionCatalogTest extends FunSuite:
     val contests = contestCatalog.contests
     assertEquals(contests.size, 2)
 
+  test("ContestCatalog getChars handles unknown contest type"):
+    val config = ConfigFactory.load()
+    val contestCatalog = ContestCatalog(config)
+    assertEquals(
+      contestCatalog.getChars(
+        ContestType.NONE
+      ),
+      ""
+    )
 

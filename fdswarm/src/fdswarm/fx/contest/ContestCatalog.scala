@@ -67,13 +67,10 @@ final class ContestCatalog @Inject()(config: Config):
     contests.find(_.name == contestType)
 
   def getChars(contestType: ContestType): String =
-
-    val contestDefinition: ContestDefinition = getContest(contestType).get
-    contestDefinition.classCharsString
+    getContest(contestType).map(_.classCharsString).getOrElse("")
 
   def comboBox(contestTypeProperty: ObjectProperty[ContestType]): ClassComboBox =
     new ClassComboBox(this, contestTypeProperty)
-
 
 
 
