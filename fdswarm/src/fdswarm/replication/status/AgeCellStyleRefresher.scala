@@ -46,7 +46,7 @@ class AgeCellStyleRefresher @Inject()(
   private val nodeAgeStyleName = "nodeAging"
   private val styleClasses = Seq("fresh", "recent", "stale")
   private val receivedFormatter =
-    DateTimeFormatter.ofPattern("MM-dd HH:mm:ss").withZone(ZoneId.systemDefault())
+    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z").withZone(ZoneId.systemDefault())
   private val contextByNode = TrieMap.empty[NodeIdentity, CellStyleContext]
   private val refreshPeriod = loadRefreshPeriod(
     config = config

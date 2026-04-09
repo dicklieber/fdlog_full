@@ -21,7 +21,6 @@ package fdswarm.util
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigValueType
 import java.time.Instant
-import java.time.Duration
 import jakarta.inject.{Inject, Singleton}
 import scala.jdk.CollectionConverters.*
 
@@ -58,10 +57,12 @@ class AgeStyleService @Inject()(config: Config):
     styleConfig: Config
   ): AgeStyle =
     val thresholds = styleConfig.getConfigList("thresholds").asScala.map { thresholdConfig =>
-      val duration = loadDuration(
-        thresholdConfig = thresholdConfig
+      val duration = thresholdConfig.getDuration(
+        "duration"
       )
-      val styleName = thresholdConfig.getString("style")
+      val styleName = thresholdConfig.getString(
+        "style"
+      )
       (duration, styleName)
     }.toSeq
     val olderStyle =
@@ -72,18 +73,6 @@ class AgeStyleService @Inject()(config: Config):
         )
       }
     new AgeStyle(thresholds*)(olderStyle)
-
-  private def loadDuration(
-    thresholdConfig: Config
-  ): Duration =
-    thresholdConfig.getValue("duration").valueType() match
-      case ConfigValueType.NUMBER =>
-        val seconds = thresholdConfig.getDouble("duration")
-        Duration.ofNanos(
-          Math.round(seconds * 1000000000L)
-        )
-      case _ =>
-        thresholdConfig.getDuration("duration")
 
   def calc(
     ageStyleName: String,
