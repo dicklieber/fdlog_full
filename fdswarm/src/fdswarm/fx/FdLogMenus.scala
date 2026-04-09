@@ -18,12 +18,11 @@
 
 package fdswarm.fx
 
-import com.google.inject.Injector
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.FdLogApp
 import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.bandmodes.BandsAndModesPane
-import fdswarm.fx.discovery.DiscoveryDialog
+import fdswarm.fx.discovery.ContestDialog
 import fdswarm.fx.station.StationEditor
 import fdswarm.fx.tools.*
 import io.circe.parser.decode
@@ -45,7 +44,6 @@ import scalafx.stage.{Stage, Window}
 import scala.io.Source
 
 final class FdLogMenus @Inject() (
-  injector: Injector,
   bandModeManagerPane: BandsAndModesPane,
   stationEditor: StationEditor,
   howManyDialogService: HowManyDialogService,
@@ -64,7 +62,8 @@ final class FdLogMenus @Inject() (
   swarmStatusAdmin: fdswarm.fx.admin.SwarmStatusAdmin,
   summaryDialog: SummaryDialog,
   metricsDialog: MetricsDialog,
-  udpQueuesDialog: UDPQueuesDialog
+  udpQueuesDialog: UDPQueuesDialog,
+  contestDialog: ContestDialog
 ) extends LazyLogging:
   aboutMenuItem.onAction = _ => showAboutDialog()
 
@@ -114,6 +113,9 @@ final class FdLogMenus @Inject() (
             FdLogApp.primaryStage
           )
         ,
+        new MenuItem("Contest"):
+          onAction = _ => contestDialog.show()
+        ,
         developerModeMenuItem
       )
 
@@ -155,9 +157,6 @@ final class FdLogMenus @Inject() (
           onAction = _ => ipAddressDialogService.show(
             FdLogApp.primaryStage
           )
-        ,
-        new MenuItem("Discovery"):
-          onAction = _ => injector.instance[DiscoveryDialog].show()
         ,
         new MenuItem("UDP Queues"):
           onAction = _ => udpQueuesDialog.show()

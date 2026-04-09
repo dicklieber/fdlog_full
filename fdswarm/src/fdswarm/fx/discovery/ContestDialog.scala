@@ -15,10 +15,10 @@ import scalafx.application.Platform
 import scalafx.scene.control.ButtonType
 import scalafx.scene.layout.VBox
 
-class DiscoveryDialog @Inject() (contestConfigPaneProvider: ContestConfigPaneProvider,
-                                 contestManager: ContestConfigManager,
-                                 qsoStore: QsoStore,
-                                 exchangePane: ExchangePane)
+class ContestDialog @Inject()(contestConfigPaneProvider: ContestConfigPaneProvider,
+                              contestManager: ContestConfigManager,
+                              qsoStore: QsoStore,
+                              exchangePane: ExchangePane)
   extends StyledDialog[ButtonType]:
 
 
