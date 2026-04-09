@@ -62,10 +62,11 @@ object FdHours:
  */
 @Singleton
 class SwarmData @Inject() (
-                            nodeIdentityManager: NodeIdentityManager,
-                            localNodeStatus: LocalNodeStatus,
-                            stationEditor: StationEditor
-                          ) extends LazyLogging:
+  nodeIdentityManager: NodeIdentityManager,
+  localNodeStatus: LocalNodeStatus,
+  stationEditor: StationEditor,
+  ageCellStyleRefresher: AgeCellStyleRefresher
+) extends LazyLogging:
   type CellNodeListener = (
     NodeStatus,
     String,
@@ -76,18 +77,6 @@ class SwarmData @Inject() (
                                       grid: GridPane,
                                       cellNodes: Map[(NodeIdentity, NodeDataField), Seq[Node]]
                                     )
-
-  /**
-   *
-   * @param nodeStatus what we know about the node, including its status and whether it is local.
-   * @param fieldName the name of the field associated with the node, used to determine specific styling rules.
-   * @param node the node to which the styling rules and behaviors will be applied.
-   */
-  private case class CellStyleContext(
-                                       nodeStatus: NodeStatus,
-                                       fieldName: String,
-                                       node: Node
-                                     )
 
   val knownNodeIdentity: ObservableBuffer[NodeIdentity] = ObservableBuffer.empty[NodeIdentity]
   private val knownFdHoursBuffer: ObservableBuffer[FdHours] = ObservableBuffer.empty[FdHours]
@@ -165,6 +154,12 @@ class SwarmData @Inject() (
 
   def clear(): Unit =
     val localStatus = nodeMap.get(ourNodeIdentity)
+    nodeMap.keys.foreach(
+      nodeIdentity =>
+        ageCellStyleRefresher.remove(
+          nodeIdentity
+        )
+    )
     nodeMap.clear()
     localStatus.foreach(
       status =>
@@ -179,7 +174,12 @@ class SwarmData @Inject() (
 
   def remove(nodeIdentity: NodeIdentity): Unit =
     if nodeIdentity != ourNodeIdentity then
-      nodeMap.remove(nodeIdentity)
+      nodeMap.remove(nodeIdentity).foreach(
+        _ =>
+          ageCellStyleRefresher.remove(
+            nodeIdentity
+          )
+      )
       updateKnownCollectionsFromNodeMap()
       notifyNodeStatusListeners()
       logger.debug(s"Removed node status for $nodeIdentity")
@@ -478,20 +478,24 @@ class SwarmData @Inject() (
   private def doStyle(
                        nodeStyler: CellStyleContext
                      ): Unit =
-    val CellStyleContext(nodeStatus, fieldName, node) = nodeStyler
+    val nodeStatus = nodeStyler.nodeStatus
+    val fieldName = nodeStyler.fieldName
+    val node = nodeStyler.node
     // Keep all current and future styling rules in one place.
-    setStyleClass(
-      node,
-      ourNodeStyleClass,
-      nodeStatus.isLocal
-    )
+    if nodeStatus.isLocal then
+      if !node.styleClass.contains(ourNodeStyleClass) then
+        node.styleClass += ourNodeStyleClass
+      else
+        while node.styleClass.contains(ourNodeStyleClass) do
+          node.styleClass -= ourNodeStyleClass
 
     val isLocalOperatorField = nodeStatus.isLocal && fieldName == operatorFieldName
-    setStyleClass(
-      node,
-      operatorLinkStyleClass,
-      isLocalOperatorField
-    )
+    if isLocalOperatorField then
+      if !node.styleClass.contains(operatorLinkStyleClass) then
+        node.styleClass += operatorLinkStyleClass
+      else
+        while node.styleClass.contains(operatorLinkStyleClass) do
+          node.styleClass -= operatorLinkStyleClass
     if isLocalOperatorField then
       node.delegate.setOnMouseClicked(
         new EventHandler[MouseEvent]:
@@ -507,14 +511,7 @@ class SwarmData @Inject() (
         null
       )
 
-  private def setStyleClass(
-                             node: Node,
-                             styleClassName: String,
-                             enabled: Boolean
-                           ): Unit =
-    if enabled then
-      if !node.styleClass.contains(styleClassName) then
-        node.styleClass += styleClassName
-    else
-      while node.styleClass.contains(styleClassName) do
-        node.styleClass -= styleClassName
+    if fieldName == NodeDataField.Received.label then
+      ageCellStyleRefresher.add(
+        nodeStyler
+      )

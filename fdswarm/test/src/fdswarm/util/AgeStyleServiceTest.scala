@@ -28,16 +28,15 @@ class AgeStyleServiceTest extends FunSuite:
     val configStr =
       """
         |fdswarm {
-        |  ageStyles = [
-        |    {
-        |      name = "test-style"
+        |  ageStyles {
+        |    testStyle {
         |      thresholds = [
-        |        { duration = "10s", style = "fresh" }
-        |        { duration = "1m", style = "recent" }
+        |        { duration = 10.0, style = "fresh" }
+        |        { duration = 60.0, style = "recent" }
+        |        { duration = 120.0, style = "stale" }
         |      ]
-        |      olderStyle = "stale"
         |    }
-        |  ]
+        |  }
         |}
       """.stripMargin
     val config = ConfigFactory.parseString(configStr)
@@ -46,16 +45,16 @@ class AgeStyleServiceTest extends FunSuite:
     val now = Instant.now()
     
     // 5 seconds ago -> fresh
-    assertEquals(service.calc("test-style", now.minusSeconds(5)).style, "fresh")
+    assertEquals(service.calc("testStyle", now.minusSeconds(5)).style, "fresh")
     
     // 30 seconds ago -> recent
-    assertEquals(service.calc("test-style", now.minusSeconds(30)).style, "recent")
+    assertEquals(service.calc("testStyle", now.minusSeconds(30)).style, "recent")
     
     // 2 minutes ago -> stale
-    assertEquals(service.calc("test-style", now.minusSeconds(120)).style, "stale")
+    assertEquals(service.calc("testStyle", now.minusSeconds(120)).style, "stale")
 
   test("AgeStyleService should throw exception for unknown style"):
-    val config = ConfigFactory.parseString("fdswarm { ageStyles = [] }")
+    val config = ConfigFactory.parseString("fdswarm { ageStyles {} }")
     val service = new AgeStyleService(config)
     intercept[IllegalArgumentException] {
       service.calc("unknown", Instant.now())

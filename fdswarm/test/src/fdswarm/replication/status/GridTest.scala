@@ -56,15 +56,14 @@ class GridTest extends FunSuite:
     val nowProperty = scalafx.beans.property.LongProperty(System.currentTimeMillis())
     val config = com.typesafe.config.ConfigFactory.parseString(
       """
-        |fdswarm.ageStyles = [
-        |  {
-        |    name = "node"
+        |fdswarm.ageStyles {
+        |  nodeAging {
         |    thresholds = [
-        |      { duration = "12s", style = "fresh" }
+        |      { duration = 12.0, style = "fresh" }
+        |      { duration = 20.0, style = "stale" }
         |    ]
-        |    olderStyle = "stale"
         |  }
-        |]
+        |}
       """.stripMargin)
     val ageStyleService = new fdswarm.util.AgeStyleService(config)
     val gird = SwarmStatusGrid(
@@ -101,15 +100,14 @@ class GridTest extends FunSuite:
     val nowProperty = scalafx.beans.property.LongProperty(System.currentTimeMillis())
     val config = com.typesafe.config.ConfigFactory.parseString(
       """
-        |fdswarm.ageStyles = [
-        |  {
-        |    name = "node"
+        |fdswarm.ageStyles {
+        |  nodeAging {
         |    thresholds = [
-        |      { duration = "12s", style = "fresh" }
+        |      { duration = 12.0, style = "fresh" }
+        |      { duration = 20.0, style = "stale" }
         |    ]
-        |    olderStyle = "stale"
         |  }
-        |]
+        |}
       """.stripMargin)
     val ageStyleService = new fdswarm.util.AgeStyleService(config)
     val grid = SwarmStatusGrid(

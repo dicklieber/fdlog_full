@@ -80,6 +80,7 @@ class SwarmStatusGrid(
       if (receivedNodeStatus.nodeIdentity.instanceId == ourInstanceId) {
         new scalafx.scene.control.Label {
           text = "Our Node"
+          tooltip = Tooltip("Our, local, node is always current")
           styleClass.addAll("grid-value", "ourNode")
         }
       } else {

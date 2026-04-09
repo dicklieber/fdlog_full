@@ -24,7 +24,7 @@ import fdswarm.fx.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
 import fdswarm.fx.qso.FdHour
 import fdswarm.fx.station.{StationEditor, StationStore}
 import fdswarm.replication.LocalNodeStatus
-import fdswarm.util.MockNodeIdentityManager
+import fdswarm.util.{AgeStyleService, MockNodeIdentityManager}
 import munit.FunSuite
 
 class SwarmDataTest extends FunSuite:
@@ -70,7 +70,13 @@ class SwarmDataTest extends FunSuite:
     val swarmData = new SwarmData(
       MockNodeIdentityManager(),
       localNodeStatus,
-      stationEditor
+      stationEditor,
+      new AgeCellStyleRefresher(
+        config = config,
+        ageStyleService = new AgeStyleService(
+          config = config
+        )
+      )
     )
     val hour1 = FdHour(10, 1)
     val hour2 = FdHour(10, 2)

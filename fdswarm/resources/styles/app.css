@@ -200,6 +200,10 @@
 .stale {
     -fx-background-color: red;
 }
+.olderStyle{
+    -fx-background-color: black;
+    -fx-color: lightpink;
+ }
 
 .grid-value.ourNode {
     -fx-background-color: #90eee6;

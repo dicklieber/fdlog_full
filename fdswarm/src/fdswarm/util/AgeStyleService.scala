@@ -19,28 +19,77 @@
 package fdswarm.util
 
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigValueType
 import java.time.Instant
+import java.time.Duration
 import jakarta.inject.{Inject, Singleton}
 import scala.jdk.CollectionConverters.*
 
 @Singleton
 class AgeStyleService @Inject()(config: Config):
-  private val ageStyles: Map[String, AgeStyle] = 
+  private val ageStyles: Map[String, AgeStyle] =
     if config.hasPath("fdswarm.ageStyles") then
-      config.getConfigList("fdswarm.ageStyles").asScala.map { styleConfig =>
-        val name = styleConfig.getString("name")
-        val olderStyle = styleConfig.getString("olderStyle")
-        val thresholds = styleConfig.getConfigList("thresholds").asScala.map { t =>
-          val d = t.getDuration("duration")
-          val s = t.getString("style")
-          (d, s)
-        }.toSeq
-        name -> new AgeStyle(thresholds*)(olderStyle)
-      }.toMap
+      loadAgeStyles(
+        config.getConfig("fdswarm.ageStyles")
+      )
     else
       Map.empty
 
-  def calc(ageStyleName: String, instant: Instant, now: Instant = Instant.now()): AgeStyle.StyleAndAge =
+  private def loadAgeStyles(
+    ageStylesConfig: Config
+  ): Map[String, AgeStyle] =
+    config.getValue("fdswarm.ageStyles").valueType() match
+      case ConfigValueType.LIST =>
+        config.getConfigList("fdswarm.ageStyles").asScala.map { styleConfig =>
+          val name = styleConfig.getString("name")
+          name -> buildAgeStyle(styleConfig)
+        }.toMap
+      case ConfigValueType.OBJECT =>
+        ageStylesConfig.root().keySet().asScala.map { styleName =>
+          val styleConfig = ageStylesConfig.getConfig(styleName)
+          styleName -> buildAgeStyle(styleConfig)
+        }.toMap
+      case other =>
+        throw new IllegalArgumentException(
+          s"Unsupported fdswarm.ageStyles type: $other"
+        )
+
+  private def buildAgeStyle(
+    styleConfig: Config
+  ): AgeStyle =
+    val thresholds = styleConfig.getConfigList("thresholds").asScala.map { thresholdConfig =>
+      val duration = loadDuration(
+        thresholdConfig = thresholdConfig
+      )
+      val styleName = thresholdConfig.getString("style")
+      (duration, styleName)
+    }.toSeq
+    val olderStyle =
+      if styleConfig.hasPath("olderStyle") then styleConfig.getString("olderStyle")
+      else thresholds.lastOption.map(_._2).getOrElse {
+        throw new IllegalArgumentException(
+          "Age style thresholds cannot be empty when olderStyle is not provided"
+        )
+      }
+    new AgeStyle(thresholds*)(olderStyle)
+
+  private def loadDuration(
+    thresholdConfig: Config
+  ): Duration =
+    thresholdConfig.getValue("duration").valueType() match
+      case ConfigValueType.NUMBER =>
+        val seconds = thresholdConfig.getDouble("duration")
+        Duration.ofNanos(
+          Math.round(seconds * 1000000000L)
+        )
+      case _ =>
+        thresholdConfig.getDuration("duration")
+
+  def calc(
+    ageStyleName: String,
+    instant: Instant,
+    now: Instant = Instant.now()
+  ): AgeStyle.StyleAndAge =
     ageStyles.get(ageStyleName) match
       case Some(style) => style.calc(instant, now)
       case None => 
