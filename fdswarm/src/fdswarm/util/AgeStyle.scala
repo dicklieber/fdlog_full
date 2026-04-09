@@ -26,7 +26,7 @@ import java.time.{Duration, Instant}
  * @param thresholds sequence of (duration, styleClass) pairs, ordered by duration ascending.
  * @param olderStyle style class to return if the age is greater than all threshold durations.
  */
-class AgeStyle(thresholds: (Duration, String)*)(olderStyle: String):
+class AgeStyle(thresholds: (Duration, String)*)(olderStyle: String, purgeAfter: Option[Duration] = None):
   private val sortedThresholds = thresholds.sortBy(_._1)
 
   /**
@@ -36,9 +36,16 @@ class AgeStyle(thresholds: (Duration, String)*)(olderStyle: String):
    */
   def calc(stamp: Instant, now: Instant = Instant.now()): AgeStyle.StyleAndAge =
     val age = Duration.between(stamp, now)
+    val needsPurge = purgeAfter.exists(
+      age.compareTo(_) >= 0
+    )
     sortedThresholds.find(t => age.compareTo(t._1) <= 0) match
-      case Some((_, styleClass)) => AgeStyle.StyleAndAge(styleClass, age)
-      case None                  => AgeStyle.StyleAndAge(olderStyle,age)
+      case Some((_, styleClass)) => AgeStyle.StyleAndAge(styleClass, age, needsPurge)
+      case None                  => AgeStyle.StyleAndAge(olderStyle, age, needsPurge)
 
 object AgeStyle:
-  case class StyleAndAge(style: String, age: Duration)
+  case class StyleAndAge(
+    style: String,
+    age: Duration,
+    needsPurge: Boolean = false
+  )

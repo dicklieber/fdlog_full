@@ -96,6 +96,13 @@ class SwarmData @Inject() (
   private val stampFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("MM-dd HH:mm:ss").withZone(ZoneId.systemDefault())
 
+  ageCellStyleRefresher.setPurgeCallback(
+    nodeIdentity =>
+      remove(
+        nodeIdentity
+      )
+  )
+
   def ourNodeIdentity: NodeIdentity =
     nodeIdentityManager.ourNodeIdentity
 
@@ -189,6 +196,9 @@ class SwarmData @Inject() (
   def update(nodeStatus: NodeStatus): Unit =
     val nodeIdentity = nodeStatus.nodeIdentity
     nodeMap.put(nodeIdentity, nodeStatus)
+    ageCellStyleRefresher.track(
+      nodeStatus = nodeStatus
+    )
     val newlyDiscoveredFdHours = nodeStatus.statusMessage.fdDigests
       .flatMap(fd => if knownFdHourValues.putIfAbsent(fd.fdHour, fd.fdHour).isEmpty then Some(fd.fdHour) else None)
       .distinct
@@ -357,7 +367,11 @@ class SwarmData @Inject() (
     if Platform.isFxApplicationThread then
       action
     else
-      Platform.runLater(() => action)
+      try
+        Platform.runLater(() => action)
+      catch
+        case _: IllegalStateException =>
+          action
 
   private def updateKnownCollectionsFromNodeMap(): Unit =
     val nodeStatuses = nodeMap.values.toSeq

@@ -30,10 +30,11 @@ class AgeStyleServiceTest extends FunSuite:
         |fdswarm {
         |  ageStyles {
         |    testStyle {
+        |      purgeAfter = 180s
         |      thresholds = [
-        |        { duration = 10.0, style = "fresh" }
-        |        { duration = 60.0, style = "recent" }
-        |        { duration = 120.0, style = "stale" }
+        |        { duration = 10s, style = "fresh" }
+        |        { duration = 60s, style = "recent" }
+        |        { duration = 120s, style = "stale" }
         |      ]
         |    }
         |  }
@@ -45,13 +46,50 @@ class AgeStyleServiceTest extends FunSuite:
     val now = Instant.now()
     
     // 5 seconds ago -> fresh
-    assertEquals(service.calc("testStyle", now.minusSeconds(5)).style, "fresh")
+    assertEquals(
+      service.calc(
+        "testStyle",
+        now.minusSeconds(5),
+        now
+      ).style,
+      "fresh"
+    )
     
     // 30 seconds ago -> recent
-    assertEquals(service.calc("testStyle", now.minusSeconds(30)).style, "recent")
+    assertEquals(
+      service.calc(
+        "testStyle",
+        now.minusSeconds(30),
+        now
+      ).style,
+      "recent"
+    )
     
     // 2 minutes ago -> stale
-    assertEquals(service.calc("testStyle", now.minusSeconds(120)).style, "stale")
+    assertEquals(
+      service.calc(
+        "testStyle",
+        now.minusSeconds(120),
+        now
+      ).style,
+      "stale"
+    )
+    assertEquals(
+      service.calc(
+        "testStyle",
+        now.minusSeconds(120),
+        now
+      ).needsPurge,
+      false
+    )
+    assertEquals(
+      service.calc(
+        "testStyle",
+        now.minusSeconds(181),
+        now
+      ).needsPurge,
+      true
+    )
 
   test("AgeStyleService should throw exception for unknown style"):
     val config = ConfigFactory.parseString("fdswarm { ageStyles {} }")

@@ -48,6 +48,8 @@ class AgeCellStyleRefresher @Inject()(
   private val receivedFormatter =
     DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z").withZone(ZoneId.systemDefault())
   private val contextByNode = TrieMap.empty[NodeIdentity, CellStyleContext]
+  private val statusByNode = TrieMap.empty[NodeIdentity, NodeStatus]
+  @volatile private var purgeNodeStatus: NodeIdentity => Unit = _ => ()
   private val refreshPeriod = loadRefreshPeriod(
     config = config
   )
@@ -72,6 +74,9 @@ class AgeCellStyleRefresher @Inject()(
   def add(
     cellStyleContext: CellStyleContext
   ): Unit =
+    track(
+      nodeStatus = cellStyleContext.nodeStatus
+    )
     contextByNode.put(
       cellStyleContext.nodeStatus.nodeIdentity,
       cellStyleContext
@@ -86,6 +91,22 @@ class AgeCellStyleRefresher @Inject()(
     contextByNode.remove(
       nodeIdentity
     )
+    statusByNode.remove(
+      nodeIdentity
+    )
+
+  def track(
+    nodeStatus: NodeStatus
+  ): Unit =
+    statusByNode.put(
+      nodeStatus.nodeIdentity,
+      nodeStatus
+    )
+
+  def setPurgeCallback(
+    callback: NodeIdentity => Unit
+  ): Unit =
+    purgeNodeStatus = callback
 
   private def loadRefreshPeriod(
     config: Config
@@ -96,13 +117,32 @@ class AgeCellStyleRefresher @Inject()(
       Duration.ofSeconds(1L)
 
   private def refreshAll(): Unit =
-    Platform.runLater(() =>
-      contextByNode.values.foreach(
-        context =>
-          refreshOne(
-            cellStyleContext = context
+    val now = Instant.now()
+    runPurgeCycle(
+      now = now
+    )
+    if contextByNode.nonEmpty then
+      try
+        Platform.runLater(() =>
+          contextByNode.values.foreach(
+            context =>
+              refreshOne(
+                cellStyleContext = context
+              )
           )
-      )
+        )
+      catch
+        case _: IllegalStateException =>
+
+  private[status] def runPurgeCycle(
+    now: Instant = Instant.now()
+  ): Unit =
+    statusByNode.values.foreach(
+      nodeStatus =>
+        purgeIfNeeded(
+          nodeStatus = nodeStatus,
+          now = now
+        )
     )
 
   private def refreshOne(
@@ -117,11 +157,17 @@ class AgeCellStyleRefresher @Inject()(
       return
 
     val now = Instant.now()
+    if purgeIfNeeded(
+      nodeStatus = cellStyleContext.nodeStatus,
+      now = now
+    ) then
+      return
     val styleAndAge = ageStyleService.calc(
       ageStyleName = nodeAgeStyleName,
       instant = cellStyleContext.nodeStatus.received,
       now = now
     )
+
     val text = DurationFormat(
       styleAndAge.age
     )
@@ -138,6 +184,28 @@ class AgeCellStyleRefresher @Inject()(
       styleClasses*
     )
     node.styleClass += styleAndAge.style
+
+  private def purgeIfNeeded(
+    nodeStatus: NodeStatus,
+    now: Instant
+  ): Boolean =
+    if nodeStatus.isLocal then
+      return false
+    val styleAndAge = ageStyleService.calc(
+      ageStyleName = nodeAgeStyleName,
+      instant = nodeStatus.received,
+      now = now
+    )
+    if !styleAndAge.needsPurge then
+      return false
+    val nodeIdentity = nodeStatus.nodeIdentity
+    remove(
+      nodeIdentity
+    )
+    purgeNodeStatus(
+      nodeIdentity
+    )
+    true
 
   private def updateLabel(
     node: Node,

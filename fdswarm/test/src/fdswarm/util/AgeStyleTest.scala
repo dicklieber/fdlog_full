@@ -27,7 +27,9 @@ class AgeStyleTest extends FunSuite:
     val ageStyle = new AgeStyle(
       (Duration.ofSeconds(10), "fresh"),
       (Duration.ofSeconds(60), "recent")
-    )("stale")
+    )(
+      "stale"
+    )
 
     val now = Instant.now()
 
@@ -45,14 +47,28 @@ class AgeStyleTest extends FunSuite:
 
     // 65 seconds ago -> stale
     assertEquals(ageStyle.calc(now.minusSeconds(65), now).style, "stale")
+    assertEquals(ageStyle.calc(now.minusSeconds(65), now).needsPurge, false)
 
   test("AgeStyle should handle unsorted thresholds"):
     val ageStyle = new AgeStyle(
       (Duration.ofSeconds(60), "recent"),
       (Duration.ofSeconds(10), "fresh")
-    )("stale")
+    )(
+      "stale"
+    )
 
     val now = Instant.now()
     assertEquals(ageStyle.calc(now.minusSeconds(5), now).style, "fresh")
     assertEquals(ageStyle.calc(now.minusSeconds(15), now).style, "recent")
     assertEquals(ageStyle.calc(now.minusSeconds(65), now).style, "stale")
+
+  test("AgeStyle should set needsPurge when purgeAfter is reached"):
+    val ageStyle = new AgeStyle(
+      (Duration.ofSeconds(10), "fresh")
+    )(
+      olderStyle = "stale",
+      purgeAfter = Some(Duration.ofSeconds(30))
+    )
+    val now = Instant.now()
+    assertEquals(ageStyle.calc(now.minusSeconds(29), now).needsPurge, false)
+    assertEquals(ageStyle.calc(now.minusSeconds(30), now).needsPurge, true)

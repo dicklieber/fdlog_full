@@ -72,7 +72,21 @@ class AgeStyleService @Inject()(config: Config):
           "Age style thresholds cannot be empty when olderStyle is not provided"
         )
       }
-    new AgeStyle(thresholds*)(olderStyle)
+    val purgeAfter =
+      if styleConfig.hasPath("purgeAfter") then
+        Some(
+          styleConfig.getDuration(
+            "purgeAfter"
+          )
+        )
+      else
+        None
+    new AgeStyle(
+      thresholds*
+    )(
+      olderStyle = olderStyle,
+      purgeAfter = purgeAfter
+    )
 
   def calc(
     ageStyleName: String,
