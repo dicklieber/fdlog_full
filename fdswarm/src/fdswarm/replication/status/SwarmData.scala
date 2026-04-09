@@ -77,6 +77,18 @@ class SwarmData @Inject() (
                                       cellNodes: Map[(NodeIdentity, NodeDataField), Seq[Node]]
                                     )
 
+  /**
+   *
+   * @param nodeStatus what we know about the node, including its status and whether it is local.
+   * @param fieldName the name of the field associated with the node, used to determine specific styling rules.
+   * @param node the node to which the styling rules and behaviors will be applied.
+   */
+  private case class CellStyleContext(
+                                       nodeStatus: NodeStatus,
+                                       fieldName: String,
+                                       node: Node
+                                     )
+
   val knownNodeIdentity: ObservableBuffer[NodeIdentity] = ObservableBuffer.empty[NodeIdentity]
   private val knownFdHoursBuffer: ObservableBuffer[FdHours] = ObservableBuffer.empty[FdHours]
 
@@ -426,9 +438,11 @@ class SwarmData @Inject() (
     targetCells.foreach(
       cell =>
         doStyle(
-          nodeStatus,
-          field.label,
-          cell
+          CellStyleContext(
+            nodeStatus,
+            field.label,
+            cell
+          )
         )
         if cellNodeListeners.nonEmpty then
           cellNodeListeners.values.foreach(
@@ -458,16 +472,13 @@ class SwarmData @Inject() (
   /**
    * Applies the appropriate styling and behavior to a given node based on its status and field name.
    *
-   * @param nodeStatus the status of the node, providing context about its state and whether it is local
-   * @param fieldName  the name of the field associated with the node, used to determine specific styling rules
-   * @param node       the node to which the styling rules and behaviors will be applied
+   * @param nodeStyler wraps the status, field, and node to which styling rules will be applied
    * @return Unit this method does not return a value; it modifies the node's style and event handlers directly
    */
   private def doStyle(
-                       nodeStatus: NodeStatus,
-                       fieldName: String,
-                       node: Node
+                       nodeStyler: CellStyleContext
                      ): Unit =
+    val CellStyleContext(nodeStatus, fieldName, node) = nodeStyler
     // Keep all current and future styling rules in one place.
     setStyleClass(
       node,
@@ -487,17 +498,8 @@ class SwarmData @Inject() (
           override def handle(
                                event: MouseEvent
                              ): Unit =
-            val ownerWindow: Option[javafx.stage.Window] =
+            stationEditor.show(
               FdLogApp.primaryStage
-                .orElse(
-                  Option(node.scene.value)
-                    .flatMap(scene => Option(scene.delegate.getWindow))
-                )
-            ownerWindow.foreach(
-              window =>
-                stationEditor.show(
-                  window
-                )
             )
       )
     else
