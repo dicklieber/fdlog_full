@@ -114,7 +114,7 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
       catch
         case _: InterruptedException => Thread.currentThread().interrupt()
         case e: Exception =>
-          logger.error("Error in Repl processing loop", e)
+          logger.error(s"Error in Repl processing loop ${e.getMessage}", e)
     , "Repl-Processor")
   thread.setDaemon(true)
   logger.debug("Starting NodeStatusHandler Thread")

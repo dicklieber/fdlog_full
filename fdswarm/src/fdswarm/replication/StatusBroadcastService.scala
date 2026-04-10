@@ -165,9 +165,7 @@ class StatusBroadcastService @Inject()(
         val operator = stationManager.station.operator
         val bandMode = selectedBandModeStore.selected.value
         val bandModeOperator = BandModeOperator(operator,bandMode )
-        val statusMessage = StatusMessage(fdDigests = qsoStore.digests(),
-          bandNodeOperator = bandModeOperator,
-          contestConfig = contestConfigManager.contestConfigProperty.value)
+        val statusMessage = StatusMessage(fdDigests = qsoStore.digests(), bandNodeOperator = bandModeOperator, contestConfig = contestConfigManager.contestConfigProperty.value)
         val gzipBytes = statusMessage.toPacket
         logger.trace("Broadcasting status: {} bytes: {}", statusMessage, gzipBytes.length)
         transport.send(Service.Status, gzipBytes)

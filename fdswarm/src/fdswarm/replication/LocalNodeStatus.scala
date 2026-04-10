@@ -105,11 +105,7 @@ final class LocalNodeStatus @Inject()(
         val bandNodeOperator =
           BandModeOperator(stationManager.station.operator, selectedBandModeStore.selected.value)
         val next = NodeStatus(
-          statusMessage = StatusMessage(
-            fdDigests = heldDigests,
-            bandNodeOperator = bandNodeOperator,
-            contestConfig = contestConfig
-          ),
+          statusMessage = StatusMessage(fdDigests = heldDigests, bandNodeOperator = bandNodeOperator, contestConfig = contestConfig),
           nodeIdentity = nodeIdentityManager.ourNodeIdentity,
           isLocal = true
         )
