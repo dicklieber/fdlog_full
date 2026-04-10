@@ -12,12 +12,10 @@ import scalafx.beans.property.{ObjectProperty, ReadOnlyBooleanProperty, ReadOnly
 @Singleton
 final class ContestConfigManager @Inject()(
                                             productionDirectory: DirectoryProvider,
-                                            qsoStoreProvider: Provider[fdswarm.store.QsoStore],
-                                            filenameStamp: fdswarm.util.FilenameStamp,
-                                            @Named("fdswarm.contestChangeIgnoreStatusSec") ignoreStatusSec: Int
+                                          qsoStoreProvider: Provider[fdswarm.store.QsoStore],
+                                          filenameStamp: fdswarm.util.FilenameStamp,
+                                          @Named("fdswarm.contestChangeIgnoreStatusSec") ignoreStatusSec: Int
                                           ) extends ContestConfigFields with LazyLogging:
-  private var onConfigSetListeners: Vector[ContestConfig => Unit] = Vector.empty
-
   private def qsoStore: fdswarm.store.QsoStore = qsoStoreProvider.get()
 // These override methods expose the current value of the contestConfigProperty
   override def contestType: ContestType =
@@ -59,11 +57,6 @@ final class ContestConfigManager @Inject()(
 
   val hasConfiguration: ReadOnlyBooleanProperty = _hasConfiguration.readOnlyProperty
 
-  def onConfigSet(
-                   listener: ContestConfig => Unit
-                 ): Unit =
-    onConfigSetListeners :+= listener
-
   def shouldIgnoreStatus: Boolean =
     val now = System.currentTimeMillis()
     (now - lastRestartTime) < (ignoreStatusSec * 1000L)
@@ -84,9 +77,6 @@ final class ContestConfigManager @Inject()(
       removePersistedConfig()
     else
       persist()
-    notifyConfigSet(
-      newConfig
-    )
 
   def clearContestConfig(): Unit =
     setConfig(
@@ -196,19 +186,3 @@ final class ContestConfigManager @Inject()(
           s"Failed to remove contest config file $contestFile",
           e
         )
-
-  private def notifyConfigSet(
-                               config: ContestConfig
-                             ): Unit =
-    onConfigSetListeners.foreach { listener =>
-      try
-        listener(
-          config
-        )
-      catch
-        case e: Throwable =>
-          logger.error(
-            "ContestConfigManager.onConfigSet listener failed",
-            e
-          )
-    }

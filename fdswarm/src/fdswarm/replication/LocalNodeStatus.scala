@@ -79,10 +79,17 @@ final class LocalNodeStatus @Inject()(
     rebuildAndNotify("bandmode-change")
   }
 
-  // Rebuild local status once contest configuration becomes available.
-  Option(contestConfigManagerProvider.get()).foreach(_.onConfigSet { _ =>
-    rebuildAndNotify("contest-config-set")
-  })
+  // Rebuild local status when contest configuration changes.
+  Option(
+    contestConfigManagerProvider.get()
+  ).foreach(
+    _.contestConfigProperty.onChange {
+      (_, _, _) =>
+        rebuildAndNotify(
+          "contest-config-change"
+        )
+    }
+  )
   rebuildAndNotify("init")
 
   def updateDigests(digests: Seq[FdHourDigest]): Unit =
