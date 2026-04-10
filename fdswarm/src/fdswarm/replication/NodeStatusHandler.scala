@@ -95,7 +95,7 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
                 udpHeader.nodeIdentity
               )
             else
-              statusBroadcastService.broadcastStatus(force = true)
+              statusBroadcastService.broadcastStatus()
               logger.trace(
                 "Received SendStatus from {} and broadcasted StatusMessage",
                 udpHeader.nodeIdentity

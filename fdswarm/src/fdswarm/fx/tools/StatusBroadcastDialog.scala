@@ -32,56 +32,30 @@ final class StatusBroadcastDialog @Inject() (
                                             ) {
 
   def show(ownerWindow: Window): Unit = {
-    val periodicCheckbox = new CheckBox("Enable periodic Status broadcasts") {
-      selected <==> statusBroadcastService.periodicEnabledProperty
-    }
-
     val broadcastButton = new Button("Broadcast Status Now") {
       onAction = _ => statusBroadcastService.broadcastStatus()
-      disable <== periodicCheckbox.selected
-    }
-
-    val periodSpinner = new Spinner[Int](1, 3600, statusBroadcastService.broadcastPeriodSecProperty.value) {
-      editable = true
-      prefWidth = 80
-    }
-    periodSpinner.valueFactory.value.valueProperty().addListener { (_, _, newValue) =>
-      statusBroadcastService.broadcastPeriodSecProperty.value = newValue.intValue()
-    }
-    statusBroadcastService.broadcastPeriodSecProperty.onChange { (_, _, newValue) =>
-      periodSpinner.valueFactory.value.value = newValue.intValue()
-    }
-
-    val resetButton = new Button("Reset") {
-      onAction = _ => {
-        periodSpinner.valueFactory.value.value = statusBroadcastService.defaultBroadcastPeriodSec
-      }
-      tooltip = Tooltip("Reset to default from application.conf")
     }
 
     val dialog = new Dialog[Unit] {
-      title = "Status Broadcast Settings"
-      headerText = "Configure Status broadcasts"
+      title = "Status Broadcast"
+      headerText = "Send a Status broadcast to peers"
       initOwner(ownerWindow)
     }
 
     dialog.dialogPane().buttonTypes = Seq(ButtonType.Close)
 
     dialog.dialogPane().content = new VBox {
-      spacing = 15
+      spacing = 12
       padding = Insets(20)
       children = Seq(
-        periodicCheckbox,
         new HBox {
-          spacing = 10
+          spacing = 12
           alignment = Pos.CenterLeft
           children = Seq(
-            new Label("Broadcast Period (sec):"),
-            periodSpinner,
-            resetButton
+            new Label("Send an immediate Status broadcast."),
+            broadcastButton
           )
-        },
-        broadcastButton
+        }
       )
     }
 
