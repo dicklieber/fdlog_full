@@ -55,10 +55,28 @@ class ContestDiscovery @Inject() (
     val transport: Transport,
     contestConfigManager: ContestConfigManager,
     swarmData: SwarmData,
-    @Named("fdswarm.contestDiscoveryTimeout") val timeout: Duration)
+    @Named("fdswarm.contestDiscoveryTimeout") val timeout: Duration
+)
     extends LazyLogging:
 
+  private val predeleteContestConfig: Boolean =
+    sys.env
+      .get(
+        "PREDELETE_CONTEST_CONFIG"
+      )
+      .exists(
+        _.trim.equalsIgnoreCase(
+          "true"
+        )
+      )
+
   def start(): Unit =
+    if predeleteContestConfig then
+      logger.info(
+        "PREDELETE_CONTEST_CONFIG=true, removing local contest config before discovery"
+      )
+      contestConfigManager.clearContestConfig()
+
     val currentConfig = contestConfigManager.contestConfigProperty.value
     if currentConfig.contestType != ContestType.NONE then
       logger.debug(
