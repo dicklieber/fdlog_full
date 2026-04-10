@@ -1,11 +1,12 @@
 package fdswarm.fx.discovery
 
 import fdswarm.fx.contest.{
+  ContestCatalog,
   ContestConfigManager,
   ContestConfigPane,
-  ContestConfigPaneProvider,
   ExchangePane
 }
+import fdswarm.fx.sections.SectionsProvider
 import fdswarm.fx.utils.StyledDialog
 import fdswarm.store.QsoStore
 import jakarta.inject.Inject
@@ -14,7 +15,8 @@ import scalafx.scene.control.{ButtonBar, ButtonType}
 import scalafx.scene.layout.VBox
 
 class ContestDialog @Inject()(
-  contestConfigPaneProvider: ContestConfigPaneProvider,
+  contestCatalog: ContestCatalog,
+  sectionsProvider: SectionsProvider,
   contestManager: ContestConfigManager,
   qsoStore: QsoStore,
   exchangePane: ExchangePane
@@ -22,7 +24,12 @@ class ContestDialog @Inject()(
   extends StyledDialog[ButtonType]:
 
 
-  private val contestConfigPane: ContestConfigPane = contestConfigPaneProvider.pane()
+  private val contestConfigPane: ContestConfigPane =
+    new ContestConfigPane(
+      contestManager.contestConfigProperty.value,
+      contestCatalog,
+      sectionsProvider
+    )
 
 
   val vBox = new VBox()
