@@ -22,6 +22,7 @@ import cats.effect.unsafe.implicits.global
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.StartupInfo
 import fdswarm.fx.FdLogUi.isMac
+import fdswarm.fx.discovery.ContestDiscovery
 import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.utils.UiStyles
 import fdswarm.replication.{NodeStatusHandler, StatusBroadcastService}
@@ -49,10 +50,12 @@ final class FdLogUi @Inject() (
   meterRegistry: MeterRegistry,
   qsoStore: fdswarm.store.QsoStore,
   apiServer: fdswarm.api.ApiServer,
-  startupInfo: StartupInfo
+  startupInfo: StartupInfo,
+  contestDiscovery:ContestDiscovery
 ) extends LazyLogging:
 
   def start(): Unit =
+    contestDiscovery.start()
     val stage = FdLogUi.primaryStage
     val qsoNode: Node = contestEntry.node
     val centerPane = new StackPane:

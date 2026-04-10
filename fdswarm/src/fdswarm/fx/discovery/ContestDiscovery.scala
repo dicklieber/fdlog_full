@@ -29,29 +29,34 @@ import jakarta.inject.Inject
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 
-/**
- * ContestDiscovery is responsible for determining the contest configuration
- * within a distributed swarm environment. It attempts to identify and select a
- * valid contest configuration by querying all nodes in the swarm and picking
- * the most recent configuration that is not set to NONE. If no such configuration
- * is found, it logs the absence of a valid contest configuration.
- *
- * @constructor Creates a ContestDiscovery instance with the provided dependencies.
- * @param transport            Facilitates communication within the swarm to exchange information
- *                             related to contest discovery.
- * @param contestConfigManager Manages the configuration of the contest, allowing
- *                             updates to the active contest configuration.
- * @param swarmData            Stores node-level data required for contest discovery, including
- *                             status information for each node.
- * @param timeout              Specifies the discovery timeout duration in milliseconds, defining
- *                             the period after which discovery will terminate.
- */
-class ContestDiscovery @Inject()(
-                                  val transport: Transport,
-                                  contestConfigManager: ContestConfigManager,
-                                  swarmData: SwarmData,
-                                  @Named("fdswarm.contestDiscoveryTimeout") val timeout: Duration,
-                                ) extends LazyLogging:
+/** ContestDiscovery is responsible for determining the contest configuration
+  * within a distributed swarm environment. It attempts to identify and select a
+  * valid contest configuration by querying all nodes in the swarm and picking
+  * the most recent configuration that is not set to NONE. If no such
+  * configuration is found, it logs the absence of a valid contest
+  * configuration.
+  *
+  * @constructor
+  *   Creates a ContestDiscovery instance with the provided dependencies.
+  * @param transport
+  *   Facilitates communication within the swarm to exchange information related
+  *   to contest discovery.
+  * @param contestConfigManager
+  *   Manages the configuration of the contest, allowing updates to the active
+  *   contest configuration.
+  * @param swarmData
+  *   Stores node-level data required for contest discovery, including status
+  *   information for each node.
+  * @param timeoutSpecifies
+  *   the discovery timeout duration in milliseconds, defining the period after
+  *   which discovery will terminate.
+  */
+class ContestDiscovery @Inject() (
+    val transport: Transport,
+    contestConfigManager: ContestConfigManager,
+    swarmData: SwarmData,
+    @Named("fdswarm.contestDiscoveryTimeout") val timeout: Duration)
+    extends LazyLogging:
 
   def start(): Unit =
     val currentConfig = contestConfigManager.contestConfigProperty.value
@@ -75,29 +80,29 @@ class ContestDiscovery @Inject()(
     TimeUnit.MILLISECONDS.sleep(
       timeout.toMillis
     )
+    val allNodeStatuses = swarmData.allNodeStatuses
+    logger.debug("Discovered {} node statuses", allNodeStatuses.size)
 
-    val selectedStatus = swarmData.allNodeStatuses
-      .filter(
-        nodeStatus =>
-          nodeStatus.statusMessage.contestConfig.contestType != ContestType.NONE
+    val selectedStatus = allNodeStatuses
+      .filter(nodeStatus =>
+        nodeStatus.statusMessage.contestConfig.contestType != ContestType.NONE
       )
       .sortBy(
         _.statusMessage.contestConfig.stamp
       )
       .headOption
-
-    selectedStatus.foreach(
-      nodeStatus =>
-        val selectedConfig = nodeStatus.statusMessage.contestConfig
-        contestConfigManager.setConfig(
-          selectedConfig
-        )
-        logger.info(
-          "Contest discovery selected config {} from {} (stamp: {})",
-          selectedConfig.contestType,
-          nodeStatus.nodeIdentity,
-          TimeHelpers.instantToString(selectedConfig.stamp)
-        )
+    selectedStatus.foreach(nodeStatus =>
+      logger.debug("Selected status: {}", nodeStatus)
+      val selectedConfig = nodeStatus.statusMessage.contestConfig
+      contestConfigManager.setConfig(
+        selectedConfig
+      )
+      logger.info(
+        "Contest discovery selected config {} from {} (stamp: {})",
+        selectedConfig.contestType,
+        nodeStatus.nodeIdentity,
+        TimeHelpers.instantToString(selectedConfig.stamp)
+      )
     )
     if selectedStatus.isEmpty then
       logger.info(

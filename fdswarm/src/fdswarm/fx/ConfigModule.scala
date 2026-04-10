@@ -38,6 +38,7 @@ import fdswarm.replication.status.SwarmData
 import fdswarm.replication.{BroadcastTransport, NodeStatusHandler, StatusBroadcastService, Transport}
 import fdswarm.util.LoggingManager
 
+import java.time.Duration
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 
@@ -106,6 +107,15 @@ class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModu
       val key = entry.getKey
       val value = fullConfig.getAnyRef(key)
       logger.trace(s"Config entry: $key = $value type: ${value.getClass}")
+      scala.util.Try(
+        fullConfig.getDuration(
+          key
+        )
+      ).toOption.foreach(duration =>
+        bind[Duration]
+          .annotatedWith(Names.named(key))
+          .toInstance(duration)
+      )
       // Determine type and bind accordingly
       value match {
         case s: String =>
@@ -138,7 +148,6 @@ class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModu
       }
     }
 
-    // Optionally bind the entire config too
     bind[Config].toInstance(fullConfig)
 
 object ConfigModule:
