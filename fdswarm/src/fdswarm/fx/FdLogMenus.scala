@@ -19,7 +19,6 @@
 package fdswarm.fx
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.FdLogApp
 import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.bandmodes.BandsAndModesPane
 import fdswarm.fx.contest.ContestConfigManager
@@ -83,12 +82,12 @@ final class FdLogMenus @Inject() (
 
   def showAboutDialog(): Unit =
     aboutMenuItem.showAboutDialog(
-      FdLogApp.primaryStage
+      FdLogUi.primaryStage
     )
 
   def showBandModeManager(): Unit =
     bandModeManagerPane.show(
-      FdLogApp.primaryStage
+      FdLogUi.primaryStage
     )
 
   private lazy val configMenu: Menu =
@@ -99,20 +98,20 @@ final class FdLogMenus @Inject() (
         ,
         new MenuItem("Station"):
           onAction = _ => stationEditor.show(
-            FdLogApp.primaryStage
+            FdLogUi.primaryStage
           )
         ,
         new SeparatorMenuItem(),
         new MenuItem("ARRL Sections Map"):
           onAction = _ => showArrlSectionsMap(
-            FdLogApp.primaryStage
+            FdLogUi.primaryStage
           )
         ,
         labelArrlRegionsMenuItem,
         new SeparatorMenuItem(),
         new MenuItem("User Config"):
           onAction = _ => userConfigEditor.show(
-            FdLogApp.primaryStage
+            FdLogUi.primaryStage
           )
         ,
         new MenuItem("Contest"):
@@ -127,37 +126,37 @@ final class FdLogMenus @Inject() (
       items = Seq(
         new MenuItem("Generate QSOs"):
           onAction = _ => howManyDialogService.showAndGenerate(
-            FdLogApp.primaryStage
+            FdLogUi.primaryStage
           )
         ,
         new MenuItem("Send FdHour"):
           onAction = _ => fdHourDialogService.show(
-            FdLogApp.primaryStage
+            FdLogUi.primaryStage
           )
         ,
         new MenuItem("FdHours"):
           onAction = _ => fdHourDigestsPane.show(
-            FdLogApp.primaryStage
+            FdLogUi.primaryStage
           )
         ,
         new MenuItem("Status Broadcast Settings"):
           onAction = _ => statusBroadcastDialog.show(
-            FdLogApp.primaryStage
+            FdLogUi.primaryStage
           )
         ,
         new MenuItem("Logging"):
           onAction = _ => loggingDialog.show(
-            FdLogApp.primaryStage
+            FdLogUi.primaryStage
           )
         ,
         new MenuItem("Contest Time"):
           onAction = _ => contestTimeDialog.show(
-            FdLogApp.primaryStage
+            FdLogUi.primaryStage
           )
         ,
         new MenuItem("Set IP Address"):
           onAction = _ => ipAddressDialogService.show(
-            FdLogApp.primaryStage
+            FdLogUi.primaryStage
           )
         ,
         new MenuItem("UDP Queues"):
@@ -172,7 +171,7 @@ final class FdLogMenus @Inject() (
       items = Seq(
         new MenuItem("Swarm Status"):
           onAction = _ => swarmStatusAdmin.show(
-            FdLogApp.primaryStage
+            FdLogUi.primaryStage
           )
       )
 
@@ -181,12 +180,12 @@ final class FdLogMenus @Inject() (
       items = Seq(
         new MenuItem("Summary"):
           onAction = _ => summaryDialog.show(
-            FdLogApp.primaryStage
+            FdLogUi.primaryStage
           )
         ,
         new MenuItem("Metrics"):
           onAction = _ => metricsDialog.show(
-            FdLogApp.primaryStage
+            FdLogUi.primaryStage
           )
       )
 
@@ -194,7 +193,7 @@ final class FdLogMenus @Inject() (
     new Menu("File"):
       private val exportItem = new MenuItem("Export"):
         onAction = _ => exportDialog.show(
-          FdLogApp.primaryStage
+          FdLogUi.primaryStage
         )
       private val exitItem = new MenuItem("Exit"):
         onAction = _ => Platform.exit()

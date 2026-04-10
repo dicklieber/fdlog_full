@@ -19,7 +19,7 @@
 package fdswarm.replication.status
 
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.FdLogApp
+import fdswarm.fx.FdLogUi
 import fdswarm.fx.GridBuilder
 import fdswarm.fx.qso.FdHour
 import fdswarm.fx.station.StationEditor
@@ -517,7 +517,7 @@ class SwarmData @Inject() (
                                event: MouseEvent
                              ): Unit =
             stationEditor.show(
-              FdLogApp.primaryStage
+              FdLogUi.primaryStage
             )
       )
     else

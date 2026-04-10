@@ -20,7 +20,6 @@ package fdswarm.fx
 
 import cats.effect.unsafe.implicits.global
 import com.typesafe.scalalogging.LazyLogging
-import fdswarm.FdLogApp
 import fdswarm.StartupInfo
 import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.qso.ContestEntry
@@ -28,7 +27,7 @@ import fdswarm.fx.utils.UiStyles
 import fdswarm.replication.{NodeStatusHandler, StatusBroadcastService}
 import fdswarm.util.{DurationFormat, NodeIdentityManager}
 import io.micrometer.core.instrument.MeterRegistry
-import jakarta.inject.Inject
+import jakarta.inject.{Inject, Singleton}
 import javafx.embed.swing.SwingFXUtils
 import scalafx.application.Platform
 import scalafx.scene.image.Image
@@ -36,9 +35,11 @@ import scalafx.scene.layout.{BorderPane, StackPane}
 import scalafx.scene.paint.Color
 import scalafx.scene.shape.SVGPath
 import scalafx.scene.{Node, Scene, SnapshotParameters}
+import scalafx.stage.Stage
 
 import java.time.{Duration, Instant}
 
+@Singleton
 final class FdLogUi @Inject() (
   contestEntry: ContestEntry,
   menus: FdLogMenus,
@@ -52,7 +53,7 @@ final class FdLogUi @Inject() (
 ) extends LazyLogging:
 
   def start(): Unit =
-    val stage = FdLogApp.primaryStage
+    val stage = FdLogUi.primaryStage
     val qsoNode: Node = contestEntry.node
     val centerPane = new StackPane:
       children = List(qsoNode)
@@ -126,7 +127,7 @@ final class FdLogUi @Inject() (
     contestEntry.buildUi()
 
   private def setAppIcon(): Unit =
-    val stage = FdLogApp.primaryStage
+    val stage = FdLogUi.primaryStage
     try
       val resource = getClass.getResource("/icons/fdswarm.svg")
       if resource != null then
@@ -196,6 +197,7 @@ final class FdLogUi @Inject() (
 
 object FdLogUi:
   private val startTime = Instant.now()
+  private var stageOpt: Option[Stage] = None
 
   def startupDuration: Duration =
     Duration.between(
@@ -205,3 +207,17 @@ object FdLogUi:
 
   lazy val isMac: Boolean =
     System.getProperty("os.name").toLowerCase.contains("mac")
+
+  def setPrimaryStage(
+    stage: Stage
+  ): Unit =
+    stageOpt = Some(
+      stage
+    )
+
+  def primaryStage: Stage =
+    stageOpt.getOrElse(
+      throw IllegalStateException(
+        "Primary stage has not been initialized."
+      )
+    )

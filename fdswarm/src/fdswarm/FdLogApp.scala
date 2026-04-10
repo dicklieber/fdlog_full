@@ -21,7 +21,6 @@ package fdswarm
 import com.google.inject.{Guice, Injector}
 import fdswarm.fx.FdLogUi
 import scalafx.application.JFXApp3
-import scalafx.stage.Stage
 
 /** Minimal app bootstrap:
   *   - applies process startup settings
@@ -29,16 +28,12 @@ import scalafx.stage.Stage
   */
 
 object FdLogApp extends JFXApp3:
-  lazy val  primaryStage: Stage =
-    stage
-
   private lazy val injector: Injector = Guice.createInjector(
     new fdswarm.fx.ConfigModule(
       rawArgs
     )
   )
   private val log = org.slf4j.LoggerFactory.getLogger(getClass)
-  private var ui: Option[FdLogUi] = None
   private var rawArgs: Array[String] = Array.empty
 
   override def main(
@@ -77,15 +72,17 @@ object FdLogApp extends JFXApp3:
 
   override def start(): Unit =
     stage = new JFXApp3.PrimaryStage
-
-    val builtUi = injector.getInstance(
-      classOf[FdLogUi]
+    FdLogUi.setPrimaryStage(
+      stage
     )
-    ui = Some(builtUi)
-    builtUi.start()
+    injector.getInstance(
+      classOf[FdLogUi]
+    ).start()
 
   override def stopApp(): Unit =
-    log.debug("stopApp")
-    ui.foreach(
-      _.stopApp()
+    log.debug(
+      "stopApp"
     )
+    injector.getInstance(
+      classOf[FdLogUi]
+    ).stopApp()
