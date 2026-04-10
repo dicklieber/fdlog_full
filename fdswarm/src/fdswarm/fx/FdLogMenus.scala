@@ -48,7 +48,6 @@ final class FdLogMenus @Inject() (
   stationEditor: StationEditor,
   howManyDialogService: HowManyDialogService,
   fdHourDialogService: FdHourDialogService,
-  statusBroadcastDialog: StatusBroadcastDialog,
   loggingDialog: LoggingDialog,
   contestTimeDialog: ContestTimeDialog,
   fdHourDigestsPane: FdHourDigestsPane,
@@ -136,11 +135,6 @@ final class FdLogMenus @Inject() (
         ,
         new MenuItem("FdHours"):
           onAction = _ => fdHourDigestsPane.show(
-            FdLogUi.primaryStage
-          )
-        ,
-        new MenuItem("Status Broadcast Settings"):
-          onAction = _ => statusBroadcastDialog.show(
             FdLogUi.primaryStage
           )
         ,
