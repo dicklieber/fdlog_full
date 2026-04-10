@@ -23,15 +23,22 @@ import fdswarm.store.FdHourDigest
 import fdswarm.util.NodeIdentity
 import fdswarm.fx.contest.{ContestConfig, ContestType}
 import fdswarm.fx.qso.FdHour
+import io.circe
 import io.circe.parser.decode
 import munit.FunSuite
+
 import java.io.ByteArrayInputStream
 import java.time.Instant
 import java.util.zip.GZIPInputStream
 
 class StatusMessageTest extends FunSuite:
   private val dummyBno = BandModeOperator(Callsign("WA9NNN"), BandMode("40M", "CW"), Instant.parse("2026-03-16T20:11:04Z"))
-  private val dummyContestConfig = ContestConfig(ContestType.ARRL, Callsign("WA9NNN"), 1, "A", "IL")
+  private val dummyContestConfig = ContestConfig(ContestType.ARRL,
+    Callsign("WA9NNN"),
+    1,
+    "A",
+    "IL",
+    stamp = Instant.parse("2026-03-16T20:11:04Z"))
 
   test("toPacket should serialize to JSON and gzip") {
 //    val hp = NodeIdentity("localhost", 8080, name =)
@@ -44,9 +51,10 @@ class StatusMessageTest extends FunSuite:
     val bais = new ByteArrayInputStream(packet)
     val gzis = new GZIPInputStream(bais)
     val json = new String(gzis.readAllBytes(), "UTF-8")
-    
+
+    val value: Either[circe.Error, StatusMessage] = decode[StatusMessage](json)
     // Deserialize
-    val readSm = decode[StatusMessage](json).toTry.get
+    val readSm = value.toTry.get
     
     assertEquals(readSm, sm)
     assertEquals(readSm.fdDigests.size, 1)

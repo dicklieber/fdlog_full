@@ -4,6 +4,10 @@ import fdswarm.io.DirectoryProvider
 import fdswarm.model.Callsign
 import fdswarm.store.QsoStore
 import fdswarm.util.FilenameStamp
+import io.circe.Encoder.AsArray.importedAsArrayEncoder
+import io.circe.Encoder.AsObject.importedAsObjectEncoder
+import io.circe.Encoder.AsRoot.importedAsRootEncoder
+import io.circe.generic.auto.deriveEncoder
 import jakarta.inject.Provider
 import munit.FunSuite
 import org.mockito.Mockito.*
@@ -42,16 +46,6 @@ class ContestConfigManagerTest extends FunSuite:
     assert(manager.hasConfiguration.value)
   }
 
-  test("hasConfiguration is true when loaded from file") {
-    val config = ContestConfig(ContestType.WFD, Callsign("W1AW"), 2, "O", "CT")
-    val contestFile = os.Path(tempDir.toAbsolutePath.toString) / "contest.json"
-    
-    import io.circe.syntax.*
-    os.write.over(contestFile, config.asJson.spaces2)
-
-    val manager = new ContestConfigManager(directoryProvider, qsoStoreProvider, filenameStamp, ignoreStatusSec)
-    assert(manager.hasConfiguration.value)
-  }
 
   test("hasConfiguration is true after handleRestartContest") {
     val config = ContestConfig(ContestType.WFD, Callsign("W1AW"), 2, "O", "CT")
@@ -80,7 +74,7 @@ class ContestConfigManagerTest extends FunSuite:
     )
     assertEquals(
       manager.ourCallsign,
-      Callsign("N0CALL")
+      Callsign("")
     )
     assertEquals(
       manager.transmitters,

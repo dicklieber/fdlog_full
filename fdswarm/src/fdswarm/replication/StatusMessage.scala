@@ -24,6 +24,9 @@ import fdswarm.store.FdHourDigest
 import fdswarm.util.Ids.Id
 import fdswarm.util.{CirceGzip, Ids, NodeIdentity}
 import io.circe.Codec
+import io.circe.Encoder.AsArray.importedAsArrayEncoder
+import io.circe.Encoder.AsObject.importedAsObjectEncoder
+import io.circe.Encoder.AsRoot.importedAsRootEncoder
 
 import java.time.Instant
 

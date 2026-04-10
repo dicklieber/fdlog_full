@@ -441,6 +441,8 @@ object fdswarm extends CommonSettings with ScoverageModule with BuildInfo with J
     override def mvnDeps = super.mvnDeps() ++ Seq(
       mvn"org.apache.logging.log4j:log4j-core:$log4jV",
       mvn"org.apache.logging.log4j:log4j-core-test:$log4jV",
+      mvn"org.mockito:mockito-core:4.11.0",
+      mvn"org.objenesis:objenesis:3.3",
       mvn"com.softwaremill.sttp.tapir:tapir-http4s-client_3:$tapirV",
       mvn"org.http4s:http4s-ember-client_3:$http4sV"
     )

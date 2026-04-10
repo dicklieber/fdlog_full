@@ -22,8 +22,7 @@ import fdswarm.model.Callsign
 import fdswarm.util.HamPhonetic.fromString
 import io.circe.Codec
 
-import java.time.Instant
-import java.time.ZoneId
+import java.time.{Instant, ZoneId}
 import java.time.format.DateTimeFormatter
 
 trait ContestConfigFields:
@@ -47,32 +46,23 @@ case class ContestConfig(contestType: ContestType,
                          ourClass: String,
                          ourSection: String,
                          stamp: Instant = Instant.now()) extends ContestConfigFields derives Codec.AsObject:
+  require(ourClass.nonEmpty, "ourClass must not be empty")
+  require(ourSection.nonEmpty, "ourSection must not be empty")
   private val stampFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("dd:HH:mm:ss").withZone(ZoneId.systemDefault())
 
   val exchange:String=
-    s"${safeValue(transmitters.toString)}${safeValue(ourClass)} ${safeValue(ourSection)}"
+    s"$transmitters$ourClass $ourSection"
   def weAre(usePhonetic: Boolean): String =
-    val callsignValue = safeCallsignValue
-    val classValue = safeValue(ourClass)
-    val sectionValue = safeValue(ourSection)
+    val callsignValue = ourCallsign.toString
     if usePhonetic then
-      s"We are ${fromString(callsignValue)} $transmitters ${fromString(classValue)} ${fromString(sectionValue)}"
+      s"We are ${fromString(callsignValue)} $transmitters ${fromString(ourClass)} ${fromString(ourSection)}"
     else
-      s"We are $callsignValue $transmitters$classValue $sectionValue"
+      s"We are $callsignValue $transmitters$ourClass $ourSection"
 
   val display:String=
     s"$exchange ${stampFormatter.format(stamp)}"
 
-  private def safeCallsignValue: String =
-    if ourCallsign == null then ""
-    else safeValue(ourCallsign.toString)
-
-  private def safeValue(
-    value: String
-  ): String =
-    if value == null then ""
-    else value
 
 object ContestConfig:
   val noContest: ContestConfig = ContestConfig(
