@@ -73,15 +73,17 @@ class ContestDiscovery @Inject() (
     )
 
     swarmData.clear()
-    transport.send(
-      Service.SendStatus,
-      Array.emptyByteArray
+    transport.send(Service.SendStatus, Array.emptyByteArray
     )
     TimeUnit.MILLISECONDS.sleep(
       timeout.toMillis
     )
     val allNodeStatuses = swarmData.allNodeStatuses
     logger.debug("Discovered {} node statuses", allNodeStatuses.size)
+    logger.whenTraceEnabled{
+      allNodeStatuses.foreach(nodeStatus =>
+        logger.trace("Node status: {} ContestType: {}", nodeStatus.nodeIdentity,    nodeStatus.statusMessage.contestConfig.contestType))
+    }
 
     val selectedStatus = allNodeStatuses
       .filter(nodeStatus =>

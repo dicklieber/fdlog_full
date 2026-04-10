@@ -29,7 +29,7 @@ import scala.compiletime.uninitialized
 /**
  * Broadcasts UDP packets to all nodes in the network.
  * Receive any UDP packets from all nodes in the network.
- * Consumers use the varooius startQueueXXX methods to get a queue for a specific service.
+ * Consumers read from the shared incoming queue exposed by [[Transport]].
  * @param nodeIdentityManager who we are.
  * @param meterRegistry for metrics,
  */
@@ -76,28 +76,7 @@ class BroadcastTransport @Inject() (
         logger.trace(s"Received UDP packet from $senderAddr:$senderPort: ${udpHeaderData.service}")
       else
         logger.trace(s"Received UDP packet from $senderAddr:$senderPort: ${udpHeaderData.service}")
-        val queue = queues.getOrElseUpdate(
-          udpHeaderData.service, {
-            new LiveOrDeadQueue(udpHeaderData.service)
-          }
-        )
-        if queue.isAlive then // if dead just ignore message no one is listening.
-          queue.offer(udpHeaderData)
-
-  def startQueue(request: Service, response: Service): LiveOrDeadQueue =
-    val queue = startQueue(response)
-    send(request, Array.empty)
-    queue
-
-  def startQueue(service: Service): LiveOrDeadQueue =
-    queues.getOrElse(service, {
-      val newQueue = new LiveOrDeadQueue(service)
-      queues.putIfAbsent(service, newQueue).getOrElse(newQueue)
-    })
-
-  override def stopQueue(service: Service): Unit =
-    val qOpt = queues.remove(service)
-    qOpt.foreach(_.invalidateQueue())
+        incomingQueue.offer(udpHeaderData)
 
   def send(data: Array[Byte]): Unit =
     send(Service.QSO, data)
@@ -127,4 +106,3 @@ class BroadcastTransport @Inject() (
         case e: Exception =>
           logger.debug(s"Error while closing DatagramSocket: ${e.getMessage}")
       finally socket = null
-

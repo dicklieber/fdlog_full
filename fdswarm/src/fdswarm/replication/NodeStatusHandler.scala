@@ -31,6 +31,29 @@ import jakarta.inject.{Inject, Provider, Singleton}
 import scalafx.application.Platform
 
 import java.net.http.HttpClient
+
+/**
+ * Handles node status updates, status broadcasts, QSO processing, and contest restarts.
+ * This class is responsible for managing the processing of incoming UDP packets
+ * related to various services, such as node status, QSO, and contest configurations.
+ * It facilitates the updating of swarm data, processing of status messages, and
+ * communication with other components for replication and status broadcast.
+ *
+ * Dependencies are injected to enable functionality for swarm data updates, status processing,
+ * replication support, contest configuration management, and metrics instrumentation.
+ *
+ * Thread-based processing ensures continuous handling of incoming requests without blocking
+ * other operations.
+ *
+ * Constructor parameters:
+ * - `replicationSupportProvider`: Facilitates replication-related tasks, such as checking and adding QSOs.
+ * - `statusProcessor`: Processes and handles incoming status messages.
+ * - `swarmData`: Maintains information about node statuses in the swarm.
+ * - `transport`: Enables communication through queues for handling various service-related messages.
+ * - `statusBroadcastService`: Manages the broadcasting of local node statuses to other nodes.
+ * - `contestManagerProvider`: Provides access to contest configuration management.
+ * - `meterRegistry`: Instrumentation for registering and tracking metrics throughout the handler.
+ */
 @Singleton
 class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[ReplicationSupport],
                                   statusProcessor: StatusProcessor,
@@ -44,9 +67,6 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
   private val statusCounter = meterRegistry.counter("fdswarm_received_status_total")
   logger.debug("Starting NodeStatusHandler")
   private val qsoCounter = meterRegistry.counter("fdswarm_received_qso_total")
-  private val statusQueue = transport.startQueue(Service.Status)
-  private val qsoQueue = transport.startQueue(Service.QSO)
-  private val restartContestQueue = transport.startQueue(Service.RestartContest)
   private val httpClient = HttpClient.newBuilder()
     .followRedirects(HttpClient.Redirect.NORMAL)
     .build()
@@ -56,21 +76,19 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
   private val thread = new Thread(() =>
     while !Thread.currentThread().isInterrupted do
       try
-        val udpHeader: UDPHeaderData = statusQueue.take()
+        val udpHeader: UDPHeaderData = transport.incomingQueue.take()
+        logger.trace(s"Received UDP packet from ${udpHeader.nodeIdentity} for service ${udpHeader.service}")
         udpHeader.service match
           case Service.Status =>
             val statusMessage = StatusMessage(udpHeader.payload)
-            if (contestManager.shouldIgnoreStatus)
-              logger.debug(s"Ignoring status message from ${udpHeader.nodeIdentity} because of recent contest change")
-            else
-              statusCounter.increment()
-              lastStatusMessagePayloadSize = udpHeader.payload.length.toDouble
-              lastStatusMessageDigestCount = statusMessage.fdDigests.size
-              val nodeStatus = NodeStatus(statusMessage, udpHeader.nodeIdentity, isLocal = false)
-              swarmData.update(nodeStatus)
-              logger.trace("nodeStatus:  {}.", nodeStatus)
-              //              swarmStatusProviders.put(receivedNodeStatus)
-              statusProcessor.processStatus(nodeStatus).unsafeRunAndForget()
+            statusCounter.increment()
+            lastStatusMessagePayloadSize = udpHeader.payload.length.toDouble
+            lastStatusMessageDigestCount = statusMessage.fdDigests.size
+            val nodeStatus = NodeStatus(statusMessage, udpHeader.nodeIdentity, isLocal = false)
+            swarmData.update(nodeStatus)
+            logger.trace("nodeStatus:  {}.", nodeStatus)
+            //              swarmStatusProviders.put(receivedNodeStatus)
+            statusProcessor.processStatus(nodeStatus).unsafeRunAndForget()
           case Service.QSO =>
             qsoCounter.increment()
             val sJson = new String(udpHeader.payload, "UTF-8")
@@ -81,18 +99,10 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
               case Left(error) =>
                 logger.error(s"Failed to decode QSO from multicast: $sJson", error)
           case Service.SendStatus =>
+            logger.info(s"Received SendStatus from ${udpHeader.nodeIdentity}")
             sendStatusReceived.increment()
-            if !contestManager.hasConfiguration.value then
-              logger.debug(
-                "Received SendStatus from {} but contest config is not initialized yet",
-                udpHeader.nodeIdentity
-              )
-            else
-              statusBroadcastService.broadcastStatus()
-              logger.trace(
-                "Received SendStatus from {} and broadcasted StatusMessage",
-                udpHeader.nodeIdentity
-              )
+            statusBroadcastService.broadcastStatus()
+
           case Service.RestartContest =>
             logger.info(s"Received RestartContest from ${udpHeader.nodeIdentity}")
             val sJson = new String(udpHeader.payload, "UTF-8")

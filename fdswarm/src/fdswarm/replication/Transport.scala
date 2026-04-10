@@ -21,34 +21,16 @@ package fdswarm.replication
 import fdswarm.util.{NodeIdentity, NodeIdentityManager}
 
 import java.util.concurrent.LinkedBlockingQueue
-import io.circe.Encoder
-import io.circe.syntax.*
-
-import java.nio.charset.StandardCharsets
-import scala.collection.concurrent.TrieMap
 
 trait Transport:
   val nodeIdentityManager: NodeIdentityManager
-  def isUs(candidate:NodeIdentity):Boolean=
+  def isUs(
+    candidate: NodeIdentity
+  ): Boolean =
     nodeIdentityManager.isUs(candidate)
   val mode: String
-
-  /**
-   * 
-   * @param service send a message of this type with empty payload.
-   * @return a queue that will receive messages of this type.
-   */
-  def startQueue(request: Service, response:Service): LiveOrDeadQueue
-
-  /**
-   * Start a queue for a service that will receive messages of type [[Service]].
-   * Don't send anything.
-   * @param service
-   * @return
-   */
-  def startQueue(service: Service): LiveOrDeadQueue
-  def stopQueue(service: Service): Unit=
-    queues.get(service).foreach(_.invalidateQueue())
+  val incomingQueue: LinkedBlockingQueue[UDPHeaderData] =
+    new LinkedBlockingQueue[UDPHeaderData]()
 
   /**
    * Just send a message of type [[Service]] with a given payload.
@@ -56,6 +38,3 @@ trait Transport:
   def send(service: Service, data: Array[Byte]): Unit
   def sentCount: Long
   def stop(): Unit
-  val queues: TrieMap[Service, LiveOrDeadQueue] = new TrieMap[Service, LiveOrDeadQueue]()
-  
-

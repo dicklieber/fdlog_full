@@ -61,7 +61,6 @@ final class FdLogMenus @Inject() (
   swarmStatusAdmin: fdswarm.fx.admin.SwarmStatusAdmin,
   summaryDialog: SummaryDialog,
   metricsDialog: MetricsDialog,
-  udpQueuesDialog: UDPQueuesDialog,
   contestDialog: ContestDialog,
   contestConfigManager: ContestConfigManager
 ) extends LazyLogging:
@@ -152,9 +151,6 @@ final class FdLogMenus @Inject() (
           onAction = _ => ipAddressDialogService.show(
             FdLogUi.primaryStage
           )
-        ,
-        new MenuItem("UDP Queues"):
-          onAction = _ => udpQueuesDialog.show()
         ,
         new MenuItem("Clear Contest"):
           onAction = _ => contestConfigManager.clearContestConfig()

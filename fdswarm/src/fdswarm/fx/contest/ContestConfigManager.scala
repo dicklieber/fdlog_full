@@ -34,8 +34,6 @@ final class ContestConfigManager @Inject()(
     contestConfigProperty.value.ourSection
 
 
-  private var lastRestartTime: Long = 0L
-
   private val contestFile: os.Path =
     productionDirectory() / "contest.json"
 
@@ -56,10 +54,6 @@ final class ContestConfigManager @Inject()(
   )
 
   val hasConfiguration: ReadOnlyBooleanProperty = _hasConfiguration.readOnlyProperty
-
-  def shouldIgnoreStatus: Boolean =
-    val now = System.currentTimeMillis()
-    (now - lastRestartTime) < (ignoreStatusSec * 1000L)
 
   def contestConfigOption: Option[ContestConfig] =
     Some(
@@ -91,8 +85,6 @@ final class ContestConfigManager @Inject()(
   def handleRestartContest(
                            newConfig: ContestConfig
                          ): Unit =
-    lastRestartTime = System.currentTimeMillis()
-
     // archive + clear
     qsoStore.archiveAndClear()
 
