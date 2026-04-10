@@ -21,6 +21,7 @@ package fdswarm.fx.contest
 import scalafx.Includes.*
 import scalafx.application.Platform
 import scalafx.scene.control.{ComboBox, ListCell, ListView}
+import scalafx.scene.input.KeyCode
 
 trait CompactComboBoxSupport:
   protected def configureCompactComboBox[T](
@@ -34,6 +35,64 @@ trait CompactComboBoxSupport:
     combo.minWidth = closedWidth
     combo.prefWidth = closedWidth
     combo.maxWidth = closedWidth
+    combo.focusTraversable = true
+
+    var typedPrefix = ""
+    var lastTypedAtMs = 0L
+    val typedResetMs = 900L
+
+    def normalized(
+      value: T
+    ): String =
+      Option(value).map(buttonText).getOrElse("").trim.toLowerCase
+
+    def advanceSelection(
+      delta: Int
+    ): Unit =
+      val currentItems = combo.items.value
+      if currentItems.nonEmpty then
+        val currentIndex = combo.selectionModel().getSelectedIndex
+        val start =
+          if currentIndex >= 0 then currentIndex
+          else if delta > 0 then -1
+          else currentItems.size
+        val nextIndex = (start + delta + currentItems.size) % currentItems.size
+        combo.selectionModel().select(nextIndex)
+
+    def selectByTypedPrefix(
+      prefixRaw: String
+    ): Unit =
+      val prefix = prefixRaw.trim.toLowerCase
+      if prefix.nonEmpty then
+        combo.items.value.indexWhere(item => normalized(item).startsWith(prefix)) match
+          case index if index >= 0 =>
+            combo.selectionModel().select(index)
+          case _ =>
+            ()
+
+    combo.onKeyPressed = event =>
+      event.code match
+        case KeyCode.Up =>
+          advanceSelection(-1)
+          event.consume()
+        case KeyCode.Down =>
+          advanceSelection(1)
+          event.consume()
+        case _ =>
+          ()
+
+    combo.onKeyTyped = event =>
+      val now = System.currentTimeMillis()
+      if now - lastTypedAtMs > typedResetMs then
+        typedPrefix = ""
+      lastTypedAtMs = now
+
+      Option(event.character).map(_.trim).filter(_.nonEmpty) match
+        case Some(chars) =>
+          typedPrefix = s"$typedPrefix$chars"
+          selectByTypedPrefix(typedPrefix)
+        case None =>
+          ()
 
     combo.cellFactory = (_: ListView[T]) => new ListCell[T]:
       item.onChange(

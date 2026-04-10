@@ -20,12 +20,14 @@ package fdswarm.fx.utils.editor
 
 import fdswarm.fx.utils.GridCells
 import fdswarm.util.camelToWords
+import javafx.scene.input.{KeyCode => JfxKeyCode, KeyEvent => JfxKeyEvent}
 import scalafx.beans.property.*
 import scalafx.scene.Node
 import scalafx.scene.control.*
 import scalafx.scene.layout.*
 
 import java.lang.reflect.Constructor
+import scala.jdk.CollectionConverters.*
 import scala.collection.mutable
 
 /**
@@ -78,6 +80,7 @@ class CaseClassPropertyEditor[T <: Product](val target: T):
 
   def horizontal: Pane =
     val grid = GridCells.styledGrid("case-class-editor-grid")
+    val fieldEditorsInOrder = mutable.ArrayBuffer.empty[Node]
 
     for ((fieldName, fieldValue), col) <- propertiesInOrder.zipWithIndex do
       val label = new Label(camelToWords(fieldName)):
@@ -91,6 +94,7 @@ class CaseClassPropertyEditor[T <: Product](val target: T):
       editorNode.styleClass.add("grid-value")
       if fieldValue.isNumeric then editorNode.styleClass.add("gridNumber")
       editorNode.styleClass.add("grid-cell")
+      fieldEditorsInOrder += editorNode
 
       val labelCell = GridCells.addCell(grid, col, 0, label, "grid-cell", "grid-row-label", "grid-header-primary-cell")
       val valueCell = GridCells.addCell(grid, col, 1, editorNode, "grid-cell", "grid-value")
@@ -100,10 +104,15 @@ class CaseClassPropertyEditor[T <: Product](val target: T):
       GridPane.setHgrow(labelCell, Priority.Never)
       GridPane.setHgrow(valueCell, Priority.Always)
 
+    installKeyboardFieldTraversal(
+      root = grid,
+      fieldEditors = fieldEditorsInOrder.toVector
+    )
     grid
 
   def vertical: Pane =
     val grid = GridCells.styledGrid("case-class-editor-grid")
+    val fieldEditorsInOrder = mutable.ArrayBuffer.empty[Node]
 
     for ((fieldName, fieldValue), row) <- propertiesInOrder.zipWithIndex do
       val label = new Label(camelToWords(fieldName)):
@@ -116,6 +125,7 @@ class CaseClassPropertyEditor[T <: Product](val target: T):
       editorNode.styleClass.add("grid-value")
       if fieldValue.isNumeric then editorNode.styleClass.add("gridNumber")
       editorNode.styleClass.add("grid-cell")
+      fieldEditorsInOrder += editorNode
 
       val labelCell = GridCells.addCell(grid, 0, row, label, "grid-cell", "grid-row-label")
       val valueCell = GridCells.addCell(grid, 1, row, editorNode, "grid-cell", "grid-value")
@@ -125,6 +135,10 @@ class CaseClassPropertyEditor[T <: Product](val target: T):
       GridPane.setHgrow(labelCell, Priority.Never)
       GridPane.setHgrow(valueCell, Priority.Always)
 
+    installKeyboardFieldTraversal(
+      root = grid,
+      fieldEditors = fieldEditorsInOrder.toVector
+    )
     grid
 
   def finish(): T =
@@ -238,6 +252,96 @@ class CaseClassPropertyEditor[T <: Product](val target: T):
     try Some(s.trim.toDouble)
     catch
       case _: NumberFormatException => None
+
+  private def installKeyboardFieldTraversal(
+    root: Pane,
+    fieldEditors: Seq[Node]
+  ): Unit =
+    val focusTargets = fieldEditors.flatMap(
+      editor =>
+        primaryFocusable(
+          editor.delegate
+        )
+    ).toVector
+
+    focusTargets.foreach(
+      _.setFocusTraversable(true)
+    )
+
+    root.delegate.addEventFilter(
+      JfxKeyEvent.KEY_PRESSED,
+      (event: JfxKeyEvent) =>
+        if event.getCode == JfxKeyCode.TAB then
+          event.getTarget match
+            case sourceNode: javafx.scene.Node =>
+              val currentIndex = focusTargets.indexWhere(
+                target =>
+                  isSameOrDescendant(
+                    sourceNode,
+                    target
+                  )
+              )
+
+              if currentIndex >= 0 then
+                val direction = if event.isShiftDown then -1 else 1
+                findNextFocusableIndex(
+                  focusTargets = focusTargets,
+                  currentIndex = currentIndex,
+                  direction = direction
+                ).foreach { nextIndex =>
+                  focusTargets(
+                    nextIndex
+                  ).requestFocus()
+                  event.consume()
+                }
+            case _ =>
+              ()
+    )
+
+  private def primaryFocusable(
+    node: javafx.scene.Node
+  ): Option[javafx.scene.Node] =
+    node match
+      case control: javafx.scene.control.Control =>
+        control.setFocusTraversable(true)
+        Some(control)
+      case parent: javafx.scene.Parent =>
+        parent.getChildrenUnmodifiable.asScala.view.flatMap(
+          primaryFocusable
+        )
+          .headOption
+      case _ =>
+        None
+
+  private def findNextFocusableIndex(
+    focusTargets: Vector[javafx.scene.Node],
+    currentIndex: Int,
+    direction: Int
+  ): Option[Int] =
+    var nextIndex = currentIndex + direction
+    while nextIndex >= 0 && nextIndex < focusTargets.length do
+      if canFocus(
+        focusTargets(nextIndex)
+      ) then
+        return Some(nextIndex)
+      nextIndex = nextIndex + direction
+    None
+
+  private def canFocus(
+    node: javafx.scene.Node
+  ): Boolean =
+    node.isVisible && !node.isDisable && node.isFocusTraversable
+
+  private def isSameOrDescendant(
+    node: javafx.scene.Node,
+    ancestor: javafx.scene.Node
+  ): Boolean =
+    var current: javafx.scene.Node = node
+    while current != null do
+      if current eq ancestor then
+        return true
+      current = current.getParent
+    false
 
 
 sealed trait FieldValue:
