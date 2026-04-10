@@ -1,6 +1,7 @@
 package fdswarm.fx.utils.editor
 
 import scalafx.beans.property.IntegerProperty
+import scalafx.application.Platform
 import scalafx.scene.Node
 import scalafx.scene.control.{Spinner, TextFormatter}
 import scalafx.util.StringConverter
@@ -50,6 +51,14 @@ class IntSpinner(
       val newValue = nv.intValue
       if spinner.getValue != newValue then
         spinner.getValueFactory.setValue(newValue)
+    }
+
+    spinner.focused.onChange { (_, _, isFocused) =>
+      if isFocused then
+        Platform.runLater {
+          spinner.getEditor.requestFocus()
+          spinner.getEditor.selectAll()
+        }
     }
 
     spinner
