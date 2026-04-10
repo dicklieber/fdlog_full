@@ -36,7 +36,8 @@ object CirceGzip:
 
   def decode[T: Decoder](bytes: Array[Byte]): Either[Error, T] =
     val jsonBytes = gunzip(bytes)
-    parse(new String(jsonBytes, StandardCharsets.UTF_8)).flatMap(_.as[T])
+    val sJson = new String(jsonBytes, StandardCharsets.UTF_8)
+    parse(sJson).flatMap(_.as[T])
 
   def gzip(input: Array[Byte]): Array[Byte] =
     Using.resource(new ByteArrayOutputStream()): bos =>

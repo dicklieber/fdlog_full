@@ -23,6 +23,7 @@ import fdswarm.fx.contest.ContestType
 import fdswarm.fx.qso.FdHour
 import fdswarm.fx.station.StationConfig
 import fdswarm.util.{Ids, NodeIdentity}
+import io.circe.syntax.EncoderOps
 import munit.FunSuite
 
 class FdHourDigestTest extends FunSuite :
@@ -50,18 +51,20 @@ class FdHourDigestTest extends FunSuite :
       uuid = "id-2"
     )
 
-    val digest = FdHourDigest(fdHour, Seq(qso1, qso2))
+    val fdHourDigest = FdHourDigest(fdHour, Seq(qso1, qso2))
     
-    assertEquals(digest.fdHour, fdHour)
-    assertEquals(digest.count, 2)
-    
+    assertEquals(fdHourDigest.fdHour, fdHour)
+    assertEquals(fdHourDigest.count, 2)
+
+    val sJson = fdHourDigest.asJson.noSpaces
+    assertEquals(sJson, """{"fdHour":"15:10","count":2,"digest":"1f8359d2e7519ee36d5259588123a178"}""".stripMargin)
     // Expected digest: MD5 of "id-1id-2" (sorted IDs)
     val expectedInput = "id-1id-2"
     val expectedDigest = java.security.MessageDigest.getInstance("MD5")
       .digest(expectedInput.getBytes("UTF-8"))
       .map("%02x".format(_)).mkString
       
-    assertEquals(digest.digest, expectedDigest)
+    assertEquals(fdHourDigest.digest, expectedDigest)
     
     Ids.revertToRandom()
 

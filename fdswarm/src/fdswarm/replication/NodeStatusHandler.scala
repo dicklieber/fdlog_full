@@ -40,26 +40,19 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
                                   contestManagerProvider: Provider[ContestConfigManager],
                                   meterRegistry: MeterRegistry) extends LazyLogging:
 
-  private def replicationSupport: ReplicationSupport = replicationSupportProvider.get()
-  private def contestManager: ContestConfigManager = contestManagerProvider.get()
-  logger.debug("Starting NodeStatusHandler")
   private val sendStatusReceived = meterRegistry.counter("fdswarm_discovery_req_received")
   private val statusCounter = meterRegistry.counter("fdswarm_received_status_total")
+  logger.debug("Starting NodeStatusHandler")
   private val qsoCounter = meterRegistry.counter("fdswarm_received_qso_total")
-  private var lastStatusMessagePayloadSize: Double = 0.0
-  private var lastStatusMessageDigestCount: Int = 0
-
-  meterRegistry.gauge("fdswarm_received_status_payload_bytes", this, (handler: NodeStatusHandler) => handler.lastStatusMessagePayloadSize)
-  meterRegistry.gauge("fdswarm_received_status_digest_count", this, (handler: NodeStatusHandler) => handler.lastStatusMessageDigestCount.toDouble)
-
   private val statusQueue = transport.startQueue(Service.Status)
   private val qsoQueue = transport.startQueue(Service.QSO)
   private val restartContestQueue = transport.startQueue(Service.RestartContest)
-
   private val httpClient = HttpClient.newBuilder()
     .followRedirects(HttpClient.Redirect.NORMAL)
     .build()
 
+  meterRegistry.gauge("fdswarm_received_status_payload_bytes", this, (handler: NodeStatusHandler) => handler.lastStatusMessagePayloadSize)
+  meterRegistry.gauge("fdswarm_received_status_digest_count", this, (handler: NodeStatusHandler) => handler.lastStatusMessageDigestCount.toDouble)
   private val thread = new Thread(() =>
     while !Thread.currentThread().isInterrupted do
       try
@@ -67,9 +60,9 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
         udpHeader.service match
           case Service.Status =>
             val statusMessage = StatusMessage(udpHeader.payload)
-            if (contestManager.shouldIgnoreStatus) 
+            if (contestManager.shouldIgnoreStatus)
               logger.debug(s"Ignoring status message from ${udpHeader.nodeIdentity} because of recent contest change")
-            else 
+            else
               statusCounter.increment()
               lastStatusMessagePayloadSize = udpHeader.payload.length.toDouble
               lastStatusMessageDigestCount = statusMessage.fdDigests.size
@@ -113,9 +106,17 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
                 logger.error(s"Failed to decode ContestConfig from RestartContest: $sJson", error)
       catch
         case _: InterruptedException => Thread.currentThread().interrupt()
-        case e: Exception =>
-          logger.error(s"Error in Repl processing loop ${e.getMessage}", e)
+
+         case e: Exception =>
+           e.printStackTrace()
+           logger.error(s"Error in Repl processing loop ${e.getMessage}", e)
     , "Repl-Processor")
+  private var lastStatusMessagePayloadSize: Double = 0.0
+  private var lastStatusMessageDigestCount: Int = 0
+
+  private def replicationSupport: ReplicationSupport = replicationSupportProvider.get()
+
+  private def contestManager: ContestConfigManager = contestManagerProvider.get()
   thread.setDaemon(true)
   logger.debug("Starting NodeStatusHandler Thread")
   thread.start()

@@ -24,10 +24,6 @@ import fdswarm.store.FdHourDigest
 import fdswarm.util.Ids.Id
 import fdswarm.util.{CirceGzip, Ids, NodeIdentity}
 import io.circe.Codec
-import io.circe.Encoder.AsArray.importedAsArrayEncoder
-import io.circe.Encoder.AsObject.importedAsObjectEncoder
-import io.circe.Encoder.AsRoot.importedAsRootEncoder
-import io.circe.generic.auto.{deriveDecoder, deriveEncoder}
 
 import java.time.Instant
 
@@ -36,7 +32,8 @@ case class StatusMessage(fdDigests: Seq[FdHourDigest],
                          bandNodeOperator: BandModeOperator,
                          id: Id = Ids.generateId(),
                          contestConfig: ContestConfig) derives Codec.AsObject:
-  def toPacket: Array[Byte] = CirceGzip.encode(this)
+  def toPacket: Array[Byte] =
+    CirceGzip.encode(this)
 
   override def toString: String =
     s"StatusMessage( $bandNodeOperator fdDigests:${fdDigests.size} gzipSize: ${toPacket.length} bytes.)"

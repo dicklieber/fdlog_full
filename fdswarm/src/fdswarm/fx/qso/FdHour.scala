@@ -45,7 +45,7 @@ case class FdHour private (
       addedHours: Int
     ): FdHour =
     val maybeHours = hour + addedHours
-    if maybeHours > 23 then FdHour(day + 1, maybeHours - 24)
+    if maybeHours > 23 then new FdHour(day + 1, maybeHours - 24)
     else copy(hour = maybeHours)
 
   override def compare(
@@ -63,7 +63,7 @@ object FdHour extends LazyLogging:
 
   /** Used to match any FdHour in [[FdHour.equals()]]
     */
-  val allHours: FdHour = FdHour(0, 0)
+  val allHours: FdHour = new FdHour(0, 0)
   private val r = """(\d{1,2}):(\d{1,2})""".r
 
   def apply(
@@ -82,9 +82,19 @@ object FdHour extends LazyLogging:
     val candidate = new FdHour(day, hour)
     saveAsKnown(candidate)
 
+  private def saveAsKnown(
+      candidate: FdHour
+    ): FdHour =
+    knownHours.getOrElseUpdate(candidate, candidate)
+
   given Codec[FdHour] = Codec.from(
-    io.circe.Decoder.decodeString.map(FdHour.apply),
-    io.circe.Encoder.encodeString.contramap(_.toString)
+    io.circe.Decoder.decodeString.map(s =>
+      FdHour(s)
+    ),
+    io.circe.Encoder.encodeString.contramap(fdHour =>
+      val s = fdHour.toString
+      s
+    )
   )
 
   given sttp.tapir.Schema[FdHour] = sttp.tapir.Schema.string
@@ -100,8 +110,3 @@ object FdHour extends LazyLogging:
         saveAsKnown(new FdHour(sDay.toInt, shour.toInt))
       case x =>
         throw new IllegalArgumentException(s"Cannot parse $x as FdHour")
-
-  private def saveAsKnown(
-      candidate: FdHour
-    ): FdHour =
-    knownHours.getOrElseUpdate(candidate, candidate)

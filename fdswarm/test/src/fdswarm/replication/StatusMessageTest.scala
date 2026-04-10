@@ -25,6 +25,7 @@ import fdswarm.fx.contest.{ContestConfig, ContestType}
 import fdswarm.fx.qso.FdHour
 import io.circe
 import io.circe.parser.decode
+import io.circe.syntax.EncoderOps
 import munit.FunSuite
 
 import java.io.ByteArrayInputStream
@@ -39,6 +40,25 @@ class StatusMessageTest extends FunSuite:
     "A",
     "IL",
     stamp = Instant.parse("2026-03-16T20:11:04Z"))
+
+  test("JSON roundtrip"):
+    val digests = Seq(FdHourDigest(FdHour(15, 12), 10, "digest-abc"))
+    val sm = StatusMessage(digests, dummyBno, contestConfig = dummyContestConfig)
+    val fdigestsJson = sm.fdDigests.head.asJson.spaces2
+    assertEquals(fdigestsJson, """{
+                                 |  "fdHour" : "15:12",
+                                 |  "count" : 10,
+                                 |  "digest" : "digest-abc"
+                                 |}""".stripMargin)
+    val sJson = sm.asJson.spaces2
+    println(
+
+    )
+//    assertEquals(sJson, """""".stripMargin)
+    val decoded = decode[StatusMessage](sJson).getOrElse(fail("failed to decode"))
+    assertEquals(decoded, sm)
+    assertEquals(decoded.fdDigests.size, 1)
+    assertEquals(decoded.fdDigests.head.count, 10)
 
   test("toPacket should serialize to JSON and gzip") {
 //    val hp = NodeIdentity("localhost", 8080, name =)
