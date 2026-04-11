@@ -94,15 +94,11 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
             logger.trace("nodeStatus:  {}.", nodeStatus)
             //              swarmStatusProviders.put(receivedNodeStatus)
             statusProcessor.processStatus(nodeStatus).unsafeRunAndForget()
+            drainQueuedMessagesAfterStatus()
           case Service.QSO =>
-            qsoCounter.increment()
-            val sJson = new String(udpHeader.payload, "UTF-8")
-            decode[Qso](sJson) match
-              case Right(qso) =>
-                logger.debug(s"Received QSO via multicast: ${qso.callsign}")
-                replicationSupport.add(qso)
-              case Left(error) =>
-                logger.error(s"Failed to decode QSO from multicast: $sJson", error)
+            processQsoMessage(
+              udpHeader
+            )
           case Service.SendStatus =>
             logger.info(s"Received SendStatus from ${udpHeader.nodeIdentity}")
             sendStatusReceived.increment()
@@ -132,6 +128,30 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
   private def replicationSupport: ReplicationSupport = replicationSupportProvider.get()
 
   private def contestManager: ContestConfigManager = contestManagerProvider.get()
+
+  private def processQsoMessage(
+    udpHeader: UDPHeaderData
+  ): Unit =
+    qsoCounter.increment()
+    val sJson = new String(udpHeader.payload, "UTF-8")
+    decode[Qso](sJson) match
+      case Right(qso) =>
+        logger.debug(s"Received QSO via multicast: ${qso.callsign}")
+        replicationSupport.add(qso)
+      case Left(error) =>
+        logger.error(s"Failed to decode QSO from multicast: $sJson", error)
+
+  private def drainQueuedMessagesAfterStatus(): Unit =
+    var queuedMessage = transport.incomingQueue.poll()
+    while queuedMessage != null do
+      logger.debug(s"Drained queued message from ${queuedMessage.nodeIdentity} for service ${queuedMessage.service}")
+      if queuedMessage.service == Service.QSO then
+        logger.debug("Processing drained QSO from {}", queuedMessage.nodeIdentity)
+        processQsoMessage(
+          queuedMessage
+        )
+      queuedMessage = transport.incomingQueue.poll()
+
   thread.setDaemon(true)
   logger.debug("Starting NodeStatusHandler Thread")
   thread.start()
