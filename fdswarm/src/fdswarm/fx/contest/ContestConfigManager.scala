@@ -4,6 +4,7 @@ import com.google.inject.name.Named
 import com.typesafe.scalalogging.LazyLogging
 import fdswarm.io.DirectoryProvider
 import fdswarm.model.Callsign
+import fdswarm.replication.NodeStatus
 import io.circe.parser.decode
 import io.circe.syntax.*
 import jakarta.inject.{Inject, Singleton, Provider}
@@ -71,6 +72,39 @@ final class ContestConfigManager @Inject()(
       removePersistedConfig()
     else
       persist()
+
+  def updateFromNodeStatus(
+                            nodeStatus: NodeStatus
+                          ): Unit =
+    val receivedConfig = nodeStatus.statusMessage.contestConfig
+    if receivedConfig.contestType == ContestType.NONE then
+      return
+
+    val localConfig = _contestConfig.value
+    if localConfig.contestType == ContestType.NONE then
+      logger.info(
+        "Applying received contest config because local contest type is NONE. receivedType={}, receivedStamp={}",
+        receivedConfig.contestType,
+        receivedConfig.stamp
+      )
+      setConfig(
+        receivedConfig
+      )
+      return
+
+    if receivedConfig.stamp.isBefore(
+        localConfig.stamp
+      ) then
+      logger.info(
+        "Replacing local contest config with older received config. localType={}, localStamp={}, receivedType={}, receivedStamp={}",
+        localConfig.contestType,
+        localConfig.stamp,
+        receivedConfig.contestType,
+        receivedConfig.stamp
+      )
+      setConfig(
+        receivedConfig
+      )
 
   def clearContestConfig(): Unit =
     setConfig(

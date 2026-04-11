@@ -1,8 +1,10 @@
 package fdswarm.fx.contest
 
 import fdswarm.io.DirectoryProvider
-import fdswarm.model.Callsign
+import fdswarm.model.{BandMode, BandModeOperator, Callsign}
+import fdswarm.replication.{NodeStatus, StatusMessage}
 import fdswarm.store.QsoStore
+import fdswarm.util.NodeIdentity
 import fdswarm.util.FilenameStamp
 import io.circe.Encoder.AsArray.importedAsArrayEncoder
 import io.circe.Encoder.AsObject.importedAsObjectEncoder
@@ -15,6 +17,7 @@ import org.mockito.ArgumentMatchers.*
 
 import java.io.File
 import java.nio.file.Files
+import java.time.Instant
 
 class ContestConfigManagerTest extends FunSuite:
 
@@ -168,6 +171,167 @@ class ContestConfigManagerTest extends FunSuite:
       !manager.hasConfiguration.value
     )
 
+    os.remove.all(
+      os.Path(
+        subTempDir.toAbsolutePath.toString
+      )
+    )
+  }
+
+  private def nodeStatusWithConfig(
+                                    config: ContestConfig
+                                  ): NodeStatus =
+    val statusMessage = StatusMessage(
+      fdDigests = Seq.empty,
+      bandNodeOperator = BandModeOperator(
+        operator = Callsign(
+          "W1AW"
+        ),
+        bandMode = BandMode(
+          "20M CW"
+        )
+      ),
+      contestConfig = config
+    )
+    NodeStatus(
+      statusMessage = statusMessage,
+      nodeIdentity = NodeIdentity.testNodeIdentity,
+      isLocal = false
+    )
+
+  test("updateFromNodeStatus sets config when local is NONE and received is non-NONE") {
+    val subTempDir = Files.createTempDirectory("update-node-status-none-test")
+    val subDirectoryProvider = mock(classOf[DirectoryProvider])
+    when(
+      subDirectoryProvider.apply()
+    ).thenReturn(
+      os.Path(
+        subTempDir.toAbsolutePath.toString
+      )
+    )
+    val manager = new ContestConfigManager(
+      subDirectoryProvider,
+      qsoStoreProvider,
+      filenameStamp,
+      ignoreStatusSec
+    )
+    val receivedConfig = ContestConfig(
+      contestType = ContestType.WFD,
+      ourCallsign = Callsign("W1AW"),
+      transmitters = 2,
+      ourClass = "O",
+      ourSection = "CT",
+      stamp = Instant.parse("2026-04-01T00:00:00Z")
+    )
+
+    manager.updateFromNodeStatus(
+      nodeStatusWithConfig(
+        receivedConfig
+      )
+    )
+
+    assertEquals(
+      manager.contestConfigProperty.value,
+      receivedConfig
+    )
+    os.remove.all(
+      os.Path(
+        subTempDir.toAbsolutePath.toString
+      )
+    )
+  }
+
+  test("updateFromNodeStatus replaces local config when received stamp is older") {
+    val subTempDir = Files.createTempDirectory("update-node-status-older-test")
+    val subDirectoryProvider = mock(classOf[DirectoryProvider])
+    when(
+      subDirectoryProvider.apply()
+    ).thenReturn(
+      os.Path(
+        subTempDir.toAbsolutePath.toString
+      )
+    )
+    val manager = new ContestConfigManager(
+      subDirectoryProvider,
+      qsoStoreProvider,
+      filenameStamp,
+      ignoreStatusSec
+    )
+    val localConfig = ContestConfig(
+      contestType = ContestType.WFD,
+      ourCallsign = Callsign("K1ABC"),
+      transmitters = 3,
+      ourClass = "I",
+      ourSection = "IL",
+      stamp = Instant.parse("2026-04-02T00:00:00Z")
+    )
+    val receivedConfig = ContestConfig(
+      contestType = ContestType.WFD,
+      ourCallsign = Callsign("W1AW"),
+      transmitters = 2,
+      ourClass = "O",
+      ourSection = "CT",
+      stamp = Instant.parse("2026-04-01T00:00:00Z")
+    )
+    manager.setConfig(
+      localConfig
+    )
+
+    manager.updateFromNodeStatus(
+      nodeStatusWithConfig(
+        receivedConfig
+      )
+    )
+
+    assertEquals(
+      manager.contestConfigProperty.value,
+      receivedConfig
+    )
+    os.remove.all(
+      os.Path(
+        subTempDir.toAbsolutePath.toString
+      )
+    )
+  }
+
+  test("updateFromNodeStatus ignores received config when contest type is NONE") {
+    val subTempDir = Files.createTempDirectory("update-node-status-ignore-none-test")
+    val subDirectoryProvider = mock(classOf[DirectoryProvider])
+    when(
+      subDirectoryProvider.apply()
+    ).thenReturn(
+      os.Path(
+        subTempDir.toAbsolutePath.toString
+      )
+    )
+    val manager = new ContestConfigManager(
+      subDirectoryProvider,
+      qsoStoreProvider,
+      filenameStamp,
+      ignoreStatusSec
+    )
+    val localConfig = ContestConfig(
+      contestType = ContestType.WFD,
+      ourCallsign = Callsign("K1ABC"),
+      transmitters = 3,
+      ourClass = "I",
+      ourSection = "IL",
+      stamp = Instant.parse("2026-04-02T00:00:00Z")
+    )
+    manager.setConfig(
+      localConfig
+    )
+
+    manager.updateFromNodeStatus(
+      nodeStatusWithConfig(
+        ContestConfig.noContest
+      )
+    )
+
+    assertEquals(
+      manager.contestConfigProperty.value,
+      localConfig
+    )
     os.remove.all(
       os.Path(
         subTempDir.toAbsolutePath.toString

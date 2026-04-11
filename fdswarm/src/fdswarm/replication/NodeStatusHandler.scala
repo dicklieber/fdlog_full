@@ -85,6 +85,11 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
             lastStatusMessagePayloadSize = udpHeader.payload.length.toDouble
             lastStatusMessageDigestCount = statusMessage.fdDigests.size
             val nodeStatus = NodeStatus(statusMessage, udpHeader.nodeIdentity, isLocal = false)
+            Platform.runLater {
+              contestManager.updateFromNodeStatus(
+                nodeStatus
+              )
+            }
             swarmData.update(nodeStatus)
             logger.trace("nodeStatus:  {}.", nodeStatus)
             //              swarmStatusProviders.put(receivedNodeStatus)
