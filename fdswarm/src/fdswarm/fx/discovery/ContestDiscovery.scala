@@ -91,13 +91,11 @@ class ContestDiscovery @Inject() (
       timeout.toMillis
     )
     val allNodeStatuses = swarmData.allNodeStatuses
-    logger.debug("Discovered {} node statuses", allNodeStatuses.size)
+    logger.debug(s"Discovered ${allNodeStatuses.size} node statuses")
     logger.whenTraceEnabled {
       allNodeStatuses.foreach(nodeStatus =>
         logger.trace(
-          "Node status: {} ContestType: {}",
-          nodeStatus.nodeIdentity,
-          nodeStatus.statusMessage.contestConfig.contestType
+          s"Node status: ${nodeStatus.nodeIdentity} ContestType: ${nodeStatus.statusMessage.contestConfig.contestType}"
         )
       )
     }
@@ -111,16 +109,13 @@ class ContestDiscovery @Inject() (
       )
       .headOption
     selectedStatus.foreach(nodeStatus =>
-      logger.debug("Selected status: {}", nodeStatus)
+      logger.debug(s"Selected status: $nodeStatus")
       val selectedConfig = nodeStatus.statusMessage.contestConfig
       contestConfigManager.setConfig(
         selectedConfig
       )
       logger.info(
-        "Contest discovery selected config {} from {} (stamp: {})",
-        selectedConfig.contestType,
-        nodeStatus.nodeIdentity,
-        TimeHelpers.instantToString(selectedConfig.stamp)
+        s"Contest discovery selected config ${selectedConfig.contestType} from ${nodeStatus.nodeIdentity} (stamp: ${TimeHelpers.instantToString(selectedConfig.stamp)}"
       )
     )
     if selectedStatus.isEmpty then

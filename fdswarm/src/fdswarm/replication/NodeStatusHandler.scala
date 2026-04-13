@@ -145,7 +145,7 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
     while queuedMessage != null do
       logger.debug(s"Drained queued message from ${queuedMessage.nodeIdentity} for service ${queuedMessage.service}")
       if queuedMessage.service == Service.QSO then
-        logger.debug("Processing drained QSO from {}", queuedMessage.nodeIdentity)
+//        logger.debug("Processing drained QSO from {}", queuedMessage.nodeIdentity)
         processQsoMessage(
           queuedMessage
         )

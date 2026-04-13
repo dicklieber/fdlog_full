@@ -10,6 +10,48 @@ import scala.jdk.CollectionConverters.*
 
 final class StructuredLogger private(private val logger: Logger):
 
+  def whenTraceEnabled[T](
+    body: => T,
+    orElse: => T = null.asInstanceOf[T]
+  ): T =
+    if logger.isTraceEnabled then body
+    else orElse
+
+  def whenDebugEnabled[T](
+    body: => T,
+    orElse: => T = null.asInstanceOf[T]
+  ): T =
+    if logger.isDebugEnabled then body
+    else orElse
+
+  def whenInfoEnabled[T](
+    body: => T,
+    orElse: => T = null.asInstanceOf[T]
+  ): T =
+    if logger.isInfoEnabled then body
+    else orElse
+
+  def whenWarnEnabled[T](
+    body: => T,
+    orElse: => T = null.asInstanceOf[T]
+  ): T =
+    if logger.isWarnEnabled then body
+    else orElse
+
+  def whenErrorEnabled[T](
+    body: => T,
+    orElse: => T = null.asInstanceOf[T]
+  ): T =
+    if logger.isErrorEnabled then body
+    else orElse
+
+  def whenFatalEnabled[T](
+    body: => T,
+    orElse: => T = null.asInstanceOf[T]
+  ): T =
+    if logger.isFatalEnabled then body
+    else orElse
+
   def trace(message: String, args: (String, Any)*): Unit =
     if logger.isTraceEnabled then
       withFields(args):
