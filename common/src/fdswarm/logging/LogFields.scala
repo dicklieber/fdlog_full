@@ -12,5 +12,5 @@ package fdswarm.logging
  *     )
  * }}}
  */
-trait LogFields:
+trait LogFields extends LazyStructuredLogging:
   def logFields: Seq[(String, Any)]

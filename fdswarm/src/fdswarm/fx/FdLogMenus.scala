@@ -96,17 +96,6 @@ final class FdLogMenus @Inject() (
         ,
         developerModeMenuItem
       )
-  val menuBar: MenuBar =
-    new MenuBar:
-      useSystemMenuBar = isMac
-      menus = Seq(
-        fileMenu,
-        reportsMenu,
-        configMenu,
-        adminMenu,
-        devMenu,
-        helpMenu
-      )
   private val arrlRegionMapPath: os.Path = os.pwd / "arrl-region-map.json"
   private val labelArrlRegionsMenuItem = new CheckMenuItem(
     "Label ARRL Regions"
@@ -219,6 +208,18 @@ final class FdLogMenus @Inject() (
   private def helpMenu: Menu =
     new Menu("Help"):
       items = Seq(aboutMenuItem)
+
+  val menuBar: MenuBar =
+    new MenuBar:
+      useSystemMenuBar = isMac
+      menus = Seq(
+        fileMenu,
+        reportsMenu,
+        configMenu,
+        adminMenu,
+        devMenu,
+        helpMenu
+      )
 
   private def loadArrlRegionMap(): Map[String, String] =
     if os.exists(arrlRegionMapPath) then

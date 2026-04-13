@@ -19,7 +19,7 @@
 package fdswarm.model
 
 import fdswarm.fx.qso.FdHour
-import fdswarm.logging.LazyStructuredLogging
+import fdswarm.logging.LogFields
 import fdswarm.util.Ids
 import fdswarm.util.Ids.Id
 import io.circe.Codec
@@ -49,12 +49,13 @@ case class Qso(
     qsoMetadata: QsoMetadata,
     stamp: Instant = Instant.now(),
     uuid: Id = Ids.generateId())
-    extends LazyStructuredLogging derives Codec.AsObject, sttp.tapir.Schema:
+
+    extends  LogFields derives Codec.AsObject, sttp.tapir.Schema:
 
   lazy val rejectedMsg: String = s"Rejected duplicate Qso: $callsign $bandMode"
   lazy val fdHour: FdHour =
     FdHour(stamp)
-  lazy val logItems: Seq[(String, Any)] =
+  val logFields: Seq[(String, Any)] =
     Seq(
       "callsign" -> callsign.value,
       "class" -> exchange.fdClass,
@@ -76,6 +77,7 @@ case class Qso(
   def asJsonCompact: String =
     import io.circe.syntax.*
     this.asJson.noSpaces
+
 
   def flatten: Map[String, String] =
     Map(

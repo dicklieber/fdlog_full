@@ -72,7 +72,7 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider,
     else
       val jsonString = qso.asJsonCompact
       os.write.append(journalFile, jsonString + "\n", createFolders = true)
-
+      logger.info("Adding QSO to store", "qso" -> qso)
       addToMap(qso)
       mutateQsoCollection {
         qsoCollection.prepend(qso)
