@@ -7,7 +7,8 @@ import fdswarm.model.Callsign
 import fdswarm.replication.NodeStatus
 import io.circe.parser.decode
 import io.circe.syntax.*
-import jakarta.inject.{Inject, Singleton, Provider}
+import jakarta.inject.{Inject, Provider, Singleton}
+import logging.{LazyStructuredLogging, StructuredLogger}
 import scalafx.beans.property.{ObjectProperty, ReadOnlyBooleanProperty, ReadOnlyBooleanWrapper}
 
 @Singleton
@@ -16,7 +17,7 @@ final class ContestConfigManager @Inject()(
                                           qsoStoreProvider: Provider[fdswarm.store.QsoStore],
                                           filenameStamp: fdswarm.util.FilenameStamp,
                                           @Named("fdswarm.contestChangeIgnoreStatusSec") ignoreStatusSec: Int
-                                          ) extends ContestConfigFields with LazyLogging:
+                                          ) extends ContestConfigFields with LazyStructuredLogging:
   private def qsoStore: fdswarm.store.QsoStore = qsoStoreProvider.get()
 // These override methods expose the current value of the contestConfigProperty
   override def contestType: ContestType =
@@ -83,9 +84,9 @@ final class ContestConfigManager @Inject()(
     val localConfig = _contestConfig.value
     if localConfig.contestType == ContestType.NONE then
       logger.info(
-        "Applying received contest config because local contest type is NONE. receivedType={}, receivedStamp={}",
-        receivedConfig.contestType,
-        receivedConfig.stamp
+        "Applying received contest config because local contest type is NONE.",
+        ("contestType", receivedConfig.contestType.toString),
+        ("receivedStamp", receivedConfig.stamp.toString)
       )
       setConfig(
         receivedConfig
@@ -96,11 +97,9 @@ final class ContestConfigManager @Inject()(
         localConfig.stamp
       ) then
       logger.info(
-        "Replacing local contest config with older received config. localType={}, localStamp={}, receivedType={}, receivedStamp={}",
-        localConfig.contestType,
-        localConfig.stamp,
-        receivedConfig.contestType,
-        receivedConfig.stamp
+        "Received Config",
+        ("contestType", receivedConfig.contestType.toString),
+        ("receivedStamp", receivedConfig.stamp.toString)
       )
       setConfig(
         receivedConfig
@@ -139,6 +138,7 @@ final class ContestConfigManager @Inject()(
         )
         .map(
           file =>
+            logger.debug(s"Loading contest config from", "file" -> file.toString())
             val jsonString = os.read(
               file
             )
@@ -148,13 +148,7 @@ final class ContestConfigManager @Inject()(
             case Right(value) =>
               value
             case Left(err) =>
-              logger.error(
-                s"""Failed to decode ContestConfig from $contestFile
-                   |Error: ${err.getMessage}
-                   |JSON:
-                   |$jsonString
-                   |""".stripMargin
-              )
+              logger.error("Failed to decode ContestConfig", err, "json" -> jsonString)
               ContestConfig.noContest
         )
         .getOrElse(
@@ -163,8 +157,7 @@ final class ContestConfigManager @Inject()(
     catch
       case e: Throwable =>
         logger.error(
-          s"Failed to load contest config from $contestFile",
-          e
+          "Failed to load contest", e
         )
         ContestConfig.noContest
 

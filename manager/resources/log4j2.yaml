@@ -1,21 +1,30 @@
 Configuration:
-  status: warn
+  status: WARN
 
   Appenders:
     Console:
       name: Console
       target: SYSTEM_OUT
-      PatternLayout:
-        Pattern: "%d{HH:mm:ss.SSS} [%t] %highlight{%-5level}{FATAL=bg_red, ERROR=red, WARN=yellow, INFO=green, DEBUG=blue, TRACE=cyan} %logger{36} - %msg%n"
-        alwaysWriteExceptions: true
+      JsonLayout:
+        compact: true
+        eventEol: true
+        properties: true
+
+    RollingFile:
+      name: File
+      fileName: logs/app.log
+      filePattern: logs/app-%d{yyyy-MM-dd}.log.gz
+      JsonLayout:
+        compact: true
+        eventEol: true
+        properties: true
+      Policies:
+        TimeBasedTriggeringPolicy:
+          interval: 1
 
   Loggers:
-    Logger:
-      - name: manager.NodeConfigManager
-        level: info
-      - name: manager.AppInstance
-        level: info
     Root:
       level: info
       AppenderRef:
-        ref: Console
+        - ref: Console
+        - ref: File

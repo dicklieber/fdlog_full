@@ -36,7 +36,7 @@ object LoggingConfigurator:
     val console = builder.newAppender("Console", "Console")
     console.addAttribute("target", "SYSTEM_OUT")
     console.add(builder.newLayout("PatternLayout")
-      .addAttribute("pattern", "%logger{36} %highlight{%-5level}{FATAL=bg_red, ERROR=red, WARN=yellow, INFO=green, DEBUG=blue, TRACE=cyan}  %msg%n"))
+      .addAttribute("pattern", "%logger{36} %highlight{%-5level}{FATAL=bg_red, ERROR=red, WARN=yellow, INFO=green, DEBUG=blue, TRACE=cyan}  %msg %X%n"))
     builder.add(console)
 
     // File Appender
@@ -44,7 +44,7 @@ object LoggingConfigurator:
     file.addAttribute("fileName", logFile.toString())
     file.addAttribute("immediateFlush", true)
     file.add(builder.newLayout("PatternLayout")
-      .addAttribute("pattern", "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n"))
+      .addAttribute("pattern", "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg %X%n"))
     builder.add(file)
 
     // Access Log Appender
