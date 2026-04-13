@@ -155,11 +155,9 @@ class QsoEntryPanel @Inject()(
   callsignField.onDoneFunction = chForNext =>
     Platform.runLater {
       contestClassField.text = if chForNext.trim.isEmpty then "" else chForNext
-      logger.debug("new class field: {}", contestClassField.text.value)
 
       contestClassField.requestFocus()
       contestClassField.end()
-      logger.debug("new class field2: {}", contestClassField.text.value)
     }
   contestClassField.onDoneFunction = chForNext =>
     Platform.runLater {

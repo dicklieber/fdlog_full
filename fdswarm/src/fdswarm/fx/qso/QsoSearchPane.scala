@@ -90,7 +90,6 @@ class QsoSearchPane @Inject()(
 
   anyChange.onChange((_, _, newVal) =>
     if contestManager.hasConfiguration.value then
-      logger.debug("anyChange: {}", newVal)
 
       val startTime = System.nanoTime()
       val searchResult = qsoStore.qsoCollection.filter (qso =>
@@ -98,7 +97,6 @@ class QsoSearchPane @Inject()(
       )
       val durationNanos = System.nanoTime() - startTime
       val sDuration: String = DurationFormat(Duration.ofNanos(durationNanos))
-      logger.debug("filteredQsos: {} of {} in {}", searchResult.size, qsoStore.qsoCollection.size, sDuration)
       MetricsHelpers.recordTimerNanos(meterRegistry, "fdswarm_qso_filter_duration", durationNanos)
 
 

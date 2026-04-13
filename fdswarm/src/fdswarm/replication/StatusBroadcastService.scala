@@ -90,7 +90,6 @@ class StatusBroadcastService @Inject()(
         contestConfig = contestConfigManager.contestConfigProperty.value
       )
       val gzipBytes = statusMessage.toPacket
-      logger.trace("Broadcasting status: {} bytes: {}", statusMessage, gzipBytes.length)
       transport.send(Service.Status, gzipBytes)
     catch
       case e: Exception =>

@@ -98,8 +98,7 @@ final class FdLogUi @Inject() (
         else logger.debug("Desktop API not supported on this platform")
       catch case e: Exception =>
         logger.warn(
-          "Could not set macOS handlers",
-          e
+          "Could not set macOS handlers"
         )
 
     stage.title = s"FdSwarm@${nodeIdentityManager.ourNodeIdentity.toString}"
@@ -169,8 +168,7 @@ final class FdLogUi @Inject() (
           catch
             case e: Exception =>
               logger.debug(
-                "Could not set app icon via Taskbar (this is normal on some platforms/JDKs)",
-                e
+                "Could not set app icon via Taskbar (this is normal on some platforms/JDKs)"
               )
 
       val pngResource = getClass.getResource("/icons/icon_256.png")
@@ -191,8 +189,7 @@ final class FdLogUi @Inject() (
           case _: Exception => ()
     catch case e: Exception =>
       logger.warn(
-        "Could not set application icon",
-        e
+        "Could not set application icon"
       )
 
   def stopApp(): Unit =

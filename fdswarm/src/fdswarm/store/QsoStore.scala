@@ -99,7 +99,6 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider,
   def potentialDups(startOfCallsign: String, bandmode: BandMode): DupInfo =
     val allPotentialDups: Seq[Qso] = map.filter { case (id, qso) =>
         val bandModeMatch = qso.bandMode == bandmode
-        logger.trace("qso.bandMode {} against {} mmatch: {}", qso.bandMode, bandmode, bandModeMatch)
         val startMatch = qso.callsign.startsWith(startOfCallsign)
         startMatch && bandModeMatch
       }

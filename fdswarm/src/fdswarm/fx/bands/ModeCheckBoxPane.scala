@@ -42,7 +42,7 @@ final class ModeCheckBoxPane @Inject()(
         text = mode
         selected = availableModesManager.modes.contains(mode)
         selected.onChange { (a, b, c) =>
-          logger.debug("Change: {} {} {}", a, b, c)
+          logger.debug(s"Change: a:$a b:$b c:$c")
           saveSelected()
         }
       }

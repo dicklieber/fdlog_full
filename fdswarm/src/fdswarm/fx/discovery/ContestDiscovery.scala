@@ -19,8 +19,8 @@
 package fdswarm.fx.discovery
 
 import com.google.inject.name.Named
-import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.contest.{ContestConfigManager, ContestType}
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.replication.status.SwarmData
 import fdswarm.replication.{Service, Transport}
 import fdswarm.util.TimeHelpers
@@ -55,8 +55,7 @@ class ContestDiscovery @Inject() (
     val transport: Transport,
     contestConfigManager: ContestConfigManager,
     swarmData: SwarmData,
-    @Named("fdswarm.contestDiscoveryTimeout") val timeout: Duration
-)
+    @Named("fdswarm.contestDiscoveryTimeout") val timeout: Duration)
     extends LazyStructuredLogging:
 
   private val predeleteContestConfig: Boolean =
@@ -80,27 +79,27 @@ class ContestDiscovery @Inject() (
     val currentConfig = contestConfigManager.contestConfigProperty.value
     if currentConfig.contestType != ContestType.NONE then
       logger.debug(
-        "Skipping contest discovery because contest config is already set to {}",
-        currentConfig.contestType
+        s"Skipping contest discovery because contest config is already set to ${currentConfig.contestType}"
       )
       return
 
-    logger.info(
-      "Starting contest discovery (timeout: {} ms)",
-      timeout.toMillis
-    )
+    logger.info("Starting contest discovery", "Timeout" -> timeout)
 
     swarmData.clear()
-    transport.send(Service.SendStatus, Array.emptyByteArray
-    )
+    transport.send(Service.SendStatus, Array.emptyByteArray)
     TimeUnit.MILLISECONDS.sleep(
       timeout.toMillis
     )
     val allNodeStatuses = swarmData.allNodeStatuses
     logger.debug("Discovered {} node statuses", allNodeStatuses.size)
-    logger.whenTraceEnabled{
+    logger.whenTraceEnabled {
       allNodeStatuses.foreach(nodeStatus =>
-        logger.trace("Node status: {} ContestType: {}", nodeStatus.nodeIdentity,    nodeStatus.statusMessage.contestConfig.contestType))
+        logger.trace(
+          "Node status: {} ContestType: {}",
+          nodeStatus.nodeIdentity,
+          nodeStatus.statusMessage.contestConfig.contestType
+        )
+      )
     }
 
     val selectedStatus = allNodeStatuses

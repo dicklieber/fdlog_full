@@ -77,7 +77,7 @@ class Runner @Inject() (directoryProvider: DirectoryProvider)
           instance.stop()
         catch
           case e: Exception =>
-            logger.warn("Failed to stop managed instance cleanly", e)
+            logger.error("Failed to stop managed instance cleanly", e)
       }
       killManagedProcessesByCommandLine()
       instances = Seq.empty
@@ -96,5 +96,5 @@ class Runner @Inject() (directoryProvider: DirectoryProvider)
           ph.destroyForcibly()
         catch
           case e: Exception =>
-            logger.warn(s"Failed to force-kill managed process pid=${ph.pid()}", e)
+            logger.error(s"Failed to force-kill managed process pid=${ph.pid()}", e)
     }

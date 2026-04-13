@@ -18,20 +18,18 @@
 
 package fdswarm.fx
 
-import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.bandmodes.BandsAndModesPane
 import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.fx.discovery.ContestDialog
 import fdswarm.fx.station.StationEditor
 import fdswarm.fx.tools.*
+import fdswarm.logging.LazyStructuredLogging
 import io.circe.parser.decode
 import io.circe.syntax.*
 import jakarta.inject.Inject
 import javafx.concurrent.Worker
-import net.codingwell.scalaguice.InjectorExtensions.*
 import netscape.javascript.JSObject
-import scalafx.Includes.*
 import scalafx.application.Platform
 import scalafx.beans.binding.Bindings
 import scalafx.beans.property.{BooleanProperty, StringProperty}
@@ -44,49 +42,27 @@ import scalafx.stage.{Stage, Window}
 import scala.io.Source
 
 final class FdLogMenus @Inject() (
-  bandModeManagerPane: BandsAndModesPane,
-  stationEditor: StationEditor,
-  howManyDialogService: HowManyDialogService,
-  fdHourDialogService: FdHourDialogService,
-  loggingDialog: LoggingDialog,
-  contestTimeDialog: ContestTimeDialog,
-  fdHourDigestsPane: FdHourDigestsPane,
-  aboutMenuItem: AboutMenuItem,
-  userConfig: UserConfig,
-  userConfigEditor: UserConfigEditor,
-  exportDialog: ExportDialog,
-  sectionsProvider: fdswarm.fx.sections.SectionsProvider,
-  sectionPanel: fdswarm.fx.sections.SectionPanel,
-  ipAddressDialogService: IpAddressDialogService,
-  swarmStatusAdmin: fdswarm.fx.admin.SwarmStatusAdmin,
-  summaryDialog: SummaryDialog,
-  metricsDialog: MetricsDialog,
-  contestDialog: ContestDialog,
-  contestConfigManager: ContestConfigManager
-) extends LazyStructuredLogging:
+    bandModeManagerPane: BandsAndModesPane,
+    stationEditor: StationEditor,
+    howManyDialogService: HowManyDialogService,
+    fdHourDialogService: FdHourDialogService,
+    loggingDialog: LoggingDialog,
+    contestTimeDialog: ContestTimeDialog,
+    fdHourDigestsPane: FdHourDigestsPane,
+    aboutMenuItem: AboutMenuItem,
+    userConfig: UserConfig,
+    userConfigEditor: UserConfigEditor,
+    exportDialog: ExportDialog,
+    sectionsProvider: fdswarm.fx.sections.SectionsProvider,
+    sectionPanel: fdswarm.fx.sections.SectionPanel,
+    ipAddressDialogService: IpAddressDialogService,
+    swarmStatusAdmin: fdswarm.fx.admin.SwarmStatusAdmin,
+    summaryDialog: SummaryDialog,
+    metricsDialog: MetricsDialog,
+    contestDialog: ContestDialog,
+    contestConfigManager: ContestConfigManager)
+    extends LazyStructuredLogging:
   aboutMenuItem.onAction = _ => showAboutDialog()
-
-  private val arrlRegionMapPath: os.Path = os.pwd / "arrl-region-map.json"
-  private var arrlRegionToSection: Map[String, String] = loadArrlRegionMap()
-
-  private val labelArrlRegionsMenuItem = new CheckMenuItem(
-    "Label ARRL Regions"
-  ):
-    selected = false
-
-  private val developerModeMenuItem = new CheckMenuItem(
-    "Developer Mode"
-  )
-
-  def showAboutDialog(): Unit =
-    aboutMenuItem.showAboutDialog(
-      FdLogUi.primaryStage
-    )
-
-  def showBandModeManager(): Unit =
-    bandModeManagerPane.show(
-      FdLogUi.primaryStage
-    )
 
   private lazy val configMenu: Menu =
     new Menu("Config"):
@@ -95,112 +71,31 @@ final class FdLogMenus @Inject() (
           onAction = _ => showBandModeManager()
         ,
         new MenuItem("Station"):
-          onAction = _ => stationEditor.show(
-            FdLogUi.primaryStage
-          )
+          onAction = _ =>
+            stationEditor.show(
+              FdLogUi.primaryStage
+            )
         ,
         new SeparatorMenuItem(),
         new MenuItem("ARRL Sections Map"):
-          onAction = _ => showArrlSectionsMap(
-            FdLogUi.primaryStage
-          )
+          onAction = _ =>
+            showArrlSectionsMap(
+              FdLogUi.primaryStage
+            )
         ,
         labelArrlRegionsMenuItem,
         new SeparatorMenuItem(),
         new MenuItem("User Config"):
-          onAction = _ => userConfigEditor.show(
-            FdLogUi.primaryStage
-          )
+          onAction = _ =>
+            userConfigEditor.show(
+              FdLogUi.primaryStage
+            )
         ,
         new MenuItem("Contest"):
           onAction = _ => contestDialog.show()
         ,
         developerModeMenuItem
       )
-
-  private val devMenu: Menu =
-    new Menu("Dev"):
-      visible = false
-      items = Seq(
-        new MenuItem("Generate QSOs"):
-          onAction = _ => howManyDialogService.showAndGenerate(
-            FdLogUi.primaryStage
-          )
-        ,
-        new MenuItem("Send FdHour"):
-          onAction = _ => fdHourDialogService.show(
-            FdLogUi.primaryStage
-          )
-        ,
-        new MenuItem("FdHours"):
-          onAction = _ => fdHourDigestsPane.show(
-            FdLogUi.primaryStage
-          )
-        ,
-        new MenuItem("Logging"):
-          onAction = _ => loggingDialog.show(
-            FdLogUi.primaryStage
-          )
-        ,
-        new MenuItem("Contest Time"):
-          onAction = _ => contestTimeDialog.show(
-            FdLogUi.primaryStage
-          )
-        ,
-        new MenuItem("Set IP Address"):
-          onAction = _ => ipAddressDialogService.show(
-            FdLogUi.primaryStage
-          )
-        ,
-        new MenuItem("Clear Contest"):
-          onAction = _ => contestConfigManager.clearContestConfig()
-      )
-
-  private val adminMenu: Menu =
-    new Menu("Admin"):
-      items = Seq(
-        new MenuItem("Swarm Status"):
-          onAction = _ => swarmStatusAdmin.show(
-            FdLogUi.primaryStage
-          )
-      )
-
-  private val reportsMenu: Menu =
-    new Menu("Reports"):
-      items = Seq(
-        new MenuItem("Summary"):
-          onAction = _ => summaryDialog.show(
-            FdLogUi.primaryStage
-          )
-        ,
-        new MenuItem("Metrics"):
-          onAction = _ => metricsDialog.show(
-            FdLogUi.primaryStage
-          )
-      )
-
-  private def fileMenu: Menu =
-    new Menu("File"):
-      private val exportItem = new MenuItem("Export"):
-        onAction = _ => exportDialog.show(
-          FdLogUi.primaryStage
-        )
-      private val exitItem = new MenuItem("Exit"):
-        onAction = _ => Platform.exit()
-      items = if isMac then Seq(exportItem) else Seq(
-        exportItem,
-        exitItem
-      )
-
-  private def helpMenu: Menu =
-    new Menu("Help"):
-      items = Seq(aboutMenuItem)
-
-  developerModeMenuItem.selected <==> userConfig.getProperty[BooleanProperty](
-    "developerMode"
-  )
-  devMenu.visible <== developerModeMenuItem.selected
-
   val menuBar: MenuBar =
     new MenuBar:
       useSystemMenuBar = isMac
@@ -212,40 +107,137 @@ final class FdLogMenus @Inject() (
         devMenu,
         helpMenu
       )
+  private val arrlRegionMapPath: os.Path = os.pwd / "arrl-region-map.json"
+  private val labelArrlRegionsMenuItem = new CheckMenuItem(
+    "Label ARRL Regions"
+  ):
+    selected = false
+  private val developerModeMenuItem = new CheckMenuItem(
+    "Developer Mode"
+  )
+  private val devMenu: Menu =
+    new Menu("Dev"):
+      visible = false
+      items = Seq(
+        new MenuItem("Generate QSOs"):
+          onAction = _ =>
+            howManyDialogService.showAndGenerate(
+              FdLogUi.primaryStage
+            )
+        ,
+        new MenuItem("Send FdHour"):
+          onAction = _ =>
+            fdHourDialogService.show(
+              FdLogUi.primaryStage
+            )
+        ,
+        new MenuItem("FdHours"):
+          onAction = _ =>
+            fdHourDigestsPane.show(
+              FdLogUi.primaryStage
+            )
+        ,
+        new MenuItem("Logging"):
+          onAction = _ =>
+            loggingDialog.show(
+              FdLogUi.primaryStage
+            )
+        ,
+        new MenuItem("Contest Time"):
+          onAction = _ =>
+            contestTimeDialog.show(
+              FdLogUi.primaryStage
+            )
+        ,
+        new MenuItem("Set IP Address"):
+          onAction = _ =>
+            ipAddressDialogService.show(
+              FdLogUi.primaryStage
+            )
+        ,
+        new MenuItem("Clear Contest"):
+          onAction = _ => contestConfigManager.clearContestConfig()
+      )
+  private val adminMenu: Menu =
+    new Menu("Admin"):
+      items = Seq(
+        new MenuItem("Swarm Status"):
+          onAction = _ =>
+            swarmStatusAdmin.show(
+              FdLogUi.primaryStage
+            )
+      )
+  private val reportsMenu: Menu =
+    new Menu("Reports"):
+      items = Seq(
+        new MenuItem("Summary"):
+          onAction = _ =>
+            summaryDialog.show(
+              FdLogUi.primaryStage
+            )
+        ,
+        new MenuItem("Metrics"):
+          onAction = _ =>
+            metricsDialog.show(
+              FdLogUi.primaryStage
+            )
+      )
+  private var arrlRegionToSection: Map[String, String] = loadArrlRegionMap()
+
+  def showAboutDialog(): Unit =
+    aboutMenuItem.showAboutDialog(
+      FdLogUi.primaryStage
+    )
+
+  def showBandModeManager(): Unit =
+    bandModeManagerPane.show(
+      FdLogUi.primaryStage
+    )
+
+  private def fileMenu: Menu =
+    new Menu("File"):
+      private val exportItem = new MenuItem("Export"):
+        onAction = _ =>
+          exportDialog.show(
+            FdLogUi.primaryStage
+          )
+      private val exitItem = new MenuItem("Exit"):
+        onAction = _ => Platform.exit()
+      items =
+        if isMac then Seq(exportItem)
+        else
+          Seq(
+            exportItem,
+            exitItem
+          )
+
+  developerModeMenuItem.selected <==> userConfig.getProperty[BooleanProperty](
+    "developerMode"
+  )
+  devMenu.visible <== developerModeMenuItem.selected
+
+  private def helpMenu: Menu =
+    new Menu("Help"):
+      items = Seq(aboutMenuItem)
 
   private def loadArrlRegionMap(): Map[String, String] =
     if os.exists(arrlRegionMapPath) then
-      val txt = os.read(arrlRegionMapPath)
+      val txt:String = os.read(arrlRegionMapPath)
       decode[Map[String, String]](txt) match
-        case Right(m) => m
+        case Right(m) =>
+          m
         case Left(err) =>
-          logger.warn(
-            s"Could not parse ${arrlRegionMapPath.toString}: ${err.getMessage}"
-          )
+          logger.warn("Could not parse", "Err" -> err.toString)
           Map.empty
-    else Map.empty
-
-  private def saveArrlRegionMap(
-    mappings: Map[String, String]
-  ): Unit =
-    try
-      val json = mappings.asJson.spaces2
-      os.write.over(
-        arrlRegionMapPath,
-        json
-      )
-    catch
-      case e: Exception =>
-        logger.warn(
-          s"Could not write ${arrlRegionMapPath.toString}",
-          e
-        )
+    else
+      Map.empty
 
   private def showArrlSectionsMap(
-    parentWindow: Window
-  ): Unit =
-    val svgText =
-      val res = getClass.getResourceAsStream("/maps/arrl_sections_autotrace.svg")
+      parentWindow: Window
+    ): Unit =
+    val svgText:String =
+      val res =
+        getClass.getResourceAsStream("/maps/arrl_sections_autotrace.svg")
       if res != null then
         val source = Source.fromInputStream(
           res,
@@ -283,9 +275,9 @@ final class FdLogMenus @Inject() (
       def getActiveRegionId: Option[String] = activeRegionId
 
       def updateMapping(
-        regionId: String,
-        sectionCode: String
-      ): Unit =
+          regionId: String,
+          sectionCode: String
+        ): Unit =
         Platform.runLater {
           val section = sectionCode.trim.toUpperCase
           if section.nonEmpty then
@@ -301,12 +293,12 @@ final class FdLogMenus @Inject() (
         }
 
       def sectionClicked(
-        id: String
-      ): Unit =
+          id: String
+        ): Unit =
         Platform.runLater {
           val mapped = arrlRegionToSection.get(id)
           logger.info(
-            s"ARRL map clicked: $id${mapped.fold("")(value => s" -> $value")}" 
+            s"ARRL map clicked: $id${mapped.fold("")(value => s" -> $value")}"
           )
           if labelArrlRegionsMenuItem.selected.value then
             activeRegionId = Some(id)
@@ -321,15 +313,17 @@ final class FdLogMenus @Inject() (
 
     mappingSectionField.onChange {
       (
-        _,
-        _,
-        newValue
-      ) =>
+          _,
+          _,
+          newValue
+        ) =>
         if newValue != null && newValue.nonEmpty then
-          bridge.getActiveRegionId.foreach(regionId => bridge.updateMapping(
-            regionId,
-            newValue
-          ))
+          bridge.getActiveRegionId.foreach(regionId =>
+            bridge.updateMapping(
+              regionId,
+              newValue
+            )
+          )
     }
 
     val sectionPanelNode = sectionPanel.buildNode(
@@ -340,8 +334,8 @@ final class FdLogMenus @Inject() (
     )
 
     def wrap(
-      svg: String
-    ): String =
+        svg: String
+      ): String =
       s"""<!doctype html>
          |<html><head><meta charset=\"utf-8\"/>
          |<style>
@@ -414,10 +408,10 @@ final class FdLogMenus @Inject() (
     webView.engine.loadContent(wrap(svgText))
     webView.engine.getLoadWorker.stateProperty.addListener {
       (
-        _,
-        _,
-        state
-      ) =>
+          _,
+          _,
+          state
+        ) =>
         if state == Worker.State.SUCCEEDED then
           val window =
             webView.engine.executeScript("window").asInstanceOf[JSObject]
@@ -448,3 +442,19 @@ final class FdLogMenus @Inject() (
       )
 
     stage.show()
+
+  private def saveArrlRegionMap(
+      mappings: Map[String, String]
+    ): Unit =
+    try
+      val json = mappings.asJson.spaces2
+      os.write.over(
+        arrlRegionMapPath,
+        json
+      )
+    catch
+      case e: Exception =>
+        logger.warn(
+          "Could not write",
+          "Path" -> arrlRegionMapPath.toString
+        )

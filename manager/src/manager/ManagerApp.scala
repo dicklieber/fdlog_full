@@ -142,7 +142,7 @@ object ManagerApp extends JFXApp3 with LazyStructuredLogging :
         runner.stop()
       catch
         case e: Exception =>
-          logger.warn("Failed to stop managed instances during shutdown", e)
+          logger.warn("Failed to stop managed instances during shutdown")
 
   private def setAppIcon(stage: Stage): Unit = {
       try {
@@ -161,10 +161,10 @@ object ManagerApp extends JFXApp3 with LazyStructuredLogging :
             }
           } catch {
             case e: Exception =>
-              logger.debug("Could not set app icon via Taskbar (normal on some platforms)", e)
+              logger.error("Could not set app icon via Taskbar (normal on some platforms)", e)
           }
         }
       } catch {
-        case e: Exception => logger.warn("Could not set manager application icon", e)
+        case e: Exception => logger.error("Could not set manager application icon", e)
       }
     }

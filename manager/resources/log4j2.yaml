@@ -28,3 +28,4 @@ Configuration:
       AppenderRef:
         - ref: Console
         - ref: File
+

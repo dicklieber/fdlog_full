@@ -91,7 +91,6 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
               )
             }
             swarmData.update(nodeStatus)
-            logger.trace("nodeStatus:  {}.", nodeStatus)
             //              swarmStatusProviders.put(receivedNodeStatus)
             statusProcessor.processStatus(nodeStatus).unsafeRunAndForget()
             drainQueuedMessagesAfterStatus()

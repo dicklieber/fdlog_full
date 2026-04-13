@@ -74,7 +74,6 @@ class StatusProcessor @Inject()(qsoStore: ReplicationSupport,
 
         // 3. If any are missing, fetch the actual QSOs
         _ <- if missingIds.nonEmpty then
-          logger.debug("fdHour: {} Missing: ({}) {}", fdHour, missingIds.size, missingIds.mkString(","))
           for
             remoteQsos <- callEndpoint(ReplEndpoints.qsosForIdsDef, FdHourRequest(fdHour, missingIds))
             _ <- IO(logger.debug(s"Fetched ${remoteQsos.size} remote QSOs for $fdHour"))

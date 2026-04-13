@@ -1,192 +1,143 @@
 package fdswarm.logging
 
-import org.apache.logging.log4j.{LogManager, ThreadContext, Logger as JLogger}
+import org.apache.logging.log4j.{CloseableThreadContext, LogManager, Logger}
 
-import scala.util.control.NonFatal
+import java.time.*
+import java.time.format.DateTimeFormatter
+import java.util.UUID
 
-final class StructuredLogger private (underlying: JLogger):
+import scala.jdk.CollectionConverters.*
 
-  private def put(entries: Seq[(String, Any)]): Unit =
-    entries.foreach:
-      case (name, value) =>
-        ThreadContext.put(
-          name,
-          String.valueOf(value)
-        )
+final class StructuredLogger private(private val logger: Logger):
 
-  private def remove(entries: Seq[(String, Any)]): Unit =
-    entries.foreach:
-      case (name, _) =>
-        ThreadContext.remove(
-          name
-        )
+  def trace(message: String, args: (String, Any)*): Unit =
+    if logger.isTraceEnabled then
+      withFields(args):
+        logger.trace(message)
 
-  private def asEntries(
-      args: Seq[Any]
-  ): Option[Seq[(String, Any)]] =
-    if args.forall(_.isInstanceOf[Tuple2[?, ?]]) then
-      val entries = args.collect:
-        case (name: String, value) => (name, value)
-      if entries.size == args.size then Some(entries)
-      else None
-    else
-      None
+  def debug(message: String, args: (String, Any)*): Unit =
+    if logger.isDebugEnabled then
+      withFields(args):
+        logger.debug(message)
 
-  private def toRefs(
-      args: Seq[Any]
-  ): Seq[AnyRef] =
-    args.map:
-      case value: AnyRef => value
-      case value => value.asInstanceOf[AnyRef]
+  def info(message: String, args: (String, Any)*): Unit =
+    if logger.isInfoEnabled then
+      withFields(args):
+        logger.info(message)
 
-  def withFields[T](entries: (String, Any)*)(f: => T): T =
+  def warn(message: String, args: (String, Any)*): Unit =
+    if logger.isWarnEnabled then
+      withFields(args):
+        logger.warn(message)
+
+  def error(message: String, args: (String, Any)*): Unit =
+    if logger.isErrorEnabled then
+      withFields(args):
+        logger.error(message)
+
+  def error(message: String, throwable: Throwable, args: (String, Any)*): Unit =
+    if logger.isErrorEnabled then
+      withFields(args):
+        logger.error(message, throwable)
+
+  def fatal(message: String, args: (String, Any)*): Unit =
+    if logger.isFatalEnabled then
+      withFields(args):
+        logger.fatal(message)
+
+  def fatal(message: String, throwable: Throwable, args: (String, Any)*): Unit =
+    if logger.isFatalEnabled then
+      withFields(args):
+        logger.fatal(message, throwable)
+
+  private inline def withFields(args: Seq[(String, Any)])(body: => Unit): Unit =
+    val fields = normalizeArgs(args)
+    val closeable =
+      if fields.isEmpty then null
+      else CloseableThreadContext.putAll(fields.asJava)
     try
-      put(entries)
-      f
+      body
     finally
-      remove(entries)
+      if closeable != null then closeable.close()
 
-  def trace(
-      message: String,
-      args: Any*
-  ): Unit =
-    asEntries(args) match
-      case Some(entries) =>
-        withFields(entries*):
-          underlying.trace(
-            message
-          )
-      case None =>
-        underlying.trace(
-          message,
-          toRefs(args)*
-        )
+  private def normalizeArgs(args: Seq[(String, Any)]): Map[String, String] =
+    val flattened = args.flatMap(expandField)
+    flattened.iterator.map: (key, value) =>
+      key -> stringify(value)
+    .toMap
 
-  def info(
-      message: String,
-      args: Any*
-  ): Unit =
-    asEntries(args) match
-      case Some(entries) =>
-        withFields(entries*):
-          underlying.info(
-            message
-          )
-      case None =>
-        underlying.info(
-          message,
-          toRefs(args)*
-        )
+  private def expandField(field: (String, Any)): Seq[(String, Any)] =
+    field match
+      case (name, null) =>
+        Seq(name -> null)
 
-  def debug(
-      message: String,
-      args: Any*
-  ): Unit =
-    asEntries(args) match
-      case Some(entries) =>
-        withFields(entries*):
-          underlying.debug(
-            message
-          )
-      case None =>
-        underlying.debug(
-          message,
-          toRefs(args)*
-        )
+      case (_, fields: LogFields) =>
+        fields.logFields.flatMap(expandField)
 
-  def warn(
-      message: String,
-      args: Any*
-  ): Unit =
-    asEntries(args) match
-      case Some(entries) =>
-        withFields(entries*):
-          underlying.warn(
-            message
-          )
-      case None =>
-        underlying.warn(
-          message,
-          toRefs(args)*
-        )
+      case (name, opt: Option[?]) =>
+        opt match
+          case Some(value) => expandField(name -> value)
+          case None        => Seq(name -> null)
 
-  def error(
-      message: String,
-      args: Any*
-  ): Unit =
-    asEntries(args) match
-      case Some(entries) =>
-        withFields(entries*):
-          underlying.error(
-            message
-          )
-      case None =>
-        underlying.error(
-          message,
-          toRefs(args)*
-        )
+      case (name, array: Array[?]) =>
+        Seq(name -> array.iterator.map(stringify).mkString("[", ", ", "]"))
 
-  def error(
-      message: String,
-      throwable: Throwable
-  ): Unit =
-    underlying.error(
-      message,
-      throwable
-    )
+      case (name, iterable: Iterable[?]) =>
+        Seq(name -> iterable.iterator.map(stringify).mkString("[", ", ", "]"))
 
-  def error(
-      message: String,
-      throwable: Throwable,
-      args: Any*
-  ): Unit =
-    asEntries(args) match
-      case Some(entries) =>
-        withFields(entries*):
-          underlying.error(
-            message,
-            throwable
-          )
-      case None =>
-        underlying.error(
-          message,
-          (toRefs(args) :+ throwable.asInstanceOf[AnyRef])*
-        )
+      case (name, map: scala.collection.Map[?, ?]) =>
+        val rendered =
+          map.iterator
+            .map: (k, v) =>
+              s"${stringify(k)}=${stringify(v)}"
+            .mkString("{", ", ", "}")
+        Seq(name -> rendered)
 
-  def timed[T](
-      operation: String,
-      entries: (String, Any)*
-  )(
-      f: => T
-  ): T =
-    val startNs = System.nanoTime()
-    try
-      val result = f
-      val durationMs = (System.nanoTime() - startNs) / 1_000_000L
-      info(
-        s"$operation completed",
-        (entries :+ (LogFields.durationMs.name, durationMs))*
-      )
-      result
-    catch
-      case NonFatal(e) =>
-        val durationMs = (System.nanoTime() - startNs) / 1_000_000L
-        error(
-          s"$operation failed",
-          e,
-          (entries :+ (LogFields.durationMs.name, durationMs))*
-        )
-        throw e
+      case other =>
+        Seq(other)
 
-  def whenTraceEnabled(
-      f: => Unit
-  ): Unit =
-    if underlying.isTraceEnabled then
-      f
+  private def stringify(value: Any): String =
+    value match
+      case null                => "null"
+      case s: String           => s
+      case c: Char             => c.toString
+      case b: Boolean          => b.toString
+      case n: Byte             => n.toString
+      case n: Short            => n.toString
+      case n: Int              => n.toString
+      case n: Long             => n.toString
+      case n: Float            => n.toString
+      case n: Double           => n.toString
+      case n: BigInt           => n.toString
+      case n: BigDecimal       => n.toString
+      case uuid: UUID          => uuid.toString
+
+      case instant: Instant         => DateTimeFormatter.ISO_INSTANT.format(instant)
+      case date: LocalDate          => DateTimeFormatter.ISO_LOCAL_DATE.format(date)
+      case time: LocalTime          => DateTimeFormatter.ISO_LOCAL_TIME.format(time)
+      case dt: LocalDateTime        => DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(dt)
+      case odt: OffsetDateTime      => DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(odt)
+      case zdt: ZonedDateTime       => DateTimeFormatter.ISO_ZONED_DATE_TIME.format(zdt)
+
+      case duration: Duration       => duration.toString
+      case period: Period           => period.toString
+
+      case enumValue: Enum[?]       => enumValue.name()
+
+      case product: Product =>
+        val fields =
+          product.productElementNames.zip(product.productIterator).map: (name, value) =>
+            s"$name=${stringify(value)}"
+          .mkString(", ")
+        s"${product.productPrefix}($fields)"
+
+      case other =>
+        other.toString
 
 object StructuredLogger:
-  def apply(name: String): StructuredLogger =
-    new StructuredLogger(LogManager.getLogger(name))
 
   def apply(clazz: Class[?]): StructuredLogger =
     new StructuredLogger(LogManager.getLogger(clazz))
+
+  def apply(name: String): StructuredLogger =
+    new StructuredLogger(LogManager.getLogger(name))
