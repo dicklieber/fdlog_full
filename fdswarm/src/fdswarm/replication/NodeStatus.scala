@@ -41,10 +41,10 @@ case class NodeStatus(
     isLocal: Boolean
 ) extends Ordered[NodeStatus]:
   // Allow quick lookup when needed by FdHour.
-  private lazy val countByFdHourMap: Map[FdHour, Int] = statusMessage.fdDigests
+  private lazy val countByFdHourMap: Map[FdHour, Int] = statusMessage.hash
     .map(fdDigest => fdDigest.fdHour -> fdDigest.count)
     .toMap
-  val qsoCount: Int = statusMessage.fdDigests.map(_.count).sum
+  val qsoCount: Int = statusMessage.hash.map(_.count).sum
 
   def getQsoCount(fdHour: FdHour): Int =
     countByFdHourMap.getOrElse(fdHour, 0)

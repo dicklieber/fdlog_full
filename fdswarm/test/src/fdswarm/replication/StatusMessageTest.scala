@@ -43,8 +43,8 @@ class StatusMessageTest extends FunSuite:
 
   test("JSON roundtrip"):
     val digests = Seq(FdHourDigest(FdHour(15, 12), 10, "digest-abc"))
-    val sm = StatusMessage(digests, dummyBno, contestConfig = dummyContestConfig)
-    val fdigestsJson = sm.fdDigests.head.asJson.spaces2
+    val sm = StatusMessage(digests,, dummyBno, contestConfig = dummyContestConfig)
+    val fdigestsJson = sm.hash.head.asJson.spaces2
     assertEquals(fdigestsJson, """{
                                  |  "fdHour" : "15:12",
                                  |  "count" : 10,
@@ -57,13 +57,13 @@ class StatusMessageTest extends FunSuite:
 //    assertEquals(sJson, """""".stripMargin)
     val decoded = decode[StatusMessage](sJson).getOrElse(fail("failed to decode"))
     assertEquals(decoded, sm)
-    assertEquals(decoded.fdDigests.size, 1)
-    assertEquals(decoded.fdDigests.head.count, 10)
+    assertEquals(decoded.hash.size, 1)
+    assertEquals(decoded.hash.head.count, 10)
 
   test("toPacket should serialize to JSON and gzip") {
 //    val hp = NodeIdentity("localhost", 8080, name =)
     val digests = Seq(FdHourDigest(FdHour(15, 12), 10, "digest-abc"))
-    val sm = StatusMessage(digests, dummyBno, contestConfig = dummyContestConfig)
+    val sm = StatusMessage(digests,, dummyBno, contestConfig = dummyContestConfig)
     
     val packet = sm.toPacket
     
@@ -77,13 +77,13 @@ class StatusMessageTest extends FunSuite:
     val readSm = value.toTry.get
     
     assertEquals(readSm, sm)
-    assertEquals(readSm.fdDigests.size, 1)
-    assertEquals(readSm.fdDigests.head.count, 10)
+    assertEquals(readSm.hash.size, 1)
+    assertEquals(readSm.hash.head.count, 10)
   }
 
   test("fromPacket should deserialize from gzipped packet") {
     val digests = Seq(FdHourDigest(FdHour(15, 12), 10, "digest-abc"))
-    val sm = StatusMessage(digests, dummyBno, contestConfig = dummyContestConfig)
+    val sm = StatusMessage(digests,, dummyBno, contestConfig = dummyContestConfig)
     
     val packet = sm.toPacket
     val readSm = StatusMessage.apply(packet)

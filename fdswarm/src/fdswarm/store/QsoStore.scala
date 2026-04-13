@@ -20,18 +20,17 @@ package fdswarm.store
 
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.StartupInfo
-import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
 import fdswarm.logging.Locus.LogEntry
 import fdswarm.model.*
 import fdswarm.replication.status.SwarmData
 import fdswarm.replication.{Service, Transport}
 import fdswarm.util.Ids.Id
+import io.circe.generic.auto.deriveDecoder
 import io.micrometer.core.instrument.{Counter, MeterRegistry, Timer}
 import jakarta.inject.*
 import jakarta.inject.Provider
 import io.circe.parser.decode
-import io.circe.syntax.*
 import javafx.application.Platform
 import scalafx.collections.ObservableBuffer
 
@@ -50,13 +49,13 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider,
   val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()
   protected val map: TrieMap[Id, Qso] = new TrieMap
   private val journalFile = directoryProvider() / "qsosJournal.json"
-  private val buildDigestsTimer = Timer.builder("fdlog.build.hour.digests")
+  private val calculateHashTimer = Timer.builder("fdlog.build.hour.digests")
     .description("Time taken to build FD hour digests")
     .register(registry)
-  private val buildDigestsCounter = Counter.builder("fdlog.build.hour.digests.count")
+  private val calculateHashCounter = Counter.builder("fdlog.build.hour.digests.count")
     .description("Number of times FD hour digests were built")
     .register(registry)
-  private var fdHourDigests: Map[FdHour, FdHourDigest] = Map.empty
+  private var allIdsHash: String = ""
 
   private def mutateQsoCollection(mutation: => Unit): Unit =
     if Platform.isFxApplicationThread then
@@ -78,7 +77,7 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider,
       mutateQsoCollection {
         qsoCollection.prepend(qso)
       }
-      buildFdHourDigests()
+      calculateHash()
       val bytes: Array[Byte] = jsonString.getBytes("UTF-8")
       transport.send(Service.QSO, bytes)
       StyledMessage(s"Added ${qso.dupCriterion} to store", "addQsoOk")
@@ -108,13 +107,6 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider,
     val frustNDups = allPotentialDups.take(70).map(_.callsign)
     DupInfo(frustNDups, allPotentialDups.size)
 
-  /**
-   * current digests for all FdHours.
-   *
-   * @return
-   */
-  def digests(): Seq[FdHourDigest] = fdHourDigests.values.toSeq.sorted
-
   if startupInfo.info.exists(_.clearQsos) then
     logger.info("StartupInfo Clearing QSOs journal")
     os.remove(journalFile)
@@ -135,7 +127,7 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider,
           case Left(error) =>
             logger.error(s"Failed to decode Qso from line: $line", error)
       }
-    buildFdHourDigests()
+    calculateHash()
 
   def archiveAndClear(): Unit =
     val timestampedFile = directoryProvider() / s"${filenameStamp.build()}.qsosJournal.json"
@@ -144,7 +136,7 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider,
       logger.info(s"Archived QSOs to $timestampedFile")
     
     map.clear()
-    fdHourDigests = Map.empty
+    allIdsHash = ""
     swarmData.updateLocalDigests(Nil)
     mutateQsoCollection {
       qsoCollection.clear()
@@ -168,19 +160,10 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider,
       mutateQsoCollection {
         qsoCollection.prependAll(toAdd)
       }
-      buildFdHourDigests()
+      calculateHash()
 
-  private def buildFdHourDigests(): Unit =
-    logger.debug("Rebuilding FDhour digests")
-    buildDigestsCounter.increment()
-    buildDigestsTimer.record(new Runnable {
-      override def run(): Unit =
-        val hourToQsos: Map[FdHour, Seq[Qso]] = all.groupBy(_.fdHour)
-        fdHourDigests = hourToQsos.map { case (fdHour, qsos) =>
-          fdHour -> FdHourDigest(fdHour, qsos)
-        }
-        swarmData.updateLocalDigests(fdHourDigests.values.toSeq)
-    })
+  private def calculateHash(): Unit =
+    allIdsHash = fdswarm.replication.calcShaHash(map.keys)
 
   /**
    * Thread-safe snapshot of all QSOs, sorted by stamp.
@@ -189,4 +172,3 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider,
   def all: Seq[Qso] =
     map.values.toSeq.sorted
 
-  private[store] def internalDigests: Map[FdHour, FdHourDigest] = fdHourDigests

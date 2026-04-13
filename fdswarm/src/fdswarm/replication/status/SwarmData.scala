@@ -199,7 +199,7 @@ class SwarmData @Inject() (
     ageCellStyleRefresher.track(
       nodeStatus = nodeStatus
     )
-    val newlyDiscoveredFdHours = nodeStatus.statusMessage.fdDigests
+    val newlyDiscoveredFdHours = nodeStatus.statusMessage.hash
       .flatMap(fd => if knownFdHourValues.putIfAbsent(fd.fdHour, fd.fdHour).isEmpty then Some(fd.fdHour) else None)
       .distinct
       .sorted
@@ -222,7 +222,7 @@ class SwarmData @Inject() (
         )
       }
 
-      val countByHour = nodeStatus.statusMessage.fdDigests.map(fd => fd.fdHour -> fd.count).toMap
+      val countByHour = nodeStatus.statusMessage.hash.map(fd => fd.fdHour -> fd.count).toMap
       knownFdHours.foreach { fdHourEnum =>
         val field = NodeDataField.FdHoursField(fdHourEnum)
         val value = countByHour.getOrElse(fdHourEnum.fdHour, 0).toString
@@ -377,7 +377,7 @@ class SwarmData @Inject() (
     val nodeStatuses = nodeMap.values.toSeq
     val nodes = nodeStatuses.map(_.nodeIdentity).distinct.sorted
     val mergedFdHours = nodeStatuses
-      .flatMap(_.statusMessage.fdDigests.map(_.fdHour))
+      .flatMap(_.statusMessage.hash.map(_.fdHour))
       .distinct
       .sorted
       .map(FdHours.apply)

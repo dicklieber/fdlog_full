@@ -46,10 +46,10 @@ class GridTest extends FunSuite:
     val hour1 = FdHour(10, 1)
     val hour2 = FdHour(10, 2)
 
-    val sm1 = StatusMessage(Seq(FdHourDigest(hour1, 5, "d1"), FdHourDigest(hour2, 10, "d2")), dummyBno, contestConfig = dummyContestConfig)
+    val sm1 = StatusMessage(Seq(FdHourDigest(hour1, 5, "d1"), FdHourDigest(hour2, 10, "d2")),, dummyBno, contestConfig = dummyContestConfig)
     val nd1 = NodeStatus(sm1, ni1, isLocal = false)
 
-    val sm2 = StatusMessage(Seq(FdHourDigest(hour1, 3, "d3")), dummyBno, contestConfig = dummyContestConfig)
+    val sm2 = StatusMessage(Seq(FdHourDigest(hour1, 3, "d3")),, dummyBno, contestConfig = dummyContestConfig)
     val nd2 = NodeStatus(sm2, ni2, isLocal = false)
 
     val allNodeDetails = Seq(nd1, nd2)
@@ -94,7 +94,7 @@ class GridTest extends FunSuite:
 
   test("Gird.populate should add header rows".ignore):
     val ni1 = NodeIdentity("192.168.1.1", 8080, "111", "node1")
-    val nd1 = NodeStatus(StatusMessage(Nil, dummyBno, contestConfig = dummyContestConfig), ni1, isLocal = false)
+    val nd1 = NodeStatus(StatusMessage(Nil,, dummyBno, contestConfig = dummyContestConfig), ni1, isLocal = false)
 
     val builder = new GridBuilder()
     val nowProperty = scalafx.beans.property.LongProperty(System.currentTimeMillis())
@@ -148,7 +148,7 @@ class GridTest extends FunSuite:
     })
     // Check "Our Node" when it matches
     val niOur = NodeIdentity("127.0.0.1", 8080, "111", "our-node")
-    val ndOur = NodeStatus(StatusMessage(Nil, dummyBno, contestConfig = dummyContestConfig), niOur, isLocal = false)
+    val ndOur = NodeStatus(StatusMessage(Nil,, dummyBno, contestConfig = dummyContestConfig), niOur, isLocal = false)
     val builder2 = new GridBuilder()
     val gird2 = SwarmStatusGrid(
       Seq(ndOur),

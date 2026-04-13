@@ -38,7 +38,7 @@ object FdHourDigest:
     apply(fdHour, Seq.empty)
     
   def apply(fdHour: FdHour, qsos: Seq[Qso]): FdHourDigest =
-    val sortedIds = qsos.map(_.uuid).sorted.mkString
+    val sortedIds: String = qsos.map(_.uuid).sorted.mkString
     val digest = java.security.MessageDigest.getInstance("MD5")
       .digest(sortedIds.getBytes("UTF-8"))
       .map("%02x".format(_)).mkString

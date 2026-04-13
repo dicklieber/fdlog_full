@@ -207,7 +207,7 @@ class SwarmDataTest extends FunSuite:
       "IL"
     )
     val staleStatus = NodeStatus(
-      statusMessage = StatusMessage(fdDigests = Nil, bandNodeOperator = bno, contestConfig = contestConfig),
+      statusMessage = StatusMessage(hash = Nil,, bandNodeOperator = bno, contestConfig = contestConfig),
       nodeIdentity = remoteNode,
       received = Instant.now().minusSeconds(5),
       isLocal = false

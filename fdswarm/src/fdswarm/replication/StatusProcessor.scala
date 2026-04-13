@@ -51,7 +51,7 @@ class StatusProcessor @Inject()(qsoStore: ReplicationSupport,
    * @return IO completing after the HTTP call finishes
    */
   def processStatus(nodeStatus: NodeStatus): IO[Unit] =
-    val needed = nodeStatus.statusMessage.fdDigests.flatMap(qsoStore.isFdHourNeeded)
+    val needed = nodeStatus.statusMessage.hash.flatMap(qsoStore.isFdHourNeeded)
     IO(nodeBandOpPane.refreshIfDue()) >>
       (if needed.nonEmpty then
          // Record at least one timing sample to indicate processing occurred

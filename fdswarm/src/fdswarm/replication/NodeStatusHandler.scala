@@ -83,7 +83,7 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
             val statusMessage = StatusMessage(udpHeader.payload)
             statusCounter.increment()
             lastStatusMessagePayloadSize = udpHeader.payload.length.toDouble
-            lastStatusMessageDigestCount = statusMessage.fdDigests.size
+            lastStatusMessageDigestCount = statusMessage.hash.size
             val nodeStatus = NodeStatus(statusMessage, udpHeader.nodeIdentity, isLocal = false)
             Platform.runLater {
               contestManager.updateFromNodeStatus(

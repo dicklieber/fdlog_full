@@ -54,7 +54,7 @@ class LocalNodeStatusTest extends FunSuite:
 
     assert(currentStatus != null, "current status should be initialized")
     assertEquals(currentStatus.isLocal, true)
-    assertEquals(currentStatus.statusMessage.fdDigests, Seq.empty)
+    assertEquals(currentStatus.statusMessage.hash, Seq.empty)
     assertEquals(currentStatus.statusMessage.contestConfig, dummyContestConfig)
 
     testDir.cleanup()
@@ -102,7 +102,7 @@ class LocalNodeStatusTest extends FunSuite:
       ContestConfig.noContest
     )
     assertEquals(
-      emitted.last.statusMessage.fdDigests,
+      emitted.last.statusMessage.hash,
       Seq(digest)
     )
 
@@ -112,7 +112,7 @@ class LocalNodeStatusTest extends FunSuite:
       2
     )
     assertEquals(emitted.last.isLocal, true)
-    assertEquals(emitted.last.statusMessage.fdDigests, Seq(digest))
+    assertEquals(emitted.last.statusMessage.hash, Seq(digest))
 
     val t1 = emitted.last.received
     Thread.sleep(2)

@@ -181,18 +181,14 @@ class ContestConfigManagerTest extends FunSuite:
   private def nodeStatusWithConfig(
                                     config: ContestConfig
                                   ): NodeStatus =
-    val statusMessage = StatusMessage(
-      fdDigests = Seq.empty,
-      bandNodeOperator = BandModeOperator(
-        operator = Callsign(
-          "W1AW"
-        ),
-        bandMode = BandMode(
-          "20M CW"
-        )
+    val statusMessage = StatusMessage(hash = Seq.empty,, bandNodeOperator = BandModeOperator(
+      operator = Callsign(
+        "W1AW"
       ),
-      contestConfig = config
-    )
+      bandMode = BandMode(
+        "20M CW"
+      )
+    ), contestConfig = config)
     NodeStatus(
       statusMessage = statusMessage,
       nodeIdentity = NodeIdentity.testNodeIdentity,

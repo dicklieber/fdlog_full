@@ -41,7 +41,7 @@ class SwarmStatusGrid(
   val fdHours: Seq[FdHour] =
     val allFdHours = for
       receivedNodeStatus <- allNodes
-      fdDigest <- receivedNodeStatus.statusMessage.fdDigests
+      fdDigest <- receivedNodeStatus.statusMessage.hash
     yield
       fdDigest.fdHour
     allFdHours.distinct.sorted
@@ -50,7 +50,7 @@ class SwarmStatusGrid(
   def bodyCounts: Array[Array[IntLabel]] =
     fdHours.map { fdHour =>
       allNodes.map { nodeStatus =>
-        val count = nodeStatus.statusMessage.fdDigests.find(_.fdHour == fdHour).map(_.count).getOrElse(0)
+        val count = nodeStatus.statusMessage.hash.find(_.fdHour == fdHour).map(_.count).getOrElse(0)
         IntLabel(count)
       }.toArray
     }.toArray
