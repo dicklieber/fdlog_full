@@ -19,7 +19,7 @@
 
 package fdswarm.fx
 
-import com.google.inject.{AbstractModule, Provides, Injector}
+import com.google.inject.{AbstractModule, Injector, Provides}
 import com.google.inject.name.Names
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.LazyLogging
@@ -37,6 +37,7 @@ import com.google.inject.TypeLiteral
 import fdswarm.replication.status.SwarmData
 import fdswarm.replication.{BroadcastTransport, NodeStatusHandler, StatusBroadcastService, Transport}
 import fdswarm.util.LoggingManager
+import logging.LazyStructuredLogging
 
 import java.time.Duration
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -75,7 +76,7 @@ class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModu
     // but here we just ensure they are discoverable if they have @Inject or no-arg constructor.
     // However, Guice often does JIT bindings for concrete classes.
 
-    val discoveredLoggers = AutoBind.discoverImplementationsOf[LazyLogging](allPkgs)
+    val discoveredLoggers: Seq[String] = AutoBind.discoverImplementationsOf[LazyStructuredLogging](allPkgs)
     bind[Seq[String]].annotatedWith(Names.named("discoveredLoggerNames")).toInstance(discoveredLoggers)
 
     val primaryConfigFromFile = ConfigFactory.parseFile((os.pwd / "config" / "sarasec.conf").toIO)
