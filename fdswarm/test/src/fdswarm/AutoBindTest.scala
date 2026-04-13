@@ -21,14 +21,14 @@ package fdswarm
 import com.google.inject.*
 import com.google.inject.multibindings.Multibinder
 import com.google.inject.spi.{Elements, InstanceBinding}
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.AutoBind
 import munit.FunSuite
 import scala.jdk.CollectionConverters.*
 
 class AutoBindTest extends FunSuite:
   test("AutoBind should discover implementation names"):
-    val names = AutoBind.discoverImplementationsOf[LazyLogging](Seq("fdswarm"))
+    val names = AutoBind.discoverImplementationsOf[LazyStructuredLogging](Seq("fdswarm"))
     assert(names.nonEmpty)
     assert(names.contains("fdswarm.fx.ConfigModule"))
     // FdHour is an object, its class name in ClassGraph usually ends with $
@@ -41,7 +41,7 @@ class AutoBindTest extends FunSuite:
     
     val elements = Elements.getElements(new AbstractModule:
       override def configure(): Unit =
-        AutoBind.bindAllImplementationsOf[LazyLogging](
+        AutoBind.bindAllImplementationsOf[LazyStructuredLogging](
           binder = binder(),
           packagesOnly = Seq("fdswarm"),
           named = None,

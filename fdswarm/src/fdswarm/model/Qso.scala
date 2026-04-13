@@ -18,7 +18,7 @@
 
 package fdswarm.model
 
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.qso.FdHour
 import fdswarm.util.Ids
 import fdswarm.util.Ids.Id
@@ -41,7 +41,7 @@ case class Qso(callsign: Callsign,
                bandMode: BandMode,
                qsoMetadata: QsoMetadata,
                stamp: Instant = Instant.now(),
-               uuid: Id = Ids.generateId()) extends  LazyLogging derives  Codec.AsObject, sttp.tapir.Schema:
+               uuid: Id = Ids.generateId()) extends  LazyStructuredLogging derives  Codec.AsObject, sttp.tapir.Schema:
 
   lazy val rejectedMsg: String = s"Rejected duplicate Qso: $callsign $bandMode"
   lazy val fdHour: FdHour =

@@ -18,7 +18,7 @@
 
 package fdswarm.fx.tools
 
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.qso.FdHour
 import fdswarm.store.QsoStore
 import io.circe.syntax.*
@@ -38,7 +38,7 @@ import java.net.http.{HttpClient, HttpRequest}
 final class FdHourDialogService @Inject() (
                                            qsoStore: QsoStore,
                                            networkConfig: fdswarm.replication.NetworkConfig
-                                         ) extends LazyLogging:
+                                         ) extends LazyStructuredLogging:
 
   private val httpClient = HttpClient.newBuilder()
     .followRedirects(HttpClient.Redirect.NORMAL)

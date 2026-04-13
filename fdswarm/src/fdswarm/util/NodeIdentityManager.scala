@@ -18,7 +18,7 @@
 
 package fdswarm.util
 
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import jakarta.inject.{Inject, Named, Singleton}
 
 import java.net.{Inet4Address, NetworkInterface}
@@ -29,7 +29,7 @@ import scala.jdk.CollectionConverters.*
  */
 @Singleton
 class NodeIdentityManager @Inject()(@Named("fdswarm.httpPort") httpPort: Int,
-                                    instanceIdManager: InstanceIdManager) extends LazyLogging:
+                                    instanceIdManager: InstanceIdManager) extends LazyStructuredLogging:
 
   def isUs(nodeIdentity: NodeIdentity):Boolean=
     nodeIdentity.instanceId == instanceIdManager.ourInstanceId

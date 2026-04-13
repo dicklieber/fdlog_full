@@ -18,7 +18,7 @@
 
 package fdswarm.fx.qso
 
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.ContestDates
 import fdswarm.fx.GridColumns
 import fdswarm.fx.contest.{ContestConfig, ContestConfigManager, ContestType}
@@ -41,7 +41,7 @@ class ContestDetailPanel @Inject()(
                                    contestManager: ContestConfigManager,
                                    contestDialog: ContestDialog,
                                    @Named("fdswarm.contestTimerUpdateSec") contestTimerUpdateSec: Int
-                                 ) extends LazyLogging:
+                                 ) extends LazyStructuredLogging:
   private val timerTimeline = new Timeline:
     keyFrames = Seq(
       KeyFrame(Duration(contestTimerUpdateSec * 1000), onFinished = _ => updateContestTimeDisplay())

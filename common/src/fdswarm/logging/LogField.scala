@@ -1,4 +1,4 @@
-package logging
+package fdswarm.logging
 
 final case class LogEntry(name: String, value: String)
 

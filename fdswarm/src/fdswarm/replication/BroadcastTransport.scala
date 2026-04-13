@@ -18,7 +18,7 @@
 
 package fdswarm.replication
 
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.util.NodeIdentityManager
 import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.{Inject, Singleton}
@@ -37,7 +37,7 @@ import scala.compiletime.uninitialized
 class BroadcastTransport @Inject() (
                                      val nodeIdentityManager: NodeIdentityManager,
                                      meterRegistry: MeterRegistry
-                                   ) extends Transport with Runnable with LazyLogging:
+                                   ) extends Transport with Runnable with LazyStructuredLogging:
 
   logger.info("Starting BroadcastTransport")
 

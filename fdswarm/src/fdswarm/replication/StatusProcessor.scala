@@ -20,7 +20,7 @@ package fdswarm.replication
 
 import cats.effect.IO
 import cats.syntax.all.*
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.api.ReplEndpoints
 import fdswarm.fx.qso.FdHour
 import fdswarm.replication.status.NodeBandOpPane
@@ -40,7 +40,7 @@ class StatusProcessor @Inject()(qsoStore: ReplicationSupport,
                                 replEndpoints: ReplEndpoints,
                                 callEndpoint: CallEndpoint,
                                 meterRegistry: MeterRegistry,
-                                nodeBandOpPane: NodeBandOpPane) extends LazyLogging:
+                                nodeBandOpPane: NodeBandOpPane) extends LazyStructuredLogging:
 
   private val timer = meterRegistry.timer("fdswarm_process_status_duration")
 

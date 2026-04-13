@@ -20,7 +20,7 @@
 package fdswarm.api
 
 import cats.effect.IO
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.util.NodeIdentityManager
 import jakarta.inject.{Inject, Singleton}
 import org.http4s.ember.server.EmberServerBuilder
@@ -36,7 +36,7 @@ import scala.jdk.CollectionConverters.*
 class ApiServer @Inject()(
                            nodeIdentityManager: NodeIdentityManager,
                            endpointsSet: Set[ApiEndpoints]
-                         ) extends LazyLogging:
+                         ) extends LazyStructuredLogging:
 
   def start(): IO[Unit] =
     val allEndpoints = endpointsSet.asScala.toList.flatMap { ae =>

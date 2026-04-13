@@ -1,6 +1,6 @@
 package manager
 
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import java.time.Instant
 
 /**
@@ -9,7 +9,7 @@ import java.time.Instant
  */
 class FdswarmJarManager(
                          outDir: os.Path = os.pwd / "out"
-                       ) extends LazyLogging:
+                       ) extends LazyStructuredLogging:
 
   def jarPath: os.Path =
     outDir / "fdswarm" / "assembly.dest" / "fdswarm-all.jar"

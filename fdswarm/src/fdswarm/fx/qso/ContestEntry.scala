@@ -19,7 +19,7 @@
 package fdswarm.fx.qso
 
 import com.google.inject.Inject
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.GridColumns
 import fdswarm.fx.bandmodes.BandModeMatrixPane
 import fdswarm.fx.sections.SectionPanel
@@ -38,7 +38,7 @@ class ContestEntry @Inject()(qsoEntryPanel: QsoEntryPanel,
                              sectionPanel: SectionPanel,
                              contestDetailPanel: ContestDetailPanel,
                              nodeBandOpPane: NodeBandOpPane
-                            ) extends LazyLogging:
+                            ) extends LazyStructuredLogging:
 
   private val _node = new GridPane {
     padding = Insets(10)

@@ -21,7 +21,7 @@ package fdswarm
 import _root_.io.circe.Printer
 import _root_.io.circe.parser.decode
 import _root_.io.circe.syntax.*
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.station.StationConfig
 import fdswarm.io.DirectoryProvider
 import fdswarm.model.Callsign
@@ -32,7 +32,7 @@ import scalafx.beans.property.ObjectProperty
 final class StationConfigManager @Inject()(
                                       productionDirectory: DirectoryProvider,
                                       startupInfo: StartupInfo
-                                    ) extends LazyLogging:
+                                    ) extends LazyStructuredLogging:
 
   private val file: os.Path =
     productionDirectory() / "station.json"

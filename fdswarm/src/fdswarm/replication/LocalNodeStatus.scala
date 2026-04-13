@@ -18,7 +18,7 @@
 
 package fdswarm.replication
 
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.StationConfigManager
 import fdswarm.fx.bandmodes.SelectedBandModeManager
 import fdswarm.fx.contest.ContestConfigManager
@@ -66,7 +66,7 @@ final class LocalNodeStatus @Inject()(
                                        stationManager: StationConfigManager,
                                        selectedBandModeStore: SelectedBandModeManager,
                                        contestConfigManagerProvider: Provider[ContestConfigManager]
-                                     ) extends LazyLogging:
+                                     ) extends LazyStructuredLogging:
 
   @volatile private var heldDigests: Seq[FdHourDigest] = Nil
   private val currentBuffer: ReadOnlyObjectWrapper[NodeStatus] = new ReadOnlyObjectWrapper[NodeStatus](null)

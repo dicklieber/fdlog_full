@@ -19,7 +19,7 @@
 package fdswarm.replication
 
 import com.google.inject.name.Named
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.StationConfigManager
 import fdswarm.fx.bandmodes.SelectedBandModeManager
 import fdswarm.fx.contest.ContestConfigManager
@@ -35,7 +35,7 @@ class StatusBroadcastService @Inject()(
                                         selectedBandModeStore: SelectedBandModeManager,
                                         contestConfigManager: ContestConfigManager,
                                         @Named("fdswarm.broadcastPeriodSec") val defaultBroadcastPeriodSec: Int
-                                      ) extends LazyLogging:
+                                      ) extends LazyStructuredLogging:
 
   private def qsoStore: QsoStore = qsoStoreProvider.get()
 

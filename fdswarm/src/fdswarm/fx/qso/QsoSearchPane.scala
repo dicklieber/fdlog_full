@@ -18,7 +18,7 @@
 
 package fdswarm.fx.qso
 
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.UserConfig
 import fdswarm.fx.bands.AvailableModesManager
 import fdswarm.fx.bands.BandCatalog
@@ -56,7 +56,7 @@ class QsoSearchPane @Inject()(
                                meterRegistry: MeterRegistry,
                                qsoStore: QsoStore,
                                qsoTablePane: QsoTablePane
-) extends LazyLogging:
+) extends LazyStructuredLogging:
   private def comboSelection[T](
                                 combo: AnyComboBox[T]
                               ): Option[T] =

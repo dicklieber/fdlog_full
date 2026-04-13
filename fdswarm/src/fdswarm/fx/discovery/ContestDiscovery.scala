@@ -19,7 +19,7 @@
 package fdswarm.fx.discovery
 
 import com.google.inject.name.Named
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.contest.{ContestConfigManager, ContestType}
 import fdswarm.replication.status.SwarmData
 import fdswarm.replication.{Service, Transport}
@@ -57,7 +57,7 @@ class ContestDiscovery @Inject() (
     swarmData: SwarmData,
     @Named("fdswarm.contestDiscoveryTimeout") val timeout: Duration
 )
-    extends LazyLogging:
+    extends LazyStructuredLogging:
 
   private val predeleteContestConfig: Boolean =
     sys.env

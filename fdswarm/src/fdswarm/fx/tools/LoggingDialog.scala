@@ -21,7 +21,7 @@ package fdswarm.fx.tools
 import fdswarm.fx.utils.IconButton
 import fdswarm.util.{LevelEnum, LoggerLevel, LoggingManager}
 import jakarta.inject.{Inject, Named, Singleton}
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import scalafx.Includes.*
 import scalafx.beans.property.{ObjectProperty, StringProperty}
 import scalafx.collections.ObservableBuffer
@@ -98,7 +98,7 @@ class LoggingDialog @Inject() (
       value = LevelEnum.TRACE
     }
 
-    // Button to pick from discovered LazyLogging implementations
+    // Button to pick from discovered LazyStructuredLogging implementations
     val pickButton = IconButton("search", 24, "Find from list possible loggers")
     pickButton.onAction = _ =>
         // Build popup dialog with filter and list

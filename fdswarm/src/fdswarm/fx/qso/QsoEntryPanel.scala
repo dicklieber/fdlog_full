@@ -18,7 +18,7 @@
 
 package fdswarm.fx.qso
 
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.StationConfigManager
 import fdswarm.fx.bandmodes.SelectedBandModeManager
 import fdswarm.fx.contest.{ContestConfigManager, ContestType}
@@ -89,7 +89,7 @@ class QsoEntryPanel @Inject()(
                                sectionField: fdswarm.fx.sections.SectionField,
                                dupPanel: DupPanel,
                                nodeIdentityManager: NodeIdentityManager
-                             ) extends LazyLogging:
+                             ) extends LazyStructuredLogging:
 
   private val _node = new VBox()
   def node: Node = _node

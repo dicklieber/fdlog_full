@@ -18,7 +18,7 @@
 
 package fdswarm.fx.sections
 
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.GridColumns
 import fdswarm.fx.qso.QsoEntryPanel
 import jakarta.inject.Inject
@@ -32,7 +32,7 @@ import scalafx.scene.layout.{HBox, Priority, Region, VBox}
 
 class SectionPanel @Inject()(sectionsProvider: SectionsProvider, 
                            qsoEntryPanel: QsoEntryPanel
-                          ) extends LazyLogging:
+                          ) extends LazyStructuredLogging:
 
   private val _node = new VBox()
   def node: Node = _node

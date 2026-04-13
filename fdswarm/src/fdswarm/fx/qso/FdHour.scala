@@ -21,7 +21,7 @@ package fdswarm.fx.qso
 //import cask.endpoints.QueryParamReader
 //import cask.model.Request
 //import cask.router.ArgReader
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import io.circe.Codec
 
 import java.time.{Instant, ZoneId, ZonedDateTime}
@@ -58,7 +58,7 @@ case class FdHour private (
 
   def name: String = display
 
-object FdHour extends LazyLogging:
+object FdHour extends LazyStructuredLogging:
   lazy val knownHours: TrieMap[FdHour, FdHour] = new TrieMap[FdHour, FdHour]()
 
   /** Used to match any FdHour in [[FdHour.equals()]]

@@ -20,7 +20,7 @@ package fdswarm.replication
 
 import cats.effect.IO
 import scala.concurrent.duration.*
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.util.NodeIdentity
 import jakarta.inject.Singleton
 import org.http4s.Uri
@@ -31,7 +31,7 @@ import _root_.meters4s.http4s.Meters4s
 import sttp.tapir.client.http4s.Http4sClientInterpreter
 
 @Singleton
-class CallEndpoint @jakarta.inject.Inject()(reporter: Reporter[IO]) extends LazyLogging:
+class CallEndpoint @jakarta.inject.Inject()(reporter: Reporter[IO]) extends LazyStructuredLogging:
 
   private val maxRetries = 3
   private val retryDelay = 2.seconds

@@ -20,10 +20,10 @@ package fdswarm.fx.bandmodes
 import scalafx.application.Platform
 import scalafx.beans.property.BooleanProperty
 import com.typesafe.config.Config
-import com.typesafe.scalalogging.LazyLogging
 import fdswarm.fx.GridColumns
 import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager, BandModeBuilder, HamBand}
 import fdswarm.fx.utils.IconButton
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.model.BandMode
 import fdswarm.model.BandMode.{Band, Mode}
 import jakarta.inject.{Inject, Provider, Singleton}
@@ -49,7 +49,7 @@ final class BandModeMatrixPane @Inject()(availableBandsStore: AvailableBandsMana
                                          availableModesManager: AvailableModesManager,
                                          selectedStore: SelectedBandModeManager,
                                          bandModeBuilder: BandModeBuilder
-                                        ) extends  LazyLogging:
+                                        ) extends  LazyStructuredLogging:
 
   val showConfigButton = BooleanProperty(true)
   var onConfigRequest: Option[() => Unit] = None
@@ -138,7 +138,7 @@ class ModeBandButton(band:Band,
                      bandModeBuilder: BandModeBuilder,
                      tg: ToggleGroup,
                      selectedStore: SelectedBandModeManager
-                    ) extends ToggleButton() with LazyLogging:
+                    ) extends ToggleButton() with LazyStructuredLogging:
   val bandMode: BandMode = bandModeBuilder(band, mode)
   text = band
   padding = Insets(2, 4, 2, 4)

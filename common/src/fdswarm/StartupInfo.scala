@@ -18,8 +18,8 @@
 
 package fdswarm
 import _root_.io.circe.parser.decode
-import com.typesafe.scalalogging.LazyLogging
 import fdswarm.StartupConfig
+import fdswarm.logging.LazyStructuredLogging
 import os.*
 
 /**
@@ -28,7 +28,7 @@ import os.*
  *
  * @param rawArgs from command line.
  */
-class StartupInfo(rawArgs: Array[String]) extends LazyLogging:
+class StartupInfo(rawArgs: Array[String]) extends LazyStructuredLogging:
   val info: Option[StartupConfig] =
     logger.debug(s"Raw command line arguments: [${rawArgs.mkString(", ")}]")
     val startupInfoIdx = rawArgs.indexOf("--startupInfo")

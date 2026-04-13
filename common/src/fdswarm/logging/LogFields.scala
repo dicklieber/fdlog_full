@@ -1,4 +1,4 @@
-package logging
+package fdswarm.logging
 
 object LogFields:
   val callsign   = LogField[String]("callsign")

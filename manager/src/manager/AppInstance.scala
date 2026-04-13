@@ -18,14 +18,14 @@
 
 package manager
 
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import manager.AppInstance.jarPath
 import os.SubProcess
 import fdswarm.StartupConfig
 
 class AppInstance(debugConfigJsonPath: String,
                   startupConfig: StartupConfig,
-                  port: Int) extends LazyLogging:
+                  port: Int) extends LazyStructuredLogging:
   private val debugOpt: Option[String] = startupConfig.debugMode.javaOpt
 
   val args =

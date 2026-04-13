@@ -18,7 +18,7 @@
 
 package fdswarm.fx
 
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.bandmodes.BandsAndModesPane
 import fdswarm.fx.contest.ContestConfigManager
@@ -63,7 +63,7 @@ final class FdLogMenus @Inject() (
   metricsDialog: MetricsDialog,
   contestDialog: ContestDialog,
   contestConfigManager: ContestConfigManager
-) extends LazyLogging:
+) extends LazyStructuredLogging:
   aboutMenuItem.onAction = _ => showAboutDialog()
 
   private val arrlRegionMapPath: os.Path = os.pwd / "arrl-region-map.json"

@@ -18,7 +18,7 @@
 
 package fdswarm.fx.tools
 
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.exporter.ExportService
 import fdswarm.util.FilenameStamp
 import jakarta.inject.{Inject, Singleton}
@@ -33,7 +33,7 @@ final class ExportDialog @Inject()(
                                     exportService: ExportService,
                                     filenameStamp: FilenameStamp,
                                     cabrilloHeaderDialog: CabrilloHeaderDialog
-                                  ) extends LazyLogging:
+                                  ) extends LazyStructuredLogging:
 
   import exportService.ExportFormat
 

@@ -1,14 +1,15 @@
 package fdswarm.fx.contest
 
 import com.google.inject.name.Named
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.io.DirectoryProvider
+import fdswarm.logging.StructuredLogger
 import fdswarm.model.Callsign
 import fdswarm.replication.NodeStatus
 import io.circe.parser.decode
 import io.circe.syntax.*
 import jakarta.inject.{Inject, Provider, Singleton}
-import logging.{LazyStructuredLogging, StructuredLogger}
+import fdswarm.logging.LazyStructuredLogging
 import scalafx.beans.property.{ObjectProperty, ReadOnlyBooleanProperty, ReadOnlyBooleanWrapper}
 
 @Singleton

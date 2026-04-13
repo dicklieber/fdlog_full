@@ -18,7 +18,7 @@
 
 package fdswarm.fx.qso
 
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.GridColumns
 import fdswarm.fx.bandmodes.BandModeStore
 import fdswarm.fx.bandmodes.SelectedBandModeManager
@@ -36,7 +36,7 @@ class DupPanel @Inject()(
                           qsoStore: QsoStore,
                           bandModeStore: BandModeStore,
                           selectedBandModeStore: SelectedBandModeManager
-                        ) extends LazyLogging:
+                        ) extends LazyStructuredLogging:
 
   private val grid = new GridPane {
     hgap = 10

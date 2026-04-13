@@ -19,7 +19,7 @@
 package fdswarm.fx
 
 import cats.effect.unsafe.implicits.global
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.StartupInfo
 import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.discovery.ContestDiscovery
@@ -52,7 +52,7 @@ final class FdLogUi @Inject() (
   apiServer: fdswarm.api.ApiServer,
   startupInfo: StartupInfo,
   contestDiscovery:ContestDiscovery
-) extends LazyLogging:
+) extends LazyStructuredLogging:
 
   def start(): Unit =
     contestDiscovery.start()

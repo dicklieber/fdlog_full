@@ -18,7 +18,7 @@
 
 package fdswarm.fx.bands
 
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.GridColumns
 import fdswarm.fx.bands.*
 import fdswarm.model.BandMode.Band
@@ -32,7 +32,7 @@ import scalafx.scene.layout.{Pane, VBox}
 final class ModeCheckBoxPane @Inject()(
                                         availableModesManager: AvailableModesManager,
                                         modeCatalog: ModeCatalog
-                                      ) extends LazyLogging:
+                                      ) extends LazyStructuredLogging:
 
   private val spacingPx = 6.0
 

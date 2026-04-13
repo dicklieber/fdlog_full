@@ -22,7 +22,7 @@ package fdswarm.fx
 import com.google.inject.{AbstractModule, Injector, Provides}
 import com.google.inject.name.Names
 import com.typesafe.config.{Config, ConfigFactory}
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import fdswarm.{AutoBind, StartupInfo}
@@ -37,13 +37,13 @@ import com.google.inject.TypeLiteral
 import fdswarm.replication.status.SwarmData
 import fdswarm.replication.{BroadcastTransport, NodeStatusHandler, StatusBroadcastService, Transport}
 import fdswarm.util.LoggingManager
-import logging.LazyStructuredLogging
+import fdswarm.logging.LazyStructuredLogging
 
 import java.time.Duration
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 
-class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModule with LazyLogging:
+class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModule with LazyStructuredLogging:
 
   override def configure(): Unit =
     val productionDirectory = new ProductionDirectory

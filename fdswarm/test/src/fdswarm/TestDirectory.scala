@@ -18,10 +18,10 @@
 
 package fdswarm
 
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.io.DirectoryProvider
 
-class TestDirectory extends DirectoryProvider with LazyLogging:
+class TestDirectory extends DirectoryProvider with LazyStructuredLogging:
   val tmpPath: os.Path = os.temp.dir(prefix = "testFdSwarm")
   logger.info(s"Created TestDirectory at $tmpPath")
 

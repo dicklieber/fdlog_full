@@ -19,7 +19,7 @@
 package manager
 
 import _root_.io.circe.syntax.*
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.StartupConfig
 import fdswarm.io.DirectoryProvider
 import jakarta.inject.Inject
@@ -34,7 +34,7 @@ import scala.jdk.OptionConverters.*
   * @param directoryProvider where manager puts it's files.
   */
 class Runner @Inject() (directoryProvider: DirectoryProvider)
-    extends LazyLogging:
+    extends LazyStructuredLogging:
 
   private var instances:Seq[AppInstance] = Seq.empty
   private val edebugConfigDir = directoryProvider() / "debugConfigs"

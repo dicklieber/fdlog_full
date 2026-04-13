@@ -18,7 +18,7 @@
 
 package fdswarm.fx.bandmodes
 
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.StartupInfo
 import fdswarm.fx.bands.BandModeBuilder
 import fdswarm.io.DirectoryProvider
@@ -31,7 +31,7 @@ import scalafx.beans.property.ObjectProperty
 @Singleton
 final class SelectedBandModeManager @Inject()(dirProvider: DirectoryProvider,
                                               bandModeBuilder: BandModeBuilder,
-                                              startupInfo: StartupInfo) extends LazyLogging:
+                                              startupInfo: StartupInfo) extends LazyStructuredLogging:
 
   private val dir: os.Path =
     val p = dirProvider()

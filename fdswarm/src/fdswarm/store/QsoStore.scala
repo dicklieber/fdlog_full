@@ -18,7 +18,7 @@
 
 package fdswarm.store
 
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.StartupInfo
 import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
@@ -43,7 +43,7 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider,
                          transport: Transport,
                          swarmDataProvider: Provider[SwarmData],
                          startupInfo: StartupInfo,
-                         filenameStamp: fdswarm.util.FilenameStamp) extends LazyLogging:
+                         filenameStamp: fdswarm.util.FilenameStamp) extends LazyStructuredLogging:
 
   private def swarmData: SwarmData = swarmDataProvider.get()
   val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()

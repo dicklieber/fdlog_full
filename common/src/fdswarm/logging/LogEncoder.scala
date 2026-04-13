@@ -1,4 +1,4 @@
-package logging
+package fdswarm.logging
 
 import java.time.Instant
 

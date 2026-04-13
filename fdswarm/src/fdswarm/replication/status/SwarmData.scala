@@ -18,7 +18,7 @@
 
 package fdswarm.replication.status
 
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.FdLogUi
 import fdswarm.fx.GridBuilder
 import fdswarm.fx.qso.FdHour
@@ -66,7 +66,7 @@ class SwarmData @Inject() (
   localNodeStatus: LocalNodeStatus,
   stationEditor: StationEditor,
   ageCellStyleRefresher: AgeCellStyleRefresher
-) extends LazyLogging:
+) extends LazyStructuredLogging:
   type CellNodeListener = (
     NodeStatus,
     String,

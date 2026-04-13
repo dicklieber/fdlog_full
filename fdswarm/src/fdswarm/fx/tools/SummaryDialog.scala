@@ -18,7 +18,7 @@
 
 package fdswarm.fx.tools
 
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.exporter.ExportService
 import fdswarm.model.Callsign
 import fdswarm.store.QsoStore
@@ -41,7 +41,7 @@ class SummaryDialog @Inject()(
     cabrilloHeaderDialog: CabrilloHeaderDialog,
     exportService: ExportService,
     filenameStamp: FilenameStamp
-) extends LazyLogging:
+) extends LazyStructuredLogging:
 
   case class OperatorSummary(callsign: Callsign, qsoCount: Int)
 

@@ -18,7 +18,7 @@
 
 package fdswarm.fx.tools
 
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.fx.qso.ContestDetailPanel
 import jakarta.inject.{Inject, Singleton}
@@ -32,7 +32,7 @@ import java.time.ZonedDateTime
 
 @Singleton
 class ContestTimeDialog @Inject()(contestManager: ContestConfigManager,
-                                  contestDetailPanel: ContestDetailPanel) extends LazyLogging{
+                                  contestDetailPanel: ContestDetailPanel) extends LazyStructuredLogging{
 
   private var stage: Option[Stage] = None
 

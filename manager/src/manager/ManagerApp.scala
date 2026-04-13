@@ -19,7 +19,7 @@
 package manager
 
 import com.google.inject.{Guice, Injector}
-import com.typesafe.scalalogging.LazyLogging
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.StartupConfig
 import fdswarm.fx.bands.*
 import fdswarm.model.{BandMode, Callsign}
@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * A development tool tha runs a bunch of instances of the FDSwarm application
  * on this host.
  */
-object ManagerApp extends JFXApp3 with LazyLogging :
+object ManagerApp extends JFXApp3 with LazyStructuredLogging :
 
   private lazy val injector: Injector =
     Guice.createInjector(new ManagerModule())
