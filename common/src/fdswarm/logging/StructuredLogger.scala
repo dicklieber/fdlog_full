@@ -54,7 +54,18 @@ final class StructuredLogger private (private val logger: Logger):
     if logger.isTraceEnabled then
       log(
         Level.TRACE,
-        message,
+        Some(message),
+        None,
+        args
+      )
+
+  def trace(
+             args: (String, Any)*
+           ): Unit =
+    if logger.isTraceEnabled then
+      log(
+        Level.TRACE,
+        None,
         None,
         args
       )
@@ -63,7 +74,18 @@ final class StructuredLogger private (private val logger: Logger):
     if logger.isDebugEnabled then
       log(
         Level.DEBUG,
-        message,
+        Some(message),
+        None,
+        args
+      )
+
+  def debug(
+             args: (String, Any)*
+           ): Unit =
+    if logger.isDebugEnabled then
+      log(
+        Level.DEBUG,
+        None,
         None,
         args
       )
@@ -72,7 +94,18 @@ final class StructuredLogger private (private val logger: Logger):
     if logger.isInfoEnabled then
       log(
         Level.INFO,
-        message,
+        Some(message),
+        None,
+        args
+      )
+
+  def info(
+            args: (String, Any)*
+          ): Unit =
+    if logger.isInfoEnabled then
+      log(
+        Level.INFO,
+        None,
         None,
         args
       )
@@ -81,7 +114,18 @@ final class StructuredLogger private (private val logger: Logger):
     if logger.isWarnEnabled then
       log(
         Level.WARN,
-        message,
+        Some(message),
+        None,
+        args
+      )
+
+  def warn(
+            args: (String, Any)*
+          ): Unit =
+    if logger.isWarnEnabled then
+      log(
+        Level.WARN,
+        None,
         None,
         args
       )
@@ -90,7 +134,18 @@ final class StructuredLogger private (private val logger: Logger):
     if logger.isErrorEnabled then
       log(
         Level.ERROR,
-        message,
+        Some(message),
+        None,
+        args
+      )
+
+  def error(
+             args: (String, Any)*
+           ): Unit =
+    if logger.isErrorEnabled then
+      log(
+        Level.ERROR,
+        None,
         None,
         args
       )
@@ -99,7 +154,19 @@ final class StructuredLogger private (private val logger: Logger):
     if logger.isErrorEnabled then
       log(
         Level.ERROR,
-        message,
+        Some(message),
+        Some(throwable),
+        args
+      )
+
+  def error(
+             throwable: Throwable,
+             args: (String, Any)*
+           ): Unit =
+    if logger.isErrorEnabled then
+      log(
+        Level.ERROR,
+        None,
         Some(throwable),
         args
       )
@@ -108,7 +175,18 @@ final class StructuredLogger private (private val logger: Logger):
     if logger.isFatalEnabled then
       log(
         Level.FATAL,
-        message,
+        Some(message),
+        None,
+        args
+      )
+
+  def fatal(
+             args: (String, Any)*
+           ): Unit =
+    if logger.isFatalEnabled then
+      log(
+        Level.FATAL,
+        None,
         None,
         args
       )
@@ -117,14 +195,26 @@ final class StructuredLogger private (private val logger: Logger):
     if logger.isFatalEnabled then
       log(
         Level.FATAL,
-        message,
+        Some(message),
+        Some(throwable),
+        args
+      )
+
+  def fatal(
+             throwable: Throwable,
+             args: (String, Any)*
+           ): Unit =
+    if logger.isFatalEnabled then
+      log(
+        Level.FATAL,
+        None,
         Some(throwable),
         args
       )
 
   private def log(
                    level: Level,
-                   message: String,
+                   message: Option[String],
                    throwable: Option[Throwable],
                    args: Seq[(String, Any)]
                  ): Unit =
@@ -139,9 +229,16 @@ final class StructuredLogger private (private val logger: Logger):
     Using.resource(withThreadContext(contextValues)): _ =>
       throwable match
         case Some(t) =>
-          logger.log(level, message, t)
+          logger.log(
+            level,
+            message.orNull,
+            t
+          )
         case None    =>
-          logger.log(level, message)
+          logger.log(
+            level,
+            message.orNull
+          )
       StructuredLogger.publishJsonEvent(
         eventJson
       )
@@ -321,7 +418,7 @@ final class StructuredLogger private (private val logger: Logger):
 
   private def buildEventJson(
                               level: Level,
-                              message: String,
+                              message: Option[String],
                               contextValues: Seq[(String, String)]
                             ): String =
     val topLevelFields =
