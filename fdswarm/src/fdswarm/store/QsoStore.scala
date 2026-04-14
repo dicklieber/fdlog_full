@@ -22,6 +22,7 @@ import fdswarm.logging.LazyStructuredLogging
 import fdswarm.StartupInfo
 import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
+import fdswarm.logging.Locus.LogEntry
 import fdswarm.model.*
 import fdswarm.replication.status.SwarmData
 import fdswarm.replication.{Service, Transport}
@@ -43,7 +44,7 @@ class QsoStore @Inject()(directoryProvider: DirectoryProvider,
                          transport: Transport,
                          swarmDataProvider: Provider[SwarmData],
                          startupInfo: StartupInfo,
-                         filenameStamp: fdswarm.util.FilenameStamp) extends LazyStructuredLogging:
+                         filenameStamp: fdswarm.util.FilenameStamp) extends LazyStructuredLogging(LogEntry):
 
   private def swarmData: SwarmData = swarmDataProvider.get()
   val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()

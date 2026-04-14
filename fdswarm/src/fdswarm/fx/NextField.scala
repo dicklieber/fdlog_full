@@ -40,14 +40,13 @@ package fdswarm.fx
 import _root_.scalafx.beans.binding.{Bindings, BooleanBinding}
 import _root_.scalafx.beans.property.BooleanProperty
 import _root_.scalafx.scene.control.TextInputControl
-import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.InputHelper.forceCaps
 import _root_.scalafx.scene.input.{KeyCode, KeyEvent}
 import scalafx.Includes.*
 /**
  * Most of the common logic for any qso input field.
  */
-trait NextField extends TextInputControl with WithDisposition with LazyStructuredLogging:
+trait NextField extends TextInputControl with WithDisposition:
   forceCaps(this)
   styleClass += "qsoField"
   sad()
@@ -150,4 +149,3 @@ object NextField:
       case _ if key.isLetterKey => key.name.head
       case _ if key.isDigitKey  => key.name.last
       case _ => ' '
-

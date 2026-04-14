@@ -1,9 +1,14 @@
 package fdswarm.logging
 
-import fdswarm.logging.StructuredLogger
-
-trait LazyStructuredLogging:
+trait LazyStructuredLogging(
+                             locus: Locus = Locus.ClassName
+                           ):
   protected lazy val logger: StructuredLogger =
+    val loggerName = locus match
+      case Locus.ClassName =>
+        getClass.getName.stripSuffix("$")
+      case _ =>
+        locus.value
     StructuredLogger(
-      getClass.getName.stripSuffix("$")
+      loggerName
     )

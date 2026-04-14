@@ -25,6 +25,7 @@ import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.discovery.ContestDiscovery
 import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.utils.UiStyles
+import fdswarm.logging.Locus.Startup
 import fdswarm.replication.{NodeStatusHandler, StatusBroadcastService}
 import fdswarm.util.{DurationFormat, NodeIdentityManager}
 import io.micrometer.core.instrument.MeterRegistry
@@ -52,7 +53,7 @@ final class FdLogUi @Inject() (
   apiServer: fdswarm.api.ApiServer,
   startupInfo: StartupInfo,
   contestDiscovery:ContestDiscovery
-) extends LazyStructuredLogging:
+) extends LazyStructuredLogging(Startup):
 
   def start(): Unit =
     contestDiscovery.start()
