@@ -15,6 +15,7 @@ trait CommonSettings extends ScalaModule:
   val majorVersion = "0"
   val version = s"$majorVersion.0.0"
   val name = "fdswarm"
+
   val log4jV = "2.24.2"
   val scalaV = "3.7.4"
   val jacksonV = "2.17.2"
@@ -43,11 +44,7 @@ object common extends CommonSettings:
     mvn"io.circe::circe-generic:0.14.10",
     mvn"io.circe::circe-parser:0.14.10",
     mvn"com.softwaremill.sttp.tapir:tapir-core_3:$tapirV",
-    mvn"org.apache.logging.log4j:log4j-layout-template-json:2.24.3",
-    mvn"com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.18.2",
     mvn"org.apache.logging.log4j:log4j-api:$log4jV",
-    mvn"org.apache.logging.log4j:log4j-core:$log4jV",
-    mvn"org.apache.logging.log4j:log4j-slf4j2-impl:$log4jV",
     mvn"org.apache.commons:commons-text:1.10.0",
     mvn"com.lihaoyi::os-lib:0.11.6",
     mvn"org.scalafx:scalafx_3:20.0.0-R31",
@@ -56,20 +53,21 @@ object common extends CommonSettings:
     mvn"org.scala-lang.modules::scala-xml:2.2.0",
     mvn"com.lihaoyi::mainargs:0.7.8"
   )
+
   object test extends ScalaTests with TestModule.Munit:
     override def mvnDeps = super.mvnDeps() ++ Seq(
       mvn"org.scalameta::munit:1.0.3"
     )
 
 object fdswarm
-    extends CommonSettings
+  extends CommonSettings
     with ScoverageModule
     with BuildInfo
     with JpackageModule:
-  // Repo-relative icons (works on other machines/CI)
+
   private val macIconIcns = repoPath("fdswarm/resources/icons/icon.icns")
   private val winIconIco = repoPath("fdswarm/resources/icons/icon.ico")
-  // Match build-macos-app.sh: nicer macOS app integration
+
   private val macJavaOptions = Seq(
     "--java-options",
     "-Xdock:name=FdSwarm",
@@ -95,12 +93,10 @@ object fdswarm
       )
   }
 
-  // ---- jpackage (Mill 1.0.6 supports these knobs) ----
-  override def jpackageName = Task {
+  def jpackageName = Task {
     "FdSwarm"
   }
 
-  /** macOS DMG/PKG require app-version to start at 1+ (not 0.x.y). */
   def jpackageAppVersion = Task {
     val v = version
     val parts = v.split("\\.")
@@ -108,7 +104,6 @@ object fdswarm
     else v
   }
 
-  /** Build a macOS .dmg using the JDK's `jpackage` tool. */
   def macDmg = Task {
     if !isMac then
       throw new RuntimeException(
@@ -137,18 +132,15 @@ object fdswarm
       mainJarName,
       "--main-class",
       jpackageMainClass()
-    )
-      ++ macJavaOptions
+    ) ++ macJavaOptions
 
-    val iconIcns = macIconIcns
     val iconArgs =
-      if os.exists(iconIcns) then Seq("--icon", iconIcns.toString)
+      if os.exists(macIconIcns) then Seq("--icon", macIconIcns.toString)
       else Seq.empty
 
-    val baseArgsWithIcon = baseArgs ++ iconArgs
-    println(baseArgsWithIcon.mkString(" "))
+    val cmd = baseArgs ++ iconArgs ++ macSignArgs
+    println(cmd.mkString(" "))
 
-    val cmd = baseArgsWithIcon ++ macSignArgs
     val exit =
       os.proc(cmd).call(stdout = os.Inherit, stderr = os.Inherit).exitCode
     if exit != 0 then
@@ -157,7 +149,6 @@ object fdswarm
     PathRef(dest)
   }
 
-  /** Build a macOS .app (app-image) using the JDK's `jpackage` tool. */
   def macAppImage = Task {
     if !isMac then
       throw new RuntimeException(
@@ -188,15 +179,13 @@ object fdswarm
       jpackageMainClass()
     ) ++ macJavaOptions
 
-    val iconIcns = macIconIcns
     val iconArgs =
-      if os.exists(iconIcns) then Seq("--icon", iconIcns.toString)
+      if os.exists(macIconIcns) then Seq("--icon", macIconIcns.toString)
       else Seq.empty
 
-    val baseArgsWithIcon = baseArgs ++ iconArgs
-    println(baseArgsWithIcon.mkString(" "))
+    val cmd = baseArgs ++ iconArgs ++ macSignArgs
+    println(cmd.mkString(" "))
 
-    val cmd = baseArgsWithIcon ++ macSignArgs
     val exit =
       os.proc(cmd).call(stdout = os.Inherit, stderr = os.Inherit).exitCode
     if exit != 0 then
@@ -205,10 +194,10 @@ object fdswarm
     PathRef(dest)
   }
 
-  private def isMac: Boolean = sys.props("os.name").toLowerCase.contains("mac")
+  private def isMac: Boolean =
+    sys.props("os.name").toLowerCase.contains("mac")
 
   private def macSignArgs: Seq[String] =
-
     val signEnabled = sys.env.get("JPACKAGE_MAC_SIGN").exists(_.trim.nonEmpty)
     val signingKey = sys.env
       .get("JPACKAGE_MAC_SIGNING_KEY_USER_NAME")
@@ -220,9 +209,9 @@ object fdswarm
     else Seq.empty
 
   private def getJpackageInput(
-      cp: Seq[PathRef],
-      dest: os.Path
-    ): (os.Path, String) =
+                                cp: Seq[PathRef],
+                                dest: os.Path
+                              ): (os.Path, String) =
 
     val jarFromEnv = sys.env.get("FDSWARM_ASSEMBLY_JAR").map(os.Path(_, os.pwd))
     val inputDir = dest / "jpackage-input"
@@ -237,9 +226,9 @@ object fdswarm
         (inputDir, mainJarName)
 
   private def stageJpackageInput(
-      inputDir: os.Path,
-      cp: Seq[PathRef]
-    ): String =
+                                  inputDir: os.Path,
+                                  cp: Seq[PathRef]
+                                ): String =
 
     if cp.isEmpty then
       throw new RuntimeException("jpackageRunClasspath was empty")
@@ -251,7 +240,6 @@ object fdswarm
 
     os.Path(cp.head.path.toString).last
 
-  /** Build a macOS .pkg using the JDK's `jpackage` tool. */
   def macPkg = Task {
     if !isMac then
       throw new RuntimeException(
@@ -280,18 +268,15 @@ object fdswarm
       mainJarName,
       "--main-class",
       jpackageMainClass()
-    )
-      ++ macJavaOptions
+    ) ++ macJavaOptions
 
-    val iconIcns = macIconIcns
     val iconArgs =
-      if os.exists(iconIcns) then Seq("--icon", iconIcns.toString)
+      if os.exists(macIconIcns) then Seq("--icon", macIconIcns.toString)
       else Seq.empty
 
-    val baseArgsWithIcon = baseArgs ++ iconArgs
-    println(baseArgsWithIcon.mkString(" "))
+    val cmd = baseArgs ++ iconArgs ++ macSignArgs
+    println(cmd.mkString(" "))
 
-    val cmd = baseArgsWithIcon ++ macSignArgs
     val exit =
       os.proc(cmd).call(stdout = os.Inherit, stderr = os.Inherit).exitCode
     if exit != 0 then
@@ -300,9 +285,6 @@ object fdswarm
     PathRef(dest)
   }
 
-  /** Build a Windows .msi using the JDK's `jpackage` tool (per-machine install,
-    * no console).
-    */
   def winMsi = Task {
     val osName = sys.props("os.name").toLowerCase
     if !osName.contains("win") then
@@ -343,9 +325,9 @@ object fdswarm
       "--win-shortcut"
     )
 
-    val iconIco = winIconIco
     val iconArgs =
-      if os.exists(iconIco) then Seq("--icon", iconIco.toString) else Seq.empty
+      if os.exists(winIconIco) then Seq("--icon", winIconIco.toString)
+      else Seq.empty
 
     val cmd = baseArgs ++ iconArgs
     println(cmd.mkString(" "))
@@ -355,9 +337,9 @@ object fdswarm
     if exit != 0 then
       throw new RuntimeException(s"jpackage failed with exit code $exit")
 
-    // Rename MSI to include arch (handy in CI releases)
     val produced =
       os.list(dest).filter(_.ext == "msi").sortBy(_.last).lastOption
+
     produced.foreach { msi =>
       val renamed = dest / s"${jpackageName()}-${version}-windows-$arch.msi"
       os.move(msi, renamed, replaceExisting = true)
@@ -371,10 +353,9 @@ object fdswarm
     val osName = sys.props("os.name").toLowerCase
     if osName.contains("mac") then "dmg"
     else if osName.contains("win") then "msi"
-    else "deb" // or "rpm"
+    else "deb"
   }
 
-  // Fat jar for Windows/Parallels testing
   override def assemblyRules = Seq(
     Rule.Append("reference.conf"),
     Rule.AppendPattern(raw".*\.conf"),
@@ -382,8 +363,7 @@ object fdswarm
   )
 
   override def assembly = Task {
-    val dest =
-      Task.dest / "fdswarm-all.jar" // todo change to "fdswarm-assembly.jar" here and in manager launcher.
+    val dest = Task.dest / "fdswarm-all.jar"
     val assemblyRes = super.assembly()
     os.copy.over(assemblyRes.path, dest, replaceExisting = true)
     PathRef(dest)
@@ -399,12 +379,6 @@ object fdswarm
     PathRef(dest)
   }
 
-  /** Copy the fat jar to a Parallels-shared Mac folder so Windows can watch and
-    * run it.
-    *
-    * Default destination: ~/ParallelsShare Override with env var:
-    * FDSWARM_PARALLELS_SHARE=/some/path
-    */
   def parallelsShareDir: os.Path =
     sys.env.get("FDSWARM_PARALLELS_SHARE") match
       case Some(p) if p.trim.nonEmpty => os.Path(p.trim, os.pwd)
@@ -421,7 +395,6 @@ object fdswarm
     dest
   }
 
-  // ---- BuildInfo ----
   def buildInfoPackageName = "com.organization"
 
   def buildInfoMembers = Seq(
@@ -435,10 +408,15 @@ object fdswarm
   def scoverageVersion = scoverageV
 
   def mvnDeps = Seq(
-    mvn"com.typesafe.scala-logging::scala-logging:3.9.5",
-    mvn"org.slf4j:slf4j-api:2.0.16",
+    mvn"org.apache.logging.log4j:log4j-api:$log4jV",
+    mvn"org.apache.logging.log4j:log4j-core:$log4jV",
+    mvn"org.apache.logging.log4j:log4j-slf4j2-impl:$log4jV",
+    mvn"org.apache.logging.log4j:log4j-layout-template-json:$log4jV",
     mvn"com.fasterxml.jackson.core:jackson-databind:$jacksonV",
     mvn"com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonV",
+
+    mvn"com.typesafe.scala-logging::scala-logging:3.9.5",
+    mvn"org.slf4j:slf4j-api:2.0.16",
     mvn"io.github.classgraph:classgraph:4.8.179",
     mvn"net.codingwell::scala-guice:7.0.0",
     mvn"com.google.inject:guice:7.0.0",
@@ -464,9 +442,8 @@ object fdswarm
     mvn"com.lihaoyi::mainargs:0.7.8"
   )
 
-  private def repoPath(
-      rel: String
-    ): os.Path = os.Path(rel, os.pwd)
+  private def repoPath(rel: String): os.Path =
+    os.Path(rel, os.pwd)
 
   object test extends ScoverageTests with TestModule.Munit:
     override def mvnDeps = super.mvnDeps() ++ Seq(
@@ -479,25 +456,29 @@ object fdswarm
     )
 
     def scalaVersion = scalaV
-
     def munitVersion = munitV
-
     override def testReportXml = Some("test-report.xml")
 
 object manager extends CommonSettings:
   override def moduleDeps = Seq(common)
 
   def mvnDeps = Seq(
+    mvn"org.apache.logging.log4j:log4j-api:$log4jV",
+    mvn"org.apache.logging.log4j:log4j-core:$log4jV",
+    mvn"org.apache.logging.log4j:log4j-slf4j2-impl:$log4jV",
+    mvn"com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonV",
+
     mvn"org.scalafx:scalafx_3:20.0.0-R31",
     mvn"io.circe::circe-core:0.14.10",
     mvn"io.circe::circe-generic:0.14.10",
     mvn"io.circe::circe-parser:0.14.10",
     mvn"com.lihaoyi::os-lib:0.11.6",
     mvn"net.codingwell::scala-guice:7.0.0",
-    mvn"com.google.inject:guice:7.0.0",
-    mvn"com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonV"
+    mvn"com.google.inject:guice:7.0.0"
   )
+
   def mainClass = Some("manager.ManagerApp")
+
   object test extends ScalaTests with TestModule.Munit:
     override def mvnDeps = super.mvnDeps() ++ Seq(
       mvn"org.scalameta::munit:1.0.3"

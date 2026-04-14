@@ -58,7 +58,8 @@ case class Qso(
   val logFields: Seq[(String, Any)] =
     Seq(
       "callsign" -> callsign.value,
-      "class" -> exchange.fdClass,
+      "transmitters" -> exchange.fdClass.transmitters,
+      "class" -> exchange.fdClass.classLetter,
       "section" -> exchange.sectionCode,
       "band" -> bandMode.band,
       "mode" -> bandMode.mode,
@@ -66,7 +67,7 @@ case class Qso(
       "rig" -> qsoMetadata.station.rig,
       "antenna" -> qsoMetadata.station.antenna,
       "node" -> qsoMetadata.node.toString,
-      "stamp" -> stamp.toString
+      "stamp" -> stamp
     )
   /** Defines a criterion used to identify duplicate QSOs. Combines the
     * `callsign` of the worked station and the `bandMode` to create a unique key
