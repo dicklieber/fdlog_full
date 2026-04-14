@@ -157,7 +157,7 @@ class SwarmData @Inject() (
   )
 
   def updateLocalDigests(digests: Seq[FdHourDigest]): Unit =
-    localNodeStatus.updateDigests(digests)
+    localNodeStatus.updateHashCount(digests)
 
   def clear(): Unit =
     val localStatus = nodeMap.get(ourNodeIdentity)

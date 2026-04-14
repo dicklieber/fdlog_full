@@ -21,6 +21,7 @@ package fdswarm.replication
 import cats.effect.unsafe.implicits.global
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.contest.{ContestConfig, ContestConfigManager}
+import fdswarm.logging.Locus.Replication
 import fdswarm.model.Qso
 import fdswarm.replication.status.SwarmData
 import fdswarm.store.ReplicationSupport
@@ -61,7 +62,7 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
                                   transport: Transport,
                                   statusBroadcastService: StatusBroadcastService,
                                   contestManagerProvider: Provider[ContestConfigManager],
-                                  meterRegistry: MeterRegistry) extends LazyStructuredLogging:
+                                  meterRegistry: MeterRegistry) extends LazyStructuredLogging(Replication):
 
   private val sendStatusReceived = meterRegistry.counter("fdswarm_discovery_req_received")
   private val statusCounter = meterRegistry.counter("fdswarm_received_status_total")

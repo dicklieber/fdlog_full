@@ -91,7 +91,7 @@ class LocalNodeStatusTest extends FunSuite:
     )
 
     val digest = FdHourDigest(FdHour(15, 12), 10, "abc")
-    localNodeStatus.updateDigests(Seq(digest))
+    localNodeStatus.updateHashCount(Seq(digest))
     assertEquals(
       emitted.size,
       1,

@@ -48,7 +48,6 @@ final class FdLogMenus @Inject() (
     fdHourDialogService: FdHourDialogService,
     loggingDialog: LoggingDialog,
     contestTimeDialog: ContestTimeDialog,
-    fdHourDigestsPane: FdHourDigestsPane,
     aboutMenuItem: AboutMenuItem,
     userConfig: UserConfig,
     userConfigEditor: UserConfigEditor,
@@ -117,12 +116,6 @@ final class FdLogMenus @Inject() (
         new MenuItem("Send FdHour"):
           onAction = _ =>
             fdHourDialogService.show(
-              FdLogUi.primaryStage
-            )
-        ,
-        new MenuItem("FdHours"):
-          onAction = _ =>
-            fdHourDigestsPane.show(
               FdLogUi.primaryStage
             )
         ,

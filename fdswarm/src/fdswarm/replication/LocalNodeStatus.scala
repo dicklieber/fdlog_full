@@ -25,6 +25,7 @@ import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.model.BandModeOperator
 import fdswarm.store.FdHourDigest
 import fdswarm.util.NodeIdentityManager
+import io.circe.Codec
 import jakarta.inject.{Inject, Provider, Singleton}
 import javafx.beans.property.{ReadOnlyObjectProperty, ReadOnlyObjectWrapper}
 
@@ -68,7 +69,7 @@ final class LocalNodeStatus @Inject()(
                                        contestConfigManagerProvider: Provider[ContestConfigManager]
                                      ) extends LazyStructuredLogging:
 
-  @volatile private var heldDigests: Seq[FdHourDigest] = Nil
+  @volatile private var lastHashCount: HashCount = HashCount()
   private val currentBuffer: ReadOnlyObjectWrapper[NodeStatus] = new ReadOnlyObjectWrapper[NodeStatus](null)
   val current: ReadOnlyObjectProperty[NodeStatus] = currentBuffer.getReadOnlyProperty
 
@@ -92,8 +93,8 @@ final class LocalNodeStatus @Inject()(
   )
   rebuildAndNotify("init")
 
-  def updateDigests(digests: Seq[FdHourDigest]): Unit =
-    heldDigests = digests
+  def updateHashCount(hashCount: HashCount): Unit =
+    lastHashCount = hashCount
     rebuildAndNotify("digest-update")
 
   def update(nodeStatus: NodeStatus): Unit =
@@ -105,10 +106,13 @@ final class LocalNodeStatus @Inject()(
         val bandNodeOperator =
           BandModeOperator(stationManager.station.operator, selectedBandModeStore.selected.value)
         val next = NodeStatus(
-          statusMessage = StatusMessage(hash = heldDigests,, bandNodeOperator = bandNodeOperator, contestConfig = contestConfig),
+          statusMessage = StatusMessage(hashCount = lastHashCount,
+            bandNodeOperator = bandNodeOperator,
+            contestConfig = contestConfig),
           nodeIdentity = nodeIdentityManager.ourNodeIdentity,
           isLocal = true
         )
         update(next)
       case None =>
         logger.debug(s"Skipping local status rebuild ($reason): contest config not initialized")
+

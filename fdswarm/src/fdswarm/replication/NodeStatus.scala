@@ -18,7 +18,6 @@
 
 package fdswarm.replication
 
-import fdswarm.fx.qso.FdHour
 import fdswarm.util.NodeIdentity
 
 import java.time.Instant
@@ -32,7 +31,7 @@ import java.time.Instant
   * @param received
   *   when we got it.
   * @param isLocal
-  *   true if this is a local node. i.e. not from another node.
+  *   true if this is a local node, i.e. not from another node.
   */
 case class NodeStatus(
     statusMessage: StatusMessage,
@@ -40,14 +39,6 @@ case class NodeStatus(
     received: Instant = Instant.now,
     isLocal: Boolean
 ) extends Ordered[NodeStatus]:
-  // Allow quick lookup when needed by FdHour.
-  private lazy val countByFdHourMap: Map[FdHour, Int] = statusMessage.hash
-    .map(fdDigest => fdDigest.fdHour -> fdDigest.count)
-    .toMap
-  val qsoCount: Int = statusMessage.hash.map(_.count).sum
-
-  def getQsoCount(fdHour: FdHour): Int =
-    countByFdHourMap.getOrElse(fdHour, 0)
 
   override def compare(that: NodeStatus): Int =
     val localOrder = java.lang.Boolean.compare(that.isLocal, this.isLocal)
