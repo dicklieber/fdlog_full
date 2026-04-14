@@ -19,8 +19,8 @@
 package fdswarm.replication
 
 import fdswarm.logging.LazyStructuredLogging
+import fdswarm.util.OtelMetrics
 import fdswarm.util.NodeIdentityManager
-import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.{Inject, Singleton}
 
 import java.net.{DatagramPacket, DatagramSocket, InetAddress, InetSocketAddress}
@@ -31,21 +31,24 @@ import scala.compiletime.uninitialized
  * Receive any UDP packets from all nodes in the network.
  * Consumers read from the shared incoming queue exposed by [[Transport]].
  * @param nodeIdentityManager who we are.
- * @param meterRegistry for metrics,
+ * @param otelMetrics for metrics,
  */
 @Singleton
 class BroadcastTransport @Inject() (
                                      val nodeIdentityManager: NodeIdentityManager,
-                                     meterRegistry: MeterRegistry
+                                     otelMetrics: OtelMetrics
                                    ) extends Transport with Runnable with LazyStructuredLogging:
 
   logger.info("Starting BroadcastTransport")
 
   override val mode: String = "Broadcast"
 
-  private val sendCounter = meterRegistry.counter("fdswarm_sent_packets_total", "mode", mode)
   private var lastPacketBytes: Int = 0
-  meterRegistry.gauge("fdswarm_sent_packet_bytes", this, (bt: BroadcastTransport) => bt.lastPacketBytes.toDouble)
+  otelMetrics.registerGauge(
+    name = "fdswarm_sent_packet_bytes",
+    attributes = Map("mode" -> mode),
+    initialValue = 0.0
+  )
   val buffer = new Array[Byte](65535)
 
   private var socket: DatagramSocket = uninitialized
@@ -90,7 +93,14 @@ class BroadcastTransport @Inject() (
         new DatagramPacket(packetBytes, packetBytes.length, broadcastAddr, port)
       socket.send(packet)
       sentCounter.increment()
-      sendCounter.increment()
+      otelMetrics.incrementCounter(
+        name = "fdswarm_sent_packets_total",
+        attributes = Map("mode" -> mode)
+      )
+      otelMetrics.setGauge(
+        name = "fdswarm_sent_packet_bytes",
+        value = packetBytes.length.toDouble
+      )
     catch
       case e: Exception  =>
         logger.error("Send", e)

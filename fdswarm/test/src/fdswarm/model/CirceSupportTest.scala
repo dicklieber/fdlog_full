@@ -76,7 +76,14 @@ class CirceSupportTest extends FunSuite:
     val digest = FdHourDigest(fdHour, 10, "some-digest")
     val bno = BandModeOperator(Callsign("WA9NNN"), BandMode("40M", "CW"), Instant.parse("2026-03-16T15:00:00Z"))
     val config = ContestConfig(ContestType.ARRL, Callsign("WA9NNN"), 1, "A", "IL")
-    val status = StatusMessage(Seq(digest),, bno, contestConfig = config)
+    val status = StatusMessage(
+      hashCount = fdswarm.replication.HashCount(),
+      hash = Seq(
+        digest
+      ),
+      bandNodeOperator = bno,
+      contestConfig = config
+    )
     val json = status.asJson.noSpaces
     val decoded = decode[StatusMessage](json).toOption.get
     assertEquals(decoded, status)

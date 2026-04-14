@@ -23,12 +23,14 @@ import fdswarm.io.DirectoryProvider
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.logging.Locus.LogEntry
 import fdswarm.model.*
+import fdswarm.fx.qso.FdHour
+import fdswarm.replication.HashCount
 import fdswarm.replication.status.SwarmData
 import fdswarm.replication.{Service, Transport}
+import fdswarm.util.OtelMetrics
 import fdswarm.util.Ids.Id
 import io.circe.generic.auto.deriveDecoder
 import io.circe.parser.decode
-import io.micrometer.core.instrument.{Counter, MeterRegistry, Timer}
 import jakarta.inject.*
 import javafx.application.Platform
 import scalafx.collections.ObservableBuffer
@@ -38,7 +40,7 @@ import scala.collection.concurrent.TrieMap
 @Singleton
 class QsoStore @Inject() (
     directoryProvider: DirectoryProvider,
-    registry: MeterRegistry,
+    otelMetrics: OtelMetrics,
     transport: Transport,
     swarmDataProvider: Provider[SwarmData],
     startupInfo: StartupInfo,
@@ -47,15 +49,8 @@ class QsoStore @Inject() (
 
   val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()
   protected val map: TrieMap[Id, Qso] = new TrieMap
+  protected val internalDigests: TrieMap[FdHour, FdHourDigest] = new TrieMap
   private val journalFile = directoryProvider() / "qsosJournal.json"
-  private val calculateHashTimer = Timer
-    .builder("fdlog.build.hour.digests")
-    .description("Time taken to build hash of all QSOs in the store")
-    .register(registry)
-  private val calculateHashCounter = Counter
-    .builder("fdlog.build.hour.digests.count")
-    .description("Number of times FD hour digests were built")
-    .register(registry)
   var idsHash: String = ""
 
   def add(
@@ -87,8 +82,43 @@ class QsoStore @Inject() (
     )
 
   private def calculateHash(): Unit =
-    idsHash = calculateHashTimer.record(
-      () => fdswarm.replication.calcShaHash(map.keys)
+    otelMetrics.incrementCounter(
+      name = "fdlog.build.hour.digests.count",
+      description = "Number of times FD hour digests were built"
+    )
+    val startNanos = System.nanoTime()
+    idsHash =
+      try
+        fdswarm.replication.calcShaHash(
+          map.keys
+        )
+      finally
+        otelMetrics.recordTimerNanos(
+          name = "fdlog.build.hour.digests",
+          nanos = System.nanoTime() - startNanos,
+          description = "Time taken to build hash of all QSOs in the store"
+        )
+    val nextDigests =
+      all
+        .groupBy(
+          _.fdHour
+        )
+        .toSeq
+        .map(
+          (fdHour, qsos) => FdHourDigest(fdHour, qsos)
+        )
+    internalDigests.clear()
+    internalDigests.addAll(
+      nextDigests.map(
+        digest => digest.fdHour -> digest
+      )
+    )
+    swarmData.updateLocalDigests(
+      hashCount = HashCount(
+        hash = idsHash,
+        qsoCount = map.size
+      ),
+      digests = digests()
     )
 
   def add(
@@ -167,8 +197,12 @@ class QsoStore @Inject() (
       logger.info(s"Archived QSOs to $timestampedFile")
 
     map.clear()
+    internalDigests.clear()
     idsHash = ""
-    swarmData.updateLocalDigests(Nil)
+    swarmData.updateLocalDigests(
+      hashCount = HashCount(),
+      digests = Nil
+    )
     mutateQsoCollection {
       qsoCollection.clear()
     }
@@ -188,3 +222,6 @@ class QsoStore @Inject() (
     */
   def all: Seq[Qso] =
     map.values.toSeq.sorted
+
+  def digests(): Seq[FdHourDigest] =
+    internalDigests.values.toSeq.sorted

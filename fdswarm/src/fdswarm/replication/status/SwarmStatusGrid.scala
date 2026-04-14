@@ -109,7 +109,7 @@ class SwarmStatusGrid(
       }
     }*)
     builder("Qso Count", allNodes.map(receivedNodeStatus =>
-      receivedNodeStatus.qsoCount.toString)*)
+      receivedNodeStatus.statusMessage.hashCount.qsoCount.toString)*)
     builder("Operator", allNodes.map(receivedNodeStatus =>
       receivedNodeStatus.statusMessage.bandNodeOperator.operator.toString)*)
     builder("Band/Mode", allNodes.map(receivedNodeStatus =>

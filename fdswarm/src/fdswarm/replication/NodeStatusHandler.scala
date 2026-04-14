@@ -25,9 +25,9 @@ import fdswarm.logging.Locus.Replication
 import fdswarm.model.Qso
 import fdswarm.replication.status.SwarmData
 import fdswarm.store.ReplicationSupport
+import fdswarm.util.OtelMetrics
 import io.circe.generic.auto.deriveDecoder
 import io.circe.parser.decode
-import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.{Inject, Provider, Singleton}
 import scalafx.application.Platform
 
@@ -62,18 +62,21 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
                                   transport: Transport,
                                   statusBroadcastService: StatusBroadcastService,
                                   contestManagerProvider: Provider[ContestConfigManager],
-                                  meterRegistry: MeterRegistry) extends LazyStructuredLogging(Replication):
+                                  otelMetrics: OtelMetrics) extends LazyStructuredLogging(Replication):
 
-  private val sendStatusReceived = meterRegistry.counter("fdswarm_discovery_req_received")
-  private val statusCounter = meterRegistry.counter("fdswarm_received_status_total")
   logger.debug("Starting NodeStatusHandler")
-  private val qsoCounter = meterRegistry.counter("fdswarm_received_qso_total")
   private val httpClient = HttpClient.newBuilder()
     .followRedirects(HttpClient.Redirect.NORMAL)
     .build()
 
-  meterRegistry.gauge("fdswarm_received_status_payload_bytes", this, (handler: NodeStatusHandler) => handler.lastStatusMessagePayloadSize)
-  meterRegistry.gauge("fdswarm_received_status_digest_count", this, (handler: NodeStatusHandler) => handler.lastStatusMessageDigestCount.toDouble)
+  otelMetrics.registerGauge(
+    name = "fdswarm_received_status_payload_bytes",
+    initialValue = 0.0
+  )
+  otelMetrics.registerGauge(
+    name = "fdswarm_received_status_digest_count",
+    initialValue = 0.0
+  )
   private val thread = new Thread(() =>
     while !Thread.currentThread().isInterrupted do
       try
@@ -82,9 +85,19 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
         udpHeader.service match
           case Service.Status =>
             val statusMessage = StatusMessage(udpHeader.payload)
-            statusCounter.increment()
+            otelMetrics.incrementCounter(
+              name = "fdswarm_received_status_total"
+            )
             lastStatusMessagePayloadSize = udpHeader.payload.length.toDouble
             lastStatusMessageDigestCount = statusMessage.hash.size
+            otelMetrics.setGauge(
+              name = "fdswarm_received_status_payload_bytes",
+              value = lastStatusMessagePayloadSize
+            )
+            otelMetrics.setGauge(
+              name = "fdswarm_received_status_digest_count",
+              value = lastStatusMessageDigestCount.toDouble
+            )
             val nodeStatus = NodeStatus(statusMessage, udpHeader.nodeIdentity, isLocal = false)
             Platform.runLater {
               contestManager.updateFromNodeStatus(
@@ -101,7 +114,9 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
             )
           case Service.SendStatus =>
             logger.info(s"Received SendStatus from ${udpHeader.nodeIdentity}")
-            sendStatusReceived.increment()
+            otelMetrics.incrementCounter(
+              name = "fdswarm_discovery_req_received"
+            )
             statusBroadcastService.broadcastStatus()
 
           case Service.RestartContest =>
@@ -132,7 +147,9 @@ class NodeStatusHandler @Inject()(replicationSupportProvider: Provider[Replicati
   private def processQsoMessage(
     udpHeader: UDPHeaderData
   ): Unit =
-    qsoCounter.increment()
+    otelMetrics.incrementCounter(
+      name = "fdswarm_received_qso_total"
+    )
     val sJson = new String(udpHeader.payload, "UTF-8")
     decode[Qso](sJson) match
       case Right(qso) =>

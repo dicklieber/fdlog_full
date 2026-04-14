@@ -25,11 +25,9 @@ import fdswarm.api.ReplEndpoints
 import fdswarm.fx.qso.FdHour
 import fdswarm.replication.status.NodeBandOpPane
 import fdswarm.store.{FdHourIds, FdHourRequest, ReplicationSupport}
+import fdswarm.util.OtelMetrics
 import fdswarm.util.NodeIdentity
-import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.{Inject, Singleton}
-
-import java.util.concurrent.TimeUnit
 
 /**
  * This is the logic that synchronizes the local QSO store with a remote node.
@@ -39,10 +37,8 @@ import java.util.concurrent.TimeUnit
 class StatusProcessor @Inject()(qsoStore: ReplicationSupport,
                                 replEndpoints: ReplEndpoints,
                                 callEndpoint: CallEndpoint,
-                                meterRegistry: MeterRegistry,
+                                otelMetrics: OtelMetrics,
                                 nodeBandOpPane: NodeBandOpPane) extends LazyStructuredLogging:
-
-  private val timer = meterRegistry.timer("fdswarm_process_status_duration")
 
   /**
    * Process an incoming status message: determine what FdHours are needed
@@ -55,7 +51,12 @@ class StatusProcessor @Inject()(qsoStore: ReplicationSupport,
     IO(nodeBandOpPane.refreshIfDue()) >>
       (if needed.nonEmpty then
          // Record at least one timing sample to indicate processing occurred
-         IO(timer.record(1L, TimeUnit.NANOSECONDS)) >>
+         IO(
+           otelMetrics.recordTimerNanos(
+             name = "fdswarm_process_status_duration",
+             nanos = 1L
+           )
+         ) >>
            processStatusInternal(nodeStatus, needed).handleError(_ => IO.unit)
        else
          IO.unit)

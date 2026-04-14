@@ -25,13 +25,10 @@ import fdswarm.util.NodeIdentity
 import jakarta.inject.Singleton
 import org.http4s.Uri
 import org.http4s.ember.client.EmberClientBuilder
-import org.http4s.client.middleware.Metrics as ClientMetrics
-import _root_.meters4s.Reporter
-import _root_.meters4s.http4s.Meters4s
 import sttp.tapir.client.http4s.Http4sClientInterpreter
 
 @Singleton
-class CallEndpoint @jakarta.inject.Inject()(reporter: Reporter[IO]) extends LazyStructuredLogging:
+class CallEndpoint @jakarta.inject.Inject()() extends LazyStructuredLogging:
 
   private val maxRetries = 3
   private val retryDelay = 2.seconds
@@ -56,8 +53,7 @@ class CallEndpoint @jakarta.inject.Inject()(reporter: Reporter[IO]) extends Lazy
     
     def executeRequest(attempt: Int): IO[O] =
       logger.debug(s"Calling remote endpoint: ${req.method} ${req.uri} with input: $input (attempt: $attempt)")
-      val metricsOps = Meters4s[IO](reporter)
-      EmberClientBuilder.default[IO].build.map(ClientMetrics[IO](metricsOps)).use { client =>
+      EmberClientBuilder.default[IO].build.use { client =>
         client.run(req).use(parseResponse).flatMap {
           case sttp.tapir.DecodeResult.Value(Right(result: O)) =>
             logger.debug(s"Endpoint call succeeded: ${req.uri} response: $result")

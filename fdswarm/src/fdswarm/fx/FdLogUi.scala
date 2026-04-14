@@ -27,8 +27,7 @@ import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.utils.UiStyles
 import fdswarm.logging.Locus.Startup
 import fdswarm.replication.{NodeStatusHandler, StatusBroadcastService}
-import fdswarm.util.{DurationFormat, NodeIdentityManager}
-import io.micrometer.core.instrument.MeterRegistry
+import fdswarm.util.{DurationFormat, NodeIdentityManager, OtelMetrics}
 import jakarta.inject.{Inject, Singleton}
 import javafx.embed.swing.SwingFXUtils
 import scalafx.application.Platform
@@ -48,7 +47,7 @@ final class FdLogUi @Inject() (
   repl: NodeStatusHandler,
   statusBroadcastService: StatusBroadcastService,
   nodeIdentityManager: NodeIdentityManager,
-  meterRegistry: MeterRegistry,
+  otelMetrics: OtelMetrics,
   qsoStore: fdswarm.store.QsoStore,
   apiServer: fdswarm.api.ApiServer,
   startupInfo: StartupInfo,
@@ -121,10 +120,9 @@ final class FdLogUi @Inject() (
       val duration = FdLogUi.startupDuration
       val durationNanos = duration.toNanos
       logger.info(s"UI responsive in ${DurationFormat(duration)}")
-      fdswarm.util.MetricsHelpers.recordTimerNanos(
-        meterRegistry,
-        "fdswarm_startup_time_seconds",
-        durationNanos
+      otelMetrics.recordTimerNanos(
+        name = "fdswarm_startup_time_seconds",
+        nanos = durationNanos
       )
     }
     contestEntry.buildUi()

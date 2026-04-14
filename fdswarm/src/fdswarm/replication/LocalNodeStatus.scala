@@ -70,6 +70,7 @@ final class LocalNodeStatus @Inject()(
                                      ) extends LazyStructuredLogging:
 
   @volatile private var lastHashCount: HashCount = HashCount()
+  @volatile private var lastDigests: Seq[FdHourDigest] = Seq.empty
   private val currentBuffer: ReadOnlyObjectWrapper[NodeStatus] = new ReadOnlyObjectWrapper[NodeStatus](null)
   val current: ReadOnlyObjectProperty[NodeStatus] = currentBuffer.getReadOnlyProperty
 
@@ -97,6 +98,14 @@ final class LocalNodeStatus @Inject()(
     lastHashCount = hashCount
     rebuildAndNotify("digest-update")
 
+  def updateDigestState(
+    hashCount: HashCount,
+    digests: Seq[FdHourDigest]
+  ): Unit =
+    lastHashCount = hashCount
+    lastDigests = digests
+    rebuildAndNotify("digest-update")
+
   def update(nodeStatus: NodeStatus): Unit =
     currentBuffer.set(nodeStatus)
 
@@ -107,6 +116,7 @@ final class LocalNodeStatus @Inject()(
           BandModeOperator(stationManager.station.operator, selectedBandModeStore.selected.value)
         val next = NodeStatus(
           statusMessage = StatusMessage(hashCount = lastHashCount,
+            hash = lastDigests,
             bandNodeOperator = bandNodeOperator,
             contestConfig = contestConfig),
           nodeIdentity = nodeIdentityManager.ourNodeIdentity,
@@ -115,4 +125,3 @@ final class LocalNodeStatus @Inject()(
         update(next)
       case None =>
         logger.debug(s"Skipping local status rebuild ($reason): contest config not initialized")
-

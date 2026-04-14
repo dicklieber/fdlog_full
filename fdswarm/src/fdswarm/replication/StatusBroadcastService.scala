@@ -84,9 +84,15 @@ class StatusBroadcastService @Inject()(
         operator,
         bandMode
       )
-      val statusMessage = StatusMessage(hash = qsoStore.idsHash,
+      val statusMessage = StatusMessage(
+        hashCount = HashCount(
+          hash = qsoStore.idsHash,
+          qsoCount = qsoStore.size
+        ),
+        hash = qsoStore.digests(),
         bandNodeOperator = bandModeOperator,
-        contestConfig = contestConfigManager.contestConfigProperty.value, qsoStore.size)
+        contestConfig = contestConfigManager.contestConfigProperty.value
+      )
       val gzipBytes = statusMessage.toPacket
       transport.send(Service.Status, gzipBytes)
     catch

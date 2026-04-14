@@ -18,8 +18,7 @@
 
 package fdswarm.fx.tools
 
-import fdswarm.util.MetricsDebug
-import io.micrometer.core.instrument.MeterRegistry
+import fdswarm.util.OtelMetrics
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
 import scalafx.geometry.Insets
@@ -29,23 +28,23 @@ import scalafx.stage.Window
 
 @Singleton
 class MetricsDialog @Inject() (
-    meterRegistry: MeterRegistry
+    otelMetrics: OtelMetrics
 ):
 
   def show(ownerWindow: Window): Unit =
     val textArea = new TextArea:
-      text = MetricsDebug.dumpMetrics(meterRegistry)
+      text = otelMetrics.scrape()
       editable = false
       prefWidth = 600
       prefHeight = 500
       vgrow = Priority.Always
 
     val refreshButton = new Button("Refresh"):
-      onAction = _ => textArea.text = MetricsDebug.dumpMetrics(meterRegistry)
+      onAction = _ => textArea.text = otelMetrics.scrape()
 
     val dialog = new Dialog[Unit]:
       title = "Metrics"
-      headerText = "Micrometer Metrics Dump"
+      headerText = "OpenTelemetry Metrics Dump"
       initOwner(ownerWindow)
 
     dialog.dialogPane().buttonTypes = Seq(ButtonType.Close)

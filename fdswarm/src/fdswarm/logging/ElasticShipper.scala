@@ -1,7 +1,7 @@
 package fdswarm.logging
 
 import com.google.inject.name.Named
-import io.micrometer.core.instrument.MeterRegistry
+import fdswarm.util.OtelMetrics
 import jakarta.inject.{Inject, Singleton}
 
 import java.time.Duration
@@ -12,7 +12,7 @@ import java.time.Duration
  * This class provides functionality for sending NDJSON payloads to Elasticsearch via the bulk endpoint.
  * API key credentials can be configured through environment variables or application configuration.
  *
- * Metrics related to the shipping process are captured using a MeterRegistry instance.
+ * Metrics related to the shipping process are captured using OpenTelemetry.
  *
  * @constructor
  * Creates an instance of ElasticShipper using the following parameters:
@@ -20,7 +20,7 @@ import java.time.Duration
  * @param configuredApiKey The API key configured through the application setting.
  * @param connectTimeout   The connection timeout for the HTTP client.
  * @param requestTimeout   The timeout for Elasticsearch requests.
- * @param meterRegistry    The metrics registry for capturing shipping metrics.
+ * @param otelMetrics      OpenTelemetry metrics helper.
  *
  *                         This class incorporates logging through LazyStructuredLogging. If the API key is overridden by
  *                         an environment variable, the class logs this behavior.
@@ -39,7 +39,7 @@ final class ElasticShipper @Inject()(
   connectTimeout: Duration,
   @Named("fdswarm.elastic.requestTimeout")
   requestTimeout: Duration,
-  meterRegistry: MeterRegistry
+  otelMetrics: OtelMetrics
 ) extends LazyStructuredLogging:
 
   private val apiKeyEnvVarName = "ES_API_KEY"
@@ -59,17 +59,6 @@ final class ElasticShipper @Inject()(
       s"ElasticShipper apiKey overridden by environment variable $apiKeyEnvVarName"
     )
 
-  private val sendCounter =
-    meterRegistry.counter(
-      "fdswarm_elastic_shipper_send_total"
-    )
-
-  private val sendTimer =
-    meterRegistry.timer(
-      "fdswarm_elastic_shipper_send_duration"
-    )
-
-
   private val elasticBulkLogger =
     new ElasticBulkLogger(
       endpoint = endpoint,
@@ -88,13 +77,19 @@ final class ElasticShipper @Inject()(
   def send(
     ndJson: String
   ): Unit =
-    sendCounter.increment()
-    sendTimer.record(
-      () =>
-        elasticBulkLogger.sendNdjson(
-          ndJson
-        )
+    otelMetrics.incrementCounter(
+      name = "fdswarm_elastic_shipper_send_total"
     )
+    val startNanos = System.nanoTime()
+    try
+      elasticBulkLogger.sendNdjson(
+        ndJson
+      )
+    finally
+      otelMetrics.recordTimerNanos(
+        name = "fdswarm_elastic_shipper_send_duration",
+        nanos = System.nanoTime() - startNanos
+      )
 
   def sendJsonEvent(
     eventJson: String,

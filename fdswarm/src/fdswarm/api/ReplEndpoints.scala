@@ -19,31 +19,29 @@
 package fdswarm.api
 
 import cats.effect.IO
-import fdswarm.model.{Callsign, Qso}
-import fdswarm.store.{FdHourIds, FdHourQsos, FdHourRequest, QsoStore, ReplicationSupport}
+import fdswarm.model.Qso
+import fdswarm.store.{FdHourIds, FdHourRequest, ReplicationSupport}
 import fdswarm.util.Ids.Id
-import io.circe.syntax.*
 import io.circe.Printer
-import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import jakarta.inject.Inject
 import sttp.tapir.*
-import sttp.tapir.CodecFormat
 import sttp.tapir.server.ServerEndpoint
 import fdswarm.fx.qso.FdHour
 import sttp.tapir.json.circe.*
 import sttp.tapir.generic.auto.*
 
-import java.time.Instant
-
 /** Tapir endpoints for QSOs. */
-final class ReplEndpoints @Inject()(replicationSupport: ReplicationSupport,
-                                    registry: PrometheusMeterRegistry) extends ApiEndpoints:
+final class ReplEndpoints @Inject()(
+  replicationSupport: ReplicationSupport
+) extends ApiEndpoints:
 
   private val printer: Printer = Printer.spaces2.copy(dropNullValues = true)
 
-  override def endpoints: List[ServerEndpoint[Any, IO]] = List( qsosForIds, qsoIdsForFdHour, neededFdHours)
-
-
+  override def endpoints: List[ServerEndpoint[Any, IO]] = List(
+    qsosForIds,
+    qsoIdsForFdHour,
+    neededFdHours
+  )
 
   val qsoIdsForFdHour: ServerEndpoint[Any, IO] =
     ReplEndpoints.qsoIdsByHourGetDef

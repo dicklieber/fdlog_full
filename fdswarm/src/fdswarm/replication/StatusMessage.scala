@@ -20,6 +20,7 @@ package fdswarm.replication
 
 import fdswarm.fx.contest.ContestConfig
 import fdswarm.model.BandModeOperator
+import fdswarm.store.FdHourDigest
 import fdswarm.util.Ids.Id
 import fdswarm.util.{CirceGzip, Ids}
 import io.circe.Codec
@@ -38,6 +39,7 @@ import io.circe.generic.auto.{deriveDecoder, deriveEncoder}
  *                         class, section, and other metadata.
  */
 case class StatusMessage(hashCount: HashCount,
+                         hash: Seq[FdHourDigest] = Seq.empty,
                          bandNodeOperator: BandModeOperator,
                          id: Id = Ids.generateId(),
                          contestConfig: ContestConfig) derives Codec.AsObject:

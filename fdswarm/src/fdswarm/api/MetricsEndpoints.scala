@@ -20,8 +20,7 @@ package fdswarm.api
 
 import cats.effect.IO
 import fdswarm.replication.Transport
-import io.micrometer.core.instrument.Gauge
-import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import fdswarm.util.OtelMetrics
 import jakarta.inject.{Inject, Singleton}
 import sttp.tapir.*
 import sttp.tapir.server.ServerEndpoint
@@ -30,19 +29,29 @@ import sttp.tapir.server.ServerEndpoint
  * Tapir endpoints for Prometheus metrics.
  */
 @Singleton
-final class MetricsEndpoints @Inject()(registry: PrometheusMeterRegistry,
-                                       transport: Transport) extends ApiEndpoints:
+final class MetricsEndpoints @Inject()(
+  otelMetrics: OtelMetrics,
+  transport: Transport
+) extends ApiEndpoints:
 
-  Gauge.builder("fdswarm_transport_sent_count", transport, (t: Transport) => t.sentCount.toDouble)
-    .description("Total number of UDP packets sent by this node")
-    .register(registry)
+  otelMetrics.registerGauge(
+    name = "fdswarm_transport_sent_count",
+    description = "Total number of UDP packets sent by this node",
+    initialValue = 0.0
+  )
 
   override def endpoints: List[ServerEndpoint[Any, IO]] = List(metricsEndpoint)
 
   val metricsEndpoint: ServerEndpoint[Any, IO] =
     MetricsEndpoints.metricsDef
       .serverLogicSuccess[IO] { _ =>
-        IO.blocking(registry.scrape())
+        otelMetrics.setGauge(
+          name = "fdswarm_transport_sent_count",
+          value = transport.sentCount.toDouble
+        )
+        IO.blocking(
+          otelMetrics.scrape()
+        )
       }
 
 object MetricsEndpoints:

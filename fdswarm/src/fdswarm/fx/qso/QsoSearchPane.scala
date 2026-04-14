@@ -31,9 +31,8 @@ import fdswarm.fx.utils.MultiChangeWatcher
 import fdswarm.model.BandMode.*
 import fdswarm.model.Qso
 import fdswarm.store.QsoStore
-import fdswarm.util.{DurationFormat, MetricsHelpers}
+import fdswarm.util.{DurationFormat, OtelMetrics}
 import io.circe.syntax.*
-import io.micrometer.core.instrument.MeterRegistry
 import jakarta.inject.Inject
 import scalafx.Includes.*
 import scalafx.beans.property.BooleanProperty
@@ -53,7 +52,7 @@ class QsoSearchPane @Inject()(
                                modesManager: AvailableModesManager,
                                bandCatalog:BandCatalog,
                                userConfig: UserConfig,
-                               meterRegistry: MeterRegistry,
+                               otelMetrics: OtelMetrics,
                                qsoStore: QsoStore,
                                qsoTablePane: QsoTablePane
 ) extends LazyStructuredLogging:
@@ -97,7 +96,10 @@ class QsoSearchPane @Inject()(
       )
       val durationNanos = System.nanoTime() - startTime
       val sDuration: String = DurationFormat(Duration.ofNanos(durationNanos))
-      MetricsHelpers.recordTimerNanos(meterRegistry, "fdswarm_qso_filter_duration", durationNanos)
+      otelMetrics.recordTimerNanos(
+        name = "fdswarm_qso_filter_duration",
+        nanos = durationNanos
+      )
 
 
       val isSearching = expandedProperty.value && (callsignFilter.value.isDefined ||

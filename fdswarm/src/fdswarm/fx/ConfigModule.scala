@@ -19,26 +19,19 @@
 
 package fdswarm.fx
 
-import com.google.inject.{AbstractModule, Injector, Provides}
+import com.google.inject.AbstractModule
 import com.google.inject.name.Names
 import com.typesafe.config.{Config, ConfigFactory}
 import fdswarm.logging.LazyStructuredLogging
-import cats.effect.IO
-import cats.effect.unsafe.implicits.global
 import fdswarm.{AutoBind, StartupInfo}
 import fdswarm.api.ApiEndpoints
 import fdswarm.io.{DirectoryProvider, ProductionDirectory}
 import fdswarm.logging.ElasticShipper
 import fdswarm.store.{QsoStore, ReplicationSupport}
-import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
-import _root_.meters4s.Reporter
-import net.codingwell.scalaguice.ScalaModule
-import com.google.inject.TypeLiteral
 import fdswarm.replication.status.SwarmData
 import fdswarm.replication.{BroadcastTransport, NodeStatusHandler, StatusBroadcastService, Transport}
-import fdswarm.util.LoggingManager
-import fdswarm.logging.LazyStructuredLogging
+import fdswarm.util.OtelMetrics
+import net.codingwell.scalaguice.ScalaModule
 
 import java.time.Duration
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -97,11 +90,9 @@ class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModu
 
     bind[QsoStore].to[ReplicationSupport].asEagerSingleton()
     bind[ElasticShipper].asEagerSingleton()
-    bind[MeterRegistry].to[PrometheusMeterRegistry].asEagerSingleton()
-    val prometheusRegistry = new PrometheusMeterRegistry(io.micrometer.prometheusmetrics.PrometheusConfig.DEFAULT)
-    bind[PrometheusMeterRegistry].toInstance(prometheusRegistry)
-    val reporter = Reporter.fromRegistry[IO](prometheusRegistry).unsafeRunSync()
-    bind(new TypeLiteral[Reporter[IO]](){}).toInstance(reporter)
+    bind[OtelMetrics].toInstance(
+      OtelMetrics.create()
+    )
 
     bind[fdswarm.fx.tools.MetricsDialog].asEagerSingleton()
 

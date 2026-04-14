@@ -22,6 +22,7 @@ import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.FdLogUi
 import fdswarm.fx.GridBuilder
 import fdswarm.fx.qso.FdHour
+import fdswarm.replication.HashCount
 import fdswarm.fx.station.StationEditor
 import fdswarm.replication.LocalNodeStatus
 import fdswarm.replication.NodeStatus
@@ -156,8 +157,14 @@ class SwarmData @Inject() (
         update(newStatus)
   )
 
-  def updateLocalDigests(digests: Seq[FdHourDigest]): Unit =
-    localNodeStatus.updateHashCount(digests)
+  def updateLocalDigests(
+    hashCount: HashCount,
+    digests: Seq[FdHourDigest]
+  ): Unit =
+    localNodeStatus.updateDigestState(
+      hashCount = hashCount,
+      digests = digests
+    )
 
   def clear(): Unit =
     val localStatus = nodeMap.get(ourNodeIdentity)
@@ -345,7 +352,7 @@ class SwarmData @Inject() (
       NodeDataField.InstanceId -> nodeStatus.nodeIdentity.instanceId,
       NodeDataField.Received -> stampFormatter.format(nodeStatus.received),
       NodeDataField.IsLocal -> nodeStatus.isLocal.toString,
-      NodeDataField.QsoCount -> nodeStatus.qsoCount.toString,
+      NodeDataField.QsoCount -> nodeStatus.statusMessage.hashCount.qsoCount.toString,
       NodeDataField.StatusId -> nodeStatus.statusMessage.id,
       NodeDataField.Operator -> bno.operator.toString,
       NodeDataField.Band -> bno.bandMode.band,

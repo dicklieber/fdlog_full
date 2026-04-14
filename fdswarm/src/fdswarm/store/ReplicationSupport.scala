@@ -26,7 +26,7 @@ import fdswarm.io.DirectoryProvider
 import fdswarm.replication.Transport
 import fdswarm.replication.status.SwarmData
 import fdswarm.util.Ids.Id
-import io.micrometer.core.instrument.MeterRegistry
+import fdswarm.util.OtelMetrics
 import jakarta.inject.{Inject, Singleton, Provider}
 
 /**
@@ -35,12 +35,12 @@ import jakarta.inject.{Inject, Singleton, Provider}
  */
 @Singleton
 class ReplicationSupport @Inject()(directoryProvider: DirectoryProvider,
-                                   registry: MeterRegistry,
+                                   otelMetrics: OtelMetrics,
                                    transport: Transport,
                                    swarmDataProvider: Provider[SwarmData],
                                    startupInfo: StartupInfo,
                                    filenameStamp: fdswarm.util.FilenameStamp)
-  extends QsoStore(directoryProvider, registry, transport, swarmDataProvider, startupInfo, filenameStamp):
+  extends QsoStore(directoryProvider, otelMetrics, transport, swarmDataProvider, startupInfo, filenameStamp):
   /**
    * 
    * @param fdHourDigest from a remote node
