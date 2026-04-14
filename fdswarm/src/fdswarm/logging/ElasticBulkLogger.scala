@@ -91,24 +91,24 @@ final class ElasticBulkLogger(
       "ndjson must end with a newline for the Elasticsearch Bulk API"
     )
 
-object ElasticBulkLogger:
-
-  def fromEnv(
-               endpoint: String,
-               apiKeyEnvVar: String = "ES_API_KEY",
-               connectTimeout: Duration = Duration.ofSeconds(5),
-               requestTimeout: Duration = Duration.ofSeconds(15)
-             ): ElasticBulkLogger =
-    val apiKey =
-      Option(System.getenv(apiKeyEnvVar)).getOrElse {
-        throw new IllegalArgumentException(
-          s"Environment variable '$apiKeyEnvVar' is not set"
-        )
-      }
-
-    new ElasticBulkLogger(
-      endpoint = endpoint,
-      apiKey = apiKey,
-      connectTimeout = connectTimeout,
-      requestTimeout = requestTimeout
-    )
+//object ElasticBulkLogger:
+//
+//  def fromEnv(
+//               endpoint: String,
+//               apiKeyEnvVar: String = "ES_API_KEY",
+//               connectTimeout: Duration = Duration.ofSeconds(5),
+//               requestTimeout: Duration = Duration.ofSeconds(15)
+//             ): ElasticBulkLogger =
+//    val apiKey =
+//      Option(System.getenv(apiKeyEnvVar)).getOrElse {
+//        throw new IllegalArgumentException(
+//          s"Environment variable '$apiKeyEnvVar' is not set"
+//        )
+//      }
+//
+//    new ElasticBulkLogger(
+//      endpoint = endpoint,
+//      apiKey = apiKey,
+//      connectTimeout = connectTimeout,
+//      requestTimeout = requestTimeout
+//    )
