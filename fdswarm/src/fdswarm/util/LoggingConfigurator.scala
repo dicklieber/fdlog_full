@@ -1,6 +1,7 @@
 package fdswarm.util
 
 import fdswarm.io.DirectoryProvider
+import fdswarm.logging.LogEventFieldNames
 import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.core.config.Configurator
 import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory
@@ -20,13 +21,7 @@ object LoggingConfigurator:
     builder.setConfigurationName("FdSwarmLogging")
 
     val jsonTemplate =
-      """{
-        "@timestamp": {"$resolver": "timestamp"},
-        "log.level": {"$resolver": "level", "field": "name"},
-        "log.logger": {"$resolver": "logger", "field": "name"},
-        "message": {"$resolver": "message", "stringified": true},
-        "mdc": {"$resolver": "mdc", "flatten": true}
-      }"""
+      LogEventFieldNames.log4jEventTemplateWithFlattenedMdc
 
     val consoleLayout =
       builder
