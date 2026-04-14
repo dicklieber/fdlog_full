@@ -1,7 +1,7 @@
 package fdswarm.logging
 
-import org.apache.logging.log4j.{Level, LogManager, Logger}
-import org.apache.logging.log4j.message.StringMapMessage
+import io.circe.{Json, JsonObject}
+import org.apache.logging.log4j.{Level, LogManager, Logger, ThreadContext}
 
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -10,6 +10,7 @@ import java.time.format.DateTimeFormatter
 import java.util.{LinkedHashMap, UUID}
 
 import scala.jdk.CollectionConverters.*
+import scala.util.Using
 
 final class StructuredLogger private (private val logger: Logger):
 
@@ -51,35 +52,75 @@ final class StructuredLogger private (private val logger: Logger):
 
   def trace(message: String, args: (String, Any)*): Unit =
     if logger.isTraceEnabled then
-      log(Level.TRACE, message, None, args)
+      log(
+        Level.TRACE,
+        message,
+        None,
+        args
+      )
 
   def debug(message: String, args: (String, Any)*): Unit =
     if logger.isDebugEnabled then
-      log(Level.DEBUG, message, None, args)
+      log(
+        Level.DEBUG,
+        message,
+        None,
+        args
+      )
 
   def info(message: String, args: (String, Any)*): Unit =
     if logger.isInfoEnabled then
-      log(Level.INFO, message, None, args)
+      log(
+        Level.INFO,
+        message,
+        None,
+        args
+      )
 
   def warn(message: String, args: (String, Any)*): Unit =
     if logger.isWarnEnabled then
-      log(Level.WARN, message, None, args)
+      log(
+        Level.WARN,
+        message,
+        None,
+        args
+      )
 
   def error(message: String, args: (String, Any)*): Unit =
     if logger.isErrorEnabled then
-      log(Level.ERROR, message, None, args)
+      log(
+        Level.ERROR,
+        message,
+        None,
+        args
+      )
 
   def error(message: String, throwable: Throwable, args: (String, Any)*): Unit =
     if logger.isErrorEnabled then
-      log(Level.ERROR, message, Some(throwable), args)
+      log(
+        Level.ERROR,
+        message,
+        Some(throwable),
+        args
+      )
 
   def fatal(message: String, args: (String, Any)*): Unit =
     if logger.isFatalEnabled then
-      log(Level.FATAL, message, None, args)
+      log(
+        Level.FATAL,
+        message,
+        None,
+        args
+      )
 
   def fatal(message: String, throwable: Throwable, args: (String, Any)*): Unit =
     if logger.isFatalEnabled then
-      log(Level.FATAL, message, Some(throwable), args)
+      log(
+        Level.FATAL,
+        message,
+        Some(throwable),
+        args
+      )
 
   private def log(
                    level: Level,
@@ -87,41 +128,61 @@ final class StructuredLogger private (private val logger: Logger):
                    throwable: Option[Throwable],
                    args: Seq[(String, Any)]
                  ): Unit =
-    val event = buildEvent(message, throwable, args)
-    val mapMessage = StringMapMessage()
+    val contextValues = buildContextValues(throwable, args)
+    val eventJson =
+      buildEventJson(
+        level,
+        message,
+        contextValues
+      )
 
-    event.forEach: (key, value) =>
-      mapMessage.`with`(key, valueAsString(value))
+    Using.resource(withThreadContext(contextValues)): _ =>
+      throwable match
+        case Some(t) =>
+          logger.log(level, message, t)
+        case None    =>
+          logger.log(level, message)
+      StructuredLogger.publishJsonEvent(
+        eventJson
+      )
 
-    throwable match
-      case Some(t) =>
-        logger.log(level, mapMessage, t)
-      case None    =>
-        logger.log(level, mapMessage)
-
-  private def buildEvent(
-                          message: String,
-                          throwable: Option[Throwable],
-                          args: Seq[(String, Any)]
-                        ): java.util.Map[String, Object] =
-    val event = LinkedHashMap[String, Object]()
-
-    event.put("message", message)
+  private def buildContextValues(
+                                  throwable: Option[Throwable],
+                                  args: Seq[(String, Any)]
+                                ): Seq[(String, String)] =
+    val entries = LinkedHashMap[String, String]()
 
     throwable.foreach: t =>
-      event.put("error.type", t.getClass.getName)
-      event.put("error.message", safeMessage(t))
-      event.put("error.stack_trace", stackTraceToString(t))
+      entries.put("error.type", t.getClass.getName)
+      entries.put("error.message", safeMessage(t))
+      entries.put("error.stack_trace", stackTraceToString(t))
 
-    val flattenedArgs = normalizeArgs(args)
-    flattenedArgs.foreach: (key, value) =>
-      event.put(key, value)
+    normalizeArgs(args).foreach: (key, value) =>
+      entries.put(key, value)
 
-    event
+    entries.asScala.toSeq
 
-  private def normalizeArgs(args: Seq[(String, Any)]): Seq[(String, Object)] =
+  private def normalizeArgs(args: Seq[(String, Any)]): Seq[(String, String)] =
     args.flatMap(expandField).map: (key, value) =>
-      key -> toJsonValue(value)
+      key -> valueAsString(toJsonValue(value))
+
+  private def withThreadContext(
+                                 values: Seq[(String, String)]
+                               ): AutoCloseable =
+    val previousValues = LinkedHashMap[String, String]()
+
+    values.foreach: (key, value) =>
+      val previousValue = ThreadContext.get(key)
+      if previousValue != null then
+        previousValues.put(key, previousValue)
+      ThreadContext.put(key, value)
+
+    () =>
+      values.reverseIterator.foreach: (key, _) =>
+        ThreadContext.remove(key)
+        val previousValue = previousValues.get(key)
+        if previousValue != null then
+          ThreadContext.put(key, previousValue)
 
   private def expandField(field: (String, Any)): Seq[(String, Any)] =
     field match
@@ -258,7 +319,58 @@ final class StructuredLogger private (private val logger: Logger):
     finally
       pw.close()
 
+  private def buildEventJson(
+                              level: Level,
+                              message: String,
+                              contextValues: Seq[(String, String)]
+                            ): String =
+    val topLevelFields =
+      Seq(
+        "@timestamp" -> Json.fromString(DateTimeFormatter.ISO_INSTANT.format(Instant.now())),
+        "log.level" -> Json.fromString(level.name()),
+        "log.logger" -> Json.fromString(logger.getName),
+        "message" -> Json.fromString(message)
+      )
+
+    val contextFields =
+      contextValues.map: (key, value) =>
+        key -> stringToJsonValue(value)
+
+    Json
+      .fromJsonObject(
+        JsonObject.fromIterable(
+          topLevelFields ++ contextFields
+        )
+      )
+      .noSpaces
+
+  private def stringToJsonValue(
+                                 value: String
+                               ): Json =
+    if value == null then Json.Null
+    else Json.fromString(value)
+
 object StructuredLogger:
+  @volatile
+  private var jsonEventSink: Option[String => Unit] = None
+
+  def setJsonEventSink(
+                       sink: String => Unit
+                     ): Unit =
+    jsonEventSink = Option(sink)
+
+  def clearJsonEventSink(): Unit =
+    jsonEventSink = None
+
+  private[logging] def publishJsonEvent(
+                                         eventJson: String
+                                       ): Unit =
+    jsonEventSink.foreach: sink =>
+      try
+        sink(eventJson)
+      catch
+        case _: Throwable =>
+          ()
 
   def apply(clazz: Class[?]): StructuredLogger =
     new StructuredLogger(LogManager.getLogger(clazz))

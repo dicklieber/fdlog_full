@@ -28,6 +28,7 @@ import cats.effect.unsafe.implicits.global
 import fdswarm.{AutoBind, StartupInfo}
 import fdswarm.api.ApiEndpoints
 import fdswarm.io.{DirectoryProvider, ProductionDirectory}
+import fdswarm.logging.ElasticShipper
 import fdswarm.store.{QsoStore, ReplicationSupport}
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
@@ -95,6 +96,7 @@ class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModu
 //      bind[Transport].to[MulticastTransport].asEagerSingleton()
 
     bind[QsoStore].to[ReplicationSupport].asEagerSingleton()
+    bind[ElasticShipper].asEagerSingleton()
     bind[MeterRegistry].to[PrometheusMeterRegistry].asEagerSingleton()
     val prometheusRegistry = new PrometheusMeterRegistry(io.micrometer.prometheusmetrics.PrometheusConfig.DEFAULT)
     bind[PrometheusMeterRegistry].toInstance(prometheusRegistry)

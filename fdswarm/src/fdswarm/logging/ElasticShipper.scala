@@ -64,6 +64,12 @@ final class ElasticShipper @Inject()(
       "fdswarm_elastic_shipper_send_total"
     )
 
+  private val sendTimer =
+    meterRegistry.timer(
+      "fdswarm_elastic_shipper_send_duration"
+    )
+
+
   private val elasticBulkLogger =
     new ElasticBulkLogger(
       endpoint = endpoint,
@@ -72,10 +78,42 @@ final class ElasticShipper @Inject()(
       requestTimeout = requestTimeout
     )
 
+  StructuredLogger.setJsonEventSink(
+    eventJson =>
+      sendJsonEvent(
+        eventJson
+      )
+  )
+
   def send(
     ndJson: String
   ): Unit =
     sendCounter.increment()
-    elasticBulkLogger.sendNdjson(
-      ndJson
+    sendTimer.record(
+      () =>
+        elasticBulkLogger.sendNdjson(
+          ndJson
+        )
+    )
+
+  def sendJsonEvent(
+    eventJson: String,
+    index: String = "fdswarm-logs"
+  ): Unit =
+    require(
+      eventJson != null && eventJson.trim.nonEmpty,
+      "eventJson must not be null or empty"
+    )
+    require(
+      index != null && index.trim.nonEmpty,
+      "index must not be null or empty"
+    )
+
+    val metadataLine =
+      s"""{"index":{"_index":"$index"}}"""
+    val payload =
+      s"$metadataLine\n${eventJson.trim}\n"
+
+    send(
+      payload
     )

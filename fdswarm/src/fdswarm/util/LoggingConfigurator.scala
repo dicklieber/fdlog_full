@@ -24,9 +24,8 @@ object LoggingConfigurator:
         "@timestamp": {"$resolver": "timestamp"},
         "log.level": {"$resolver": "level", "field": "name"},
         "log.logger": {"$resolver": "logger", "field": "name"},
-        "process.thread.name": {"$resolver": "thread", "field": "name"},
-        "$resolver": "map",
-        "flatten": true
+        "message": {"$resolver": "message", "stringified": true},
+        "mdc": {"$resolver": "mdc", "flatten": true}
       }"""
 
     val consoleLayout =
