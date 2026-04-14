@@ -91,24 +91,17 @@ final class ElasticBulkLogger(
       "ndjson must end with a newline for the Elasticsearch Bulk API"
     )
 
-//object ElasticBulkLogger:
-//
-//  def fromEnv(
-//               endpoint: String,
-//               apiKeyEnvVar: String = "ES_API_KEY",
-//               connectTimeout: Duration = Duration.ofSeconds(5),
-//               requestTimeout: Duration = Duration.ofSeconds(15)
-//             ): ElasticBulkLogger =
-//    val apiKey =
-//      Option(System.getenv(apiKeyEnvVar)).getOrElse {
-//        throw new IllegalArgumentException(
-//          s"Environment variable '$apiKeyEnvVar' is not set"
-//        )
-//      }
-//
-//    new ElasticBulkLogger(
-//      endpoint = endpoint,
-//      apiKey = apiKey,
-//      connectTimeout = connectTimeout,
-//      requestTimeout = requestTimeout
-//    )
+/*  private def toNdjson(events: Seq[LogEvent]): String =
+    events.map { e =>
+      val meta = """{"index":{"_index":"fdswarm-logs"}}"""
+      val doc =
+        e.asJson.deepMerge(
+          io.circe.Json.obj(
+            "@timestamp" -> io.circe.Json.fromString(e.timestamp.toString),
+            "log.level" -> io.circe.Json.fromString(e.level),
+            "event.dataset" -> io.circe.Json.fromString("fdswarm.app")
+          )
+        )
+      s"$meta\n${doc.noSpaces}"
+    }.mkString("\n") + "\n"
+    */

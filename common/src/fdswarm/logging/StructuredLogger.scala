@@ -94,8 +94,10 @@ final class StructuredLogger private (private val logger: Logger):
       mapMessage.`with`(key, valueAsString(value))
 
     throwable match
-      case Some(t) => logger.log(level, mapMessage, t)
-      case None    => logger.log(level, mapMessage)
+      case Some(t) =>
+        logger.log(level, mapMessage, t)
+      case None    =>
+        logger.log(level, mapMessage)
 
   private def buildEvent(
                           message: String,
