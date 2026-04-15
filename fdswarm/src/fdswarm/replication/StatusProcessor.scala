@@ -18,6 +18,7 @@
 
 package fdswarm.replication
 
+import cats.effect.unsafe.implicits.global
 import fdswarm.api.ReplEndpoints
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.replication.status.NodeBandOpPane
@@ -30,6 +31,7 @@ import nl.grons.metrics4.scala.DefaultInstrumented
 @Singleton
 class StatusProcessor @Inject() (
     qsoStore: QsoStore,
+    localNodeStatus: LocalNodeStatus,
     replEndpoints: ReplEndpoints,
     callEndpoint: CallEndpoint,
     nodeBandOpPane: NodeBandOpPane)
@@ -47,4 +49,22 @@ class StatusProcessor @Inject() (
   def processStatus(
       nodeStatus: NodeStatus
     ): Unit =
-    throw new NotImplementedError("")
+    processTimer.time {
+      val remoteHashCount = nodeStatus.statusMessage.hashCount
+      val localHashCount = localNodeStatus.statusMessage.hashCount
+
+      if remoteHashCount != localHashCount then
+        val qsoCountDiff = remoteHashCount.qsoCount - localHashCount.qsoCount
+        logger.info(
+          s"HashCount mismatch for ${nodeStatus.nodeIdentity}: local=$localHashCount remote=$remoteHashCount qsoCountDiff=$qsoCountDiff"
+        )
+        given fdswarm.util.NodeIdentity = nodeStatus.nodeIdentity
+        val remoteAllQsos =
+          callEndpoint(
+            ReplEndpoints.allQsosDef,
+            ()
+          ).unsafeRunSync()
+        qsoStore.add(
+          remoteAllQsos.qsos
+        )
+    }
