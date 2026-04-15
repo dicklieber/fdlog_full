@@ -92,8 +92,6 @@ class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModu
     bind[ElasticShipper].asEagerSingleton()
 
 
-    bind[fdswarm.fx.tools.MetricsDialog].asEagerSingleton()
-
     val entries = fullConfig.entrySet().asScala.toSeq
     for (entry <- entries) {
       val key = entry.getKey

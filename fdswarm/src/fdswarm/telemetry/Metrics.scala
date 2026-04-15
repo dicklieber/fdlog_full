@@ -27,25 +27,7 @@ final class Metrics @Inject()():
       registry
     )
   )
-//
-//  private val registeredGauges = ConcurrentHashMap.newKeySet[String]()
-//  private val mutableGauges = new ConcurrentHashMap[String, AtomicReference[Any]]()
-//
-//  def metricName(first: String, rest: String*): String =
-//    MetricRegistry.name(first, rest*)
-//
-//  def counter(name: String): Counter =
-//    registry.counter(name)
-//
-//  def counter(first: String, rest: String*): Counter =
-//    counter(metricName(first, rest*))
-//
-//  def timer(name: String): Timer =
-//    registry.timer(name)
-//
-//  def timer(first: String, rest: String*): Timer =
-//    timer(metricName(first, rest*))
-//
+
 
   def prometheusScrape(): String =
     prometheusTextFormatWriter.toDebugString(

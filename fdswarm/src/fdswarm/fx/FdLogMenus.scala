@@ -57,7 +57,8 @@ final class FdLogMenus @Inject() (
     swarmStatusAdmin: fdswarm.fx.admin.SwarmStatusAdmin,
     summaryDialog: SummaryDialog,
     contestDialog: ContestDialog,
-    contestConfigManager: ContestConfigManager)
+    contestConfigManager: ContestConfigManager,
+    metricsDialog: MetricsDialog)
     extends LazyStructuredLogging:
   aboutMenuItem.onAction = _ => showAboutDialog()
 
@@ -127,6 +128,12 @@ final class FdLogMenus @Inject() (
         new MenuItem("Set IP Address"):
           onAction = _ =>
             ipAddressDialogService.show(
+              FdLogUi.primaryStage
+            )
+        ,
+        new MenuItem("Metrics"):
+          onAction = _ =>
+            metricsDialog.show(
               FdLogUi.primaryStage
             )
         ,
