@@ -46,25 +46,10 @@ class GridTest extends FunSuite:
     val hour1 = FdHour(10, 1)
     val hour2 = FdHour(10, 2)
 
-    val sm1 = StatusMessage(
-      hashCount = fdswarm.replication.HashCount(),
-      hash = Seq(
-        FdHourDigest(hour1, 5, "d1"),
-        FdHourDigest(hour2, 10, "d2")
-      ),
-      bandNodeOperator = dummyBno,
-      contestConfig = dummyContestConfig
-    )
+    val sm1 = StatusMessage(hashCount = fdswarm.replication.HashCount(), bandNodeOperator = dummyBno, contestConfig = dummyContestConfig)
     val nd1 = NodeStatus(sm1, ni1, isLocal = false)
 
-    val sm2 = StatusMessage(
-      hashCount = fdswarm.replication.HashCount(),
-      hash = Seq(
-        FdHourDigest(hour1, 3, "d3")
-      ),
-      bandNodeOperator = dummyBno,
-      contestConfig = dummyContestConfig
-    )
+    val sm2 = StatusMessage(hashCount = fdswarm.replication.HashCount(), bandNodeOperator = dummyBno, contestConfig = dummyContestConfig)
     val nd2 = NodeStatus(sm2, ni2, isLocal = false)
 
     val allNodeDetails = Seq(nd1, nd2)
@@ -110,12 +95,7 @@ class GridTest extends FunSuite:
   test("Gird.populate should add header rows".ignore):
     val ni1 = NodeIdentity("192.168.1.1", 8080, "111", "node1")
     val nd1 = NodeStatus(
-      StatusMessage(
-        hashCount = fdswarm.replication.HashCount(),
-        hash = Nil,
-        bandNodeOperator = dummyBno,
-        contestConfig = dummyContestConfig
-      ),
+      StatusMessage(hashCount = fdswarm.replication.HashCount(), bandNodeOperator = dummyBno, contestConfig = dummyContestConfig),
       ni1,
       isLocal = false
     )
@@ -173,12 +153,7 @@ class GridTest extends FunSuite:
     // Check "Our Node" when it matches
     val niOur = NodeIdentity("127.0.0.1", 8080, "111", "our-node")
     val ndOur = NodeStatus(
-      StatusMessage(
-        hashCount = fdswarm.replication.HashCount(),
-        hash = Nil,
-        bandNodeOperator = dummyBno,
-        contestConfig = dummyContestConfig
-      ),
+      StatusMessage(hashCount = fdswarm.replication.HashCount(), bandNodeOperator = dummyBno, contestConfig = dummyContestConfig),
       niOur,
       isLocal = false
     )

@@ -43,12 +43,7 @@ class StatusMessageTest extends FunSuite:
 
   test("JSON roundtrip"):
     val digests = Seq(FdHourDigest(FdHour(15, 12), 10, "digest-abc"))
-    val sm = StatusMessage(
-      hashCount = HashCount(),
-      hash = digests,
-      bandNodeOperator = dummyBno,
-      contestConfig = dummyContestConfig
-    )
+    val sm = StatusMessage(hashCount = HashCount(), bandNodeOperator = dummyBno, contestConfig = dummyContestConfig)
     val fdigestsJson = sm.hash.head.asJson.spaces2
     assertEquals(fdigestsJson, """{
                                  |  "fdHour" : "15:12",
@@ -68,12 +63,7 @@ class StatusMessageTest extends FunSuite:
   test("toPacket should serialize to JSON and gzip") {
 //    val hp = NodeIdentity("localhost", 8080, name =)
     val digests = Seq(FdHourDigest(FdHour(15, 12), 10, "digest-abc"))
-    val sm = StatusMessage(
-      hashCount = HashCount(),
-      hash = digests,
-      bandNodeOperator = dummyBno,
-      contestConfig = dummyContestConfig
-    )
+    val sm = StatusMessage(hashCount = HashCount(), bandNodeOperator = dummyBno, contestConfig = dummyContestConfig)
     
     val packet = sm.toPacket
     
@@ -93,12 +83,7 @@ class StatusMessageTest extends FunSuite:
 
   test("fromPacket should deserialize from gzipped packet") {
     val digests = Seq(FdHourDigest(FdHour(15, 12), 10, "digest-abc"))
-    val sm = StatusMessage(
-      hashCount = HashCount(),
-      hash = digests,
-      bandNodeOperator = dummyBno,
-      contestConfig = dummyContestConfig
-    )
+    val sm = StatusMessage(hashCount = HashCount(), bandNodeOperator = dummyBno, contestConfig = dummyContestConfig)
     
     val packet = sm.toPacket
     val readSm = StatusMessage.apply(packet)

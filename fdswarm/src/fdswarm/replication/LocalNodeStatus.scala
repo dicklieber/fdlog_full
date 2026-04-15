@@ -44,11 +44,14 @@ final class LocalNodeStatus @Inject()(
 
   @volatile private var lastHashCount: HashCount = HashCount()
 
-  def statusMessage:StatusMessage =
-    throw new NotImplementedError("Not implemented yet.")
-
-  def nodeStatus:NodeStatus =
-    throw new NotImplementedError("Not implemented yet.")
+  def statusMessage: StatusMessage =
+    val contestConfig = contestConfigManager.contestConfigProperty.value
+    val bandNodeOperator =
+      BandModeOperator(
+        stationManager.station.operator,
+        selectedBandModeStore.selected.value
+      )
+    StatusMessage(hashCount = lastHashCount, bandNodeOperator = bandNodeOperator, contestConfig = contestConfig)
 
   private val currentBuffer: ReadOnlyObjectWrapper[NodeStatus] = new ReadOnlyObjectWrapper[NodeStatus](null)
   val current: ReadOnlyObjectProperty[NodeStatus] = currentBuffer.getReadOnlyProperty
@@ -67,13 +70,10 @@ final class LocalNodeStatus @Inject()(
     rebuildAndNotify()
 
   private def rebuildAndNotify(): Unit =
-    val contestConfig = contestConfigManager.contestConfigProperty.value
-    val bandNodeOperator = BandModeOperator(stationManager.station.operator, selectedBandModeStore.selected.value)
-        val next = NodeStatus(
-          statusMessage = StatusMessage(hashCount = lastHashCount,
-            bandNodeOperator = bandNodeOperator,
-            contestConfig = contestConfig),
-          nodeIdentity = nodeIdentityManager.ourNodeIdentity,
-          isLocal = true
-        )
-        swarmData.update(next)
+    val next =
+      NodeStatus(
+        statusMessage = statusMessage,
+        nodeIdentity = nodeIdentityManager.ourNodeIdentity,
+        isLocal = true
+      )
+    swarmData.update(next)

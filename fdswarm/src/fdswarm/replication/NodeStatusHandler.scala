@@ -18,7 +18,6 @@
 
 package fdswarm.replication
 
-import cats.effect.unsafe.implicits.global
 import fdswarm.fx.contest.{ContestConfig, ContestConfigManager}
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.logging.Locus.Replication
@@ -92,7 +91,6 @@ class NodeStatusHandler @Inject() (
               statusPackets.inc(1)
               val statusMessage = StatusMessage(udpHeader.payload)
               lastStatusMessagePayloadSize = udpHeader.payload.length.toDouble
-              lastStatusMessageDigestCount = statusMessage.hash.size
 
               val nodeStatus = NodeStatus(
                 statusMessage,
@@ -143,7 +141,6 @@ class NodeStatusHandler @Inject() (
     "Repl-Processor"
   )
   private var lastStatusMessagePayloadSize: Double = 0.0
-  private var lastStatusMessageDigestCount: Int = 0
 
   private def contestManager: ContestConfigManager =
     contestManagerProvider.get()

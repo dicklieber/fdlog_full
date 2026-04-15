@@ -19,7 +19,6 @@
 package fdswarm.replication.status
 
 import fdswarm.fx.GridBuilder
-import fdswarm.fx.qso.FdHour
 import fdswarm.fx.utils.{BootstrapIcons, IntLabel}
 import fdswarm.replication.NodeStatus
 import fdswarm.util.{AgeStyleService, DurationFormat, NodeIdentity}
@@ -37,23 +36,6 @@ class SwarmStatusGrid(
   ourInstanceId: String,
   removeNode: NodeIdentity => Unit
 ):
-
-  val fdHours: Seq[FdHour] =
-    val allFdHours = for
-      receivedNodeStatus <- allNodes
-      fdDigest <- receivedNodeStatus.statusMessage.hash
-    yield
-      fdDigest.fdHour
-    allFdHours.distinct.sorted
-  
-
-  def bodyCounts: Array[Array[IntLabel]] =
-    fdHours.map { fdHour =>
-      allNodes.map { nodeStatus =>
-        val count = nodeStatus.statusMessage.hash.find(_.fdHour == fdHour).map(_.count).getOrElse(0)
-        IntLabel(count)
-      }.toArray
-    }.toArray
 
   def populate(builder: GridBuilder, rowStyleCallback: Seq[IntLabel] => String): Unit =
     // Header rows
@@ -114,15 +96,3 @@ class SwarmStatusGrid(
       receivedNodeStatus.statusMessage.bandNodeOperator.operator.toString)*)
     builder("Band/Mode", allNodes.map(receivedNodeStatus =>
       receivedNodeStatus.statusMessage.bandNodeOperator.bandMode.toString)*)
-
-    val currentGrid = bodyCounts
-    fdHours.zip(currentGrid).foreach { (hour, rowLabels) =>
-      val styleClass = rowStyleCallback(rowLabels.toIndexedSeq)
-      if (styleClass.nonEmpty) {
-        rowLabels.foreach(_.styleClass += styleClass)
-      }
-      builder(hour.display, rowLabels*)
-    }
-  
-  
-  

@@ -38,11 +38,7 @@ import io.circe.generic.auto.{deriveDecoder, deriveEncoder}
  * @param contestConfig    Configuration details of the contest, such as callsign,
  *                         class, section, and other metadata.
  */
-case class StatusMessage(hashCount: HashCount,
-                         hash: Seq[FdHourDigest] = Seq.empty,
-                         bandNodeOperator: BandModeOperator,
-                         id: Id = Ids.generateId(),
-                         contestConfig: ContestConfig) derives Codec.AsObject:
+case class StatusMessage(hashCount: HashCount, bandNodeOperator: BandModeOperator, contestConfig: ContestConfig, id: Id = Ids.generateId()) derives Codec.AsObject:
   def toPacket: Array[Byte] =
     CirceGzip.encode(this)
 
