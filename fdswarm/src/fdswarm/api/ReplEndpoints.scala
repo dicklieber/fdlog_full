@@ -23,6 +23,7 @@ import fdswarm.model.Qso
 import fdswarm.replication.{LocalNodeStatus, StatusMessage}
 import fdswarm.store.QsoStore
 import io.circe.{Codec, Printer}
+import io.circe.generic.semiauto.deriveCodec
 import io.circe.syntax.*
 import jakarta.inject.{Inject, Singleton}
 import nl.grons.metrics4.scala.DefaultInstrumented
@@ -65,7 +66,7 @@ final class ReplEndpoints @Inject()(
           )
           val jsonSizeBytes = response.asJson
             .printWith(
-              ReplEndpoints.given_Printer
+              ReplEndpoints.printer
             )
             .getBytes(
               StandardCharsets.UTF_8
@@ -79,7 +80,7 @@ final class ReplEndpoints @Inject()(
       }
 
 object ReplEndpoints:
-  given Printer = Printer.spaces2
+  val printer: Printer = Printer.spaces2
 
   val allQsosDef: PublicEndpoint[Unit, Unit, AllQsos, Any] =
     endpoint
@@ -110,4 +111,8 @@ object ReplEndpoints:
 case class AllQsos(
     statusMessage: StatusMessage,
     qsos: Seq[Qso]
-) derives Codec.AsObject
+)
+
+object AllQsos:
+  given Codec.AsObject[AllQsos] = deriveCodec[AllQsos]
+  given Schema[AllQsos] = Schema.derived
