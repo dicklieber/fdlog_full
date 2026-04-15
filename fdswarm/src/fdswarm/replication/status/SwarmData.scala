@@ -36,7 +36,7 @@ import scalafx.beans.property.StringProperty
 import scalafx.collections.ObservableBuffer
 import scalafx.scene.Node
 import scalafx.scene.Parent
-import scalafx.scene.control.{Label, Tooltip}
+import scalafx.scene.control.{Label, ScrollPane, Tooltip}
 import scalafx.scene.layout.GridPane
 import scalafx.scene.layout.StackPane
 
@@ -184,7 +184,14 @@ SwarmData @Inject() (
   def buildGridPane(
                      fields: Seq[NodeDataField]
                    ): Parent =
-    val container = new StackPane()
+    val gridContainer = new StackPane()
+    val scrollPane = new ScrollPane:
+      content = gridContainer
+      hbarPolicy = ScrollPane.ScrollBarPolicy.Always
+      vbarPolicy = ScrollPane.ScrollBarPolicy.Never
+      fitToHeight = false
+      fitToWidth = false
+      pannable = true
     var renderedByThisPane = Map.empty[(NodeIdentity, NodeDataField), Seq[Node]]
 
     def rebuildGrid(): Unit =
@@ -196,7 +203,7 @@ SwarmData @Inject() (
       registerRenderedCells(
         renderedByThisPane
       )
-      container.children.setAll(
+      gridContainer.children.setAll(
         result.grid
       )
 
@@ -218,10 +225,14 @@ SwarmData @Inject() (
             renderedByThisPane
           )
           renderedByThisPane = Map.empty
-          container.delegate.sceneProperty.removeListener(this)
-    container.delegate.sceneProperty.addListener(sceneListener)
+          scrollPane.delegate.sceneProperty.removeListener(
+            this
+          )
+    scrollPane.delegate.sceneProperty.addListener(
+      sceneListener
+    )
 
-    container
+    scrollPane
 
   private def buildGrid(fields: Seq[NodeDataField]): GridBuildResult =
     val builder = GridBuilder()
