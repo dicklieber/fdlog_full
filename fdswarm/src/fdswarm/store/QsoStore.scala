@@ -60,7 +60,8 @@ class QsoStore @Inject() (
     ): StyledMessage =
     val isDuplicateInStore =
       map.values.exists(existing => existing.dupCriterion == qso.dupCriterion)
-    if isDuplicateInStore then StyledMessage(qso.rejectedMsg, "duplicate-qso")
+    if isDuplicateInStore then
+      StyledMessage(qso.rejectedMsg, "duplicate-qso")
     else
       qsoEnteryCounter.inc()
       val jsonString = qso.asJsonCompact
@@ -111,12 +112,8 @@ class QsoStore @Inject() (
 
   def add(
       batch: Seq[Qso]
-    ): Unit =
-    doAdd(batch)
+    ): Unit = {
 
-  private def doAdd(
-      batch: Seq[Qso]
-    ): Unit =
     val thread = Thread.currentThread().getName
     logger.debug(s"[THREAD:$thread] Adding ${batch.size} QSOs to store")
 
@@ -134,6 +131,7 @@ class QsoStore @Inject() (
         qsoCollection.prependAll(toAdd)
       }
       calculateHash()
+  }
 
   def get(
       uuid: Id
