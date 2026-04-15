@@ -227,6 +227,10 @@ SwarmData @Inject() (
 
   private def buildGrid(fields: Seq[NodeDataField]): GridBuildResult =
     val builder = GridBuilder()
+    builder.hgap = 1
+    builder.vgap = 1
+    builder.padding = scalafx.geometry.Insets(1)
+    builder.style = "-fx-background-color: #808080; -fx-background-insets: 0;"
     val nodes = knownNodeIdentity.toSeq.sorted
     val cellsByField = scala.collection.mutable.Map.empty[(NodeIdentity, NodeDataField), Vector[Node]]
     fields.foreach { field =>
@@ -255,8 +259,10 @@ SwarmData @Inject() (
         values*
       )
     }
+    val grid = builder.result
+    grid.styleClass += "swarm-status-grid"
     GridBuildResult(
-      builder.result,
+      grid,
       cellsByField.view.mapValues(_.toSeq).toMap
     )
 
