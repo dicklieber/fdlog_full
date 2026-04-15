@@ -19,9 +19,7 @@
 package fdswarm.replication
 
 import fdswarm.fx.contest.{ContestConfig, ContestType}
-import fdswarm.fx.qso.FdHour
 import fdswarm.model.{BandMode, BandModeOperator, Callsign}
-import fdswarm.store.FdHourDigest
 import io.circe
 import io.circe.parser.decode
 import munit.FunSuite
@@ -29,6 +27,7 @@ import munit.FunSuite
 import java.io.ByteArrayInputStream
 import java.time.Instant
 import java.util.zip.GZIPInputStream
+import scala.util.Try
 
 class StatusMessageTest extends FunSuite:
   private val dummyBno = BandModeOperator(Callsign("WA9NNN"), BandMode("40M", "CW"), Instant.parse("2026-03-16T20:11:04Z"))
@@ -40,26 +39,18 @@ class StatusMessageTest extends FunSuite:
     stamp = Instant.parse("2026-03-16T20:11:04Z"))
 
 
-  test("toPacket should serialize to JSON and gzip") {
+  test("gzip round trip") {
 //    val hp = NodeIdentity("localhost", 8080, name =)
     val sm = StatusMessage(hashCount = HashCount(), bandNodeOperator = dummyBno, contestConfig = dummyContestConfig)
     
     val packet = sm.toPacket
-    
-    // Decompress
-    val bais = new ByteArrayInputStream(packet)
-    val gzis = new GZIPInputStream(bais)
-    val json = new String(gzis.readAllBytes(), "UTF-8")
 
-    val value: Either[circe.Error, StatusMessage] = decode[StatusMessage](json)
-    // Deserialize
-    val readSm = value.toTry.get
-    
-    assertEquals(readSm, sm)
+    val backAgain = StatusMessage(packet)
+
+    assertEquals(backAgain, sm)
   }
 
   test("fromPacket should deserialize from gzipped packet") {
-    val digests = Seq(FdHourDigest(FdHour(15, 12), 10, "digest-abc"))
     val sm = StatusMessage(hashCount = HashCount(), bandNodeOperator = dummyBno, contestConfig = dummyContestConfig)
     
     val packet = sm.toPacket

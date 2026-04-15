@@ -31,8 +31,6 @@ class AutoBindTest extends FunSuite:
     val names = AutoBind.discoverImplementationsOf[LazyStructuredLogging](Seq("fdswarm"))
     assert(names.nonEmpty)
     assert(names.contains("fdswarm.fx.ConfigModule"))
-    // FdHour is an object, its class name in ClassGraph usually ends with $
-    assert(names.exists(_.contains("FdHour")))
 
   test("AutoBind should filter injectable classes and handle objects"):
     // Just verify that we can get the Elements from a module using AutoBind

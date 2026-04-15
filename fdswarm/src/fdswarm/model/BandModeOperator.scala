@@ -19,30 +19,10 @@
 package fdswarm.model
 
 import java.time.Instant
-import io.circe.{Decoder, Encoder}
+import io.circe.{Codec, Decoder, Encoder}
 
-case class BandModeOperator(
+case class  BandModeOperator(
     operator: Callsign,
     bandMode: BandMode,
     stamp: Instant = Instant.now()
-)
-
-object BandModeOperator:
-  given Encoder[BandModeOperator] = Encoder.instance { bno =>
-    import io.circe.syntax.*
-    import fdswarm.util.JavaTimeCirce.given
-    io.circe.Json.obj(
-      "operator" -> bno.operator.asJson,
-      "bandMode" -> bno.bandMode.asJson,
-      "stamp" -> bno.stamp.asJson
-    )
-  }
-
-  given Decoder[BandModeOperator] = Decoder.instance { c =>
-    import fdswarm.util.JavaTimeCirce.given
-    for
-      operator <- c.downField("operator").as[Callsign]
-      bandMode <- c.downField("bandMode").as[BandMode]
-      stamp <- c.downField("stamp").as[Instant]
-    yield BandModeOperator(operator, bandMode, stamp)
-  }
+)derives Codec.AsObject

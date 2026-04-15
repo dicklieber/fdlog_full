@@ -18,15 +18,12 @@
 
 package fdswarm.model
 
-import munit.FunSuite
-import io.circe.syntax.*
+import fdswarm.fx.station.StationConfig
 import io.circe.parser.decode
-import fdswarm.fx.contest.ContestType
+import io.circe.syntax.*
+import munit.FunSuite
 
 import java.time.Instant
-import fdswarm.fx.qso.FdHour
-import fdswarm.fx.station.StationConfig
-import fdswarm.util.NodeIdentity
 
 class QsoCirceTest extends FunSuite:
 
@@ -64,7 +61,7 @@ class QsoCirceTest extends FunSuite:
                                |    "contest" : "WFD",
                                |    "v" : "0.0.0"
                                |  },
-                               |  "stamp" : "AAAAAAAAAAA",
+                               |  "stamp" : "1970-01-01T00:00:00Z",
                                |  "uuid" : "unique-id-123"
                                |}""".stripMargin)
     // Decode back to Qso
@@ -72,12 +69,6 @@ class QsoCirceTest extends FunSuite:
     
     assert(decoded.isRight, s"Failed to decode: ${decoded.left.map(_.getMessage)}")
     assertEquals(decoded.toOption.get, qso)
-
-  test("FdHour Circe round trip"):
-    val fdHour = FdHour(15, 23)
-    val json = fdHour.asJson.noSpaces
-    val decoded = decode[FdHour](json).getOrElse(fail("failed to decode"))
-    assertEquals(decoded, fdHour)
 
   test("Callsign Circe round trip"):
     val callsign = Callsign("wa9nnn")

@@ -18,19 +18,16 @@
 
 package fdswarm.model
 
-import munit.FunSuite
-import io.circe.syntax.*
-import io.circe.parser.decode
-import fdswarm.fx.contest.*
-import fdswarm.fx.qso.FdHour
-import fdswarm.fx.sections.*
 import fdswarm.fx.bands.*
-import fdswarm.store.*
+import fdswarm.fx.contest.*
 import fdswarm.replication.*
 import fdswarm.util.NodeIdentity
-import fdswarm.ContestDates
-import java.time.*
+import io.circe.parser.decode
+import io.circe.syntax.*
+import munit.FunSuite
+
 import java.net.URL
+import java.time.*
 
 class CirceSupportTest extends FunSuite:
 
@@ -72,8 +69,6 @@ class CirceSupportTest extends FunSuite:
 
   test("StatusMessage round trip"):
     val hostAndPort = NodeIdentity.testNodeIdentity
-    val fdHour = FdHour(15, 23)
-    val digest = FdHourDigest(fdHour, 10, "some-digest")
     val bno = BandModeOperator(Callsign("WA9NNN"), BandMode("40M", "CW"), Instant.parse("2026-03-16T15:00:00Z"))
     val config = ContestConfig(ContestType.ARRL, Callsign("WA9NNN"), 1, "A", "IL")
     val status = StatusMessage(hashCount = fdswarm.replication.HashCount(), bandNodeOperator = bno, contestConfig = config)
@@ -89,9 +84,3 @@ class CirceSupportTest extends FunSuite:
     assertEquals(decoded.url.toString, node.url.toString)
     assertEquals(decoded.ourStation, node.ourStation)
 
-  test("FdHourIds round trip"):
-    val fdHour = FdHour(15, 23)
-    val ids = FdHourIds(fdHour, Seq("id1", "id2"))
-    val json = ids.asJson.noSpaces
-    val decoded = decode[FdHourIds](json).toOption.get
-    assertEquals(decoded, ids)

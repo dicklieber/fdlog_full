@@ -45,7 +45,6 @@ final class FdLogMenus @Inject() (
     bandModeManagerPane: BandsAndModesPane,
     stationEditor: StationEditor,
     howManyDialogService: HowManyDialogService,
-    fdHourDialogService: FdHourDialogService,
     loggingDialog: LoggingDialog,
     contestTimeDialog: ContestTimeDialog,
     aboutMenuItem: AboutMenuItem,
@@ -112,12 +111,7 @@ final class FdLogMenus @Inject() (
               FdLogUi.primaryStage
             )
         ,
-        new MenuItem("Send FdHour"):
-          onAction = _ =>
-            fdHourDialogService.show(
-              FdLogUi.primaryStage
-            )
-        ,
+
         new MenuItem("Logging"):
           onAction = _ =>
             loggingDialog.show(

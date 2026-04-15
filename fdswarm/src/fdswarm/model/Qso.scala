@@ -18,7 +18,6 @@
 
 package fdswarm.model
 
-import fdswarm.fx.qso.FdHour
 import fdswarm.logging.LogFields
 import fdswarm.util.Ids
 import fdswarm.util.Ids.Id
@@ -53,8 +52,6 @@ case class Qso(
     extends  LogFields derives Codec.AsObject, sttp.tapir.Schema:
 
   lazy val rejectedMsg: String = s"Rejected duplicate Qso: $callsign $bandMode"
-  lazy val fdHour: FdHour =
-    FdHour(stamp)
   val logFields: Seq[(String, Any)] =
     Seq(
       "callsign" -> callsign.value,

@@ -19,7 +19,6 @@
 package fdswarm.store
 
 import fdswarm.StartupInfo
-import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.logging.Locus.LogEntry
@@ -49,7 +48,6 @@ class QsoStore @Inject() (
 
   val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()
   protected val map: TrieMap[Id, Qso] = new TrieMap
-  protected val internalDigests: TrieMap[FdHour, FdHourDigest] = new TrieMap
   // Metrics
   private val qsoEnteryCounter = metrics.counter("qsoEntries")
   private val hashCalculatorTimer = metrics.timer("hashCalculation")
@@ -193,9 +191,6 @@ class QsoStore @Inject() (
     mutateQsoCollection {
       qsoCollection.clear()
     }
-
-  def digests(): Seq[FdHourDigest] =
-    internalDigests.values.toSeq.sorted
 
   def size: Int = map.size
 

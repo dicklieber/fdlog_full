@@ -19,14 +19,12 @@
 package fdswarm.store
 
 import cats.effect.IO
-import cats.syntax.all.*
 import fdswarm.StartupInfo
-import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
-import fdswarm.replication.{LocalNodeStatus, Transport}
 import fdswarm.replication.status.SwarmData
-import fdswarm.util.Ids.Id
+import fdswarm.replication.{LocalNodeStatus, Transport}
 import fdswarm.telemetry.Metrics
+import fdswarm.util.Ids.Id
 import jakarta.inject.{Inject, Provider, Singleton}
 
 /**
@@ -43,51 +41,37 @@ class ReplicationSupport @Inject()(directoryProvider: DirectoryProvider,
                                    localNodeStatus: LocalNodeStatus
                                   )
   extends QsoStore(directoryProvider, transport, swarmDataProvider, startupInfo, filenameStamp, localNodeStatus):
-  /**
-   * 
-   * @param fdHourDigest from a remote node
-   * @return FdHours that need to be replicated.
-   */
-  def isFdHourNeeded(fdHourDigest: FdHourDigest): Option[FdHour] =
-    val fdHour = fdHourDigest.fdHour
-    internalDigests.get(fdHour) match
-      case Some(haveDigest) => 
-        Option.when(haveDigest != fdHourDigest){fdHour}
-      case None => 
-        // If we don't have the FdourDIgest]], we need it.
-        Option(fdHour)
+//  /**
+//   *
+//   * @param fdHourDigest from a remote node
+//   * @return FdHours that need to be replicated.
+//   */
+//  def isFdHourNeeded(fdHourDigest: FdHourDigest): Option[FdHour] =
+//    val fdHour = fdHourDigest.fdHour
+//    internalDigests.get(fdHour) match
+//      case Some(haveDigest) =>
+//        Option.when(haveDigest != fdHourDigest){fdHour}
+//      case None =>
+//        // If we don't have the FdourDIgest]], we need it.
+//        Option(fdHour)
 
 
-  def idsForHour(fdHour: FdHour): IO[FdHourIds] =
-    IO {
-      val ids = all.filter(_.fdHour == fdHour).map(_.uuid)
-      FdHourIds(fdHour, ids)
-    }
+//  def idsForHour(fdHour: FdHour): IO[FdHourIds] =
+//    IO {
+//      val ids = all.filter(_.fdHour == fdHour).map(_.uuid)
+//      FdHourIds(fdHour, ids)
+//    }
 
   private def doWeHaveQso(uuid:Id): IO[Boolean] =
     IO(map.contains(uuid))
 
-  def missingIds(remote: FdHourIds): IO[Seq[Id]] =
-    remote.ids.filterA { id =>
-      doWeHaveQso(id).map(!_)
-    }
+//  def missingIds(remote: FdHourIds): IO[Seq[Id]] =
+//    remote.ids.filterA { id =>
+//      doWeHaveQso(id).map(!_)
+//    }
 
   def addQsos(qsos: Seq[fdswarm.model.Qso]): IO[Unit] =
     IO {
       add(qsos)
     }
 
-  def qsosForFdHour(fdHour: FdHour): IO[Seq[fdswarm.model.Qso]] =
-    IO {
-      all.filter(_.fdHour == fdHour)
-    }
-
-  def qsosForIds(request: FdHourRequest): IO[FdHourQsos] =
-    qsosForFdHour(request.fdHour).map { qsos =>
-      val filteredQsos = if (request.specificQsos.isEmpty) 
-        qsos
-      else 
-        val ids = request.specificQsos.toSet
-        qsos.filter(qso => ids.contains(qso.uuid))
-      FdHourQsos(request.fdHour, filteredQsos)
-    }
