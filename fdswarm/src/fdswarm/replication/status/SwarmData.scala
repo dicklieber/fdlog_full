@@ -169,9 +169,6 @@ SwarmData @Inject() (
     )
 
     updateOnFxThread {
-      if !knownNodeIdentity.contains(nodeIdentity) then
-        knownNodeIdentity += nodeIdentity
-
       val staticValues = staticFieldValues(nodeStatus)
       staticValues.foreach { case (field, value) =>
         propertyFor(nodeIdentity, field).value = value
@@ -181,6 +178,7 @@ SwarmData @Inject() (
         )
       }
     }
+    updateKnownCollectionsFromNodeMap()
     notifyNodeStatusListeners()
 
   def buildGridPane(
@@ -231,7 +229,7 @@ SwarmData @Inject() (
     builder.vgap = 1
     builder.padding = scalafx.geometry.Insets(1)
     builder.style = "-fx-background-color: #808080; -fx-background-insets: 0;"
-    val nodes = knownNodeIdentity.toSeq.sorted
+    val nodes = knownNodeIdentity.toSeq
     val cellsByField = scala.collection.mutable.Map.empty[(NodeIdentity, NodeDataField), Vector[Node]]
     fields.foreach { field =>
       val values = nodes.map(
@@ -328,7 +326,7 @@ SwarmData @Inject() (
 
   private def updateKnownCollectionsFromNodeMap(): Unit =
     val nodeStatuses = nodeMap.values.toSeq
-    val nodes = nodeStatuses.map(_.nodeIdentity).distinct.sorted
+    val nodes = nodeStatuses.sorted.map(_.nodeIdentity).distinct
     updateOnFxThread {
       knownNodeIdentity.clear()
       knownNodeIdentity ++= nodes

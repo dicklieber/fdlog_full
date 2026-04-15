@@ -43,4 +43,7 @@ case class NodeStatus(
   override def compare(that: NodeStatus): Int =
     val localOrder = java.lang.Boolean.compare(that.isLocal, this.isLocal)
     if localOrder != 0 then localOrder
-    else this.nodeIdentity.hostName.compareTo(that.nodeIdentity.hostName)
+    else
+      val hostOrder = this.nodeIdentity.hostName.compareTo(that.nodeIdentity.hostName)
+      if hostOrder != 0 then hostOrder
+      else this.nodeIdentity.instanceId.compareTo(that.nodeIdentity.instanceId)
