@@ -19,9 +19,11 @@
 package fdswarm.replication.status
 
 import com.google.inject.name.Named
+import fdswarm.fx.GridColumns
 import jakarta.inject.{Inject, Singleton}
 import scalafx.application.Platform
-import scalafx.scene.control.TitledPane
+import scalafx.scene.control.Label
+import scalafx.scene.layout.BorderPane
 
 import java.util.concurrent.atomic.AtomicLong
 
@@ -34,11 +36,21 @@ class NodeBandOpPane @Inject()(
   private val refreshIntervalMillis = math.max(0L, nodeBandOpRefreshSeconds.toLong * 1000L)
   private val lastRefreshMillis = AtomicLong(0L)
 
-  val node: TitledPane = new TitledPane {
-    text = "Swarm"
-    collapsible = false
-    content = buildGrid()
-  }
+  private val titleLabel = new Label()
+  private val contentPane = new BorderPane:
+    center = buildGrid()
+  val node = GridColumns.fieldSet(
+    titleLabel,
+    contentPane
+  )
+  private val removeNodeStatusListener = swarmData.addNodeStatusListener(
+    statuses =>
+      Platform.runLater {
+        updateTitle(
+          statuses.size
+        )
+      }
+  )
 
   def refresh(): Unit =
     refreshInternal(force = true)
@@ -51,11 +63,17 @@ class NodeBandOpPane @Inject()(
     if force then
       lastRefreshMillis.set(now)
       Platform.runLater {
-        node.content = buildGrid()
+        contentPane.center = buildGrid()
+        updateTitle(
+          swarmData.allNodeStatuses.size
+        )
       }
     else if markRefreshDue(now) then
       Platform.runLater {
-        node.content = buildGrid()
+        contentPane.center = buildGrid()
+        updateTitle(
+          swarmData.allNodeStatuses.size
+        )
       }
 
   private def markRefreshDue(now: Long): Boolean =
@@ -75,3 +93,10 @@ class NodeBandOpPane @Inject()(
         NodeDataField.BandMode
       )
     )
+
+  private def updateTitle(
+                           nodeCount: Int
+                         ): Unit =
+    titleLabel.text =
+      if nodeCount == 1 then "Swarm"
+      else s"Swarm ($nodeCount nodes)"
