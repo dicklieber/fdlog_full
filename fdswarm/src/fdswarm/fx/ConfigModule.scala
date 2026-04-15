@@ -27,7 +27,7 @@ import fdswarm.{AutoBind, StartupInfo}
 import fdswarm.api.ApiEndpoints
 import fdswarm.io.{DirectoryProvider, ProductionDirectory}
 import fdswarm.logging.ElasticShipper
-import fdswarm.store.{QsoStore, ReplicationSupport}
+import fdswarm.store.QsoStore
 import fdswarm.replication.status.SwarmData
 import fdswarm.replication.{BroadcastTransport, NodeStatusHandler, StatusBroadcastService, Transport}
 import fdswarm.telemetry.Metrics
@@ -88,7 +88,7 @@ class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModu
       throw new Exception("Transport type not supported: " + transportType)
 //      bind[Transport].to[MulticastTransport].asEagerSingleton()
 
-    bind[QsoStore].to[ReplicationSupport].asEagerSingleton()
+    bind[QsoStore].asEagerSingleton()
     bind[ElasticShipper].asEagerSingleton()
 
 

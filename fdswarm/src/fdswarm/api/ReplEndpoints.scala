@@ -19,14 +19,14 @@
 package fdswarm.api
 
 import cats.effect.IO
-import fdswarm.store.ReplicationSupport
+import fdswarm.store.QsoStore
 import io.circe.Printer
 import jakarta.inject.Inject
 import sttp.tapir.server.ServerEndpoint
 
 /** Tapir endpoints for QSOs. */
 final class ReplEndpoints @Inject()(
-  replicationSupport: ReplicationSupport
+  qsoStore: QsoStore
 ) extends ApiEndpoints:
 
   private val printer: Printer = Printer.spaces2.copy(dropNullValues = true)

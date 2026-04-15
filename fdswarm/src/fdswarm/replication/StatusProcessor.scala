@@ -21,7 +21,7 @@ package fdswarm.replication
 import fdswarm.api.ReplEndpoints
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.replication.status.NodeBandOpPane
-import fdswarm.store.ReplicationSupport
+import fdswarm.store.QsoStore
 import jakarta.inject.{Inject, Singleton}
 import nl.grons.metrics4.scala.DefaultInstrumented
 
@@ -29,7 +29,7 @@ import nl.grons.metrics4.scala.DefaultInstrumented
   */
 @Singleton
 class StatusProcessor @Inject() (
-    qsoStore: ReplicationSupport,
+    qsoStore: QsoStore,
     replEndpoints: ReplEndpoints,
     callEndpoint: CallEndpoint,
     nodeBandOpPane: NodeBandOpPane)

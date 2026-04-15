@@ -23,7 +23,7 @@ import fdswarm.logging.LazyStructuredLogging
 import fdswarm.logging.Locus.Replication
 import fdswarm.model.Qso
 import fdswarm.replication.status.SwarmData
-import fdswarm.store.ReplicationSupport
+import fdswarm.store.QsoStore
 import io.circe.generic.auto.deriveDecoder
 import io.circe.parser.decode
 import jakarta.inject.{Inject, Provider, Singleton}
@@ -62,7 +62,7 @@ import java.net.http.HttpClient
   */
 @Singleton
 class NodeStatusHandler @Inject() (
-    replicationSupportProvider: Provider[ReplicationSupport],
+    qsoStoreProvider: Provider[QsoStore],
     statusProcessor: StatusProcessor,
     swarmData: SwarmData,
     transport: Transport,
@@ -166,12 +166,12 @@ class NodeStatusHandler @Inject() (
     decode[Qso](sJson) match
       case Right(qso) =>
         logger.debug(s"Received QSO via multicast: ${qso.callsign}")
-        replicationSupport.add(qso)
+        qsoStore.add(qso)
       case Left(error) =>
         logger.error(s"Failed to decode QSO from multicast: $sJson", error)
 
-  private def replicationSupport: ReplicationSupport =
-    replicationSupportProvider.get()
+  private def qsoStore: QsoStore =
+    qsoStoreProvider.get()
 
   thread.setDaemon(true)
   logger.debug("Starting NodeStatusHandler Thread")
