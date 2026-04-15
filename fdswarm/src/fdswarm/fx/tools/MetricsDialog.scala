@@ -230,9 +230,9 @@ final class MetricsDialog @Inject() (
         val snapshot = histogram.getSnapshot
         (
           "Histogram",
-          s"count=${histogram.getCount}, p50=${snapshot.getMedian}, p95=${snapshot.get95thPercentile}",
-          "",
-          ""
+          s"count=${histogram.getCount}",
+          snapshot.getMedian.toString,
+          snapshot.get95thPercentile.toString
         )
       case timer: Timer =>
         val snapshot = timer.getSnapshot
