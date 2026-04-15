@@ -20,40 +20,38 @@ package fdswarm.replication.status
 
 import fdswarm.fx.GridBuilder
 import fdswarm.fx.contest.{ContestConfig, ContestType}
-import fdswarm.fx.qso.FdHour
 import fdswarm.model.{BandMode, BandModeOperator, Callsign}
-import fdswarm.replication.{NodeDetails, NodeStatus, StatusMessage}
-import fdswarm.store.FdHourDigest
+import fdswarm.replication.{HashCount, NodeStatus, StatusMessage}
 import fdswarm.util.NodeIdentity
 import munit.FunSuite
+
 import java.time.Instant
+
 import scala.jdk.CollectionConverters.*
 
 class GridTest extends FunSuite:
-  private val dummyBno = BandModeOperator(Callsign("WA9NNN"), BandMode("40M", "CW"), Instant.parse("2026-03-16T20:11:04Z"))
-  private val dummyContestConfig = ContestConfig(ContestType.ARRL, Callsign("WA9NNN"), 1, "A", "IL")
+  private val dummyBno = BandModeOperator(
+    Callsign("WA9NNN"),
+    BandMode("40M", "CW"),
+    Instant.parse("2026-03-16T20:11:04Z")
+  )
 
-  test("Gird should create a 2D array of IntLabels".ignore):
-    // Mock JavaFX Toolkit if not already initialized
-    try {
+  private val dummyContestConfig = ContestConfig(
+    ContestType.ARRL,
+    Callsign("WA9NNN"),
+    1,
+    "A",
+    "IL",
+    Instant.parse("2026-03-16T20:11:04Z")
+  )
+
+  private def initJavaFx(): Unit =
+    try
       new javafx.embed.swing.JFXPanel()
-    } catch {
-      case _: Throwable => // ignore
-    }
-    val ni1 = NodeIdentity("192.168.1.1", 8080, "111", "node1")
-    val ni2 = NodeIdentity("192.168.1.2", 8080, "222", "node2")
+    catch
+      case _: Throwable =>
 
-    val hour1 = FdHour(10, 1)
-    val hour2 = FdHour(10, 2)
-
-    val sm1 = StatusMessage(hashCount = fdswarm.replication.HashCount(), bandNodeOperator = dummyBno, contestConfig = dummyContestConfig)
-    val nd1 = NodeStatus(sm1, ni1, isLocal = false)
-
-    val sm2 = StatusMessage(hashCount = fdswarm.replication.HashCount(), bandNodeOperator = dummyBno, contestConfig = dummyContestConfig)
-    val nd2 = NodeStatus(sm2, ni2, isLocal = false)
-
-    val allNodeDetails = Seq(nd1, nd2)
-    val nowProperty = scalafx.beans.property.LongProperty(System.currentTimeMillis())
+  private def newAgeStyleService() =
     val config = com.typesafe.config.ConfigFactory.parseString(
       """
         |fdswarm.ageStyles {
@@ -64,123 +62,148 @@ class GridTest extends FunSuite:
         |    ]
         |  }
         |}
-      """.stripMargin)
-    val ageStyleService = new fdswarm.util.AgeStyleService(config)
-    val gird = SwarmStatusGrid(
-      allNodeDetails,
-      nowProperty,
-      ageStyleService,
-      "some-id",
-      _ => ()
+      """.stripMargin
     )
+    new fdswarm.util.AgeStyleService(config)
 
-    // FdHour is sorted, so hour1 then hour2
-    assertEquals(gird.fdHours.length, 2)
-    assertEquals(gird.fdHours(0), hour1)
-    assertEquals(gird.fdHours(1), hour2)
+  private def gridContainsText(
+    gridPane: javafx.scene.layout.GridPane,
+    text: String
+  ): Boolean =
+    gridPane.getChildren.asScala.exists {
+      case l: javafx.scene.control.Label if l.getText == text => true
+      case h: javafx.scene.layout.HBox =>
+        h.getChildren.asScala.exists {
+          case l: javafx.scene.control.Label if l.getText == text => true
+          case _ => false
+        }
+      case _ => false
+    }
 
-    // grid dimension 1: hours
-    // assertEquals(gird.bodyCounts.length, 2)
+  test("Grid.populate should include all current SwarmStatusGrid rows".ignore):
+    initJavaFx()
+    val nowProperty = scalafx.beans.property.LongProperty(
+      Instant.parse("2026-03-16T20:12:00Z").toEpochMilli
+    )
+    val ageStyleService = newAgeStyleService()
 
-    // row 0: hour1
-    // assertEquals(gird.bodyCounts(0).length, 2)
-    // assertEquals(gird.bodyCounts(0)(0).text.value, "5")
-    // assertEquals(gird.bodyCounts(0)(1).text.value, "3")
-
-    // row 1: hour2
-    // assertEquals(gird.bodyCounts(1).length, 2)
-    // assertEquals(gird.bodyCounts(1)(0).text.value, "10")
-    // assertEquals(gird.bodyCounts(1)(1).text.value, "0")
-
-  test("Gird.populate should add header rows".ignore):
-    val ni1 = NodeIdentity("192.168.1.1", 8080, "111", "node1")
-    val nd1 = NodeStatus(
-      StatusMessage(hashCount = fdswarm.replication.HashCount(), bandNodeOperator = dummyBno, contestConfig = dummyContestConfig),
-      ni1,
+    val node1 = NodeStatus(
+      StatusMessage(
+        hashCount = HashCount(qsoCount = 5),
+        bandNodeOperator = dummyBno,
+        contestConfig = dummyContestConfig
+      ),
+      NodeIdentity("192.168.1.1", 8080, "111", "node1"),
+      Instant.parse("2026-03-16T20:11:30Z"),
+      isLocal = false
+    )
+    val node2 = NodeStatus(
+      StatusMessage(
+        hashCount = HashCount(qsoCount = 3),
+        bandNodeOperator = dummyBno,
+        contestConfig = dummyContestConfig
+      ),
+      NodeIdentity("192.168.1.2", 8080, "222", "node2"),
+      Instant.parse("2026-03-16T20:11:30Z"),
       isLocal = false
     )
 
     val builder = new GridBuilder()
-    val nowProperty = scalafx.beans.property.LongProperty(System.currentTimeMillis())
-    val config = com.typesafe.config.ConfigFactory.parseString(
-      """
-        |fdswarm.ageStyles {
-        |  nodeAging {
-        |    thresholds = [
-        |      { duration = 12.0, style = "fresh" }
-        |      { duration = 20.0, style = "stale" }
-        |    ]
-        |  }
-        |}
-      """.stripMargin)
-    val ageStyleService = new fdswarm.util.AgeStyleService(config)
     val grid = SwarmStatusGrid(
-      Seq(nd1),
+      Seq(node1, node2),
       nowProperty,
       ageStyleService,
       "some-id",
       _ => ()
     )
 
-    grid.populate(builder, _ => "test-style")
-    
-    val gridPane = builder.result
-    // 4 headers + 0 hours = 4 rows
-    // Wait, hours is empty here.
-    // Labels are added to gridPane.
-    
-    def findLabelByText(text: String): Option[javafx.scene.control.Label] =
-      gridPane.getChildren.asScala.collectFirst {
-        case l: javafx.scene.control.Label if l.getText == text => l
-      }
+    grid.populate(
+      builder,
+      _ => "test-style"
+    )
 
-    // Check headers in col 0
-    assert(findLabelByText("Instance Id").isDefined)
-    assert(findLabelByText("Host").isDefined)
-    assert(findLabelByText("Age").isDefined)
-    assert(findLabelByText("Qso Count").isDefined)
-    
-    // Check values in col 1
-    // assert(findLabelByText("node1").isDefined) // Commented out because it's now in an HBox
-    assert(gridPane.getChildren.asScala.exists {
-      case l: javafx.scene.control.Label if l.getText == "node1" => true
-      case h: javafx.scene.layout.HBox => h.getChildren.asScala.exists {
-        case l: javafx.scene.control.Label if l.getText == "node1" => true
-        case _ => false
-      }
-      case _ => false
-    })
-    // Check "Our Node" when it matches
-    val niOur = NodeIdentity("127.0.0.1", 8080, "111", "our-node")
-    val ndOur = NodeStatus(
-      StatusMessage(hashCount = fdswarm.replication.HashCount(), bandNodeOperator = dummyBno, contestConfig = dummyContestConfig),
-      niOur,
+    val gridPane = builder.result
+
+    assert(gridContainsText(gridPane, "Instance Id"))
+    assert(gridContainsText(gridPane, "Host"))
+    assert(gridContainsText(gridPane, "Contest"))
+    assert(gridContainsText(gridPane, "Age"))
+    assert(gridContainsText(gridPane, "Qso Count"))
+    assert(gridContainsText(gridPane, "Operator"))
+    assert(gridContainsText(gridPane, "Band/Mode"))
+    assert(gridContainsText(gridPane, "node1"))
+    assert(gridContainsText(gridPane, "node2"))
+    assert(gridContainsText(gridPane, "192.168.1.1"))
+    assert(gridContainsText(gridPane, "192.168.1.2"))
+    assert(gridContainsText(gridPane, dummyContestConfig.display))
+    assert(gridContainsText(gridPane, "5"))
+    assert(gridContainsText(gridPane, "3"))
+    assert(gridPane.getChildren.asScala.nonEmpty)
+
+  test("Grid.populate should show remove control and our-node age label".ignore):
+    initJavaFx()
+    val nowProperty = scalafx.beans.property.LongProperty(
+      Instant.parse("2026-03-16T20:12:00Z").toEpochMilli
+    )
+    val ageStyleService = newAgeStyleService()
+
+    var removedNode: Option[NodeIdentity] = None
+    val remoteNodeIdentity = NodeIdentity("192.168.1.10", 8080, "111", "remote-node")
+    val ourNodeIdentity = NodeIdentity("127.0.0.1", 8080, "222", "our-node")
+
+    val remoteNode = NodeStatus(
+      StatusMessage(
+        hashCount = HashCount(),
+        bandNodeOperator = dummyBno,
+        contestConfig = dummyContestConfig
+      ),
+      remoteNodeIdentity,
+      Instant.parse("2026-03-16T20:11:30Z"),
       isLocal = false
     )
-    val builder2 = new GridBuilder()
-    val gird2 = SwarmStatusGrid(
-      Seq(ndOur),
+    val ourNode = NodeStatus(
+      StatusMessage(
+        hashCount = HashCount(),
+        bandNodeOperator = dummyBno,
+        contestConfig = dummyContestConfig
+      ),
+      ourNodeIdentity,
+      Instant.parse("2026-03-16T20:11:30Z"),
+      isLocal = true
+    )
+
+    val builder = new GridBuilder()
+    val grid = SwarmStatusGrid(
+      Seq(remoteNode, ourNode),
       nowProperty,
       ageStyleService,
       "our-node",
-      _ => ()
+      nodeIdentity => removedNode = Some(nodeIdentity)
     )
-    gird2.populate(builder2, _ => "test-style")
-    val gridPane2 = builder2.result
-    
-    val ourNodeLabel = gridPane2.getChildren.asScala.collectFirst {
+
+    grid.populate(
+      builder,
+      _ => "test-style"
+    )
+
+    val gridPane = builder.result
+    val deleteButtons = gridPane.getChildren.asScala.collect {
+      case h: javafx.scene.layout.HBox =>
+        h.getChildren.asScala.collect { case b: javafx.scene.control.Button => b }
+    }.flatten
+
+    assertEquals(
+      deleteButtons.size,
+      1
+    )
+    deleteButtons.head.fire()
+    assertEquals(
+      removedNode,
+      Some(remoteNodeIdentity)
+    )
+
+    val ourNodeLabel = gridPane.getChildren.asScala.collectFirst {
       case l: javafx.scene.control.Label if l.getText == "Our Node" => l
     }
     assert(ourNodeLabel.isDefined)
     assert(ourNodeLabel.get.getStyleClass.contains("ourNode"))
-    
-    // Check font styles (now applied via CSS, so we check if the style class is present)
-
-    // Check host
-    val allChildren = gridPane.getChildren.asScala.toList
-    val labels = allChildren.collect { case l: javafx.scene.control.Label => l.getText }
-    assert(labels.contains("192.168.1.1"))
-    // Check age label - we don't check exact text because it's a binding and might not be evaluated immediately in test
-    // or might have slightly different timing.
-    // But we should have some labels.
-    assert(gridPane.getChildren.asScala.nonEmpty)

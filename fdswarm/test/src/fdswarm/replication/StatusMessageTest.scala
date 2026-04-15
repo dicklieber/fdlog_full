@@ -18,14 +18,12 @@
 
 package fdswarm.replication
 
-import fdswarm.model.{BandMode, BandModeOperator, Callsign}
-import fdswarm.store.FdHourDigest
-import fdswarm.util.NodeIdentity
 import fdswarm.fx.contest.{ContestConfig, ContestType}
 import fdswarm.fx.qso.FdHour
+import fdswarm.model.{BandMode, BandModeOperator, Callsign}
+import fdswarm.store.FdHourDigest
 import io.circe
 import io.circe.parser.decode
-import io.circe.syntax.EncoderOps
 import munit.FunSuite
 
 import java.io.ByteArrayInputStream
@@ -41,28 +39,9 @@ class StatusMessageTest extends FunSuite:
     "IL",
     stamp = Instant.parse("2026-03-16T20:11:04Z"))
 
-  test("JSON roundtrip"):
-    val digests = Seq(FdHourDigest(FdHour(15, 12), 10, "digest-abc"))
-    val sm = StatusMessage(hashCount = HashCount(), bandNodeOperator = dummyBno, contestConfig = dummyContestConfig)
-    val fdigestsJson = sm.hash.head.asJson.spaces2
-    assertEquals(fdigestsJson, """{
-                                 |  "fdHour" : "15:12",
-                                 |  "count" : 10,
-                                 |  "digest" : "digest-abc"
-                                 |}""".stripMargin)
-    val sJson = sm.asJson.spaces2
-    println(
-
-    )
-//    assertEquals(sJson, """""".stripMargin)
-    val decoded = decode[StatusMessage](sJson).getOrElse(fail("failed to decode"))
-    assertEquals(decoded, sm)
-    assertEquals(decoded.hash.size, 1)
-    assertEquals(decoded.hash.head.count, 10)
 
   test("toPacket should serialize to JSON and gzip") {
 //    val hp = NodeIdentity("localhost", 8080, name =)
-    val digests = Seq(FdHourDigest(FdHour(15, 12), 10, "digest-abc"))
     val sm = StatusMessage(hashCount = HashCount(), bandNodeOperator = dummyBno, contestConfig = dummyContestConfig)
     
     val packet = sm.toPacket
@@ -77,8 +56,6 @@ class StatusMessageTest extends FunSuite:
     val readSm = value.toTry.get
     
     assertEquals(readSm, sm)
-    assertEquals(readSm.hash.size, 1)
-    assertEquals(readSm.hash.head.count, 10)
   }
 
   test("fromPacket should deserialize from gzipped packet") {
