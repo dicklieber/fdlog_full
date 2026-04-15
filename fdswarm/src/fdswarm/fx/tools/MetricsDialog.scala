@@ -22,15 +22,16 @@ import com.codahale.metrics.{Counter, Gauge, Histogram, Meter, Metric, Timer}
 import fdswarm.telemetry.Metrics
 import fdswarm.util.DurationFormat
 import jakarta.inject.{Inject, Singleton}
+import scalafx.application.Platform
 import scalafx.Includes.*
 import scalafx.animation.{KeyFrame, Timeline}
 import scalafx.beans.property.StringProperty
 import scalafx.collections.ObservableBuffer
 import scalafx.geometry.Insets
 import scalafx.scene.chart.{LineChart, NumberAxis, XYChart}
-import scalafx.scene.control.{ButtonType, Dialog, Label, TableColumn, TableRow, TableView, TextField}
+import scalafx.scene.control.{ButtonType, CheckBox, Dialog, Label, TableColumn, TableRow, TableView, TextField}
 import scalafx.scene.input.MouseButton
-import scalafx.scene.layout.VBox
+import scalafx.scene.layout.{HBox, VBox}
 import scalafx.stage.Window
 import scalafx.util.Duration as FxDuration
 
@@ -334,14 +335,59 @@ final class MetricsDialog @Inject() (
       startedAtMillis = startedAtMillis,
       percentile = _.p99
     )
-
-    lineChart.data = Seq(
-      p50Series.delegate,
-      p75Series.delegate,
-      p90Series.delegate,
-      p95Series.delegate,
-      p99Series.delegate
+    val seriesByName = Seq(
+      "P50" -> p50Series,
+      "P75" -> p75Series,
+      "P90" -> p90Series,
+      "P95" -> p95Series,
+      "P99" -> p99Series
     )
+
+    val p50Check = new CheckBox("P50"):
+      selected = true
+    val p75Check = new CheckBox("P75"):
+      selected = true
+    val p90Check = new CheckBox("P90"):
+      selected = true
+    val p95Check = new CheckBox("P95"):
+      selected = true
+    val p99Check = new CheckBox("P99"):
+      selected = true
+    val toggles = Seq(
+      p50Check,
+      p75Check,
+      p90Check,
+      p95Check,
+      p99Check
+    )
+
+    def refreshVisibleSeries(): Unit =
+      val selectedNames = toggles
+        .filter(
+          _.selected.value
+        )
+        .map(
+          _.text.value
+        )
+        .toSet
+      lineChart.data = seriesByName.collect {
+        case (name, series) if selectedNames.contains(
+              name
+            ) =>
+          series.delegate
+      }
+      Platform.runLater(
+        applySeriesStyles(
+          lineChart
+        )
+      )
+
+    toggles.foreach(
+      _.selected.onChange {
+        (_, _, _) => refreshVisibleSeries()
+      }
+    )
+    refreshVisibleSeries()
 
     val content = new VBox:
       spacing = 8
@@ -354,6 +400,10 @@ final class MetricsDialog @Inject() (
         new Label(
           s"$metricType metric history for $metricName"
         ),
+        new HBox:
+          spacing = 12
+          children = toggles
+        ,
         lineChart
       )
 
@@ -362,6 +412,12 @@ final class MetricsDialog @Inject() (
       headerText = metricName
       initOwner(
         ownerWindow
+      )
+    dialog.onShown = _ =>
+      Platform.runLater(
+        applySeriesStyles(
+          lineChart
+        )
       )
     dialog.dialogPane().buttonTypes = Seq(
       ButtonType.Close
@@ -454,6 +510,31 @@ final class MetricsDialog @Inject() (
             )
         )*
       )
+
+  private def applySeriesStyles(
+      lineChart: LineChart[Number, Number]
+  ): Unit =
+    val styles = Map(
+      "P50" -> "#1f77b4",
+      "P75" -> "#2ca02c",
+      "P90" -> "#ff7f0e",
+      "P95" -> "#d62728",
+      "P99" -> "#9467bd"
+    )
+    lineChart.data.value.foreach(
+      series =>
+        val color = styles.getOrElse(
+          series.getName,
+          "#666666"
+        )
+        Option(
+          series.getNode
+        ).foreach(
+          _.setStyle(
+            s"-fx-stroke: $color; -fx-stroke-width: 2.4px;"
+          )
+        )
+    )
 
   private def appendGraphPoint(
       metricName: String,
