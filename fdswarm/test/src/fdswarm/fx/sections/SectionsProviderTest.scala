@@ -25,7 +25,7 @@ import scalafx.Includes.*
 import scalafx.beans.binding.Bindings
 
 class SectionsProviderTest extends FunSuite:
-  test("SectionsProvider provides a Seq[SectionGroup] as a val".ignore) {
+  test("SectionsProvider provides a Seq[SectionGroup] as a val") {
     val config = ConfigFactory.load()
     val provider = new SectionsProvider(config)
     
@@ -53,7 +53,7 @@ class SectionsProviderTest extends FunSuite:
     assert(allSections.exists(_.code == "DX"))
   }
 
-  test("Section properties are correctly initialized".ignore) {
+  test("Section properties are correctly initialized") {
     JavaFxTestKit.init()
     val section = Section("IL", "Illinois")
     assertEquals(section.text.value, "IL")
@@ -61,7 +61,7 @@ class SectionsProviderTest extends FunSuite:
     assertEquals(section.tooltip.value.text.value, "Illinois")
   }
 
-  test("Section selection updates StringProperty and respects canSubmit binding".ignore) {
+  test("Section selection updates StringProperty and respects canSubmit binding") {
     val section = Section("IL", "Illinois")
     val prop = scalafx.beans.property.StringProperty("")
     var called = false

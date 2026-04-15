@@ -42,7 +42,7 @@ class SectionFieldValidatorTest extends FunSuite:
       sections.exists(_.code.toUpperCase.startsWith(upper))
     }
 
-  test("isValid validates against section list".ignore) {
+  test("isValid validates against section list") {
     assert(isValid("IL"))
     assert(isValid("QC"))
     assert(isValid("DX"))
@@ -51,14 +51,14 @@ class SectionFieldValidatorTest extends FunSuite:
     assert(isValid(" sjv ")) // with spaces
   }
 
-  test("isValid rejects invalid sections".ignore) {
+  test("isValid rejects invalid sections") {
     assert(!isValid(""))
     assert(!isValid("XX"))
     assert(!isValid("ILL"))
     assert(!isValid(null))
   }
 
-  test("isValidPartial allows valid prefixes".ignore) {
+  test("isValidPartial allows valid prefixes") {
     assert(isValidPartial(""))
     assert(isValidPartial("I"))
     assert(isValidPartial("IL"))
@@ -67,7 +67,7 @@ class SectionFieldValidatorTest extends FunSuite:
     assert(isValidPartial("SJV"))
   }
 
-  test("isValidPartial rejects invalid prefixes".ignore) {
+  test("isValidPartial rejects invalid prefixes") {
     assert(!isValidPartial("X"))
     assert(!isValidPartial("ILL"))
     assert(!isValidPartial("SVA"))

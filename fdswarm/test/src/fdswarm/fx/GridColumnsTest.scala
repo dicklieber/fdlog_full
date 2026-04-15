@@ -22,7 +22,7 @@ import scalafx.scene.control.Label
 import scalafx.scene.layout.{GridPane, StackPane, BorderPane}
 
 class GridColumnsTest extends FunSuite:
-  test("toGrid arranges items in rows and columns".ignore):
+  test("toGrid arranges items in rows and columns"):
     val items = (1 to 8).map(
       i => new Label(i.toString)
     )
@@ -49,7 +49,7 @@ class GridColumnsTest extends FunSuite:
       grid != null
     )
 
-  test("fieldSet creates a StackPane with a Label and content".ignore):
+  test("fieldSet creates a StackPane with a Label and content"):
     val content = new Label(
       "Content"
     )

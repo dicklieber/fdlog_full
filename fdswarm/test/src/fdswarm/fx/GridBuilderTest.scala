@@ -27,7 +27,7 @@ import scalafx.scene.layout.GridPane
 
 class GridBuilderTest extends FunSuite:
 
-  test("GridBuilder builds a GridPane with correct rows".ignore):
+  test("GridBuilder builds a GridPane with correct rows"):
     JavaFxTestKit.runOnFx {
       val builder = GridBuilder()
       builder.hgap = 10
@@ -65,7 +65,7 @@ class GridBuilderTest extends FunSuite:
       
     }
 
-  test("GridBuilder handles Node as value".ignore):
+  test("GridBuilder handles Node as value"):
     JavaFxTestKit.runOnFx {
       val builder = GridBuilder()
       val customLabel = new Label("Custom Node Content")
@@ -86,7 +86,7 @@ class GridBuilderTest extends FunSuite:
       // (like "Label@...[styleClass=label]'Custom Node Content'")
     }
 
-  test("GridBuilder handles empty label".ignore):
+  test("GridBuilder handles empty label"):
     JavaFxTestKit.runOnFx {
       val builder = GridBuilder()
       builder("", "Value Only")
@@ -104,7 +104,7 @@ class GridBuilderTest extends FunSuite:
       assertEquals(label.getText, "Value Only")
     }
 
-  test("GridBuilder handles header and column span".ignore):
+  test("GridBuilder handles header and column span"):
     JavaFxTestKit.runOnFx {
       val builder = new GridBuilder("Test Header")
       builder("Label 1:", "Value 1", "Value 2")
@@ -124,7 +124,7 @@ class GridBuilderTest extends FunSuite:
       assertEquals(headerLabel.getAlignment, javafx.geometry.Pos.CENTER)
     }
 
-  test("GridBuilder fills empty cells in short rows".ignore):
+  test("GridBuilder fills empty cells in short rows"):
     JavaFxTestKit.runOnFx {
       val builder = GridBuilder()
       builder("Long Row:", "Val 1", "Val 2")
@@ -141,7 +141,7 @@ class GridBuilderTest extends FunSuite:
       assert(filler.getStyleClass.contains("grid-value"))
     }
 
-  test("GridBuilder ensures style class for manually created labels".ignore):
+  test("GridBuilder ensures style class for manually created labels"):
     JavaFxTestKit.runOnFx {
       val builder = GridBuilder()
       val manualLabel = new Label("Manual")
@@ -154,7 +154,7 @@ class GridBuilderTest extends FunSuite:
       assert(label.getStyleClass.contains("grid-value"))
     }
 
-  test("GridBuilder header does not have overlapping fillers".ignore):
+  test("GridBuilder header does not have overlapping fillers"):
     JavaFxTestKit.runOnFx {
       val builder = new GridBuilder("Overlap Test Header")
       builder("Row 1:", "Value 1", "Value 2") // maxValues = 2
