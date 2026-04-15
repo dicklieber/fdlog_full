@@ -21,12 +21,8 @@ package fdswarm.replication.status
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.FdLogUi
 import fdswarm.fx.GridBuilder
-import fdswarm.fx.qso.FdHour
-import fdswarm.replication.HashCount
 import fdswarm.fx.station.StationEditor
-import fdswarm.replication.LocalNodeStatus
 import fdswarm.replication.NodeStatus
-import fdswarm.store.FdHourDigest
 import fdswarm.util.NodeIdentity
 import fdswarm.util.NodeIdentityManager
 import jakarta.inject.{Inject, Singleton}
@@ -48,23 +44,12 @@ import java.time.format.DateTimeFormatter
 import java.util.concurrent.atomic.AtomicLong
 import scala.collection.concurrent.TrieMap
 
-enum FdHours(val fdHour: FdHour):
-  case Value(override val fdHour: FdHour) extends FdHours(fdHour)
-
-  def label: String = s"FdHour:${fdHour.display}"
-
-object FdHours:
-  def apply(fdHour: FdHour): FdHours = Value(fdHour)
-
 /**
  * Holds data about each node in the swarm.
- * @param nodeIdentityManager
- * @param localNodeStatus
  */
 @Singleton
 class SwarmData @Inject() (
   nodeIdentityManager: NodeIdentityManager,
-  localNodeStatus: LocalNodeStatus,
   stationEditor: StationEditor,
   ageCellStyleRefresher: AgeCellStyleRefresher
 ) extends LazyStructuredLogging:
@@ -80,12 +65,10 @@ class SwarmData @Inject() (
                                     )
 
   val knownNodeIdentity: ObservableBuffer[NodeIdentity] = ObservableBuffer.empty[NodeIdentity]
-  private val knownFdHoursBuffer: ObservableBuffer[FdHours] = ObservableBuffer.empty[FdHours]
 
   val nodeMap: TrieMap[NodeIdentity, NodeStatus] = TrieMap.empty[NodeIdentity, NodeStatus]
   private val valueProperties = TrieMap.empty[(NodeIdentity, NodeDataField), StringProperty]
   private val renderedCellNodes = TrieMap.empty[(NodeIdentity, NodeDataField), Vector[Node]]
-  private val knownFdHourValues = TrieMap.empty[FdHour, FdHour]
   private val nodeStatusListeners = TrieMap.empty[Long, Seq[NodeStatus] => Unit]
   private val cellNodeListeners = TrieMap.empty[Long, CellNodeListener]
   private val nodeStatusListenerId = AtomicLong(0L)
@@ -143,28 +126,6 @@ class SwarmData @Inject() (
     }
     () => cellNodeListeners.remove(id)
 
-  Option(localNodeStatus.current.get()).foreach(
-    nodeStatus =>
-      update(nodeStatus)
-  )
-  localNodeStatus.current.addListener(
-    (
-      _: javafx.beans.value.ObservableValue[? <: NodeStatus],
-      _: NodeStatus,
-      newStatus: NodeStatus
-    ) =>
-      if newStatus != null then
-        update(newStatus)
-  )
-
-//  def updateLocalDigests(
-//    hashCount: HashCount,
-//  ): Unit =
-//    localNodeStatus.updateDigestState(
-//      hashCount = hashCount,
-//      digests = digests
-//    )
-
   def clear(): Unit =
     val localStatus = nodeMap.get(ourNodeIdentity)
     nodeMap.keys.foreach(
@@ -197,25 +158,14 @@ class SwarmData @Inject() (
       notifyNodeStatusListeners()
       logger.debug(s"Removed node status for $nodeIdentity")
 
-  def knownFdHours: Seq[FdHours] = knownFdHoursBuffer.toSeq
-
   def update(nodeStatus: NodeStatus): Unit =
     val nodeIdentity = nodeStatus.nodeIdentity
     nodeMap.put(nodeIdentity, nodeStatus)
     ageCellStyleRefresher.track(
       nodeStatus = nodeStatus
     )
-    val newlyDiscoveredFdHours = nodeStatus.statusMessage.hash
-      .flatMap(fd => if knownFdHourValues.putIfAbsent(fd.fdHour, fd.fdHour).isEmpty then Some(fd.fdHour) else None)
-      .distinct
-      .sorted
 
     updateOnFxThread {
-      if newlyDiscoveredFdHours.nonEmpty then
-        val mergedFdHours = (knownFdHoursBuffer.map(_.fdHour) ++ newlyDiscoveredFdHours).distinct.sorted.map(FdHours.apply)
-        knownFdHoursBuffer.clear()
-        knownFdHoursBuffer ++= mergedFdHours
-
       if !knownNodeIdentity.contains(nodeIdentity) then
         knownNodeIdentity += nodeIdentity
 
@@ -227,30 +177,20 @@ class SwarmData @Inject() (
           field
         )
       }
-
-      val countByHour = nodeStatus.statusMessage.hash.map(fd => fd.fdHour -> fd.count).toMap
-      knownFdHours.foreach { fdHourEnum =>
-        val field = NodeDataField.FdHoursField(fdHourEnum)
-        val value = countByHour.getOrElse(fdHourEnum.fdHour, 0).toString
-        propertyFor(nodeIdentity, field).value = value
-        notifyCellNodeListeners(
-          nodeStatus,
-          field
-        )
-      }
     }
     notifyNodeStatusListeners()
 
-  def buildGridPane(fields: Seq[NodeDataField | FdHours.type]): Parent =
+  def buildGridPane(
+                     fields: Seq[NodeDataField]
+                   ): Parent =
     val container = new StackPane()
-    val includeAllFdHours = fields.contains(FdHours)
     var renderedByThisPane = Map.empty[(NodeIdentity, NodeDataField), Seq[Node]]
 
     def rebuildGrid(): Unit =
       unregisterRenderedCells(
         renderedByThisPane
       )
-      val result = buildGrid(resolveFields(fields))
+      val result = buildGrid(fields.distinct)
       renderedByThisPane = result.cellNodes
       registerRenderedCells(
         renderedByThisPane
@@ -264,11 +204,6 @@ class SwarmData @Inject() (
       (_: ListChangeListener.Change[? <: NodeIdentity]) => rebuildGrid()
     knownNodeIdentity.delegate.addListener(nodeListener)
 
-    val fdHoursListener: ListChangeListener[FdHours] =
-      (_: ListChangeListener.Change[? <: FdHours]) => rebuildGrid()
-    if includeAllFdHours then
-      knownFdHoursBuffer.delegate.addListener(fdHoursListener)
-
     // Remove listener once the wrapper leaves the scene graph.
     val sceneListener: ChangeListener[javafx.scene.Scene] = new ChangeListener[javafx.scene.Scene]:
       override def changed(
@@ -278,8 +213,6 @@ class SwarmData @Inject() (
       ): Unit =
         if newScene == null then
           knownNodeIdentity.delegate.removeListener(nodeListener)
-          if includeAllFdHours then
-            knownFdHoursBuffer.delegate.removeListener(fdHoursListener)
           unregisterRenderedCells(
             renderedByThisPane
           )
@@ -326,21 +259,6 @@ class SwarmData @Inject() (
       cellsByField.view.mapValues(_.toSeq).toMap
     )
 
-  private[status] def addKnownFdHours(fdHours: Seq[FdHour]): Unit =
-    if fdHours.nonEmpty then
-      fdHours.foreach(fdHour => knownFdHourValues.putIfAbsent(fdHour, fdHour))
-      val mergedFdHours = (knownFdHoursBuffer.map(_.fdHour) ++ fdHours).distinct.sorted.map(FdHours.apply)
-      knownFdHoursBuffer.clear()
-      knownFdHoursBuffer ++= mergedFdHours
-
-  private[status] def resolveFields(fields: Seq[NodeDataField | FdHours.type]): Seq[NodeDataField] =
-    fields
-      .flatMap {
-        case nodeDataField: NodeDataField => Seq(nodeDataField)
-        case FdHours => knownFdHours.map(NodeDataField.FdHoursField.apply)
-      }
-      .distinct
-
   private def staticFieldValues(nodeStatus: NodeStatus): Map[NodeDataField, String] =
     val bno = nodeStatus.statusMessage.bandNodeOperator
     val contest = nodeStatus.statusMessage.contestConfig
@@ -352,6 +270,7 @@ class SwarmData @Inject() (
       NodeDataField.Received -> stampFormatter.format(nodeStatus.received),
       NodeDataField.IsLocal -> nodeStatus.isLocal.toString,
       NodeDataField.QsoCount -> nodeStatus.statusMessage.hashCount.qsoCount.toString,
+      NodeDataField.Hash -> nodeStatus.statusMessage.hashCount.hash,
       NodeDataField.StatusId -> nodeStatus.statusMessage.id,
       NodeDataField.Operator -> bno.operator.toString,
       NodeDataField.Band -> bno.bandMode.band,
@@ -382,16 +301,9 @@ class SwarmData @Inject() (
   private def updateKnownCollectionsFromNodeMap(): Unit =
     val nodeStatuses = nodeMap.values.toSeq
     val nodes = nodeStatuses.map(_.nodeIdentity).distinct.sorted
-    val mergedFdHours = nodeStatuses
-      .flatMap(_.statusMessage.hash.map(_.fdHour))
-      .distinct
-      .sorted
-      .map(FdHours.apply)
     updateOnFxThread {
       knownNodeIdentity.clear()
       knownNodeIdentity ++= nodes
-      knownFdHoursBuffer.clear()
-      knownFdHoursBuffer ++= mergedFdHours
     }
 
   private def notifyNodeStatusListeners(): Unit =

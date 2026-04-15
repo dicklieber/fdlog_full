@@ -24,7 +24,7 @@ import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.logging.Locus.Replication
 import fdswarm.model.BandModeOperator
-import fdswarm.store.FdHourDigest
+import fdswarm.replication.status.SwarmData
 import fdswarm.util.NodeIdentityManager
 import jakarta.inject.{Inject, Singleton}
 import javafx.beans.property.{ReadOnlyObjectProperty, ReadOnlyObjectWrapper}
@@ -38,7 +38,8 @@ final class LocalNodeStatus @Inject()(
                                        nodeIdentityManager: NodeIdentityManager,
                                        stationManager: StationConfigManager,
                                        selectedBandModeStore: SelectedBandModeManager,
-                                       contestConfigManager: ContestConfigManager
+                                       contestConfigManager: ContestConfigManager,
+                                       swarmData: SwarmData
                                      ) extends LazyStructuredLogging(Replication):
 
   @volatile private var lastHashCount: HashCount = HashCount()
@@ -65,16 +66,6 @@ final class LocalNodeStatus @Inject()(
     lastHashCount = hashCount
     rebuildAndNotify()
 
-  def updateDigestState(
-    hashCount: HashCount,
-    digests: Seq[FdHourDigest]
-  ): Unit =
-    lastHashCount = hashCount
-    rebuildAndNotify()
-
-  def update(nodeStatus: NodeStatus): Unit =
-    currentBuffer.set(nodeStatus)
-
   private def rebuildAndNotify(): Unit =
     val contestConfig = contestConfigManager.contestConfigProperty.value
     val bandNodeOperator = BandModeOperator(stationManager.station.operator, selectedBandModeStore.selected.value)
@@ -85,4 +76,4 @@ final class LocalNodeStatus @Inject()(
           nodeIdentity = nodeIdentityManager.ourNodeIdentity,
           isLocal = true
         )
-        update(next)
+        swarmData.update(next)

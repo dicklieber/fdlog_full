@@ -18,7 +18,7 @@
 
 package fdswarm.fx.admin
 
-import fdswarm.replication.status.{FdHours, NodeDataField, SwarmData}
+import fdswarm.replication.status.{NodeDataField, SwarmData}
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
 import scalafx.scene.Scene
@@ -37,7 +37,11 @@ class SwarmStatusAdmin @Inject()(swarmData: SwarmData):
         val newStage = new Stage {
           initOwner(ownerWindow)
           title = "Swarm Status"
-          scene = new Scene(swarmData.buildGridPane(NodeDataField.staticFields :+ FdHours)) {
+          scene = new Scene(
+            swarmData.buildGridPane(
+              NodeDataField.staticFields
+            )
+          ) {
             stylesheets = Seq(getClass.getResource("/styles/app.css").toExternalForm)
           }
           sizeToScene()

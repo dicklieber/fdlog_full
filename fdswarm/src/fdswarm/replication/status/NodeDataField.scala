@@ -26,6 +26,7 @@ enum NodeDataField:
   case Received
   case IsLocal
   case QsoCount
+  case Hash
   case StatusId
   case Operator
   case Band
@@ -38,7 +39,6 @@ enum NodeDataField:
   case ContestClass
   case ContestSection
   case ContestStamp
-  case FdHoursField(fdHour: FdHours)
 
   def label: String = this match
     case HostIp => "hostIp"
@@ -48,6 +48,7 @@ enum NodeDataField:
     case Received => "received"
     case IsLocal => "isLocal"
     case QsoCount => "qsoCount"
+    case Hash => "hash"
     case StatusId => "statusId"
     case Operator => "operator"
     case Band => "band"
@@ -60,7 +61,6 @@ enum NodeDataField:
     case ContestClass => "contestClass"
     case ContestSection => "contestSection"
     case ContestStamp => "contestStamp"
-    case FdHoursField(fdHour) => fdHour.label
 
 object NodeDataField:
   val staticFields: Seq[NodeDataField] = Seq(
@@ -71,6 +71,7 @@ object NodeDataField:
     NodeDataField.Received,
     NodeDataField.IsLocal,
     NodeDataField.QsoCount,
+    NodeDataField.Hash,
     NodeDataField.StatusId,
     NodeDataField.Operator,
     NodeDataField.Band,
