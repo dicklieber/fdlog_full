@@ -18,32 +18,28 @@
 
 package fdswarm.fx.qso
 
-import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.UserConfig
-import fdswarm.fx.bands.AvailableModesManager
-import fdswarm.fx.bands.BandCatalog
-import fdswarm.fx.bands.ModeCatalog
+import fdswarm.fx.bands.{AvailableModesManager, BandCatalog, ModeCatalog}
 import fdswarm.fx.components.{AnyComboBox, CountComboBox, OptionTextField}
 import fdswarm.fx.contest.*
-import fdswarm.fx.utils.BootstrapIcons
-import fdswarm.fx.utils.IconButton
-import fdswarm.fx.utils.MultiChangeWatcher
+import fdswarm.fx.utils.{IconButton, MultiChangeWatcher}
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.model.BandMode.*
 import fdswarm.model.Qso
 import fdswarm.store.QsoStore
-import fdswarm.util.{DurationFormat, OtelMetrics}
+import fdswarm.telemetry.Metrics
 import io.circe.syntax.*
 import jakarta.inject.Inject
+import nl.grons.metrics4.scala.DefaultInstrumented
 import scalafx.Includes.*
 import scalafx.beans.property.BooleanProperty
-import scalafx.scene.Node
+import scalafx.collections.ObservableBuffer
 import scalafx.scene.control.*
 import scalafx.scene.layout.{HBox, VBox}
 import scalafx.scene.paint.Color
 import scalafx.stage.FileChooser
 
 import java.io.PrintWriter
-import java.time.Duration
 
 class QsoSearchPane @Inject()(
                                contestManager: ContestConfigManager,
@@ -52,17 +48,12 @@ class QsoSearchPane @Inject()(
                                modesManager: AvailableModesManager,
                                bandCatalog:BandCatalog,
                                userConfig: UserConfig,
-                               otelMetrics: OtelMetrics,
+                               otelMetrics: Metrics,
                                qsoStore: QsoStore,
                                qsoTablePane: QsoTablePane
-) extends LazyStructuredLogging:
-  private def comboSelection[T](
-                                combo: AnyComboBox[T]
-                              ): Option[T] =
-    Option(
-      combo.value.value
-    ).flatten
-
+) extends DefaultInstrumented with LazyStructuredLogging:
+  private val searchTimer = metrics.timer("search_duration")
+  private val searchCountGauge = metrics.gauge("search_count") { 0 }
   val callsignFilter = new OptionTextField {
     promptText = "Callsign"
   }
@@ -77,7 +68,6 @@ class QsoSearchPane @Inject()(
    * is the pane expanded?
    */
   val expandedProperty = scalafx.beans.property.BooleanProperty(false)
-
   // Initialize anyChange after defining all filters
   val anyChange: BooleanProperty = MultiChangeWatcher(callsignFilter.optionValueProperty,
     bandFilter.value,
@@ -86,22 +76,6 @@ class QsoSearchPane @Inject()(
     classFilter.value,
     operatorFilter.optionValueProperty,
     expandedProperty)
-
-  anyChange.onChange((_, _, newVal) =>
-    if contestManager.hasConfiguration.value then
-
-      val startTime = System.nanoTime()
-      val searchResult = qsoStore.qsoCollection.filter (qso =>
-        filter(qso)
-      )
-      val durationNanos = System.nanoTime() - startTime
-      val sDuration: String = DurationFormat(Duration.ofNanos(durationNanos))
-      otelMetrics.recordTimerNanos(
-        name = "fdswarm_qso_filter_duration",
-        nanos = durationNanos
-      )
-
-
       val isSearching = expandedProperty.value && (callsignFilter.value.isDefined ||
         comboSelection(
           bandFilter
@@ -114,12 +88,34 @@ class QsoSearchPane @Inject()(
           classFilter
         ).isDefined ||
         operatorFilter.optionValueProperty.value.isDefined)
+  val node: VBox = new VBox()
+
+  anyChange.onChange((_, _, newVal) =>
+    if contestManager.hasConfiguration.value then
+      val searchResult = searchTimer.time[ObservableBuffer[Qso]](
+       qsoStore.qsoCollection.filter (qso => filter(qso))
+      )
 
       if isSearching then
         qsoTablePane.showSearchResults(searchResult)
       else
         qsoTablePane.restoreQsoCollection()
   )
+  private val exportButton = new Button("Export..."):
+    onAction = _ => showExportMenu()
+  private val resetButton = {
+    val btn = IconButton("x-octagon", size = 20, tooltipText = "Reset Filters", color = Color.Red)
+    btn.onAction = _ =>
+      callsignFilter.text = ""
+      bandFilter.value = None
+      modeFilter.value = None
+      classFilter.value = None
+      transmittersFilter.value = None
+      operatorFilter.text = ""
+    btn
+  }
+  var filteredQsosSupplier: () => Seq[Qso] = () => Seq.empty
+  private var uiBuilt = false
 
   def filter(qso: Qso): Boolean = {
     if !contestManager.hasConfiguration.value then return true
@@ -144,20 +140,13 @@ class QsoSearchPane @Inject()(
 
     matchesCallsign && matchesBand && matchesMode && matchesClass && matchesTransmitters && matchesOperator
   }
-  private val exportButton = new Button("Export..."):
-    onAction = _ => showExportMenu()
 
-  private val resetButton = {
-    val btn = IconButton("x-octagon", size = 20, tooltipText = "Reset Filters", color = Color.Red)
-    btn.onAction = _ =>
-      callsignFilter.text = ""
-      bandFilter.value = None
-      modeFilter.value = None
-      classFilter.value = None
-      transmittersFilter.value = None
-      operatorFilter.text = ""
-    btn
-  }
+  private def comboSelection[T](
+                                combo: AnyComboBox[T]
+                              ): Option[T] =
+    Option(
+      combo.value.value
+    ).flatten
 
   def showExportMenu(): Unit =
     val menu = new ContextMenu()
@@ -172,9 +161,6 @@ class QsoSearchPane @Inject()(
     else
       // Fallback if not visible or similar
       menu.show(node.getScene.getWindow)
-
-  def focusSearch(): Unit =
-    callsignFilter.requestFocus()
 
   private def exportData(asJson: Boolean): Unit =
     val fileChooser = new FileChooser()
@@ -203,39 +189,8 @@ class QsoSearchPane @Inject()(
       finally
         writer.close()
 
-  var filteredQsosSupplier: () => Seq[Qso] = () => Seq.empty
-
-  val node: VBox = new VBox()
-
-  private var uiBuilt = false
-
-  private def updateClassChoices(
-                                  contestType: ContestType
-                                ): Unit =
-    if contestType == ContestType.NONE then
-      classFilter.setChoices()
-      classFilter.value = None
-      return
-
-    contestCatalog.getContest(
-      contestType
-    ) match
-      case Some(contestDefinition) =>
-        val classChoices: Seq[ClassChoice] = contestDefinition.classChoices
-        classFilter.setChoices(classChoices*)
-      case None =>
-        logger.warn(
-          s"Missing contest definition for $contestType; clearing class choices"
-        )
-        classFilter.setChoices()
-        classFilter.value = None
-
-  contestManager.contestConfigProperty.onChange(
-    (_, _, newConfig) =>
-      updateClassChoices(
-        newConfig.contestType
-      )
-  )
+  def focusSearch(): Unit =
+    callsignFilter.requestFocus()
 
   def buildUi(): Unit =
     if uiBuilt then return
@@ -277,3 +232,31 @@ class QsoSearchPane @Inject()(
     }
     node.children = Seq(titledPane)
     uiBuilt = true
+
+  contestManager.contestConfigProperty.onChange(
+    (_, _, newConfig) =>
+      updateClassChoices(
+        newConfig.contestType
+      )
+  )
+
+  private def updateClassChoices(
+                                  contestType: ContestType
+                                ): Unit =
+    if contestType == ContestType.NONE then
+      classFilter.setChoices()
+      classFilter.value = None
+      return
+
+    contestCatalog.getContest(
+      contestType
+    ) match
+      case Some(contestDefinition) =>
+        val classChoices: Seq[ClassChoice] = contestDefinition.classChoices
+        classFilter.setChoices(classChoices*)
+      case None =>
+        logger.warn(
+          s"Missing contest definition for $contestType; clearing class choices"
+        )
+        classFilter.setChoices()
+        classFilter.value = None

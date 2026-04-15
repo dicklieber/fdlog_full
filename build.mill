@@ -53,7 +53,11 @@ object common extends CommonSettings:
     mvn"jakarta.inject:jakarta.inject-api:2.0.1",
     mvn"com.typesafe:config:1.4.3",
     mvn"org.scala-lang.modules::scala-xml:2.2.0",
-    mvn"com.lihaoyi::mainargs:0.7.8"
+    mvn"com.lihaoyi::mainargs:0.7.8",
+    mvn"io.dropwizard.metrics:metrics-core:4.2.28",
+    mvn"nl.grons::metrics4-scala:4.3.7",
+    mvn"io.prometheus:prometheus-metrics-model:1.5.1",
+    mvn"io.prometheus:prometheus-metrics-instrumentation-dropwizard:1.5.1"
   )
 
   object test extends ScalaTests with TestModule.Munit:
@@ -62,7 +66,7 @@ object common extends CommonSettings:
     )
 
 object fdswarm
-  extends CommonSettings
+    extends CommonSettings
     with ScoverageModule
     with BuildInfo
     with JpackageModule:
@@ -211,9 +215,9 @@ object fdswarm
     else Seq.empty
 
   private def getJpackageInput(
-                                cp: Seq[PathRef],
-                                dest: os.Path
-                              ): (os.Path, String) =
+      cp: Seq[PathRef],
+      dest: os.Path
+    ): (os.Path, String) =
 
     val jarFromEnv = sys.env.get("FDSWARM_ASSEMBLY_JAR").map(os.Path(_, os.pwd))
     val inputDir = dest / "jpackage-input"
@@ -228,9 +232,9 @@ object fdswarm
         (inputDir, mainJarName)
 
   private def stageJpackageInput(
-                                  inputDir: os.Path,
-                                  cp: Seq[PathRef]
-                                ): String =
+      inputDir: os.Path,
+      cp: Seq[PathRef]
+    ): String =
 
     if cp.isEmpty then
       throw new RuntimeException("jpackageRunClasspath was empty")
@@ -416,7 +420,6 @@ object fdswarm
     mvn"org.apache.logging.log4j:log4j-layout-template-json:$log4jV",
     mvn"com.fasterxml.jackson.core:jackson-databind:$jacksonV",
     mvn"com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonV",
-
     mvn"com.typesafe.scala-logging::scala-logging:3.9.5",
     mvn"org.slf4j:slf4j-api:2.0.16",
     mvn"io.github.classgraph:classgraph:4.8.179",
@@ -439,13 +442,13 @@ object fdswarm
     mvn"org.typelevel:cats-effect_3:3.5.7",
     mvn"org.scalafx:scalafx_3:20.0.0-R31",
     mvn"org.scala-lang.modules::scala-xml:2.3.0",
-    mvn"io.opentelemetry:opentelemetry-api:$otelV",
-    mvn"io.opentelemetry:opentelemetry-sdk:$otelV",
-    mvn"io.opentelemetry:opentelemetry-exporter-prometheus:$otelAlphaV",
+    mvn"org.typelevel::otel4s-oteljava:0.16.0-M1",
     mvn"com.lihaoyi::mainargs:0.7.8"
   )
 
-  private def repoPath(rel: String): os.Path =
+  private def repoPath(
+      rel: String
+    ): os.Path =
     os.Path(rel, os.pwd)
 
   object test extends ScoverageTests with TestModule.Munit:
@@ -470,7 +473,6 @@ object manager extends CommonSettings:
     mvn"org.apache.logging.log4j:log4j-core:$log4jV",
     mvn"org.apache.logging.log4j:log4j-slf4j2-impl:$log4jV",
     mvn"com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonV",
-
     mvn"org.scalafx:scalafx_3:20.0.0-R31",
     mvn"io.circe::circe-core:0.14.10",
     mvn"io.circe::circe-generic:0.14.10",

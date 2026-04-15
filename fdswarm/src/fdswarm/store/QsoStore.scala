@@ -19,20 +19,19 @@
 package fdswarm.store
 
 import fdswarm.StartupInfo
+import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.logging.Locus.LogEntry
 import fdswarm.model.*
-import fdswarm.fx.qso.FdHour
-import fdswarm.replication.HashCount
 import fdswarm.replication.status.SwarmData
-import fdswarm.replication.{Service, Transport}
-import fdswarm.util.OtelMetrics
+import fdswarm.replication.{HashCount, LocalNodeStatus, Service, Transport}
 import fdswarm.util.Ids.Id
 import io.circe.generic.auto.deriveDecoder
 import io.circe.parser.decode
 import jakarta.inject.*
 import javafx.application.Platform
+import nl.grons.metrics4.scala.DefaultInstrumented
 import scalafx.collections.ObservableBuffer
 
 import scala.collection.concurrent.TrieMap
@@ -40,18 +39,23 @@ import scala.collection.concurrent.TrieMap
 @Singleton
 class QsoStore @Inject() (
     directoryProvider: DirectoryProvider,
-    otelMetrics: OtelMetrics,
     transport: Transport,
     swarmDataProvider: Provider[SwarmData],
     startupInfo: StartupInfo,
-    filenameStamp: fdswarm.util.FilenameStamp)
-    extends LazyStructuredLogging(LogEntry):
+    filenameStamp: fdswarm.util.FilenameStamp,
+    localNodeStatus: LocalNodeStatus)
+    extends DefaultInstrumented
+    with LazyStructuredLogging(LogEntry):
 
   val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()
   protected val map: TrieMap[Id, Qso] = new TrieMap
   protected val internalDigests: TrieMap[FdHour, FdHourDigest] = new TrieMap
+  // Metrics
+  private val qsoEnteryCounter = metrics.counter("qsoEntries")
+  private val hashCalculatorTimer = metrics.timer("hashCalculation")
+  private val qsoCollectionSizeGauge =
+    metrics.gauge("qsoCollectionSize")(qsoCollection.size)
   private val journalFile = directoryProvider() / "qsosJournal.json"
-  var idsHash: String = ""
 
   def add(
       qso: Qso
@@ -60,6 +64,7 @@ class QsoStore @Inject() (
       map.values.exists(existing => existing.dupCriterion == qso.dupCriterion)
     if isDuplicateInStore then StyledMessage(qso.rejectedMsg, "duplicate-qso")
     else
+      qsoEnteryCounter.inc()
       val jsonString = qso.asJsonCompact
       os.write.append(journalFile, jsonString + "\n", createFolders = true)
       logger.info("qso" -> qso)
@@ -82,44 +87,29 @@ class QsoStore @Inject() (
     )
 
   private def calculateHash(): Unit =
-    otelMetrics.incrementCounter(
-      name = "fdlog.build.hour.digests.count",
-      description = "Number of times FD hour digests were built"
-    )
-    val startNanos = System.nanoTime()
-    idsHash =
-      try
-        fdswarm.replication.calcShaHash(
-          map.keys
-        )
-      finally
-        otelMetrics.recordTimerNanos(
-          name = "fdlog.build.hour.digests",
-          nanos = System.nanoTime() - startNanos,
-          description = "Time taken to build hash of all QSOs in the store"
-        )
-    val nextDigests =
-      all
-        .groupBy(
-          _.fdHour
-        )
-        .toSeq
-        .map(
-          (fdHour, qsos) => FdHourDigest(fdHour, qsos)
-        )
-    internalDigests.clear()
-    internalDigests.addAll(
-      nextDigests.map(
-        digest => digest.fdHour -> digest
-      )
-    )
-    swarmData.updateLocalDigests(
-      hashCount = HashCount(
+    val idsHash:String =
+      hashCalculatorTimer.time(
+          fdswarm.replication.calcShaHash(
+            map.keys
+          ))
+    localNodeStatus.updateHashCount(
+      HashCount(
         hash = idsHash,
         qsoCount = map.size
-      ),
-      digests = digests()
+      )
     )
+
+  private def mutateQsoCollection(
+      mutation: => Unit
+    ): Unit =
+    if Platform.isFxApplicationThread then mutation
+    else Platform.runLater(() => mutation)
+
+  /** Thread-safe snapshot of all QSOs, sorted by stamp. Prefer this over
+    * reading `qsoCollection` from non-JavaFX threads (e.g., Cask routes).
+    */
+  def all: Seq[Qso] =
+    map.values.toSeq.sorted
 
   def add(
       batch: Seq[Qso]
@@ -151,21 +141,6 @@ class QsoStore @Inject() (
       uuid: Id
     ): Option[Qso] =
     map.get(uuid)
-  def hasQsos: Boolean = map.nonEmpty
-  def potentialDups(
-      startOfCallsign: String,
-      bandmode: BandMode
-    ): DupInfo =
-    val allPotentialDups: Seq[Qso] = map
-      .filter { case (id, qso) =>
-        val bandModeMatch = qso.bandMode == bandmode
-        val startMatch = qso.callsign.startsWith(startOfCallsign)
-        startMatch && bandModeMatch
-      }
-      .values
-      .toSeq
-    val frustNDups = allPotentialDups.take(70).map(_.callsign)
-    DupInfo(frustNDups, allPotentialDups.size)
 
   if startupInfo.info.exists(_.clearQsos) then
     logger.info("StartupInfo Clearing QSOs journal")
@@ -189,6 +164,23 @@ class QsoStore @Inject() (
       }
     calculateHash()
 
+  def hasQsos: Boolean = map.nonEmpty
+
+  def potentialDups(
+      startOfCallsign: String,
+      bandmode: BandMode
+    ): DupInfo =
+    val allPotentialDups: Seq[Qso] = map
+      .filter { case (id, qso) =>
+        val bandModeMatch = qso.bandMode == bandmode
+        val startMatch = qso.callsign.startsWith(startOfCallsign)
+        startMatch && bandModeMatch
+      }
+      .values
+      .toSeq
+    val frustNDups = allPotentialDups.take(70).map(_.callsign)
+    DupInfo(frustNDups, allPotentialDups.size)
+
   def archiveAndClear(): Unit =
     val timestampedFile =
       directoryProvider() / s"${filenameStamp.build()}.qsosJournal.json"
@@ -197,31 +189,14 @@ class QsoStore @Inject() (
       logger.info(s"Archived QSOs to $timestampedFile")
 
     map.clear()
-    internalDigests.clear()
-    idsHash = ""
-    swarmData.updateLocalDigests(
-      hashCount = HashCount(),
-      digests = Nil
-    )
+
     mutateQsoCollection {
       qsoCollection.clear()
     }
 
+  def digests(): Seq[FdHourDigest] =
+    internalDigests.values.toSeq.sorted
+
   def size: Int = map.size
 
   private def swarmData: SwarmData = swarmDataProvider.get()
-
-  private def mutateQsoCollection(
-      mutation: => Unit
-    ): Unit =
-    if Platform.isFxApplicationThread then mutation
-    else Platform.runLater(() => mutation)
-
-  /** Thread-safe snapshot of all QSOs, sorted by stamp. Prefer this over
-    * reading `qsoCollection` from non-JavaFX threads (e.g., Cask routes).
-    */
-  def all: Seq[Qso] =
-    map.values.toSeq.sorted
-
-  def digests(): Seq[FdHourDigest] =
-    internalDigests.values.toSeq.sorted

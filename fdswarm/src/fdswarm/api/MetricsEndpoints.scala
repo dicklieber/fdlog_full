@@ -20,8 +20,9 @@ package fdswarm.api
 
 import cats.effect.IO
 import fdswarm.replication.Transport
-import fdswarm.util.OtelMetrics
+import fdswarm.telemetry.Metrics
 import jakarta.inject.{Inject, Singleton}
+import nl.grons.metrics4.scala.DefaultInstrumented
 import sttp.tapir.*
 import sttp.tapir.server.ServerEndpoint
 
@@ -30,27 +31,18 @@ import sttp.tapir.server.ServerEndpoint
  */
 @Singleton
 final class MetricsEndpoints @Inject()(
-  otelMetrics: OtelMetrics,
-  transport: Transport
-) extends ApiEndpoints:
+                                        metrics: Metrics,
+                                        transport: Transport
+) extends ApiEndpoints with DefaultInstrumented:
 
-  otelMetrics.registerGauge(
-    name = "fdswarm_transport_sent_count",
-    description = "Total number of UDP packets sent by this node",
-    initialValue = 0.0
-  )
 
   override def endpoints: List[ServerEndpoint[Any, IO]] = List(metricsEndpoint)
 
   val metricsEndpoint: ServerEndpoint[Any, IO] =
     MetricsEndpoints.metricsDef
       .serverLogicSuccess[IO] { _ =>
-        otelMetrics.setGauge(
-          name = "fdswarm_transport_sent_count",
-          value = transport.sentCount.toDouble
-        )
         IO.blocking(
-          otelMetrics.scrape()
+          metrics.scrape()
         )
       }
 

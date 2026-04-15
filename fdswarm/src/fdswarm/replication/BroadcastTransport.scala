@@ -19,9 +19,10 @@
 package fdswarm.replication
 
 import fdswarm.logging.LazyStructuredLogging
-import fdswarm.util.OtelMetrics
+import fdswarm.logging.Locus.Replication
 import fdswarm.util.NodeIdentityManager
 import jakarta.inject.{Inject, Singleton}
+import nl.grons.metrics4.scala.DefaultInstrumented
 
 import java.net.{DatagramPacket, DatagramSocket, InetAddress, InetSocketAddress}
 import scala.compiletime.uninitialized
@@ -31,40 +32,30 @@ import scala.compiletime.uninitialized
  * Receive any UDP packets from all nodes in the network.
  * Consumers read from the shared incoming queue exposed by [[Transport]].
  * @param nodeIdentityManager who we are.
- * @param otelMetrics for metrics,
  */
 @Singleton
 class BroadcastTransport @Inject() (
-                                     val nodeIdentityManager: NodeIdentityManager,
-                                     otelMetrics: OtelMetrics
-                                   ) extends Transport with Runnable with LazyStructuredLogging:
+                                     val nodeIdentityManager: NodeIdentityManager
+                                   ) extends Transport with DefaultInstrumented with Runnable with LazyStructuredLogging(Replication):
 
   logger.info("Starting BroadcastTransport")
 
   override val mode: String = "Broadcast"
-
-  private var lastPacketBytes: Int = 0
-  otelMetrics.registerGauge(
-    name = "fdswarm_sent_packet_bytes",
-    attributes = Map("mode" -> mode),
-    initialValue = 0.0
-  )
   val buffer = new Array[Byte](65535)
 
-  private var socket: DatagramSocket = uninitialized
   val port = 8090
+  val thread = new Thread(this, "Broadcast-Receiver")
+  private val sentCounter = metrics.counter("broadcast_packets_total")
+  private val receivedCounter = metrics.counter("broadcast_packets_received_total")
   socket = new DatagramSocket(null)
   socket.setReuseAddress(true)
   socket.setBroadcast(true)
   socket.bind(new InetSocketAddress("0.0.0.0", port))
-
-  val thread = new Thread(this, "Broadcast-Receiver")
+  private var lastPacketBytes: Int = 0
 
   thread.setDaemon(true)
   thread.start()
-
-  private val sentCounter = new java.util.concurrent.atomic.LongAdder()
-  override def sentCount: Long = sentCounter.sum()
+  private var socket: DatagramSocket = uninitialized
 
   override def run(): Unit =
     while !Thread.currentThread().isInterrupted do
@@ -92,15 +83,8 @@ class BroadcastTransport @Inject() (
       val packet =
         new DatagramPacket(packetBytes, packetBytes.length, broadcastAddr, port)
       socket.send(packet)
-      sentCounter.increment()
-      otelMetrics.incrementCounter(
-        name = "fdswarm_sent_packets_total",
-        attributes = Map("mode" -> mode)
-      )
-      otelMetrics.setGauge(
-        name = "fdswarm_sent_packet_bytes",
-        value = packetBytes.length.toDouble
-      )
+      sentCounter.inc()
+
     catch
       case e: Exception  =>
         logger.error("Send", e)

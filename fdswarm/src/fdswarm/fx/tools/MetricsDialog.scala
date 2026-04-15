@@ -18,7 +18,7 @@
 
 package fdswarm.fx.tools
 
-import fdswarm.util.OtelMetrics
+import fdswarm.telemetry.Metrics
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
 import scalafx.geometry.Insets
@@ -28,7 +28,7 @@ import scalafx.stage.Window
 
 @Singleton
 class MetricsDialog @Inject() (
-    otelMetrics: OtelMetrics
+    otelMetrics: Metrics
 ):
 
   def show(ownerWindow: Window): Unit =

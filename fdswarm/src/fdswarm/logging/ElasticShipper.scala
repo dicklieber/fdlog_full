@@ -1,8 +1,9 @@
 package fdswarm.logging
 
 import com.google.inject.name.Named
-import fdswarm.util.OtelMetrics
+import fdswarm.logging.Locus.Metrics
 import jakarta.inject.{Inject, Singleton}
+import nl.grons.metrics4.scala.DefaultInstrumented
 
 import java.time.Duration
 
@@ -20,7 +21,6 @@ import java.time.Duration
  * @param configuredApiKey The API key configured through the application setting.
  * @param connectTimeout   The connection timeout for the HTTP client.
  * @param requestTimeout   The timeout for Elasticsearch requests.
- * @param otelMetrics      OpenTelemetry metrics helper.
  *
  *                         This class incorporates logging through LazyStructuredLogging. If the API key is overridden by
  *                         an environment variable, the class logs this behavior.
@@ -38,9 +38,8 @@ final class ElasticShipper @Inject()(
   @Named("fdswarm.elastic.connectTimeout")
   connectTimeout: Duration,
   @Named("fdswarm.elastic.requestTimeout")
-  requestTimeout: Duration,
-  otelMetrics: OtelMetrics
-) extends LazyStructuredLogging:
+  requestTimeout: Duration
+) extends DefaultInstrumented with LazyStructuredLogging(Metrics):
 
   private val apiKeyEnvVarName = "ES_API_KEY"
   private val apiKey =
@@ -77,21 +76,14 @@ final class ElasticShipper @Inject()(
   def send(
     ndJson: String
   ): Unit =
-    otelMetrics.incrementCounter(
-      name = "fdswarm_elastic_shipper_send_total"
-    )
-    val startNanos = System.nanoTime()
-    try
+    shipCount.inc()
+    shipTime.time(
       elasticBulkLogger.sendNdjson(
         ndJson
-      )
-    finally
-      otelMetrics.recordTimerNanos(
-        name = "fdswarm_elastic_shipper_send_duration",
-        nanos = System.nanoTime() - startNanos
-      )
+      ))
 
-  def sendJsonEvent(
+
+  private def sendJsonEvent(
     eventJson: String,
     index: String = "fdswarm-logs"
   ): Unit =
@@ -112,3 +104,6 @@ final class ElasticShipper @Inject()(
     send(
       payload
     )
+
+  private val shipTime = metrics.timer("es_ship_duration")
+  private val shipCount = metrics.counter("es_ship_count")

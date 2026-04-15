@@ -58,11 +58,6 @@ final class ContestConfigManager @Inject()(
 
   val hasConfiguration: ReadOnlyBooleanProperty = _hasConfiguration.readOnlyProperty
 
-  def contestConfigOption: Option[ContestConfig] =
-    Some(
-      _contestConfig.value
-    )
-
   def contestConfigProperty: ObjectProperty[ContestConfig] =
     _contestConfig
 

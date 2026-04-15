@@ -30,7 +30,7 @@ import fdswarm.logging.ElasticShipper
 import fdswarm.store.{QsoStore, ReplicationSupport}
 import fdswarm.replication.status.SwarmData
 import fdswarm.replication.{BroadcastTransport, NodeStatusHandler, StatusBroadcastService, Transport}
-import fdswarm.util.OtelMetrics
+import fdswarm.telemetry.Metrics
 import net.codingwell.scalaguice.ScalaModule
 
 import java.time.Duration
@@ -90,9 +90,7 @@ class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModu
 
     bind[QsoStore].to[ReplicationSupport].asEagerSingleton()
     bind[ElasticShipper].asEagerSingleton()
-    bind[OtelMetrics].toInstance(
-      OtelMetrics.create()
-    )
+
 
     bind[fdswarm.fx.tools.MetricsDialog].asEagerSingleton()
 

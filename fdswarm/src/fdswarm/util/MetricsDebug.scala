@@ -1,8 +1,10 @@
 package fdswarm.util
 
+import fdswarm.telemetry.Metrics
+
 object MetricsDebug:
 
   def dumpMetrics(
-    otelMetrics: OtelMetrics
+    otelMetrics: Metrics
   ): String =
     otelMetrics.scrape()

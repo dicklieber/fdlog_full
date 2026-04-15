@@ -27,7 +27,8 @@ import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.utils.UiStyles
 import fdswarm.logging.Locus.Startup
 import fdswarm.replication.{NodeStatusHandler, StatusBroadcastService}
-import fdswarm.util.{DurationFormat, NodeIdentityManager, OtelMetrics}
+import fdswarm.telemetry.Metrics
+import fdswarm.util.{DurationFormat, NodeIdentityManager}
 import jakarta.inject.{Inject, Singleton}
 import javafx.embed.swing.SwingFXUtils
 import scalafx.application.Platform
@@ -42,16 +43,17 @@ import java.time.{Duration, Instant}
 
 @Singleton
 final class FdLogUi @Inject() (
-  contestEntry: ContestEntry,
-  menus: FdLogMenus,
-  repl: NodeStatusHandler,
-  statusBroadcastService: StatusBroadcastService,
-  nodeIdentityManager: NodeIdentityManager,
-  otelMetrics: OtelMetrics,
-  qsoStore: fdswarm.store.QsoStore,
-  apiServer: fdswarm.api.ApiServer,
-  startupInfo: StartupInfo,
-  contestDiscovery:ContestDiscovery
+                                contestEntry: ContestEntry,
+                                menus: FdLogMenus,
+                                repl: NodeStatusHandler,
+                                statusBroadcastService: StatusBroadcastService,
+                                nodeIdentityManager: NodeIdentityManager,
+                                otelMetrics: Metrics,
+                                qsoStore: fdswarm.store.QsoStore,
+                                apiServer: fdswarm.api.ApiServer,
+                                startupInfo: StartupInfo,
+                                contestDiscovery:ContestDiscovery,
+                                metrics:Metrics
 ) extends LazyStructuredLogging(Startup):
 
   def start(): Unit =
@@ -117,13 +119,13 @@ final class FdLogUi @Inject() (
     )
 
     Platform.runLater {
-      val duration = FdLogUi.startupDuration
-      val durationNanos = duration.toNanos
-      logger.info(s"UI responsive in ${DurationFormat(duration)}")
-      otelMetrics.recordTimerNanos(
-        name = "fdswarm_startup_time_seconds",
-        nanos = durationNanos
-      )
+//      val duration = FdLogUi.startupDuration
+//      val durationNanos = duration.toNanos
+//      logger.info(s"UI responsive in ${DurationFormat(duration)}")
+//      otelMetrics.recordTimerNanos(
+//        name = "fdswarm_startup_time_seconds",
+//        nanos = durationNanos
+//      )
     }
     contestEntry.buildUi()
 

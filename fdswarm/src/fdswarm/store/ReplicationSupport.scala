@@ -23,11 +23,11 @@ import cats.syntax.all.*
 import fdswarm.StartupInfo
 import fdswarm.fx.qso.FdHour
 import fdswarm.io.DirectoryProvider
-import fdswarm.replication.Transport
+import fdswarm.replication.{LocalNodeStatus, Transport}
 import fdswarm.replication.status.SwarmData
 import fdswarm.util.Ids.Id
-import fdswarm.util.OtelMetrics
-import jakarta.inject.{Inject, Singleton, Provider}
+import fdswarm.telemetry.Metrics
+import jakarta.inject.{Inject, Provider, Singleton}
 
 /**
  * Adds methods to [[QsoStore]] that are needed for replication.
@@ -35,12 +35,14 @@ import jakarta.inject.{Inject, Singleton, Provider}
  */
 @Singleton
 class ReplicationSupport @Inject()(directoryProvider: DirectoryProvider,
-                                   otelMetrics: OtelMetrics,
+                                   otelMetrics: Metrics,
                                    transport: Transport,
                                    swarmDataProvider: Provider[SwarmData],
                                    startupInfo: StartupInfo,
-                                   filenameStamp: fdswarm.util.FilenameStamp)
-  extends QsoStore(directoryProvider, otelMetrics, transport, swarmDataProvider, startupInfo, filenameStamp):
+                                   filenameStamp: fdswarm.util.FilenameStamp,
+                                   localNodeStatus: LocalNodeStatus
+                                  )
+  extends QsoStore(directoryProvider, transport, swarmDataProvider, startupInfo, filenameStamp, localNodeStatus):
   /**
    * 
    * @param fdHourDigest from a remote node

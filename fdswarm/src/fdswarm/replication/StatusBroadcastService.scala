@@ -19,13 +19,13 @@
 package fdswarm.replication
 
 import com.google.inject.name.Named
-import fdswarm.logging.LazyStructuredLogging
 import fdswarm.StationConfigManager
 import fdswarm.fx.bandmodes.SelectedBandModeManager
 import fdswarm.fx.contest.ContestConfigManager
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.model.BandModeOperator
 import fdswarm.store.QsoStore
-import jakarta.inject.{Inject, Singleton, Provider}
+import jakarta.inject.{Inject, Provider, Singleton}
 
 @Singleton
 class StatusBroadcastService @Inject()(
@@ -34,7 +34,8 @@ class StatusBroadcastService @Inject()(
                                         stationManager: StationConfigManager,
                                         selectedBandModeStore: SelectedBandModeManager,
                                         contestConfigManager: ContestConfigManager,
-                                        @Named("fdswarm.broadcastPeriodSec") val defaultBroadcastPeriodSec: Int
+                                        @Named("fdswarm.broadcastPeriodSec") val defaultBroadcastPeriodSec: Int,
+                                        localNodeStatus: LocalNodeStatus
                                       ) extends LazyStructuredLogging:
 
   private def qsoStore: QsoStore = qsoStoreProvider.get()
@@ -84,15 +85,8 @@ class StatusBroadcastService @Inject()(
         operator,
         bandMode
       )
-      val statusMessage = StatusMessage(
-        hashCount = HashCount(
-          hash = qsoStore.idsHash,
-          qsoCount = qsoStore.size
-        ),
-        hash = qsoStore.digests(),
-        bandNodeOperator = bandModeOperator,
-        contestConfig = contestConfigManager.contestConfigProperty.value
-      )
+
+      val statusMessage: StatusMessage = localNodeStatus.statusMessage
       val gzipBytes = statusMessage.toPacket
       transport.send(Service.Status, gzipBytes)
     catch

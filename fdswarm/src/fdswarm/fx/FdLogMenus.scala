@@ -57,7 +57,6 @@ final class FdLogMenus @Inject() (
     ipAddressDialogService: IpAddressDialogService,
     swarmStatusAdmin: fdswarm.fx.admin.SwarmStatusAdmin,
     summaryDialog: SummaryDialog,
-    metricsDialog: MetricsDialog,
     contestDialog: ContestDialog,
     contestConfigManager: ContestConfigManager)
     extends LazyStructuredLogging:
@@ -157,12 +156,7 @@ final class FdLogMenus @Inject() (
             summaryDialog.show(
               FdLogUi.primaryStage
             )
-        ,
-        new MenuItem("Metrics"):
-          onAction = _ =>
-            metricsDialog.show(
-              FdLogUi.primaryStage
-            )
+
       )
   private var arrlRegionToSection: Map[String, String] = loadArrlRegionMap()
 
