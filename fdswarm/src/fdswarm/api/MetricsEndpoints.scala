@@ -42,14 +42,25 @@ final class MetricsEndpoints @Inject()(
     MetricsEndpoints.metricsDef
       .serverLogicSuccess[IO] { _ =>
         IO.blocking(
-          metrics.scrape()
+          metrics.prometheusContentType -> metrics.scrape()
         )
       }
 
 object MetricsEndpoints:
-  val metricsDef: PublicEndpoint[Unit, Unit, String, Any] =
+  val metricsDef: PublicEndpoint[
+    Unit,
+    Unit,
+    (String, String),
+    Any
+  ] =
     endpoint
       .get
       .in("metrics")
-      .out(stringBody)
+      .out(
+        header[String](
+          "Content-Type"
+        ).and(
+          stringBody
+        )
+      )
       .description("Expose Prometheus metrics")

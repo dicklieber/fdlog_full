@@ -16,5 +16,7 @@ final class MetricsEndpoints @Inject()(metrics: Metrics):
           .and(stringBody)
       )
       .serverLogicSuccess[IO] { _ =>
-        IO.pure("text/plain; version=0.0.4; charset=utf-8" -> metrics.prometheusScrape())
+        IO.pure(
+          metrics.prometheusContentType -> metrics.prometheusScrape()
+        )
       }

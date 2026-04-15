@@ -1,9 +1,11 @@
 package fdswarm.telemetry
 
+import io.prometheus.metrics.expositionformats.ExpositionFormats
 import com.codahale.metrics.{Counter, Gauge, MetricRegistry, Timer}
+import com.codahale.metrics.SharedMetricRegistries
+import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter
 import io.prometheus.metrics.instrumentation.dropwizard.DropwizardExports
 import io.prometheus.metrics.model.registry.PrometheusRegistry
-import io.prometheus.metrics.model.snapshots.MetricSnapshots
 import jakarta.inject.*
 
 import java.util.concurrent.ConcurrentHashMap
@@ -11,10 +13,20 @@ import java.util.concurrent.atomic.AtomicReference
 
 @Singleton
 final class Metrics @Inject()():
-  private val registry = new MetricRegistry()
+  // metrics4-scala DefaultInstrumented publishes into SharedMetricRegistries "default"
+  private val registry: MetricRegistry = SharedMetricRegistries.getOrCreate(
+    "default"
+  )
 
   private val prometheusRegistry = new PrometheusRegistry()
-  prometheusRegistry.register(new DropwizardExports(registry))
+  private val prometheusTextFormatWriter = ExpositionFormats
+    .init()
+    .getPrometheusTextFormatWriter()
+  prometheusRegistry.register(
+    new DropwizardExports(
+      registry
+    )
+  )
 //
 //  private val registeredGauges = ConcurrentHashMap.newKeySet[String]()
 //  private val mutableGauges = new ConcurrentHashMap[String, AtomicReference[Any]]()
@@ -35,11 +47,14 @@ final class Metrics @Inject()():
 //    timer(metricName(first, rest*))
 //
 
-
-
   def prometheusScrape(): String =
-//    prometheusRegistry.scrape()
-  throw new NotImplementedError("")
+    prometheusTextFormatWriter.toDebugString(
+      prometheusRegistry.scrape()
+    )
+
+  def prometheusContentType: String =
+    PrometheusTextFormatWriter.CONTENT_TYPE
+
   /** Compatibility alias for old call sites. */
   def scrape(): String =
     prometheusScrape()
