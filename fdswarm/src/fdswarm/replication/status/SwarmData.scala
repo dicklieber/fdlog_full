@@ -85,6 +85,7 @@ SwarmData @Inject() (
 
   ageCellStyleRefresher.setPurgeCallback(
     nodeIdentity =>
+      logger.info("Purging", "Node" -> nodeIdentity.toString)
       remove(
         nodeIdentity
       )
