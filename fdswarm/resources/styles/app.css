@@ -198,13 +198,17 @@
 }
 
 .fresh {
-    -fx-background-color: lightgreen;
+    -fx-background-color: green;
+    -fx-text-fill: white;
 }
 
 .recent {
-    -fx-background-color: lightblue;
+    -fx-background-color: lightgreen;
 }
 
+.old{
+    -fx-background-color: orange;
+}
 .stale {
     -fx-background-color: red;
 }
