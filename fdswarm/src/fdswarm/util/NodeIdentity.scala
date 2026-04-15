@@ -52,7 +52,7 @@ case class NodeIdentity(hostIp: String,
    * This is the complement to the [[NodeIdentity.apply(s:String)]] method.
    */
   override val toString: String =
-    f"${hostIp}_${port}_${instanceId}_$hostName"
+    f"${hostIp}_${port}_${hostName}_$instanceId"
   /**
    * UDP header piece is used to identify the node.
    * This gets put into the [[fdswarm.replication.UDPHeader]].
@@ -82,7 +82,7 @@ object NodeIdentity:
   /**
    *
    * @param address  from packet.getAddress as received from UDP.
-   * @param udpPiece from the [[udpPiece]].
+   * @param udpPiece for header.
    */
   def fromUdpHeader(address: InetAddress, udpPiece: String): NodeIdentity =
     udpPiece match
