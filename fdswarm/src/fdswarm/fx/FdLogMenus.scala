@@ -53,7 +53,6 @@ final class FdLogMenus @Inject() (
     exportDialog: ExportDialog,
     sectionsProvider: fdswarm.fx.sections.SectionsProvider,
     sectionPanel: fdswarm.fx.sections.SectionPanel,
-    ipAddressDialogService: IpAddressDialogService,
     swarmStatusAdmin: fdswarm.fx.admin.SwarmStatusAdmin,
     summaryDialog: SummaryDialog,
     contestDialog: ContestDialog,
@@ -122,12 +121,6 @@ final class FdLogMenus @Inject() (
         new MenuItem("Contest Time"):
           onAction = _ =>
             contestTimeDialog.show(
-              FdLogUi.primaryStage
-            )
-        ,
-        new MenuItem("Set IP Address"):
-          onAction = _ =>
-            ipAddressDialogService.show(
               FdLogUi.primaryStage
             )
         ,
