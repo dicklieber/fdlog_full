@@ -113,15 +113,9 @@ class QsoStore @Inject() (
   def add(
       batch: Seq[Qso]
     ): Unit = {
-
-    val thread = Thread.currentThread().getName
-    logger.debug(s"[THREAD:$thread] Adding ${batch.size} QSOs to store")
-
     val toAdd = batch.filter { qso =>
       val uuid = qso.uuid
-      val isNew = map.putIfAbsent(uuid, qso).isEmpty
-      if !isNew then logger.error(s"Was already a qso for uuid: $uuid $qso")
-      isNew
+      map.putIfAbsent(uuid, qso).isEmpty
     }
 
     if toAdd.nonEmpty then
@@ -131,6 +125,17 @@ class QsoStore @Inject() (
         qsoCollection.prependAll(toAdd)
       }
       calculateHash()
+
+    val added = toAdd.size
+    val received = batch.size
+    val dups = received - added
+    val hashCount = localNodeStatus.statusMessage.hashCount
+    logger.info(
+      "received" -> received,
+      "added" -> added,
+      "dups" -> dups,
+      "newCount" -> hashCount.qsoCount
+    )
   }
 
   def get(
