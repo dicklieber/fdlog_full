@@ -1,0 +1,48 @@
+package fdswarm.telemetry
+
+import com.codahale.metrics.{Counter, Gauge, MetricRegistry, Timer}
+import io.prometheus.metrics.instrumentation.dropwizard.DropwizardExports
+import io.prometheus.metrics.model.registry.PrometheusRegistry
+import io.prometheus.metrics.model.snapshots.MetricSnapshots
+import jakarta.inject.*
+
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
+
+@Singleton
+final class Metrics @Inject()():
+  private val registry = new MetricRegistry()
+
+  private val prometheusRegistry = new PrometheusRegistry()
+  prometheusRegistry.register(new DropwizardExports(registry))
+//
+//  private val registeredGauges = ConcurrentHashMap.newKeySet[String]()
+//  private val mutableGauges = new ConcurrentHashMap[String, AtomicReference[Any]]()
+//
+//  def metricName(first: String, rest: String*): String =
+//    MetricRegistry.name(first, rest*)
+//
+//  def counter(name: String): Counter =
+//    registry.counter(name)
+//
+//  def counter(first: String, rest: String*): Counter =
+//    counter(metricName(first, rest*))
+//
+//  def timer(name: String): Timer =
+//    registry.timer(name)
+//
+//  def timer(first: String, rest: String*): Timer =
+//    timer(metricName(first, rest*))
+//
+
+
+
+  def prometheusScrape(): String =
+//    prometheusRegistry.scrape()
+  throw new NotImplementedError("")
+  /** Compatibility alias for old call sites. */
+  def scrape(): String =
+    prometheusScrape()
+
+  def registryRef: MetricRegistry =
+    registry
