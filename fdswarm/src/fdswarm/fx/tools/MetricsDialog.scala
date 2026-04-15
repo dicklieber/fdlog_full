@@ -27,19 +27,35 @@ import scalafx.animation.{KeyFrame, Timeline}
 import scalafx.beans.property.StringProperty
 import scalafx.collections.ObservableBuffer
 import scalafx.geometry.Insets
-import scalafx.scene.control.{ButtonType, Dialog, Label, TableColumn, TableView, TextField}
+import scalafx.scene.chart.{LineChart, NumberAxis, XYChart}
+import scalafx.scene.control.{ButtonType, Dialog, Label, TableColumn, TableRow, TableView, TextField}
+import scalafx.scene.input.MouseButton
 import scalafx.scene.layout.VBox
 import scalafx.stage.Window
 import scalafx.util.Duration as FxDuration
 
 import java.time.{Duration as JDuration, Instant, ZoneId}
 import java.time.format.DateTimeFormatter
+import javafx.scene.chart.{XYChart as JfxXYChart}
+import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
 @Singleton
 final class MetricsDialog @Inject() (
     metrics: Metrics
 ):
+  private final case class MetricGraphPoint(
+      epochMillis: Long,
+      p50: Double,
+      p75: Double,
+      p90: Double,
+      p95: Double,
+      p99: Double
+  )
+
+  private val maxGraphSamples = 180
+  private val metricGraphHistory = mutable.Map.empty[String, Vector[MetricGraphPoint]]
+
   private val timestampFormatter = DateTimeFormatter
     .ofPattern(
       "yyyy-MM-dd HH:mm:ss"
@@ -85,6 +101,8 @@ final class MetricsDialog @Inject() (
   def show(
       ownerWindow: Window
   ): Unit =
+    metricGraphHistory.clear()
+
     val allRows = ObservableBuffer.empty[MetricRow]
     val filteredRows = ObservableBuffer.empty[MetricRow]
     val lastUpdated = new Label("Last updated: -")
@@ -121,6 +139,20 @@ final class MetricsDialog @Inject() (
           prefWidth = 160
       )
       columnResizePolicy = TableView.ConstrainedResizePolicy
+      rowFactory = { _ =>
+        val row = new TableRow[MetricRow]()
+        row.onMouseClicked = event =>
+          if event.button == MouseButton.Primary && event.clickCount == 2 && !row.empty.value then
+            Option(
+              row.item.value
+            ).foreach(
+              rowItem => showGraphDialogForRow(
+                ownerWindow,
+                rowItem
+              )
+            )
+        row
+      }
 
     def applyFilter(): Unit =
       val filter = Option(
@@ -138,8 +170,14 @@ final class MetricsDialog @Inject() (
         )
 
     def refreshRows(): Unit =
+      val currentMetrics = metrics.registryRef.getMetrics.asScala.toMap
+      recordGraphSample(
+        currentMetrics
+      )
       allRows.setAll(
-        snapshotRows()*
+        snapshotRows(
+          currentMetrics
+        )*
       )
       applyFilter()
       lastUpdated.text = s"Last updated: ${timestampFormatter.format(Instant.now())}"
@@ -189,8 +227,10 @@ final class MetricsDialog @Inject() (
     refreshTimeline.play()
     dialog.showAndWait()
 
-  private def snapshotRows(): Seq[MetricRow] =
-    metrics.registryRef.getMetrics.asScala.toSeq
+  private def snapshotRows(
+      currentMetrics: Map[String, Metric]
+  ): Seq[MetricRow] =
+    currentMetrics.toSeq
       .sortBy(_._1)
       .map {
         case (name, metric) =>
@@ -205,6 +245,248 @@ final class MetricsDialog @Inject() (
             p95
           )
       }
+
+  private def showGraphDialogForRow(
+      ownerWindow: Window,
+      row: MetricRow
+  ): Unit =
+    if !isGraphableMetric(
+      row.typeProp.value
+    ) then
+      ()
+    else
+      showGraphDialog(
+        ownerWindow,
+        row.nameProp.value,
+        row.typeProp.value
+      )
+
+  private def isGraphableMetric(
+      metricType: String
+  ): Boolean =
+    metricType == "Timer" || metricType == "Histogram"
+
+  private def showGraphDialog(
+      ownerWindow: Window,
+      metricName: String,
+      metricType: String
+  ): Unit =
+    val history = metricGraphHistory.getOrElse(
+      metricName,
+      Vector.empty
+    )
+    val yLabel =
+      if metricType == "Timer" then "Duration (ms)"
+      else "Value"
+
+    val xAxis = new NumberAxis:
+      label = "Elapsed seconds"
+      forceZeroInRange = true
+
+    val yAxis = new NumberAxis:
+      label = yLabel
+      forceZeroInRange = true
+
+    val lineChart = new LineChart[Number, Number](
+      xAxis,
+      yAxis
+    ):
+      title = metricName
+      createSymbols = false
+      animated = false
+      legendVisible = true
+
+    val startedAtMillis = history.headOption
+      .map(
+        _.epochMillis
+      )
+      .getOrElse(
+        Instant.now().toEpochMilli
+      )
+
+    val p50Series = buildPercentileSeries(
+      label = "P50",
+      history = history,
+      startedAtMillis = startedAtMillis,
+      percentile = _.p50
+    )
+    val p75Series = buildPercentileSeries(
+      label = "P75",
+      history = history,
+      startedAtMillis = startedAtMillis,
+      percentile = _.p75
+    )
+    val p90Series = buildPercentileSeries(
+      label = "P90",
+      history = history,
+      startedAtMillis = startedAtMillis,
+      percentile = _.p90
+    )
+    val p95Series = buildPercentileSeries(
+      label = "P95",
+      history = history,
+      startedAtMillis = startedAtMillis,
+      percentile = _.p95
+    )
+    val p99Series = buildPercentileSeries(
+      label = "P99",
+      history = history,
+      startedAtMillis = startedAtMillis,
+      percentile = _.p99
+    )
+
+    lineChart.data = Seq(
+      p50Series.delegate,
+      p75Series.delegate,
+      p90Series.delegate,
+      p95Series.delegate,
+      p99Series.delegate
+    )
+
+    val content = new VBox:
+      spacing = 8
+      padding = Insets(
+        10
+      )
+      prefWidth = 860
+      prefHeight = 520
+      children = Seq(
+        new Label(
+          s"$metricType metric history for $metricName"
+        ),
+        lineChart
+      )
+
+    val dialog = new Dialog[Unit]:
+      title = s"$metricType Graph"
+      headerText = metricName
+      initOwner(
+        ownerWindow
+      )
+    dialog.dialogPane().buttonTypes = Seq(
+      ButtonType.Close
+    )
+    dialog.dialogPane().content = content
+    dialog.showAndWait()
+
+  private def elapsedSeconds(
+      startMillis: Long,
+      epochMillis: Long
+  ): Double =
+    (epochMillis - startMillis).toDouble / 1000.0
+
+  private def recordGraphSample(
+      currentMetrics: Map[String, Metric]
+  ): Unit =
+    val nowMillis = Instant.now().toEpochMilli
+    currentMetrics.foreach {
+      case (name, histogram: Histogram) =>
+        val snapshot = histogram.getSnapshot
+        appendGraphPoint(
+          metricName = name,
+          nowMillis = nowMillis,
+          p50 = snapshot.getMedian,
+          p75 = snapshot.get75thPercentile,
+          p90 = snapshot.getValue(
+            0.90
+          ),
+          p95 = snapshot.get95thPercentile,
+          p99 = snapshot.get99thPercentile
+        )
+      case (name, timer: Timer) =>
+        val snapshot = timer.getSnapshot
+        appendGraphPoint(
+          metricName = name,
+          nowMillis = nowMillis,
+          p50 = nanosToMillis(
+            snapshot.getMedian
+          ),
+          p75 = nanosToMillis(
+            snapshot.get75thPercentile
+          ),
+          p90 = nanosToMillis(
+            snapshot.getValue(
+              0.90
+            )
+          ),
+          p95 = nanosToMillis(
+            snapshot.get95thPercentile
+          ),
+          p99 = nanosToMillis(
+            snapshot.get99thPercentile
+          )
+        )
+      case _ =>
+        ()
+    }
+
+    val activeGraphMetrics = currentMetrics.collect {
+      case (name, _: Histogram) => name
+      case (name, _: Timer) => name
+    }.toSet
+    metricGraphHistory.keys.toSeq
+      .filterNot(
+        activeGraphMetrics.contains
+      )
+      .foreach(
+        metricGraphHistory.remove
+      )
+
+  private def buildPercentileSeries(
+      label: String,
+      history: Vector[MetricGraphPoint],
+      startedAtMillis: Long,
+      percentile: MetricGraphPoint => Double
+  ): XYChart.Series[Number, Number] =
+    new XYChart.Series[Number, Number]:
+      name = label
+      data = Seq(
+        history.map(
+          point =>
+            new JfxXYChart.Data[Number, Number](
+              elapsedSeconds(
+                startedAtMillis,
+                point.epochMillis
+              ),
+              percentile(
+                point
+              )
+            )
+        )*
+      )
+
+  private def appendGraphPoint(
+      metricName: String,
+      nowMillis: Long,
+      p50: Double,
+      p75: Double,
+      p90: Double,
+      p95: Double,
+      p99: Double
+  ): Unit =
+    val prior = metricGraphHistory.getOrElse(
+      metricName,
+      Vector.empty
+    )
+    metricGraphHistory.update(
+      metricName,
+      (prior :+ MetricGraphPoint(
+        epochMillis = nowMillis,
+        p50 = p50,
+        p75 = p75,
+        p90 = p90,
+        p95 = p95,
+        p99 = p99
+      )).takeRight(
+        maxGraphSamples
+      )
+    )
+
+  private def nanosToMillis(
+      nanos: Double
+  ): Double =
+    if nanos.isNaN || nanos.isInfinite then 0.0
+    else nanos / 1000000.0
 
   private def formatMetric(
       metric: Metric
