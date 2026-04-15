@@ -27,7 +27,6 @@ enum NodeDataField:
   case IsLocal
   case QsoCount
   case Hash
-  case StatusId
   case Operator
   case Band
   case Mode
@@ -49,7 +48,6 @@ enum NodeDataField:
     case IsLocal => "isLocal"
     case QsoCount => "qsoCount"
     case Hash => "hash"
-    case StatusId => "statusId"
     case Operator => "operator"
     case Band => "band"
     case Mode => "mode"
@@ -72,7 +70,6 @@ object NodeDataField:
     NodeDataField.IsLocal,
     NodeDataField.QsoCount,
     NodeDataField.Hash,
-    NodeDataField.StatusId,
     NodeDataField.Operator,
     NodeDataField.Band,
     NodeDataField.Mode,

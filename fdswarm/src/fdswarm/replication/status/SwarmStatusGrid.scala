@@ -92,6 +92,19 @@ class SwarmStatusGrid(
     }*)
     builder("Qso Count", allNodes.map(receivedNodeStatus =>
       receivedNodeStatus.statusMessage.hashCount.qsoCount.toString)*)
+    builder(
+      "Hash",
+      allNodes.map(
+        receivedNodeStatus =>
+          val fullHash = receivedNodeStatus.statusMessage.hashCount.hash
+          new Label {
+            text = fullHash.take(5)
+            tooltip = Tooltip(
+              fullHash
+            )
+          }
+      )*
+    )
     builder("Operator", allNodes.map(receivedNodeStatus =>
       receivedNodeStatus.statusMessage.bandNodeOperator.operator.toString)*)
     builder("Band/Mode", allNodes.map(receivedNodeStatus =>

@@ -31,10 +31,12 @@ import javafx.event.EventHandler
 import javafx.scene.input.MouseEvent
 import scalafx.Includes.*
 import scalafx.application.Platform
+import scalafx.beans.binding.Bindings
 import scalafx.beans.property.StringProperty
 import scalafx.collections.ObservableBuffer
 import scalafx.scene.Node
 import scalafx.scene.Parent
+import scalafx.scene.control.{Label, Tooltip}
 import scalafx.scene.layout.GridPane
 import scalafx.scene.layout.StackPane
 
@@ -48,7 +50,8 @@ import scala.collection.concurrent.TrieMap
  * Holds data about each node in the swarm.
  */
 @Singleton
-class SwarmData @Inject() (
+class
+SwarmData @Inject() (
   nodeIdentityManager: NodeIdentityManager,
   stationEditor: StationEditor,
   ageCellStyleRefresher: AgeCellStyleRefresher
@@ -229,11 +232,9 @@ class SwarmData @Inject() (
     fields.foreach { field =>
       val values = nodes.map(
         node =>
-          val cellNode = GridBuilder.valueToLabel(
-            propertyFor(
-              node,
-              field
-            )
+          val cellNode = buildCellNode(
+            node,
+            field
           )
           val key = (
             node,
@@ -259,6 +260,28 @@ class SwarmData @Inject() (
       cellsByField.view.mapValues(_.toSeq).toMap
     )
 
+  private def buildCellNode(
+                             node: NodeIdentity,
+                             field: NodeDataField
+                           ): Node =
+    val valueProperty = propertyFor(
+      node,
+      field
+    )
+    if field == NodeDataField.Hash then
+      val shortHashBinding = Bindings.createStringBinding(
+        () => Option(valueProperty.value).getOrElse("").take(5),
+        valueProperty
+      )
+      new Label:
+        text <== shortHashBinding
+        tooltip = new Tooltip:
+          text <== valueProperty
+    else
+      GridBuilder.valueToLabel(
+        valueProperty
+      )
+
   private def staticFieldValues(nodeStatus: NodeStatus): Map[NodeDataField, String] =
     val bno = nodeStatus.statusMessage.bandNodeOperator
     val contest = nodeStatus.statusMessage.contestConfig
@@ -271,7 +294,6 @@ class SwarmData @Inject() (
       NodeDataField.IsLocal -> nodeStatus.isLocal.toString,
       NodeDataField.QsoCount -> nodeStatus.statusMessage.hashCount.qsoCount.toString,
       NodeDataField.Hash -> nodeStatus.statusMessage.hashCount.hash,
-      NodeDataField.StatusId -> nodeStatus.statusMessage.id,
       NodeDataField.Operator -> bno.operator.toString,
       NodeDataField.Band -> bno.bandMode.band,
       NodeDataField.Mode -> bno.bandMode.mode,
