@@ -19,38 +19,73 @@
 package fdswarm.api
 
 import cats.effect.IO
+import fdswarm.model.Qso
+import fdswarm.replication.{LocalNodeStatus, StatusMessage}
 import fdswarm.store.QsoStore
-import io.circe.Printer
-import jakarta.inject.Inject
+import io.circe.{Codec, Printer}
+import io.circe.syntax.*
+import jakarta.inject.{Inject, Singleton}
+import nl.grons.metrics4.scala.DefaultInstrumented
+import sttp.tapir.*
+import sttp.tapir.generic.auto.*
+import sttp.tapir.json.circe.*
 import sttp.tapir.server.ServerEndpoint
 
+import java.nio.charset.StandardCharsets
+import java.util.concurrent.atomic.AtomicLong
+
 /** Tapir endpoints for QSOs. */
+@Singleton
 final class ReplEndpoints @Inject()(
-  qsoStore: QsoStore
-) extends ApiEndpoints:
+    qsoStore: QsoStore,
+    localNodeStatus: LocalNodeStatus
+) extends ApiEndpoints
+    with DefaultInstrumented:
 
-  private val printer: Printer = Printer.spaces2.copy(dropNullValues = true)
-
-  override def endpoints: List[ServerEndpoint[Any, IO]] = List(
-//    qsosForIds,
-//    qsoIdsForFdHour,
-//    neededFdHours
+  private val allQsoJsonSizeValue = new AtomicLong(0L)
+  private val allQsoCount = metrics.counter("allQsoCount")
+  metrics.gauge("allQsoJsonSizeBytes")(
+    allQsoJsonSizeValue.get()
   )
 
+  override def endpoints: List[ServerEndpoint[Any, IO]] = List(
+    allQsos
+  )
 
-/**
- * vals here ending in "Def" are tapir endpoints.
- * The are used ServerEndpoint.serverLogicSuccess[IO] to provide the actual logic. above.
- * and in client code
- */
-//object ReplEndpoints:
-//  val allQsosDef =
-//    endpoint
-//      .get
-//      .in("qsos")
-//      .out(jsonBody[Seq[Qso]])
-//      .out(header[String]("Content-Type"))
-//      .out(header[String]("Content-Disposition"))
+  val allQsos: ServerEndpoint[Any, IO] =
+    ReplEndpoints.allQsosDef
+      .serverLogicSuccess[IO] { _ =>
+        IO.delay {
+          val response = AllQsos(
+            statusMessage = localNodeStatus.statusMessage,
+            qsos = qsoStore.all
+          )
+          allQsoCount.inc(
+            response.qsos.size.toLong
+          )
+          val jsonSizeBytes = response.asJson
+            .printWith(
+              ReplEndpoints.given_Printer
+            )
+            .getBytes(
+              StandardCharsets.UTF_8
+            )
+            .length
+          allQsoJsonSizeValue.set(
+            jsonSizeBytes.toLong
+          )
+          response
+        }
+      }
+
+object ReplEndpoints:
+  given Printer = Printer.spaces2
+
+  val allQsosDef: PublicEndpoint[Unit, Unit, AllQsos, Any] =
+    endpoint
+      .get
+      .in("qsos")
+      .out(jsonBody[AllQsos])
 
 //
 //  val qsoIdsByHourGetDef =
@@ -72,3 +107,7 @@ final class ReplEndpoints @Inject()(
 //      .in("neededFdHours")
 //      .in(jsonBody[Seq[FdHour]])
 //      .out(jsonBody[List[FdHourIds]])
+case class AllQsos(
+    statusMessage: StatusMessage,
+    qsos: Seq[Qso]
+) derives Codec.AsObject
