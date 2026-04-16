@@ -11,11 +11,11 @@ enum PowerSource derives CanEqual:
 
 object PowerSource:
   given Codec[PowerSource] = Codec.from(
-    Decoder.decodeString.emap(s =>
+    Decoder.decodeString.emap { s =>
       PowerSource.values.find(_.toString == s) match
         case Some(ps) => Right(ps)
         case None     => Left(s"Invalid PowerSource: $s")
-    ),
+    },
     Encoder.encodeString.contramap(_.toString)
   )
 
@@ -23,5 +23,5 @@ case class ContestScoringConfig(
     powerWatts: Int = 100,
     powerSource: PowerSource = PowerSource.Battery,
     claimedObjectives: Set[String] = Set.empty,
-    includeBonusesInLiveScore: Boolean = false)
-    derives Codec.AsObject
+    includeBonusesInLiveScore: Boolean = false
+) derives Codec.AsObject

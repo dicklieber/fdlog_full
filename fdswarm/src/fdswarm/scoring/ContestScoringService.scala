@@ -99,3 +99,11 @@ class ContestScoringService @Inject() (
       case ContestType.NONE => 0
       case ContestType.WFD  => 1
       case ContestType.ARRL => 2
+
+  private val lastResult =
+    new java.util.concurrent.atomic.AtomicReference[ScoreResult](
+      ScoreResult(0, 0, 1.0, 0, Map.empty, Map.empty)
+    )
+
+  def current: ScoreResult =
+    lastResult.get()
