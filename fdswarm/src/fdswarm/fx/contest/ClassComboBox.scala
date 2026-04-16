@@ -32,6 +32,7 @@ class ClassComboBox(
 
   override def editor(fieldProperty: Any): Node =
     val stringProp = fieldProperty.asInstanceOf[StringProperty]
+    var syncingSelection = false
 
     val combo = configureCompactComboBox(new ComboBox[ClassChoice])(
       buttonText = _.ch,
@@ -42,37 +43,81 @@ class ClassComboBox(
       val contestType = contestTypeProperty.value
       val choices: Seq[ClassChoice] =
         if contestType != null then
-          catalog.getContest(contestType).map(_.classChoices).getOrElse(Seq.empty)
+          catalog.getContest(
+            contestType
+          ).map(
+            _.classChoices
+          ).getOrElse(
+            Seq.empty
+          )
         else
           Seq.empty
 
       combo.items = ObservableBuffer.from(choices)
 
       val currentClassStr = stringProp.value
-      combo.value =
-        if currentClassStr != null && currentClassStr.nonEmpty && choices.nonEmpty then
-          choices.find(_.ch == currentClassStr).orNull
+      val nextChoice =
+        if choices.nonEmpty then
+          if currentClassStr != null && currentClassStr.nonEmpty then
+            choices.find(
+              _.ch == currentClassStr
+            ).orElse(
+              choices.headOption
+            )
+          else
+            choices.headOption
         else
-          null.asInstanceOf[ClassChoice]
+          None
+
+      syncingSelection = true
+      combo.value = nextChoice.orNull
+      syncingSelection = false
+
+      nextChoice.foreach(
+        choice =>
+          if stringProp.value != choice.ch then
+            stringProp.value = choice.ch
+      )
 
     contestTypeProperty.onChange { (_, _, _) =>
       updateItems()
     }
 
     combo.value.onChange { (_, _, newChoice) =>
-      stringProp.value = Option(newChoice).map(_.ch).getOrElse("")
+      if !syncingSelection then
+        Option(newChoice).foreach(
+          choice =>
+            if stringProp.value != choice.ch then
+              stringProp.value = choice.ch
+        )
     }
 
     stringProp.onChange { (_, _, newStr) =>
-      if newStr != null && newStr.nonEmpty then
-        combo.items.value.find(_.ch == newStr) match
-          case Some(choice) =>
-            if combo.value.value != choice then
-              combo.value = choice
-          case None =>
+      val choices = combo.items.value.toVector
+      val nextChoice =
+        if choices.nonEmpty then
+          if newStr != null && newStr.nonEmpty then
+            choices.find(
+              _.ch == newStr
+            ).orElse(
+              choices.headOption
+            )
+          else
+            choices.headOption
+        else
+          None
+
+      nextChoice match
+        case Some(choice) =>
+          if combo.value.value != choice then
+            syncingSelection = true
+            combo.value = choice
+            syncingSelection = false
+        case None =>
+          if combo.value.value != null then
+            syncingSelection = true
             combo.value = null.asInstanceOf[ClassChoice]
-      else
-        combo.value = null.asInstanceOf[ClassChoice]
+            syncingSelection = false
     }
 
     updateItems()

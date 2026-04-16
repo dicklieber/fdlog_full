@@ -62,7 +62,8 @@ class CaseClassPropertyEditor[T <: Product](val target: T):
     mutable.LinkedHashMap.empty[String, CustomFieldEditor]
 
   private def updatePropertyT(): Unit =
-    propertyT.value = rebuildTarget().asInstanceOf[T]
+    if hasNoEmptyStringFields then
+      propertyT.value = rebuildTarget().asInstanceOf[T]
 
   propertiesInOrder.foreach { case (_, fieldValue) =>
     fieldValue.onAnyChange(() => updatePropertyT())
@@ -180,6 +181,14 @@ class CaseClassPropertyEditor[T <: Product](val target: T):
       fieldValue.valueAsObject
     }
     ctor.newInstance(args*)
+
+  private def hasNoEmptyStringFields: Boolean =
+    propertiesInOrder.forall {
+      case (_, StringFieldValue(p)) =>
+        Option(p.value).exists(_.nonEmpty)
+      case _ =>
+        true
+    }
 
   private def defaultEditor(fieldValue: FieldValue): Node =
     fieldValue match
