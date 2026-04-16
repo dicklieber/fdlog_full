@@ -25,6 +25,7 @@ import fdswarm.logging.Locus.LogEntry
 import fdswarm.model.*
 import fdswarm.replication.status.SwarmData
 import fdswarm.replication.{HashCount, LocalNodeStatus, Service, Transport}
+import fdswarm.scoring.{ArrlFieldDayConfig, ArrlPowerSource, ContestKind, ContestScoreConfig, ContestScoreMetrics}
 import fdswarm.util.Ids.Id
 import io.circe.generic.auto.deriveDecoder
 import io.circe.parser.decode
@@ -42,7 +43,8 @@ class QsoStore @Inject() (
     swarmDataProvider: Provider[SwarmData],
     startupInfo: StartupInfo,
     filenameStamp: fdswarm.util.FilenameStamp,
-    localNodeStatus: LocalNodeStatus)
+    localNodeStatus: LocalNodeStatus,
+    contestScoreMetrics: ContestScoreMetrics)
     extends DefaultInstrumented
     with LazyStructuredLogging(LogEntry):
 
@@ -86,6 +88,7 @@ class QsoStore @Inject() (
     )
 
   private def calculateHash(): Unit =
+    refreshScores()
     val idsHash:String =
       hashCalculatorTimer.time(
           fdswarm.replication.calcShaHash(
@@ -96,6 +99,15 @@ class QsoStore @Inject() (
         hash = idsHash,
         qsoCount = map.size
       )
+    )
+
+  private def refreshScores(): Unit =
+    contestScoreMetrics.refresh(map.values, contestScoreConfig)
+
+  private val contestScoreConfig =
+    ContestScoreConfig(
+      contestKind = ContestKind.ArrlFieldDay2026,
+      arrl = Some(ArrlFieldDayConfig(BigDecimal(100), ArrlPowerSource.NonCommercial))
     )
 
   private def mutateQsoCollection(
