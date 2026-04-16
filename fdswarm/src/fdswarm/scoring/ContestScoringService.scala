@@ -57,7 +57,7 @@ class ContestScoringService @Inject() (
       "contestScoringConfigChanged" -> true,
       "powerWatts" -> newConfig.powerWatts,
       "powerSource" -> newConfig.powerSource.toString,
-      "enabledObjectives" -> newConfig.enabledObjectives.toSeq.sorted.mkString(","),
+      "enabledObjectives" -> newConfig.claimedObjectives.toSeq.sorted.mkString(","),
       "includeBonusesInLiveScore" -> newConfig.includeBonusesInLiveScore
     )
     recompute()

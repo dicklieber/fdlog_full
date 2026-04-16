@@ -8,23 +8,28 @@ object ArrlFdScorer extends ContestScorer:
   def score(
       qsos: Seq[Qso],
       scoringConfig: ContestScoringConfig
-  ): ScoreResult =
+    ): ScoreResult =
     val byMode =
-      qsos.groupBy(_.bandMode.mode.toString).view.mapValues(_.size).toMap
+      qsos.groupBy(_.bandMode.mode).view.mapValues(_.size).toMap
 
     val byBand =
-      qsos.groupBy(_.bandMode.band.toString).view.mapValues(_.size).toMap
+      qsos.groupBy(_.bandMode.band).view.mapValues(_.size).toMap
 
     val rawPoints =
       qsos.map { q =>
-        q.bandMode.mode.toString.toUpperCase match
+        q.bandMode.mode.toUpperCase match
           case "CW" => 2
           case "DI" => 2
           case "PH" => 1
           case _    => 1
       }.sum
 
-    val multiplier = 1.0
+    val multiplier =
+      val watts = scoringConfig.powerWatts
+
+      if watts <= 5 then 5.0
+      else if watts <= 150 then 2.0
+      else 1.0
 
     ScoreResult(
       totalScore = (rawPoints * multiplier).toInt,

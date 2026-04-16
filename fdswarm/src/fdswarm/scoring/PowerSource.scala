@@ -1,6 +1,5 @@
 package fdswarm.scoring
 
-
 import io.circe.{Codec, Decoder, Encoder}
 
 enum PowerSource derives CanEqual:
@@ -21,8 +20,8 @@ object PowerSource:
   )
 
 case class ContestScoringConfig(
-                                 powerWatts: Int = 100,
-                                 powerSource: PowerSource = PowerSource.Battery,
-                                 enabledObjectives: Set[String] = Set.empty,
-                                 includeBonusesInLiveScore: Boolean = false
-                               ) derives Codec.AsObject
+    powerWatts: Int = 100,
+    powerSource: PowerSource = PowerSource.Battery,
+    claimedObjectives: Set[String] = Set.empty,
+    includeBonusesInLiveScore: Boolean = false)
+    derives Codec.AsObject

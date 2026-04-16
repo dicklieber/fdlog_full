@@ -24,7 +24,8 @@ object WfdScorer extends ContestScorer:
           case _    => 1
       }.sum
 
-    val multiplier = 1.0
+    val multiplier =
+      qsos.map(q => (q.bandMode.band, q.bandMode.mode)).distinct.size.toDouble
 
     ScoreResult(
       totalScore = (rawPoints * multiplier).toInt,

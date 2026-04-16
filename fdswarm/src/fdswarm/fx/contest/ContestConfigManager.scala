@@ -9,7 +9,7 @@ import fdswarm.replication.NodeStatus
 import io.circe.parser.decode
 import io.circe.syntax.*
 import jakarta.inject.{Inject, Provider, Singleton}
-import fdswarm.logging.LazyStructuredLogging
+import fdswarm.logging.Locus.Scoring
 import scalafx.beans.property.{ObjectProperty, ReadOnlyBooleanProperty, ReadOnlyBooleanWrapper}
 
 @Singleton
@@ -18,7 +18,7 @@ final class ContestConfigManager @Inject()(
                                           qsoStoreProvider: Provider[fdswarm.store.QsoStore],
                                           filenameStamp: fdswarm.util.FilenameStamp,
                                           @Named("fdswarm.contestChangeIgnoreStatusSec") ignoreStatusSec: Int
-                                          ) extends ContestConfigFields with LazyStructuredLogging:
+                                          ) extends ContestConfigFields with LazyStructuredLogging(Scoring):
   private def qsoStore: fdswarm.store.QsoStore = qsoStoreProvider.get()
 // These override methods expose the current value of the contestConfigProperty
   override def contestType: ContestType =
