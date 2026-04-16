@@ -4,9 +4,11 @@ import fdswarm.model.Qso
 
 trait ContestScorer:
   def name: String
+
   def score(
-      qsos: Seq[Qso]
-    ): ScoreResult
+             qsos: Seq[Qso],
+             scoringConfig: ContestScoringConfig
+           ): ScoreResult
 
 case class ScoreResult(
     totalScore: Int,

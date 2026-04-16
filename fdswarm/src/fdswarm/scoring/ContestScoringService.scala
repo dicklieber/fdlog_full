@@ -1,60 +1,101 @@
 package fdswarm.scoring
 
-import fdswarm.fx.contest.ContestConfigManager
-import fdswarm.logging.Locus.Scoring
-import fdswarm.logging.{LazyStructuredLogging, StructuredLogger}
+import fdswarm.fx.contest.{ContestConfigManager, ContestType}
+import fdswarm.logging.LazyStructuredLogging
+import fdswarm.logging.Locus.LogEntry
 import fdswarm.store.QsoStore
 import jakarta.inject.*
 import nl.grons.metrics4.scala.DefaultInstrumented
 
+import java.util.concurrent.atomic.{AtomicInteger, AtomicLong, AtomicReference}
+
 @Singleton
 class ContestScoringService @Inject() (
                                         qsoStore: QsoStore,
-                                        contestConfigManager: ContestConfigManager)
-  extends  LazyStructuredLogging(Scoring) with DefaultInstrumented:
+                                        contestConfigManager: ContestConfigManager,
+                                        contestScoringConfigManager: ContestScoringConfigManager
+                                      ) extends DefaultInstrumented
+  with LazyStructuredLogging(LogEntry):
 
-  // 🔥 current scorer (mutable on purpose)
   private var scorer: ContestScorer =
     ContestScorerRegistry.forType(
       contestConfigManager.contestConfigProperty.value.contestType
     )
 
-  // 🔥 backing values (IMPORTANT: not plain gauge lambdas)
-  private val scoreValue       = new java.util.concurrent.atomic.AtomicLong(0)
-  private val rawPointsValue   = new java.util.concurrent.atomic.AtomicLong(0)
-  private val multiplierValue  = new java.util.concurrent.atomic.AtomicReference[Double](1.0)
-  private val totalQsosValue   = new java.util.concurrent.atomic.AtomicLong(0)
+  private val finalScoreValue = new AtomicLong(0L)
+  private val rawPointsValue = new AtomicLong(0L)
+  private val totalQsosValue = new AtomicLong(0L)
+  private val multiplierValue = new AtomicReference[Double](1.0)
+  private val contestTypeValue = new AtomicInteger(
+    toContestTypeMetricValue(
+      contestConfigManager.contestConfigProperty.value.contestType
+    )
+  )
 
-  // metrics
-  metrics.gauge("fdswarm_contest_final_score")(scoreValue.get)
-  metrics.gauge("fdswarm_contest_raw_qso_points")(rawPointsValue.get)
-  metrics.gauge("fdswarm_contest_multiplier")(multiplierValue.get)
-  metrics.gauge("fdswarm_contest_total_qsos")(totalQsosValue.get)
+  metrics.gauge("fdswarm_contest_final_score")(finalScoreValue.get())
+  metrics.gauge("fdswarm_contest_raw_qso_points")(rawPointsValue.get())
+  metrics.gauge("fdswarm_contest_total_qsos")(totalQsosValue.get())
+  metrics.gauge("fdswarm_contest_multiplier")(multiplierValue.get())
+  metrics.gauge("fdswarm_contest_type")(contestTypeValue.get())
 
-  // 🟢 1. react to contest type changes
-  contestConfigManager.contestConfigProperty.onChange { (_, oldCfg, newCfg) =>
-    val newType = newCfg.contestType
-    val oldType = oldCfg.contestType
+  contestConfigManager.contestConfigProperty.onChange { (_, oldConfig, newConfig) =>
+    val oldType = oldConfig.contestType
+    val newType = newConfig.contestType
 
-    if newType != oldType then
+    if oldType != newType then
       scorer = ContestScorerRegistry.forType(newType)
-      logger.info("contestTypeChanged" -> newType.toString)
-
-      recompute()   // 🔥 immediate update
+      contestTypeValue.set(toContestTypeMetricValue(newType))
+      logger.info(
+        "contestTypeChanged" -> s"$oldType->$newType",
+        "scorer" -> scorer.name
+      )
+      recompute()
   }
 
-  // 🟢 2. react to QSO changes
+  contestScoringConfigManager.contestScoringConfigProperty.onChange { (_, _, newConfig) =>
+    logger.info(
+      "contestScoringConfigChanged" -> true,
+      "powerWatts" -> newConfig.powerWatts,
+      "powerSource" -> newConfig.powerSource.toString,
+      "enabledObjectives" -> newConfig.enabledObjectives.toSeq.sorted.mkString(","),
+      "includeBonusesInLiveScore" -> newConfig.includeBonusesInLiveScore
+    )
+    recompute()
+  }
+
   qsoStore.qsoCollection.onChange { (_, _) =>
     recompute()
   }
 
-  // 🟢 3. recompute (simple + correct first)
+  recompute()
+
   private def recompute(): Unit =
-    val qsos = qsoStore.all   // your thread-safe snapshot
+    val qsos = qsoStore.all
+    val scoringConfig = contestScoringConfigManager.current
 
-    val result = scorer.score(qsos)
+    val result =
+      scorer.score(
+        qsos = qsos,
+        scoringConfig = scoringConfig
+      )
 
-    scoreValue.set(result.totalScore)
-    rawPointsValue.set(result.rawPoints)
+    finalScoreValue.set(result.totalScore.toLong)
+    rawPointsValue.set(result.rawPoints.toLong)
+    totalQsosValue.set(result.totalQsos.toLong)
     multiplierValue.set(result.multiplier)
-    totalQsosValue.set(result.totalQsos)
+
+    logger.info(
+      "contestScoreRecomputed" -> true,
+      "contestType" -> contestConfigManager.contestConfigProperty.value.contestType.toString,
+      "scorer" -> scorer.name,
+      "qsos" -> result.totalQsos,
+      "rawPoints" -> result.rawPoints,
+      "multiplier" -> result.multiplier,
+      "finalScore" -> result.totalScore
+    )
+
+  private def toContestTypeMetricValue(contestType: ContestType): Int =
+    contestType match
+      case ContestType.NONE => 0
+      case ContestType.WFD  => 1
+      case ContestType.ARRL => 2

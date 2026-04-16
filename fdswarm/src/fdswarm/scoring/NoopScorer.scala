@@ -1,12 +1,14 @@
 package fdswarm.scoring
 
-
 import fdswarm.model.Qso
 
 object NoopScorer extends ContestScorer:
   val name = "NONE"
 
-  def score(qsos: Seq[Qso]): ScoreResult =
+  def score(
+      qsos: Seq[Qso],
+      scoringConfig: ContestScoringConfig
+  ): ScoreResult =
     ScoreResult(
       totalScore = 0,
       rawPoints = 0,
