@@ -27,9 +27,13 @@ class ContestScoringConfigPane @Inject() (
     text = configProperty.value.powerWatts.toString
     prefColumnCount = 6
 
+  private val powerWattsLabel = new Label("Power watts")
+
   private val powerSourceCombo = new ComboBox[PowerSource]:
     items = ObservableBuffer.from(PowerSource.values.toSeq)
     value = configProperty.value.powerSource
+
+  private val powerSourceLabel = new Label("Power source")
 
   private val includeBonusesCheck = new CheckBox("Include bonuses in live score"):
     selected = configProperty.value.includeBonusesInLiveScore
@@ -69,10 +73,26 @@ class ContestScoringConfigPane @Inject() (
       new GridPane:
         hgap = 10
         vgap = 10
-        add(new Label("Power watts"), 0, 1)
-        add(powerWattsField, 1, 1)
-        add(new Label("Power source"), 0, 2)
-        add(powerSourceCombo, 1, 2),
+        add(
+          powerWattsLabel,
+          0,
+          1
+        )
+        add(
+          powerWattsField,
+          1,
+          1
+        )
+        add(
+          powerSourceLabel,
+          0,
+          2
+        )
+        add(
+          powerSourceCombo,
+          1,
+          2
+        ),
         includeBonusesCheck,
       objectivesBox
     )
@@ -144,10 +164,21 @@ class ContestScoringConfigPane @Inject() (
   private def refreshContestTypeUi(): Unit =
     val contestType = contestConfigManager.contestConfigProperty.value.contestType
     contestTypeValueLabel.text = contestType.toString
-    val isWfd = contestType == ContestType.WFD
+    val showArrlFields = contestType == ContestType.WFD
+    val showWfdFields = !showArrlFields
 
-    objectivesBox.visible = isWfd
-    objectivesBox.managed = isWfd
+    powerWattsLabel.visible = showArrlFields
+    powerWattsLabel.managed = showArrlFields
+    powerWattsField.visible = showArrlFields
+    powerWattsField.managed = showArrlFields
+
+    powerSourceLabel.visible = showArrlFields
+    powerSourceLabel.managed = showArrlFields
+    powerSourceCombo.visible = showArrlFields
+    powerSourceCombo.managed = showArrlFields
+
+    objectivesBox.visible = showWfdFields
+    objectivesBox.managed = showWfdFields
 
   private def objectiveCheckBox(
                                  objectiveId: String,
