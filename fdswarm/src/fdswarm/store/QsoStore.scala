@@ -202,6 +202,7 @@ class QsoStore @Inject() (
     mutateQsoCollection {
       qsoCollection.clear()
     }
+    calculateHash()
 
   def size: Int = map.size
 
