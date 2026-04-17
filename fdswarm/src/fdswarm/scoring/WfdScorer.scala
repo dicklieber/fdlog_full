@@ -46,13 +46,23 @@ class WfdScorer @Inject() (
     val multiplier =
       1.0 + claimedObjectivePoints + bandObjectivePoints
 
+    val breakdown =
+      Map(
+        "rawPoints" -> rawPoints.toDouble,
+        "claimedObjectivePoints" -> claimedObjectivePoints.toDouble,
+        "qualifiedBandCount" -> qualifiedBandCount.toDouble,
+        "bandObjectivePoints" -> bandObjectivePoints.toDouble,
+        "multiplier" -> multiplier
+      )
+
     ScoreResult(
       totalScore = (rawPoints * multiplier).toInt,
       rawPoints = rawPoints,
       multiplier = multiplier,
       totalQsos = qsos.size,
       byMode = byMode,
-      byBand = byBand
+      byBand = byBand,
+      breakdown = breakdown
     )
 
   private def qsoPoints(qso: Qso): Int =

@@ -6,9 +6,9 @@ trait ContestScorer:
   def name: String
 
   def score(
-             qsos: Seq[Qso],
-             scoringConfig: ContestScoringConfig
-           ): ScoreResult
+      qsos: Seq[Qso],
+      scoringConfig: ContestScoringConfig
+    ): ScoreResult
 
 case class ScoreResult(
     totalScore: Int,
@@ -16,4 +16,6 @@ case class ScoreResult(
     multiplier: Double,
     totalQsos: Int,
     byMode: Map[String, Int],
-    byBand: Map[String, Int])
+    byBand: Map[String, Int],
+    breakdown: Map[String, Double] = Map.empty // ← add back
+  )

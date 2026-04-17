@@ -32,14 +32,19 @@ class ArrlFdScorer @Inject() (
         powerWatts = scoringConfig.powerWatts,
         powerSource = scoringConfig.powerSource
       )
-
+    val breakdown =
+      Map(
+        "rawPoints" -> rawPoints.toDouble,
+        "powerMultiplier" -> multiplier
+      )
     ScoreResult(
       totalScore = (rawPoints * multiplier).toInt,
       rawPoints = rawPoints,
       multiplier = multiplier,
       totalQsos = qsos.size,
       byMode = byMode,
-      byBand = byBand
+      byBand = byBand,
+      breakdown = breakdown
     )
 
   private def arrlPowerMultiplier(
@@ -52,8 +57,8 @@ class ArrlFdScorer @Inject() (
         case _                                       => false
 
     arrlScoringRules.multiplierTiers
-      .find(tier => powerWatts <= tier.maxPower && nonCommercial == tier.nonCommercial)
-      .orElse(arrlScoringRules.multiplierTiers.find(tier => powerWatts <= tier.maxPower))
+      .find(t => powerWatts <= t.maxPower && t.nonCommercial == nonCommercial)
+      .orElse(arrlScoringRules.multiplierTiers.find(t => powerWatts <= t.maxPower))
       .map(_.multiplier)
       .getOrElse(1.0)
 
