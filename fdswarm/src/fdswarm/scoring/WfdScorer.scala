@@ -21,10 +21,17 @@ object WfdScorer extends ContestScorer:
              scoringConfig: ContestScoringConfig
            ): ScoreResult =
     val byMode =
-      qsos.groupBy(q => scoringModeOf(q)).view.mapValues(_.size).toMap
+      Map(
+        "CW" -> qsos.count(q => scoringModeOf(q) == "CW"),
+        "DI" -> qsos.count(q => scoringModeOf(q) == "DI"),
+        "PH" -> qsos.count(q => scoringModeOf(q) == "PH")
+      )
+
+    val qsosByBand =
+      qsos.groupBy(_.bandMode.band)
 
     val byBand =
-      qsos.groupBy(_.bandMode.band).view.mapValues(_.size).toMap
+      qsosByBand.view.mapValues(_.size).toMap
 
     val rawPoints =
       qsos.map(qsoPoints).sum
@@ -35,17 +42,15 @@ object WfdScorer extends ContestScorer:
       }.sum
 
     val qualifiedBandCount =
-      byBand.values.count(_ >= 3)
+      qsosByBand.values.count(_.size >= 3)
 
-    val derivedObjectivePoints =
-      (if qualifiedBandCount >= 6 then 6 else 0) +
-        (if qualifiedBandCount >= 12 then 6 else 0)
-
-    val objectiveMultiplier =
-      claimedObjectivePoints + derivedObjectivePoints
+    val bandObjectivePoints =
+      if qualifiedBandCount >= 12 then 12
+      else if qualifiedBandCount >= 6 then 6
+      else 0
 
     val multiplier =
-      objectiveMultiplier + 1.0
+      1.0 + claimedObjectivePoints + bandObjectivePoints
 
     ScoreResult(
       totalScore = (rawPoints * multiplier).toInt,
@@ -64,6 +69,6 @@ object WfdScorer extends ContestScorer:
 
   private def scoringModeOf(qso: Qso): String =
     qso.bandMode.mode.trim.toUpperCase match
-      case "CW"                                => "CW"
+      case "CW" => "CW"
       case "USB" | "LSB" | "SSB" | "FM" | "AM" | "PHONE" | "PH" => "PH"
-      case _                                   => "DI"
+      case _ => "DI"

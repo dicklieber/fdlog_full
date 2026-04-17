@@ -18,7 +18,7 @@ class ContestScoringConfigManager @Inject() (
                                             ) extends LazyStructuredLogging(Scoring):
 
   private val configFile =
-    directoryProvider() / "contestScoringConfig.json"
+    directoryProvider() / "scoringConfig.json"
 
   val contestScoringConfigProperty: ObjectProperty[ContestScoringConfig] =
     ObjectProperty(load())

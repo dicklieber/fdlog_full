@@ -10,7 +10,11 @@ object ArrlFdScorer extends ContestScorer:
              scoringConfig: ContestScoringConfig
            ): ScoreResult =
     val byMode =
-      qsos.groupBy(q => scoringModeOf(q)).view.mapValues(_.size).toMap
+      Map(
+        "CW" -> qsos.count(q => scoringModeOf(q) == "CW"),
+        "DI" -> qsos.count(q => scoringModeOf(q) == "DI"),
+        "PH" -> qsos.count(q => scoringModeOf(q) == "PH")
+      )
 
     val byBand =
       qsos.groupBy(_.bandMode.band).view.mapValues(_.size).toMap
@@ -57,6 +61,6 @@ object ArrlFdScorer extends ContestScorer:
 
   private def scoringModeOf(qso: Qso): String =
     qso.bandMode.mode.trim.toUpperCase match
-      case "CW"                                => "CW"
+      case "CW" => "CW"
       case "USB" | "LSB" | "SSB" | "FM" | "AM" | "PHONE" | "PH" => "PH"
-      case _                                   => "DI"
+      case _ => "DI"

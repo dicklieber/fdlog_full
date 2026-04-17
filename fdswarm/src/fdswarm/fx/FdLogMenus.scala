@@ -22,6 +22,7 @@ import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.bandmodes.BandsAndModesPane
 import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.fx.discovery.ContestDialog
+import fdswarm.scoring.ContestScoringConfigDialog
 import fdswarm.fx.station.StationEditor
 import fdswarm.fx.tools.*
 import fdswarm.logging.LazyStructuredLogging
@@ -56,6 +57,7 @@ final class FdLogMenus @Inject() (
     swarmStatusAdmin: fdswarm.fx.admin.SwarmStatusAdmin,
     summaryDialog: SummaryDialog,
     contestDialog: ContestDialog,
+    contestScoringConfigDialog: ContestScoringConfigDialog,
     contestConfigManager: ContestConfigManager,
     metricsDialog: MetricsDialog)
     extends LazyStructuredLogging:
@@ -90,6 +92,9 @@ final class FdLogMenus @Inject() (
         ,
         new MenuItem("Contest"):
           onAction = _ => contestDialog.show()
+        ,
+        new MenuItem("Scoring"):
+          onAction = _ => contestScoringConfigDialog.show()
         ,
         developerModeMenuItem
       )
