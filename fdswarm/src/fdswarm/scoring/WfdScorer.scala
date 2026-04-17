@@ -1,20 +1,14 @@
 package fdswarm.scoring
 
 import fdswarm.model.Qso
+import jakarta.inject.{Inject, Singleton}
 
-object WfdScorer extends ContestScorer:
+@Singleton
+class WfdScorer @Inject() (
+                            wfdScoringRules: WfdScoringRules
+                          ) extends ContestScorer:
+
   val name = "WFD"
-
-  private val FlagObjectiveValues: Map[String, Int] =
-    Map(
-      "away-from-home" -> 3,
-      "qrp" -> 4,
-      "alternative-power" -> 1,
-      "multiple-antennas" -> 1,
-      "satellite-qso" -> 1,
-      "winlink-message" -> 1,
-      "copy-bulletin" -> 1
-    )
 
   def score(
              qsos: Seq[Qso],
@@ -38,7 +32,7 @@ object WfdScorer extends ContestScorer:
 
     val claimedObjectivePoints =
       scoringConfig.claimedObjectives.toSeq.distinct.map { id =>
-        FlagObjectiveValues.getOrElse(id, 0)
+        wfdScoringRules.flagObjectiveValues.getOrElse(id, 0)
       }.sum
 
     val qualifiedBandCount =

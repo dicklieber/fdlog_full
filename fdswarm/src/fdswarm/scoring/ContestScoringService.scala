@@ -13,12 +13,13 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicLong, AtomicReference}
 class ContestScoringService @Inject() (
                                         qsoStore: QsoStore,
                                         contestConfigManager: ContestConfigManager,
-                                        contestScoringConfigManager: ContestScoringConfigManager
+                                        contestScoringConfigManager: ContestScoringConfigManager,
+                                        contestScorerRegistry: ContestScorerRegistry
                                       ) extends DefaultInstrumented
   with LazyStructuredLogging(LogEntry):
 
   private var scorer: ContestScorer =
-    ContestScorerRegistry.forType(
+    contestScorerRegistry.forType(
       contestConfigManager.contestConfigProperty.value.contestType
     )
 
@@ -43,7 +44,7 @@ class ContestScoringService @Inject() (
     val newType = newConfig.contestType
 
     if oldType != newType then
-      scorer = ContestScorerRegistry.forType(newType)
+      scorer = contestScorerRegistry.forType(newType)
       contestTypeValue.set(toContestTypeMetricValue(newType))
       logger.info(
         "contestTypeChanged" -> s"$oldType->$newType",

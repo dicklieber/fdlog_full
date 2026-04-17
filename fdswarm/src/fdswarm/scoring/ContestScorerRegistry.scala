@@ -1,11 +1,15 @@
 package fdswarm.scoring
 
 import fdswarm.fx.contest.ContestType
+import jakarta.inject.{Inject, Singleton}
 
-object ContestScorerRegistry:
+@Singleton
+class ContestScorerRegistry @Inject() (
+                                        wfdScorer: WfdScorer
+                                      ):
 
   def forType(ct: ContestType): ContestScorer =
     ct match
-      case ContestType.WFD  => WfdScorer
+      case ContestType.WFD  => wfdScorer
       case ContestType.ARRL => ArrlFdScorer
       case ContestType.NONE => NoopScorer
