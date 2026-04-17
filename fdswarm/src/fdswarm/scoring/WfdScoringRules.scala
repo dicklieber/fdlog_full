@@ -8,7 +8,7 @@ class WfdScoringRules @Inject() (
                                   config: Config
                                 ):
 
-  private val path = "fdswarm.scoring.wfd.flag-objective-values"
+  private val path = "fdswarm.scoring.rules.wfd.flag-objective-values"
 
   val flagObjectiveValues: Map[String, Int] =
     loadStringIntMap(config.getConfig(path))

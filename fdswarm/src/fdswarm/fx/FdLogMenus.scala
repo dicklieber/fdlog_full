@@ -41,7 +41,7 @@ import scalafx.scene.web.WebView
 import scalafx.stage.{Stage, Window}
 
 import scala.io.Source
-
+import fdswarm.scoring.ContestScoreResultsDialog
 final class FdLogMenus @Inject() (
     bandModeManagerPane: BandsAndModesPane,
     stationEditor: StationEditor,
@@ -59,7 +59,8 @@ final class FdLogMenus @Inject() (
     contestDialog: ContestDialog,
     contestScoringConfigDialog: ContestScoringConfigDialog,
     contestConfigManager: ContestConfigManager,
-    metricsDialog: MetricsDialog)
+    metricsDialog: MetricsDialog,
+                                 )
     extends LazyStructuredLogging:
   aboutMenuItem.onAction = _ => showAboutDialog()
 

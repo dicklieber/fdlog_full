@@ -14,7 +14,7 @@ class ArrlScoringRules @Inject() (
                                    config: Config
                                  ):
 
-  private val path = "fdswarm.scoring.arrl.multiplier-tiers"
+  private val path = "fdswarm.scoring.rules.arrl.multiplier-tiers"
 
   val multiplierTiers: Seq[ArrlMultiplierTier] =
     config

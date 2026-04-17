@@ -3,7 +3,7 @@ package fdswarm.scoring
 import fdswarm.fx.contest.{ContestConfigManager, ContestType}
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.logging.Locus.LogEntry
-import fdswarm.store.QsoStore
+import fdswarm.model.Qso
 import jakarta.inject.*
 import nl.grons.metrics4.scala.DefaultInstrumented
 
@@ -11,7 +11,6 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicLong, AtomicReference}
 
 @Singleton
 class ContestScoringService @Inject() (
-                                        qsoStore: QsoStore,
                                         contestConfigManager: ContestConfigManager,
                                         contestScoringConfigManager: ContestScoringConfigManager,
                                         contestScorerRegistry: ContestScorerRegistry
@@ -32,6 +31,14 @@ class ContestScoringService @Inject() (
       contestConfigManager.contestConfigProperty.value.contestType
     )
   )
+  private val lastResult =
+    new java.util.concurrent.atomic.AtomicReference[ScoreResult](
+      ScoreResult(0, 0, 1.0, 0, Map.empty, Map.empty)
+    )
+  private val latestQsos =
+    new java.util.concurrent.atomic.AtomicReference[Seq[Qso]](
+      Seq.empty
+    )
 
   metrics.gauge("fdswarm_contest_final_score")(finalScoreValue.get())
   metrics.gauge("fdswarm_contest_raw_qso_points")(rawPointsValue.get())
@@ -64,14 +71,16 @@ class ContestScoringService @Inject() (
     recompute()
   }
 
-  qsoStore.qsoCollection.onChange { (_, _) =>
-    recompute()
-  }
-
   recompute()
 
+  def refresh(
+      qsos: Seq[Qso]
+    ): Unit =
+    latestQsos.set(qsos)
+    recompute()
+
   private def recompute(): Unit =
-    val qsos = qsoStore.all
+    val qsos = latestQsos.get()
     val scoringConfig = contestScoringConfigManager.current
 
     val result =
@@ -79,7 +88,7 @@ class ContestScoringService @Inject() (
         qsos = qsos,
         scoringConfig = scoringConfig
       )
-
+    lastResult.set(result)
     finalScoreValue.set(result.totalScore.toLong)
     rawPointsValue.set(result.rawPoints.toLong)
     totalQsosValue.set(result.totalQsos.toLong)
@@ -100,11 +109,6 @@ class ContestScoringService @Inject() (
       case ContestType.NONE => 0
       case ContestType.WFD  => 1
       case ContestType.ARRL => 2
-
-  private val lastResult =
-    new java.util.concurrent.atomic.AtomicReference[ScoreResult](
-      ScoreResult(0, 0, 1.0, 0, Map.empty, Map.empty)
-    )
 
   def current: ScoreResult =
     lastResult.get()
