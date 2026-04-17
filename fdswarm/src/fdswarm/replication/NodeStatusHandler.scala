@@ -97,11 +97,6 @@ class NodeStatusHandler @Inject() (
                 udpHeader.nodeIdentity,
                 isLocal = false
               )
-              Platform.runLater {
-                contestManager.updateFromNodeStatus(
-                  nodeStatus
-                )
-              }
               swarmData.update(nodeStatus)
               //              swarmStatusProviders.put(receivedNodeStatus)
               statusProcessor.processStatus(nodeStatus)
