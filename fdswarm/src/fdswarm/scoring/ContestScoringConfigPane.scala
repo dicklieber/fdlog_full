@@ -1,5 +1,6 @@
-package fdswarm.fx.contest
+package fdswarm.scoring
 
+import fdswarm.fx.contest.{ContestConfigManager, ContestType}
 import fdswarm.scoring.{ContestScoringConfig, ContestScoringConfigManager, PowerSource}
 import jakarta.inject.*
 import scalafx.Includes.*
@@ -18,6 +19,9 @@ class ContestScoringConfigPane @Inject() (
 
   private val configProperty: ObjectProperty[ContestScoringConfig] =
     contestScoringConfigManager.contestScoringConfigProperty
+
+  private val contestTypeValueLabel = new Label:
+    text = contestConfigManager.contestConfigProperty.value.contestType.toString
 
   private val powerWattsField = new TextField:
     text = configProperty.value.powerWatts.toString
@@ -65,15 +69,15 @@ class ContestScoringConfigPane @Inject() (
       new GridPane:
         hgap = 10
         vgap = 10
-        add(new Label("Power watts"), 0, 0)
-        add(powerWattsField, 1, 0)
-        add(new Label("Power source"), 0, 1)
-        add(powerSourceCombo, 1, 1),
+        add(new Label("Power watts"), 0, 1)
+        add(powerWattsField, 1, 1)
+        add(new Label("Power source"), 0, 2)
+        add(powerSourceCombo, 1, 2),
         includeBonusesCheck,
       objectivesBox
     )
 
-  refreshObjectiveVisibility()
+  refreshContestTypeUi()
   bindUiToCurrentConfig()
   installListeners()
 
@@ -95,20 +99,22 @@ class ContestScoringConfigPane @Inject() (
       copyBulletinCheck.selected
     )
 
-  def saveFromUi(): Unit =
-    uiConfigFromUi.foreach { newConfig =>
-      contestScoringConfigManager.update(
-        newConfig
-      )
+  def validateInput(): Either[String, ContestScoringConfig] =
+    uiConfigFromUi
+
+  def saveFromUi(): Either[String, ContestScoringConfig] =
+    validateInput().map { newConfig =>
+      contestScoringConfigManager.update(newConfig)
+      newConfig
     }
 
   def reloadFromManager(): Unit =
     bindUiToCurrentConfig()
-    refreshObjectiveVisibility()
+    refreshContestTypeUi()
 
   private def installListeners(): Unit =
     contestConfigManager.contestConfigProperty.onChange { (_, _, _) =>
-      refreshObjectiveVisibility()
+      refreshContestTypeUi()
     }
 
     configProperty.onChange { (_, _, _) =>
@@ -121,7 +127,7 @@ class ContestScoringConfigPane @Inject() (
     powerSourceCombo.value = cfg.powerSource
     includeBonusesCheck.selected = cfg.includeBonusesInLiveScore
 
-    setObjectiveSelected("away-from-home", awayFromHomeCheck)
+    setObjectiveSelected("  away-from-home", awayFromHomeCheck)
     setObjectiveSelected("qrp", qrpCheck)
     setObjectiveSelected("alternative-power", alternativePowerCheck)
     setObjectiveSelected("multiple-antennas", multipleAntennasCheck)
@@ -135,8 +141,9 @@ class ContestScoringConfigPane @Inject() (
                                   ): Unit =
     checkBox.selected = configProperty.value.claimedObjectives.contains(objectiveId)
 
-  private def refreshObjectiveVisibility(): Unit =
+  private def refreshContestTypeUi(): Unit =
     val contestType = contestConfigManager.contestConfigProperty.value.contestType
+    contestTypeValueLabel.text = contestType.toString
     val isWfd = contestType == ContestType.WFD
 
     objectivesBox.visible = isWfd
@@ -163,7 +170,7 @@ class ContestScoringConfigPane @Inject() (
   private def hasUnsavedChanges: Boolean =
     uiConfigFromUi.exists(_ != configProperty.value)
 
-  private def uiConfigFromUi: Option[ContestScoringConfig] =
+  private def uiConfigFromUi: Either[String, ContestScoringConfig] =
     parsePowerWatts(powerWattsField.text.value).map { watts =>
       ContestScoringConfig(
         powerWatts = watts,
@@ -173,7 +180,15 @@ class ContestScoringConfigPane @Inject() (
       )
     }
 
-  private def parsePowerWatts(text: String): Option[Int] =
-    text.trim match
-      case "" => Some(configProperty.value.powerWatts)
-      case s  => scala.util.Try(s.toInt).toOption.filter(_ >= 0)
+  private def parsePowerWatts(text: String): Either[String, Int] =
+    val trimmed = text.trim
+    if trimmed.isEmpty then
+      Left("Power watts is required.")
+    else
+      scala.util.Try(trimmed.toInt).toOption match
+        case None =>
+          Left(s"Power watts must be a whole number, got: '$trimmed'.")
+        case Some(value) if value < 0 =>
+          Left("Power watts must be zero or greater.")
+        case Some(value) =>
+          Right(value)
