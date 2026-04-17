@@ -23,6 +23,7 @@ import fdswarm.fx.bandmodes.BandsAndModesPane
 import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.fx.discovery.ContestDialog
 import fdswarm.scoring.ContestScoringConfigDialog
+import fdswarm.scoring.ContestScoreResultsDialog
 import fdswarm.fx.station.StationEditor
 import fdswarm.fx.tools.*
 import fdswarm.logging.LazyStructuredLogging
@@ -41,7 +42,6 @@ import scalafx.scene.web.WebView
 import scalafx.stage.{Stage, Window}
 
 import scala.io.Source
-import fdswarm.scoring.ContestScoreResultsDialog
 final class FdLogMenus @Inject() (
     bandModeManagerPane: BandsAndModesPane,
     stationEditor: StationEditor,
@@ -60,7 +60,8 @@ final class FdLogMenus @Inject() (
     contestScoringConfigDialog: ContestScoringConfigDialog,
     contestConfigManager: ContestConfigManager,
     metricsDialog: MetricsDialog,
-                                 )
+    contestScoreResultsDialog: ContestScoreResultsDialog,
+)
     extends LazyStructuredLogging:
   aboutMenuItem.onAction = _ => showAboutDialog()
 
@@ -151,6 +152,9 @@ final class FdLogMenus @Inject() (
   private val reportsMenu: Menu =
     new Menu("Reports"):
       items = Seq(
+        new MenuItem("Score Results"):
+          onAction = _ => contestScoreResultsDialog.show()
+        ,
         new MenuItem("Summary"):
           onAction = _ =>
             summaryDialog.show(
