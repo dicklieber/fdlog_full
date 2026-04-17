@@ -45,7 +45,11 @@
 .grid-header {
     -fx-font-weight: bold;
     -fx-background-color: blue;
-    -fx-color: green;
+    -fx-text-fill: white;
+    -fx-alignment: center;
+    -fx-padding: 4 8 4 8;
+    -fx-background-insets: 0;
+    -fx-border-insets: 0;
 }
 
 .grid-value {
