@@ -5,11 +5,12 @@ import jakarta.inject.{Inject, Singleton}
 
 @Singleton
 class ContestScorerRegistry @Inject() (
-                                        wfdScorer: WfdScorer
+                                        wfdScorer: WfdScorer,
+                                        arrlFdScorer: ArrlFdScorer
                                       ):
 
   def forType(ct: ContestType): ContestScorer =
     ct match
       case ContestType.WFD  => wfdScorer
-      case ContestType.ARRL => ArrlFdScorer
+      case ContestType.ARRL => arrlFdScorer
       case ContestType.NONE => NoopScorer

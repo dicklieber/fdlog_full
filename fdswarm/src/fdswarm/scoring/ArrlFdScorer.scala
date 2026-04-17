@@ -1,8 +1,13 @@
 package fdswarm.scoring
 
 import fdswarm.model.Qso
+import jakarta.inject.{Inject, Singleton}
 
-object ArrlFdScorer extends ContestScorer:
+@Singleton
+class ArrlFdScorer @Inject() (
+                               arrlScoringRules: ArrlScoringRules
+                             ) extends ContestScorer:
+
   val name = "ARRL"
 
   def score(
@@ -46,12 +51,11 @@ object ArrlFdScorer extends ContestScorer:
         case PowerSource.Battery | PowerSource.Solar => true
         case _                                       => false
 
-    if powerWatts <= 5 then
-      if nonCommercial then 5.0 else 2.0
-    else if powerWatts <= 100 then
-      2.0
-    else
-      1.0
+    arrlScoringRules.multiplierTiers
+      .find(tier => powerWatts <= tier.maxPower && nonCommercial == tier.nonCommercial)
+      .orElse(arrlScoringRules.multiplierTiers.find(tier => powerWatts <= tier.maxPower))
+      .map(_.multiplier)
+      .getOrElse(1.0)
 
   private def qsoPoints(qso: Qso): Int =
     scoringModeOf(qso) match
