@@ -68,7 +68,7 @@ class CirceSupportTest extends FunSuite:
     assertEquals(decoded, fdClass)
 
   test("StatusMessage round trip"):
-    val hostAndPort = NodeIdentity.testNodeIdentity
+    val hostAndPort = NodeIdentity.mockNodeIdentity
     val bno = BandModeOperator(Callsign("WA9NNN"), BandMode("40M", "CW"), Instant.parse("2026-03-16T15:00:00Z"))
     val config = ContestConfig(ContestType.ARRL, Callsign("WA9NNN"), 1, "A", "IL")
     val status = StatusMessage(hashCount = fdswarm.replication.HashCount(), bandNodeOperator = bno, contestConfig = config)

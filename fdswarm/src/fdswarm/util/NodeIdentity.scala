@@ -58,7 +58,7 @@ case class NodeIdentity(hostIp: String,
    * This gets put into the [[fdswarm.replication.UDPHeader]].
    */
   val udpHeaderPiece: String =
-    s"${port}_${instanceId}_$hostName"
+    toString
 
   val short: String = s"$hostName:$port"
   override def compare(that: NodeIdentity): Int =
@@ -71,40 +71,41 @@ case class NodeIdentity(hostIp: String,
   override def hashCode: Int = instanceId.hashCode
 
 object NodeIdentity:
-  val testNodeIdentity = NodeIdentity(
+  val mockNodeIdentity = NodeIdentity(
     hostIp = "44.0.0.1",
     port = 42,
     hostName = "testHost",
     instanceId = "=id")
-  private val regx = """([^:]+)_(\d+)_(.{3})_(.*)""".r
-  private val regxUdp = """(\d+)_(.{3})_(.*)""".r
-
   /**
    *
    * @param address  from packet.getAddress as received from UDP.
    * @param udpPiece for header.
    */
-  def fromUdpHeader(address: InetAddress, udpPiece: String): NodeIdentity =
-    udpPiece match
-      case regxUdp(port, hostName, instanceId) =>
-        NodeIdentity(hostIp = address.getHostAddress,
-          port = port.toInt,
-          hostName = instanceId,
-          instanceId = hostName)
-      case _ =>
-        throw new IllegalArgumentException(s"Invalid UdpPiece in header: $udpPiece")
+  def fromUdpHeader(
+    address: InetAddress,
+    udpPiece: String): NodeIdentity =
+    apply(
+      udpPiece
+    )
+      .copy(
+        hostIp = address.getHostAddress
+      )
 
 /**
  *
  * @param s from [[toString]]
  * @return
  */
-  def apply(s: String): NodeIdentity =
-      s match
-        case regx(hostIp, sPort, hostName, instanceId) =>
-          NodeIdentity(hostIp = hostIp, port = sPort.toInt, hostName = instanceId, instanceId = hostName)
-        case _ =>
-          throw new IllegalArgumentException(s"Invalid NodeIdentity: $s")
+  def apply(
+    s: String): NodeIdentity =
+    val parts = s.split("_", 4)
+    if parts.length != 4 then
+      throw new IllegalArgumentException(s"Invalid NodeIdentity: $s")
 
-
-
+    val Array(hostIp, sPort, hostName, instanceId) = parts
+    NodeIdentity(
+      hostIp = hostIp,
+      port = sPort.toInt,
+      hostName = hostName,
+      instanceId = instanceId
+    )

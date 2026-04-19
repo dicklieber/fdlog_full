@@ -151,7 +151,7 @@ class ContestConfigManagerTest extends FunSuite:
     ), contestConfig = config)
     NodeStatus(
       statusMessage = statusMessage,
-      nodeIdentity = NodeIdentity.testNodeIdentity,
+      nodeIdentity = NodeIdentity.mockNodeIdentity,
       isLocal = false
     )
 

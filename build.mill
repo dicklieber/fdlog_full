@@ -490,20 +490,20 @@ object manager extends CommonSettings:
       mvn"org.scalameta::munit:1.0.3"
     )
 
-object app extends CommonSettings:
-  def mvnDeps = Seq(
-    mvn"org.scalafx:scalafx_3:20.0.0-R31"
-  )
-
-  object test extends ScalaTests with TestModule.Munit:
-    override def mvnDeps = super.mvnDeps() ++ Seq(
-      mvn"org.scalameta::munit:1.0.3",
-      mvn"org.testfx:testfx-core:4.0.18"
-    )
-
-    override def forkArgs = Seq(
-      "-Dtestfx.robot=glass",
-      "-Dtestfx.headless=false",
-      "-Dprism.order=sw",
-      "--add-opens=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED"
-    )
+//object app extends CommonSettings:
+//  def mvnDeps = Seq(
+//    mvn"org.scalafx:scalafx_3:20.0.0-R31"
+//  )
+//
+//  object test extends ScalaTests with TestModule.Munit:
+//    override def mvnDeps = super.mvnDeps() ++ Seq(
+//      mvn"org.scalameta::munit:1.0.3",
+//      mvn"org.testfx:testfx-core:4.0.18"
+//    )
+//
+//    override def forkArgs = Seq(
+//      "-Dtestfx.robot=glass",
+//      "-Dtestfx.headless=false",
+//      "-Dprism.order=sw",
+//      "--add-opens=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED"
+//    )

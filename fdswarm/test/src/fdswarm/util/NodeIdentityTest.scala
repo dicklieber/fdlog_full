@@ -27,13 +27,13 @@ import java.net.InetAddress
 class NodeIdentityTest extends FunSuite:
 
   test("string round trip"):
-    val nodeIdentity = NodeIdentity.testNodeIdentity
+    val nodeIdentity = NodeIdentity.mockNodeIdentity
     val string = nodeIdentity.toString
     val backAgain = NodeIdentity(string)
     assertEquals( backAgain, nodeIdentity)
 
   test("udpPiece round trip"):
-    val nodeIdentity = NodeIdentity.testNodeIdentity
+    val nodeIdentity = NodeIdentity.mockNodeIdentity
     val udpPiece = nodeIdentity.udpHeaderPiece
     // The [[UDPHeder]] mechanism doens't send the IP address in the UDPHeader. Instead, it uses the IP address of rempote socket. 
     val inetAddress = InetAddress.getByName(nodeIdentity.hostIp)
@@ -41,7 +41,7 @@ class NodeIdentityTest extends FunSuite:
     assertEquals( backAgain, nodeIdentity)
 
   test("circe round trip"):
-    val nodeIdentity = NodeIdentity.testNodeIdentity
+    val nodeIdentity = NodeIdentity.mockNodeIdentity
     val sJson = nodeIdentity.asJson.spaces2
     assertEquals(sJson, """{
                          |  "hostIp" : "44.0.0.1",

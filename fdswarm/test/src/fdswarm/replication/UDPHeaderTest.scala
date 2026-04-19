@@ -27,13 +27,13 @@ import java.net.{DatagramPacket, InetAddress}
 class UDPHeaderTest extends FunSuite:
 
   test("UDPHeader generates correct Status header"):
-    val nodeIdentity = NodeIdentity.testNodeIdentity
+    val nodeIdentity = NodeIdentity.mockNodeIdentity
     val bytes = UDPHeader(Service.Status, nodeIdentity, Array.emptyByteArray)
     val expected = s"FDSWARM|Status|${nodeIdentity.udpHeaderPiece}|${BuildInfo.dataVersion}|\n".getBytes("UTF-8")
     assert(bytes.sameElements(expected))
 
   test("UDPHeader generates correct header with payload"):
-    val nodeIdentity = NodeIdentity.testNodeIdentity
+    val nodeIdentity = NodeIdentity.mockNodeIdentity
     val payload = "Hello World".getBytes("UTF-8")
     val bytes = UDPHeader(Service.Status, nodeIdentity, payload)
     val headerPart = s"FDSWARM|Status|${nodeIdentity.udpHeaderPiece}|${BuildInfo.dataVersion}|\n".getBytes("UTF-8")
