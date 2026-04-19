@@ -3,7 +3,12 @@ package fdswarm.fx.discovery
 import fdswarm.fx.contest.*
 import fdswarm.fx.sections.SectionsProvider
 import fdswarm.fx.utils.StyledDialog
-import fdswarm.fx.utils.editor.{CallsignCustomField, CaseClassPropertyEditor, CustomFieldEditor, IntSpinner}
+import fdswarm.fx.utils.editor.{
+  CallsignCustomField,
+  CaseClassPropertyEditor,
+  CustomFieldEditor,
+  IntSpinner
+}
 import jakarta.inject.Inject
 import scalafx.Includes.*
 import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
@@ -13,12 +18,12 @@ import scalafx.scene.layout.VBox
 
 import scala.jdk.CollectionConverters.*
 
-class ContestConfigDialog @Inject()(
-                                     contestCatalog: ContestCatalog,
-                                     sectionsProvider: SectionsProvider,
-                                     contestManager: ContestConfigManager,
-                                     exchangePane: ExchangePane)
-  extends StyledDialog[ButtonType]:
+class ContestConfigDialog @Inject() (
+    contestCatalog: ContestCatalog,
+    sectionsProvider: SectionsProvider,
+    contestManager: ContestConfigManager,
+    exchangePane: ExchangePane
+) extends StyledDialog[ButtonType]:
 
   private val configEditor: CaseClassPropertyEditor[ContestConfig] =
     new CaseClassPropertyEditor(
@@ -56,7 +61,7 @@ class ContestConfigDialog @Inject()(
 
   private val configPane = configEditor.horizontal
   private val currentContestConfigProperty
-  : ReadOnlyObjectProperty[ContestConfig] =
+      : ReadOnlyObjectProperty[ContestConfig] =
     configEditor.currentValueProperty
 
   title = "Contest Configuration"
@@ -100,8 +105,8 @@ class ContestConfigDialog @Inject()(
   )
 
   private def hasInvalidCustomEditor(
-                                      root: Node
-                                    ): Boolean =
+      root: Node
+  ): Boolean =
     allNodes(
       root.delegate
     ).exists(node =>
@@ -118,8 +123,8 @@ class ContestConfigDialog @Inject()(
     )
 
   private def allNodes(
-                        root: javafx.scene.Node
-                      ): Seq[javafx.scene.Node] =
+      root: javafx.scene.Node
+  ): Seq[javafx.scene.Node] =
     val children =
       root match
         case parent: javafx.scene.Parent =>
