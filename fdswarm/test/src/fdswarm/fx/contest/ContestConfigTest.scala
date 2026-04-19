@@ -36,6 +36,23 @@ class ContestConfigTest extends FunSuite:
     assertEquals(weAre, "We are Whiskey One Alpha Whiskey 2 Oscar Charlie Tango")
   }
 
+  test("weAre handles null callsign without throwing") {
+    val config = ContestConfig(
+      contestType = ContestType.WFD,
+      ourCallsign = null,
+      transmitters = 2,
+      ourClass = "O",
+      ourSection = "CT"
+    )
+    val weAre = config.weAre(
+      usePhonetic = false
+    )
+    assertEquals(
+      weAre,
+      "We are  2O CT"
+    )
+  }
+
   test("exchange single transmitter") {
     val config = ContestConfig(ContestType.ARRL, Callsign("K1ABC"), 1, "1A", "NH")
     assertEquals(config.exchange, "11A NH")

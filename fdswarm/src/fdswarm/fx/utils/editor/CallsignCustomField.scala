@@ -45,7 +45,7 @@ class CallsignCustomField extends CustomFieldEditor:
       // from text to prop
       tf.text.onChange { (_, _, _) =>
         val textVal = tf.text.value.trim
-        val cs = if textVal.isEmpty then null.asInstanceOf[Callsign] else Callsign(textVal)
+        val cs = if textVal.isEmpty then Callsign("") else Callsign(textVal)
         callsignProp.value = cs
       }
       tf

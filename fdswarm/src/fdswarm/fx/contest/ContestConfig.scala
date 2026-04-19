@@ -54,7 +54,7 @@ case class ContestConfig(contestType: ContestType,
   val exchange:String=
     s"$transmitters$ourClass $ourSection"
   def weAre(usePhonetic: Boolean): String =
-    val callsignValue = ourCallsign.toString
+    val callsignValue = Option(ourCallsign).map(_.toString).getOrElse("")
     if usePhonetic then
       s"We are ${fromString(callsignValue)} $transmitters ${fromString(ourClass)} ${fromString(ourSection)}"
     else
