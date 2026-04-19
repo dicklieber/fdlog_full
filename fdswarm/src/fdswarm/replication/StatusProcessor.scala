@@ -40,15 +40,14 @@ class StatusProcessor @Inject() (
 
   private var processTimer = metrics.timer("fdswarm_process_status_duration")
 
-  /** Process an incoming status message: determine what FdHours are needed and
-    * POST them to the remote node.
+  /**
+   * If the remote node has a different hash count than the local node, then fetch all the QSOs from the remote node and add them to the local QSO store..
+   * Note [[QsoStore.add]] handles duplicates.
     *
     * @return
     *   IO completing after the HTTP call finishes
     */
-  def processStatus(
-      nodeStatus: NodeStatus
-    ): Unit =
+  def processStatus(nodeStatus: NodeStatus): Unit =
     processTimer.time {
       val remoteHashCount = nodeStatus.statusMessage.hashCount
       val localHashCount = localNodeStatus.statusMessage.hashCount

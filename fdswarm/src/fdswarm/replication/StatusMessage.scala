@@ -22,6 +22,7 @@ import fdswarm.fx.contest.ContestConfig
 import fdswarm.model.BandModeOperator
 import fdswarm.util.Gzip
 import io.circe.Codec
+import io.circe.generic.auto.{deriveDecoder, deriveEncoder}
 import io.circe.parser.decode
 import io.circe.syntax.EncoderOps
 
