@@ -37,9 +37,6 @@ import scala.collection.mutable
  * @tparam T type of the case class.
  */
 class CaseClassPropertyEditor[T <: Product](val target: T):
-
-  require(target != null, "target must not be null")
-
   private val runtimeClass: Class[?] =
     target.getClass
 
@@ -190,6 +187,9 @@ class CaseClassPropertyEditor[T <: Product](val target: T):
     )
     grid
 
+  /**
+   * Finish editing and return the target.
+   */
   def finish(): T =
     propertyT.value
 
@@ -200,16 +200,6 @@ class CaseClassPropertyEditor[T <: Product](val target: T):
       .filterNot(hiddenFields.contains)
       .flatMap(customEditors.get)
       .forall(_.isValid)
-
-  def update(newTarget: T): Unit =
-    require(
-      newTarget.productElementNames.toVector == fieldNames,
-      "New target must have same product element names"
-    )
-
-    propertiesInOrder.zipWithIndex.foreach { case ((_, fieldValue), idx) =>
-      fieldValue.setFromAny(newTarget.productElement(idx))
-    }
 
   private def nodeFor(fieldName: String, fieldValue: FieldValue): Node =
     customEditors.get(fieldName) match
