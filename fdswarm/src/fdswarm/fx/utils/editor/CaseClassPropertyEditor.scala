@@ -54,6 +54,8 @@ class CaseClassPropertyEditor[T <: Product](val target: T):
 
   private val propertyT: ObjectProperty[T] =
     ObjectProperty[T](target)
+  private val anyFieldChangeListeners =
+    mutable.ArrayBuffer.empty[() => Unit]
 
   def currentValueProperty: ObjectProperty[T] =
     propertyT
@@ -68,8 +70,20 @@ class CaseClassPropertyEditor[T <: Product](val target: T):
       propertyT.value = rebuildTarget().asInstanceOf[T]
 
   propertiesInOrder.foreach { case (_, fieldValue) =>
-    fieldValue.onAnyChange(() => updatePropertyT())
+    fieldValue.onAnyChange(
+      () =>
+        updatePropertyT()
+        anyFieldChangeListeners.foreach(
+          listener =>
+            listener()
+        )
+    )
   }
+
+  def onAnyFieldChange(
+    listener: () => Unit
+  ): Unit =
+    anyFieldChangeListeners += listener
 
   def getProperty[A](propertyName: String): A =
     propertiesByName.getOrElse(
@@ -191,7 +205,15 @@ class CaseClassPropertyEditor[T <: Product](val target: T):
 
   private def nodeFor(fieldName: String, fieldValue: FieldValue): Node =
     customEditors.get(fieldName) match
-      case Some(custom) => custom.editor(fieldValue.rawProperty)
+      case Some(custom) =>
+        val node = custom.editor(
+          fieldValue.rawProperty
+        )
+        node.delegate.getProperties.put(
+          CaseClassPropertyEditor.CustomFieldEditorNodeKey,
+          custom
+        )
+        node
       case None         => defaultEditor(fieldValue)
 
   private def buildProperties(value: T): Vector[(String, FieldValue)] =
@@ -456,3 +478,8 @@ final case class ObjectFieldValue(property: ObjectProperty[Any]) extends FieldVa
 
 trait CustomFieldEditor:
   def editor(fieldProperty: Any): Node
+  def isValid: Boolean
+
+object CaseClassPropertyEditor:
+  val CustomFieldEditorNodeKey: String =
+    "fdswarm.customFieldEditor"

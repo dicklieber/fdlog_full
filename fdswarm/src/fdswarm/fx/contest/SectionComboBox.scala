@@ -29,10 +29,23 @@ import scalafx.scene.control.ComboBox
 class SectionComboBox(
                        sectionsProvider: SectionsProvider
                      ) extends CustomFieldEditor, CompactComboBoxSupport:
+  private var sectionProperty: Option[StringProperty] =
+    None
+
+  override def isValid: Boolean =
+    sectionProperty.exists(
+      valueProperty =>
+        valueProperty.value != null &&
+          valueProperty.value.trim.nonEmpty &&
+          valueProperty.value != "-"
+    )
 
   override def editor(fieldProperty: Any): Node =
     fieldProperty match
       case stringProp: StringProperty =>
+        sectionProperty = Some(
+          stringProp
+        )
         val combo = configureCompactComboBox(new ComboBox[Section])(
           buttonText = _.code,
           listText = s => s"${s.code} - ${s.name}"

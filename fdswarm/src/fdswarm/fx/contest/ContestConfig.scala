@@ -42,7 +42,7 @@ trait ContestConfigFields:
  */
 case class ContestConfig(contestType: ContestType,
                          ourCallsign: Callsign,
-                         transmitters: Int,
+                         transmitters: Int = 1,
                          ourClass: String,
                          ourSection: String,
                          stamp: Instant = Instant.now()) extends ContestConfigFields derives Codec.AsObject:
@@ -68,7 +68,7 @@ object ContestConfig:
   val noContest: ContestConfig = ContestConfig(
     contestType = ContestType.NONE,
     ourCallsign = Callsign(""),
-    transmitters = 0,
+    transmitters = 1,
     ourClass = "-",
     ourSection = "-"
   )

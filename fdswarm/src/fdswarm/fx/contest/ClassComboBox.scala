@@ -29,9 +29,22 @@ class ClassComboBox(
                      catalog: ContestCatalog,
                      contestTypeProperty: ObjectProperty[ContestType]
                    ) extends CustomFieldEditor, CompactComboBoxSupport:
+  private var classProperty: Option[StringProperty] =
+    None
+
+  override def isValid: Boolean =
+    classProperty.exists(
+      valueProperty =>
+        valueProperty.value != null &&
+          valueProperty.value.trim.nonEmpty &&
+          valueProperty.value != "-"
+    )
 
   override def editor(fieldProperty: Any): Node =
     val stringProp = fieldProperty.asInstanceOf[StringProperty]
+    classProperty = Some(
+      stringProp
+    )
     var syncingSelection = false
 
     val combo = configureCompactComboBox(new ComboBox[ClassChoice])(

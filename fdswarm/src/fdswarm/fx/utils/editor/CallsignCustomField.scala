@@ -24,9 +24,24 @@ import scalafx.scene.control.TextField
 import fdswarm.model.Callsign
 
 class CallsignCustomField extends CustomFieldEditor:
+  private var callsignProperty: Option[ObjectProperty[Callsign]] =
+    None
+
+  override def isValid: Boolean =
+    callsignProperty.exists(
+      property =>
+        property.value != null &&
+          Callsign.isValid(
+            property.value.toString
+          )
+    )
+
   override def editor(fieldProperty: Any): Node = fieldProperty match
     case prop: ObjectProperty[?] =>
       val callsignProp = prop.asInstanceOf[ObjectProperty[Callsign]]
+      callsignProperty = Some(
+        callsignProp
+      )
       val tf = new TextField {
         text.onChange { (_, _, newValue) =>
           val filtered = newValue.filter(c => c.isLetterOrDigit || c == '/').toUpperCase

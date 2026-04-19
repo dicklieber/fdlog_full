@@ -12,9 +12,21 @@ class IntSpinner(
                   max: Int = 100,
                   width: Double = 90.0,
                 ) extends CustomFieldEditor:
+  private var spinnerProperty: Option[IntegerProperty] =
+    None
+
+  override def isValid: Boolean =
+    spinnerProperty.exists(
+      valueProperty =>
+        valueProperty.value >= min &&
+          valueProperty.value <= max
+    )
 
   override def editor(fieldProperty: Any): Node =
     val intProp = fieldProperty.asInstanceOf[IntegerProperty]
+    spinnerProperty = Some(
+      intProp
+    )
 
     val spinner = new Spinner[Int](min, max, intProp.value, 1)
     spinner.editable = true
