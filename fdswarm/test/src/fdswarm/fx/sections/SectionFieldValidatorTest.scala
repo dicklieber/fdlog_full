@@ -18,9 +18,11 @@
 
 package fdswarm.fx.sections
 
+import fdswarm.JavaFxTestKit
 import munit.FunSuite
 
 class SectionFieldValidatorTest extends FunSuite:
+  JavaFxTestKit.init()
 
   lazy val sections = Seq(
     Section("IL", "Illinois"),

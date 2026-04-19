@@ -17,11 +17,14 @@
  */
 
 package fdswarm.fx
+import fdswarm.JavaFxTestKit
 import munit.FunSuite
 import scalafx.scene.control.Label
 import scalafx.scene.layout.{GridPane, StackPane, BorderPane}
 
 class GridColumnsTest extends FunSuite:
+  JavaFxTestKit.init()
+
   test("toGrid arranges items in rows and columns"):
     val items = (1 to 8).map(
       i => new Label(i.toString)

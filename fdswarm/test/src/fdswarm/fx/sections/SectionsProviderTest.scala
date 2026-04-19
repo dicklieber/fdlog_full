@@ -25,6 +25,8 @@ import scalafx.Includes.*
 import scalafx.beans.binding.Bindings
 
 class SectionsProviderTest extends FunSuite:
+  JavaFxTestKit.init()
+
   test("SectionsProvider provides a Seq[SectionGroup] as a val") {
     val config = ConfigFactory.load()
     val provider = new SectionsProvider(config)
@@ -54,7 +56,6 @@ class SectionsProviderTest extends FunSuite:
   }
 
   test("Section properties are correctly initialized") {
-    JavaFxTestKit.init()
     val section = Section("IL", "Illinois")
     assertEquals(section.text.value, "IL")
     assert(section.tooltip.value.isInstanceOf[javafx.scene.control.Tooltip])
