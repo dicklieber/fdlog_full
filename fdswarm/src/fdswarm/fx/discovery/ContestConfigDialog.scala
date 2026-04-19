@@ -3,15 +3,12 @@ package fdswarm.fx.discovery
 import fdswarm.fx.contest.*
 import fdswarm.fx.sections.SectionsProvider
 import fdswarm.fx.utils.StyledDialog
-import fdswarm.fx.utils.editor.{CallsignCustomField, CaseClassPropertyEditor, CustomFieldEditor, IntSpinner}
+import fdswarm.fx.utils.editor.{CallsignCustomField, CaseClassPropertyEditor, IntSpinner}
 import jakarta.inject.Inject
 import scalafx.Includes.*
 import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
-import scalafx.scene.Node
 import scalafx.scene.control.ButtonType
 import scalafx.scene.layout.VBox
-
-import scala.jdk.CollectionConverters.*
 
 class ContestConfigDialog @Inject() (
     contestCatalog: ContestCatalog,
@@ -42,23 +39,10 @@ class ContestConfigDialog @Inject() (
   dialogPane().buttonTypes = Seq(ButtonType.OK, ButtonType.Cancel)
 
   private val updateButton = dialogPane().lookupButton(ButtonType.OK)
-  configEditor.onAnyFieldChange(() => updateButton.setDisable(hasInvalidCustomEditor(configPane)))
-  updateButton.setDisable(hasInvalidCustomEditor(configPane))
+  configEditor.onAnyFieldChange(
+    () => updateButton.setDisable(!configEditor.isValid)
+  )
+  updateButton.setDisable(!configEditor.isValid)
   updateButton.addEventFilter(
     javafx.event.ActionEvent.ACTION,
     (_: javafx.event.ActionEvent) => contestManager.setConfig(configEditor.finish()))
-
-  private def hasInvalidCustomEditor(root: Node): Boolean = allNodes(root.delegate).exists(node =>
-    Option(node.getProperties.get(CaseClassPropertyEditor.CustomFieldEditorNodeKey)).exists {
-      case editor: CustomFieldEditor =>
-        !editor.isValid
-      case _ =>
-        false
-    })
-
-  private def allNodes(root: javafx.scene.Node): Seq[javafx.scene.Node] =
-    val children = root match
-      case parent: javafx.scene.Parent => parent.getChildrenUnmodifiable.asScala.toSeq
-      case _                           => Seq.empty
-
-    root +: children.flatMap(allNodes)

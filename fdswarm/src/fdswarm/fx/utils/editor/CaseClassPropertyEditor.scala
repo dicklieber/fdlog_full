@@ -193,6 +193,14 @@ class CaseClassPropertyEditor[T <: Product](val target: T):
   def finish(): T =
     propertyT.value
 
+  def isValid: Boolean =
+    propertiesInOrder
+      .iterator
+      .map(_._1)
+      .filterNot(hiddenFields.contains)
+      .flatMap(customEditors.get)
+      .forall(_.isValid)
+
   def update(newTarget: T): Unit =
     require(
       newTarget.productElementNames.toVector == fieldNames,
