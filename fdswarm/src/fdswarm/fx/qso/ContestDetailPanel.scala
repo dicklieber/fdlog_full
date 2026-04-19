@@ -22,7 +22,7 @@ import fdswarm.logging.LazyStructuredLogging
 import fdswarm.ContestDates
 import fdswarm.fx.GridColumns
 import fdswarm.fx.contest.{ContestConfig, ContestConfigManager, ContestType}
-import fdswarm.fx.discovery.ContestDialog
+import fdswarm.fx.discovery.ContestConfigDialog
 import fdswarm.util.DurationFormat
 import jakarta.inject.{Inject, Named, Singleton}
 import scalafx.animation.{KeyFrame, Timeline}
@@ -38,9 +38,9 @@ import scala.compiletime.uninitialized
 
 @Singleton
 class ContestDetailPanel @Inject()(
-                                   contestManager: ContestConfigManager,
-                                   contestDialog: ContestDialog,
-                                   @Named("fdswarm.contestTimerUpdateSec") contestTimerUpdateSec: Int
+                                    contestManager: ContestConfigManager,
+                                    contestConfigDialog: ContestConfigDialog,
+                                    @Named("fdswarm.contestTimerUpdateSec") contestTimerUpdateSec: Int
                                  ) extends LazyStructuredLogging:
   private val timerTimeline = new Timeline:
     keyFrames = Seq(
@@ -59,7 +59,7 @@ class ContestDetailPanel @Inject()(
     minWidth = scalafx.scene.layout.Region.USE_PREF_SIZE
 
   private val setupContestButton = new Button("Setup Contest"):
-    onAction = _ => contestDialog.show()
+    onAction = _ => contestConfigDialog.show()
 
   private val setupContestContent = new VBox:
     spacing = 8

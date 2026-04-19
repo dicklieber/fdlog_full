@@ -21,7 +21,7 @@ package fdswarm.fx
 import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.bandmodes.BandsAndModesPane
 import fdswarm.fx.contest.ContestConfigManager
-import fdswarm.fx.discovery.ContestDialog
+import fdswarm.fx.discovery.ContestConfigDialog
 import fdswarm.scoring.ContestScoringConfigDialog
 import fdswarm.scoring.ContestScoreResultsDialog
 import fdswarm.fx.station.StationEditor
@@ -43,24 +43,24 @@ import scalafx.stage.{Stage, Window}
 
 import scala.io.Source
 final class FdLogMenus @Inject() (
-    bandModeManagerPane: BandsAndModesPane,
-    stationEditor: StationEditor,
-    howManyDialogService: HowManyDialogService,
-    loggingDialog: LoggingDialog,
-    contestTimeDialog: ContestTimeDialog,
-    aboutMenuItem: AboutMenuItem,
-    userConfig: UserConfig,
-    userConfigEditor: UserConfigEditor,
-    exportDialog: ExportDialog,
-    sectionsProvider: fdswarm.fx.sections.SectionsProvider,
-    sectionPanel: fdswarm.fx.sections.SectionPanel,
-    swarmStatusAdmin: fdswarm.fx.admin.SwarmStatusAdmin,
-    summaryDialog: SummaryDialog,
-    contestDialog: ContestDialog,
-    contestScoringConfigDialog: ContestScoringConfigDialog,
-    contestConfigManager: ContestConfigManager,
-    metricsDialog: MetricsDialog,
-    contestScoreResultsDialog: ContestScoreResultsDialog,
+                                   bandModeManagerPane: BandsAndModesPane,
+                                   stationEditor: StationEditor,
+                                   howManyDialogService: HowManyDialogService,
+                                   loggingDialog: LoggingDialog,
+                                   contestTimeDialog: ContestTimeDialog,
+                                   aboutMenuItem: AboutMenuItem,
+                                   userConfig: UserConfig,
+                                   userConfigEditor: UserConfigEditor,
+                                   exportDialog: ExportDialog,
+                                   sectionsProvider: fdswarm.fx.sections.SectionsProvider,
+                                   sectionPanel: fdswarm.fx.sections.SectionPanel,
+                                   swarmStatusAdmin: fdswarm.fx.admin.SwarmStatusAdmin,
+                                   summaryDialog: SummaryDialog,
+                                   contestConfigDialog: ContestConfigDialog,
+                                   contestScoringConfigDialog: ContestScoringConfigDialog,
+                                   contestConfigManager: ContestConfigManager,
+                                   metricsDialog: MetricsDialog,
+                                   contestScoreResultsDialog: ContestScoreResultsDialog,
 )
     extends LazyStructuredLogging:
   aboutMenuItem.onAction = _ => showAboutDialog()
@@ -93,7 +93,7 @@ final class FdLogMenus @Inject() (
             )
         ,
         new MenuItem("Contest"):
-          onAction = _ => contestDialog.show()
+          onAction = _ => contestConfigDialog.show()
         ,
         new MenuItem("Scoring"):
           onAction = _ => contestScoringConfigDialog.show()

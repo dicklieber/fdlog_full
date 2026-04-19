@@ -1,18 +1,90 @@
-package fdswarm.fx.contest
+package fdswarm.fx.discovery
 
+import fdswarm.fx.contest.{
+  ContestConfig,
+  ContestCatalog,
+  ContestChooser,
+  ContestConfigManager,
+  SectionComboBox,
+  ContestType,
+  ExchangePane
+}
 import fdswarm.fx.sections.SectionsProvider
+import fdswarm.fx.utils.StyledDialog
 import fdswarm.fx.utils.editor.{
   CallsignCustomField,
   CaseClassPropertyEditor,
   IntSpinner
 }
 import fdswarm.model.Callsign
+import fdswarm.store.QsoStore
+import jakarta.inject.Inject
+import scalafx.Includes.*
 import scalafx.beans.property.{
   BooleanProperty,
   ObjectProperty,
   ReadOnlyObjectProperty
 }
-import scalafx.scene.layout.Pane
+import scalafx.scene.control.{ButtonBar, ButtonType}
+import scalafx.scene.layout.{Pane, VBox}
+
+class ContestConfigDialog @Inject()(
+  contestCatalog: ContestCatalog,
+  sectionsProvider: SectionsProvider,
+  contestManager: ContestConfigManager,
+  qsoStore: QsoStore,
+  exchangePane: ExchangePane
+)
+  extends StyledDialog[ButtonType]:
+
+
+  private val contestConfigPane: ContestConfigPane =
+    new ContestConfigPane(
+      contestManager.contestConfigProperty.value,
+      contestCatalog,
+      sectionsProvider
+    )
+
+
+  title = "Contest Configuration"
+  resizable = true
+  dialogPane().content = new ContestDetailEditor(
+    contestConfigPane,
+    exchangePane,
+    qsoStore,
+    contestManager
+  )
+
+  private val updateButtonType = new ButtonType(
+    "Update",
+    ButtonBar.ButtonData.OKDone
+  )
+
+  dialogPane().buttonTypes = Seq(
+    updateButtonType,
+    ButtonType.Cancel
+  )
+
+  private val updateButton = dialogPane().lookupButton(
+    updateButtonType
+  )
+  updateButton.disableProperty().bind(new ContestDetailEditor(
+    contestConfigPane,
+    exchangePane,
+    qsoStore,
+    contestManager
+  ).isValid.delegate.not())
+  updateButton.addEventFilter(
+    javafx.event.ActionEvent.ACTION,
+    (event: javafx.event.ActionEvent) =>
+      if !new ContestDetailEditor(
+    contestConfigPane,
+    exchangePane,
+    qsoStore,
+    contestManager
+  ).updateContestConfig() then
+        event.consume()
+  )
 
 class ContestConfigPane(
   initialContestConfig: ContestConfig,
@@ -38,7 +110,9 @@ class ContestConfigPane(
     new CallsignCustomField()
   )
   val contestTypeProperty: ObjectProperty[ContestType] =
-    configEditor.getProperty("contestType")
+    configEditor.getProperty(
+      "contestType"
+    )
   configEditor.setCustomEditor(
     "ourClass",
     contestCatalog.comboBox(
@@ -68,15 +142,10 @@ class ContestConfigPane(
     ) =>
       isValid.value =
         if updatedConfig == null then false
-        else isValidContestConfig(updatedConfig)
+        else isValidContestConfig(
+          updatedConfig
+        )
   }
-
-  def update(
-    contestConfig: ContestConfig
-  ): Unit =
-    configEditor.update(
-      contestConfig
-    )
 
   def pane: Pane =
     configEditor.horizontal
@@ -93,8 +162,12 @@ class ContestConfigPane(
       ) &&
       config.contestType != ContestType.NONE &&
       config.transmitters > 0 &&
-      hasValue(config.ourClass) &&
-      hasValue(config.ourSection)
+      hasValue(
+        config.ourClass
+      ) &&
+      hasValue(
+        config.ourSection
+      )
 
   private def hasValue(
     value: String

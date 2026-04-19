@@ -2,7 +2,6 @@ package fdswarm.fx.discovery
 
 import fdswarm.fx.contest.{
   ContestConfigManager,
-  ContestConfigPane,
   ExchangePane
 }
 import fdswarm.store.QsoStore
