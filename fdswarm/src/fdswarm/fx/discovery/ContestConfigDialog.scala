@@ -17,7 +17,6 @@ import fdswarm.fx.utils.editor.{
   IntSpinner
 }
 import fdswarm.model.Callsign
-import fdswarm.store.QsoStore
 import jakarta.inject.Inject
 import scalafx.Includes.*
 import scalafx.beans.property.{
@@ -25,14 +24,13 @@ import scalafx.beans.property.{
   ObjectProperty,
   ReadOnlyObjectProperty
 }
-import scalafx.scene.control.{ButtonBar, ButtonType}
+import scalafx.scene.control.ButtonType
 import scalafx.scene.layout.{Pane, VBox}
 
 class ContestConfigDialog @Inject()(
   contestCatalog: ContestCatalog,
   sectionsProvider: SectionsProvider,
   contestManager: ContestConfigManager,
-  qsoStore: QsoStore,
   exchangePane: ExchangePane
 )
   extends StyledDialog[ButtonType]:
@@ -48,42 +46,31 @@ class ContestConfigDialog @Inject()(
 
   title = "Contest Configuration"
   resizable = true
-  dialogPane().content = new ContestDetailEditor(
-    contestConfigPane,
-    exchangePane,
-    qsoStore,
-    contestManager
-  )
-
-  private val updateButtonType = new ButtonType(
-    "Update",
-    ButtonBar.ButtonData.OKDone
-  )
+  dialogPane().content = new VBox(spacing = 8):
+    children ++= Seq(
+      contestConfigPane.pane,
+      exchangePane.pane(
+        contestConfigPane.currentContestConfigProperty
+      )
+    )
 
   dialogPane().buttonTypes = Seq(
-    updateButtonType,
+    ButtonType.OK,
     ButtonType.Cancel
   )
 
   private val updateButton = dialogPane().lookupButton(
-    updateButtonType
+    ButtonType.OK
   )
-  updateButton.disableProperty().bind(new ContestDetailEditor(
-    contestConfigPane,
-    exchangePane,
-    qsoStore,
-    contestManager
-  ).isValid.delegate.not())
+  updateButton.disableProperty().bind(
+    contestConfigPane.isValid.delegate.not()
+  )
   updateButton.addEventFilter(
     javafx.event.ActionEvent.ACTION,
-    (event: javafx.event.ActionEvent) =>
-      if !new ContestDetailEditor(
-    contestConfigPane,
-    exchangePane,
-    qsoStore,
-    contestManager
-  ).updateContestConfig() then
-        event.consume()
+    (_: javafx.event.ActionEvent) =>
+      contestManager.setConfig(
+        contestConfigPane.finish()
+      )
   )
 
 class ContestConfigPane(
@@ -125,11 +112,15 @@ class ContestConfigPane(
       sectionsProvider
     )
   )
+  configEditor.hideField(
+    "stamp"
+  )
 
   val currentContestConfigProperty: ReadOnlyObjectProperty[ContestConfig] =
     configEditor.currentValueProperty
   val isValid: BooleanProperty = BooleanProperty(
-    isValidContestConfig(
+    if currentContestConfigProperty.value == null then false
+    else canUpdateContestConfig(
       currentContestConfigProperty.value
     )
   )
@@ -142,7 +133,7 @@ class ContestConfigPane(
     ) =>
       isValid.value =
         if updatedConfig == null then false
-        else isValidContestConfig(
+        else canUpdateContestConfig(
           updatedConfig
         )
   }
@@ -152,6 +143,21 @@ class ContestConfigPane(
 
   def finish(): ContestConfig =
     configEditor.finish()
+
+  private def canUpdateContestConfig(
+    config: ContestConfig
+  ): Boolean =
+    isValidContestConfig(
+      config
+    ) &&
+      hasChanges(
+        config
+      )
+
+  private def hasChanges(
+    config: ContestConfig
+  ): Boolean =
+    config != initialContestConfig
 
   private def isValidContestConfig(
     config: ContestConfig

@@ -60,6 +60,8 @@ class CaseClassPropertyEditor[T <: Product](val target: T):
 
   private val customEditors =
     mutable.LinkedHashMap.empty[String, CustomFieldEditor]
+  private val hiddenFields =
+    mutable.HashSet.empty[String]
 
   private def updatePropertyT(): Unit =
     if hasNoEmptyStringFields then
@@ -75,15 +77,38 @@ class CaseClassPropertyEditor[T <: Product](val target: T):
       throw new NoSuchElementException(s"No field named '$propertyName'")
     ).rawProperty.asInstanceOf[A]
 
-  def setCustomEditor(fieldName: String, editor: CustomFieldEditor): Unit =
+  def setCustomEditor(
+    fieldName: String,
+    editor: CustomFieldEditor
+  ): Unit =
     require(fieldNames.contains(fieldName), s"No field named '$fieldName'")
     customEditors(fieldName) = editor
+
+  def hideField(
+    fieldName: String
+  ): Unit =
+    require(
+      fieldNames.contains(
+        fieldName
+      ),
+      s"No field named '$fieldName'"
+    )
+    hiddenFields += fieldName
 
   def horizontal: Pane =
     val grid = GridCells.styledGrid("case-class-editor-grid")
     val fieldEditorsInOrder = mutable.ArrayBuffer.empty[Node]
+    val visibleProperties = propertiesInOrder.filterNot {
+      case (
+            fieldName,
+            _
+          ) =>
+        hiddenFields.contains(
+          fieldName
+        )
+    }
 
-    for ((fieldName, fieldValue), col) <- propertiesInOrder.zipWithIndex do
+    for ((fieldName, fieldValue), col) <- visibleProperties.zipWithIndex do
       val label = new Label(camelToWords(fieldName)):
         minWidth = Region.USE_PREF_SIZE
         textOverrun = OverrunStyle.Clip
@@ -114,8 +139,17 @@ class CaseClassPropertyEditor[T <: Product](val target: T):
   def vertical: Pane =
     val grid = GridCells.styledGrid("case-class-editor-grid")
     val fieldEditorsInOrder = mutable.ArrayBuffer.empty[Node]
+    val visibleProperties = propertiesInOrder.filterNot {
+      case (
+            fieldName,
+            _
+          ) =>
+        hiddenFields.contains(
+          fieldName
+        )
+    }
 
-    for ((fieldName, fieldValue), row) <- propertiesInOrder.zipWithIndex do
+    for ((fieldName, fieldValue), row) <- visibleProperties.zipWithIndex do
       val label = new Label(camelToWords(fieldName)):
         minWidth = Region.USE_PREF_SIZE
         textOverrun = OverrunStyle.Clip
