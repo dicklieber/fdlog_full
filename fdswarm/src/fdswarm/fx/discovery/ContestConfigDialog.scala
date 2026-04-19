@@ -10,6 +10,11 @@ import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
 import scalafx.scene.control.ButtonType
 import scalafx.scene.layout.VBox
 
+import java.time.Instant
+
+/**
+ * Dialog for configuring contest settings.
+ */
 class ContestConfigDialog @Inject() (
     contestCatalog: ContestCatalog,
     sectionsProvider: SectionsProvider,
@@ -45,4 +50,10 @@ class ContestConfigDialog @Inject() (
   updateButton.setDisable(!configEditor.isValid)
   updateButton.addEventFilter(
     javafx.event.ActionEvent.ACTION,
-    (_: javafx.event.ActionEvent) => contestManager.setConfig(configEditor.finish()))
+    (_: javafx.event.ActionEvent) =>
+      contestManager.setConfig(
+        configEditor.finish().copy(
+          stamp = Instant.now()
+        )
+      )
+  )
