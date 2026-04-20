@@ -26,7 +26,7 @@ import fdswarm.fx.discovery.ContestDiscovery
 import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.utils.UiStyles
 import fdswarm.logging.Locus.Startup
-import fdswarm.replication.{NodeStatusHandler, StatusBroadcastService}
+import fdswarm.replication.{NodeStatusDispatcher, StatusBroadcastService}
 import fdswarm.telemetry.Metrics
 import fdswarm.util.{DurationFormat, NodeIdentityManager}
 import jakarta.inject.{Inject, Singleton}
@@ -45,7 +45,7 @@ import java.time.{Duration, Instant}
 final class FdLogUi @Inject() (
                                 contestEntry: ContestEntry,
                                 menus: FdLogMenus,
-                                repl: NodeStatusHandler,
+                                repl: NodeStatusDispatcher,
                                 statusBroadcastService: StatusBroadcastService,
                                 nodeIdentityManager: NodeIdentityManager,
                                 otelMetrics: Metrics,

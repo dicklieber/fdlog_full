@@ -20,6 +20,7 @@ package fdswarm.replication
 
 import com.organization.BuildInfo
 import fdswarm.util.NodeIdentity
+import fdswarm.util.Gzip
 import munit.FunSuite
 
 import java.net.{DatagramPacket, InetAddress}
@@ -101,3 +102,20 @@ class UDPHeaderTest extends FunSuite:
     val headerData = s"FDSWARM|Status|8080-instance|999|\n".getBytes("UTF-8")
     val packet = new DatagramPacket(headerData, headerData.length, InetAddress.getLoopbackAddress, 1234)
     intercept[IllegalArgumentException](UDPHeader.parse(packet))
+
+  test("UDPHeaderData.decode handles gzipped JSON payload"):
+    val json = "\"status-ok\"".getBytes("UTF-8")
+    val gzipped = Gzip.compress(
+      json
+    )
+    val udpHeaderData = UDPHeaderData(
+      service = Service.Status,
+      nodeIdentity = NodeIdentity.mockNodeIdentity,
+      payload = gzipped
+    )
+
+    val result = udpHeaderData.decode[String]
+    assertEquals(
+      result,
+      "status-ok"
+    )

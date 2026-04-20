@@ -23,8 +23,7 @@ import fdswarm.io.DirectoryProvider
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.logging.Locus.LogEntry
 import fdswarm.model.*
-import fdswarm.replication.status.SwarmData
-import fdswarm.replication.{HashCount, LocalNodeStatus, Service, Transport}
+import fdswarm.replication.{HashCount, LocalNodeStatus, NodeStatusDispatcher, Service, Transport}
 import fdswarm.scoring.ContestScoringService
 import fdswarm.util.Ids.Id
 import io.circe.generic.auto.deriveDecoder
@@ -38,13 +37,13 @@ import scala.collection.concurrent.TrieMap
 
 @Singleton
 class QsoStore @Inject() (
-    directoryProvider: DirectoryProvider,
-    transport: Transport,
-    swarmDataProvider: Provider[SwarmData],
-    startupInfo: StartupInfo,
-    filenameStamp: fdswarm.util.FilenameStamp,
-    localNodeStatus: LocalNodeStatus,
-    contestScoringService: ContestScoringService)
+                           directoryProvider: DirectoryProvider,
+                           transport: Transport,
+                           startupInfo: StartupInfo,
+                           filenameStamp: fdswarm.util.FilenameStamp,
+                           localNodeStatus: LocalNodeStatus,
+                           contestScoringService: ContestScoringService,
+                           nodeStatusDispatcher: NodeStatusDispatcher)
     extends DefaultInstrumented
     with LazyStructuredLogging(LogEntry):
 
@@ -56,6 +55,14 @@ class QsoStore @Inject() (
   private val qsoCollectionSizeGauge =
     metrics.gauge("qsoCollectionSize")(qsoCollection.size)
   private val journalFile = directoryProvider() / "qsosJournal.json"
+  nodeStatusDispatcher.addQsoListener(
+    qso => {
+      add(
+        qso
+      )
+      ()
+    }
+  )
 
   def add(
       qso: Qso
@@ -205,5 +212,3 @@ class QsoStore @Inject() (
     calculateHash()
 
   def size: Int = map.size
-
-  private def swarmData: SwarmData = swarmDataProvider.get()

@@ -43,19 +43,6 @@ class ContestConfigManagerTest extends FunSuite:
   }
 
 
-  test("hasConfiguration is true after handleRestartContest") {
-    val config = ContestConfig(ContestType.WFD, Callsign("W1AW"), 2, "O", "CT")
-    val subTempDir = Files.createTempDirectory("sub-contest-config-test")
-    val subDirectoryProvider = mock(classOf[DirectoryProvider])
-    when(subDirectoryProvider.apply()).thenReturn(os.Path(subTempDir.toAbsolutePath.toString))
-    
-    val manager = new ContestConfigManager(subDirectoryProvider, filenameStamp, ignoreStatusSec)
-    assert(!manager.hasConfiguration.value)
-    manager.handleRestartContest(config)
-    assert(manager.hasConfiguration.value)
-    
-    os.remove.all(os.Path(subTempDir.toAbsolutePath.toString))
-  }
 
 
   test("contestConfigProperty returns noContest when not initialized") {
@@ -133,14 +120,9 @@ class ContestConfigManagerTest extends FunSuite:
   private def nodeStatusWithConfig(
                                     config: ContestConfig
                                   ): NodeStatus =
-    val statusMessage = StatusMessage(hashCount = fdswarm.replication.HashCount(), bandNodeOperator = BandModeOperator(
-      operator = Callsign(
-        "W1AW"
-      ),
-      bandMode = BandMode(
-        "20M CW"
-      )
-    ), contestConfig = config)
+    val statusMessage = StatusMessage(hashCount = fdswarm.replication.HashCount(),
+      bandNodeOperator = BandModeOperator(operator = Callsign("W1AW"), bandMode = BandMode("20M CW")),
+      contestConfig = config)
     NodeStatus(
       statusMessage = statusMessage,
       nodeIdentity = NodeIdentity.mockNodeIdentity,

@@ -30,15 +30,19 @@ import nl.grons.metrics4.scala.DefaultInstrumented
   */
 @Singleton
 class StatusProcessor @Inject() (
-    qsoStore: QsoStore,
-    localNodeStatus: LocalNodeStatus,
-    replEndpoints: ReplEndpoints,
-    callEndpoint: CallEndpoint,
-    nodeBandOpPane: NodeBandOpPane)
+                                  qsoStore: QsoStore,
+                                  localNodeStatus: LocalNodeStatus,
+                                  replEndpoints: ReplEndpoints,
+                                  callEndpoint: CallEndpoint,
+                                  nodeBandOpPane: NodeBandOpPane,
+                                  nodeStatusDispatcher: NodeStatusDispatcher)
     extends LazyStructuredLogging
     with DefaultInstrumented:
 
   private var processTimer = metrics.timer("fdswarm_process_status_duration")
+  nodeStatusDispatcher.addNodeStatusListener(
+    processStatus
+  )
 
   /**
    * If the remote node has a different hash count than the local node, then fetch all the QSOs from the remote node and add them to the local QSO store..

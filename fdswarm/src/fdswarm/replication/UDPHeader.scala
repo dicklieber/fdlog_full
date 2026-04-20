@@ -20,6 +20,7 @@ package fdswarm.replication
 
 import com.organization.BuildInfo
 import fdswarm.util.NodeIdentity
+import fdswarm.util.Gzip
 import io.circe.{Decoder, Json, parser}
 import com.codahale.metrics.SharedMetricRegistries
 import org.slf4j.LoggerFactory
@@ -34,13 +35,34 @@ enum Service:
 case class UDPHeaderData(service: Service, nodeIdentity: NodeIdentity, payload: Array[Byte]):
 
   def decode[T](using Decoder[T]): T =
-    val jsonString = new String(payload, StandardCharsets.UTF_8)
+    val decodedPayload = maybeDecompressGzip(payload)
+    val jsonString = new String(decodedPayload, StandardCharsets.UTF_8)
     io.circe.parser.parse(jsonString) match
       case Left(error) => throw new RuntimeException(s"Failed to parse JSON: ${error.getMessage}", error)
       case Right(json) => json.as[T] match
         case Left(error) => throw new RuntimeException(s"Failed to decode JSON to T: ${error.getMessage}", error)
         case Right(value) => value
-  
+
+  private def maybeDecompressGzip(
+                                  input: Array[Byte]
+                                ): Array[Byte] =
+    if isGzip(input) then
+      Try(
+        Gzip.decompress(input)
+      ).getOrElse(
+        throw new RuntimeException(
+          "Failed to decompress GZIP payload"
+        )
+      )
+    else
+      input
+
+  private def isGzip(
+                      input: Array[Byte]
+                    ): Boolean =
+    input.length >= 2 &&
+      input(0) == 0x1f.toByte &&
+      input(1) == 0x8b.toByte
 
 /**
  *

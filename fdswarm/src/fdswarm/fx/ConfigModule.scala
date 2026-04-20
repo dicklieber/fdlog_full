@@ -29,7 +29,7 @@ import fdswarm.io.{DirectoryProvider, ProductionDirectory}
 import fdswarm.logging.ElasticShipper
 import fdswarm.store.QsoStore
 import fdswarm.replication.status.SwarmData
-import fdswarm.replication.{BroadcastTransport, NodeStatusHandler, StatusBroadcastService, Transport}
+import fdswarm.replication.{BroadcastTransport, ContestRestartHandler, NodeStatusDispatcher, StatusBroadcastService, Transport}
 import fdswarm.telemetry.Metrics
 import net.codingwell.scalaguice.ScalaModule
 
@@ -76,10 +76,11 @@ class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModu
     val primaryConfigFromFile = ConfigFactory.parseFile((os.pwd / "config" / "sarasec.conf").toIO)
     val defaultConfigFromFile: Config = ConfigFactory.load()
     val fullConfig: Config = primaryConfigFromFile.withFallback(defaultConfigFromFile)
-    bind[StatusBroadcastService].asEagerSingleton()
-    bind[NodeStatusHandler].asEagerSingleton()
+//    bind[StatusBroadcastService].asEagerSingleton()
+//    bind[NodeStatusDispatcher].asEagerSingleton()
+//    bind[ContestRestartHandler].asEagerSingleton()
 //    bind[MulticastTransport].asEagerSingleton()
-    bind[BroadcastTransport].asEagerSingleton()
+//    bind[BroadcastTransport].asEagerSingleton()
 
     val transportType = if fullConfig.hasPath("fdswarm.transportType") then fullConfig.getString("fdswarm.transportType") else "Multicast"
     if (transportType.equalsIgnoreCase("Broadcast")) 

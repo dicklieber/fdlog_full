@@ -18,59 +18,42 @@
 
 package fdswarm.replication.status
 
-import fdswarm.logging.LazyStructuredLogging
-import fdswarm.fx.FdLogUi
-import fdswarm.fx.GridBuilder
 import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.fx.station.StationEditor
-import fdswarm.replication.NodeStatus
-import fdswarm.util.NodeIdentity
-import fdswarm.util.NodeIdentityManager
+import fdswarm.fx.{FdLogUi, GridBuilder}
+import fdswarm.logging.LazyStructuredLogging
+import fdswarm.replication.{NodeStatus, NodeStatusDispatcher}
+import fdswarm.util.{NodeIdentity, NodeIdentityManager}
 import jakarta.inject.{Inject, Singleton}
 import javafx.beans.value.ChangeListener
+import javafx.collections.ListChangeListener
 import javafx.event.EventHandler
 import javafx.scene.input.MouseEvent
-import scalafx.Includes.*
 import scalafx.application.Platform
 import scalafx.beans.binding.Bindings
 import scalafx.beans.property.StringProperty
 import scalafx.collections.ObservableBuffer
-import scalafx.scene.Node
-import scalafx.scene.Parent
 import scalafx.scene.control.{Label, ScrollPane, Tooltip}
-import scalafx.scene.layout.GridPane
-import scalafx.scene.layout.StackPane
+import scalafx.scene.layout.{GridPane, StackPane}
+import scalafx.scene.{Node, Parent}
 
-import javafx.collections.ListChangeListener
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.atomic.AtomicLong
 import scala.collection.concurrent.TrieMap
 
-/**
- * Holds data about each node in the swarm.
- */
+/** Holds data about each node in the swarm.
+  */
 @Singleton
-class
-SwarmData @Inject() (
-  nodeIdentityManager: NodeIdentityManager,
-  stationEditor: StationEditor,
-  contestConfigManager: ContestConfigManager,
-  ageCellStyleRefresher: AgeCellStyleRefresher
-) extends LazyStructuredLogging:
-  type CellNodeListener = (
-    NodeStatus,
-    String,
-    Node
-  ) => Unit
-
-  private case class GridBuildResult(
-                                      grid: GridPane,
-                                      cellNodes: Map[(NodeIdentity, NodeDataField), Seq[Node]]
-                                    )
-
+class SwarmData @Inject() (
+    nodeIdentityManager: NodeIdentityManager,
+    stationEditor: StationEditor,
+    contestConfigManager: ContestConfigManager,
+    ageCellStyleRefresher: AgeCellStyleRefresher,
+    nodeStatusDispatcher: NodeStatusDispatcher)
+    extends LazyStructuredLogging:
+  type CellNodeListener = (NodeStatus, String, Node) => Unit
   val knownNodeIdentity: ObservableBuffer[NodeIdentity] = ObservableBuffer.empty[NodeIdentity]
-
   val nodeMap: TrieMap[NodeIdentity, NodeStatus] = TrieMap.empty[NodeIdentity, NodeStatus]
   private val valueProperties = TrieMap.empty[(NodeIdentity, NodeDataField), StringProperty]
   private val renderedCellNodes = TrieMap.empty[(NodeIdentity, NodeDataField), Vector[Node]]
@@ -81,248 +64,93 @@ SwarmData @Inject() (
   private val ourNodeStyleClass = "ourNode"
   private val operatorLinkStyleClass = "operatorLink"
   private val operatorFieldName = NodeDataField.Operator.label
+  private val stampFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("MM-dd HH:mm:ss")
+    .withZone(ZoneId.systemDefault())
 
-  private val stampFormatter: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("MM-dd HH:mm:ss").withZone(ZoneId.systemDefault())
-
-  ageCellStyleRefresher.setPurgeCallback(
-    nodeIdentity =>
-      logger.info("Purging", "Node" -> nodeIdentity.toString)
-      remove(
-        nodeIdentity
-      )
-  )
-
-  def ourNodeIdentity: NodeIdentity =
-    nodeIdentityManager.ourNodeIdentity
-
-  def allNodeStatuses: Seq[NodeStatus] =
-    nodeMap.values.toSeq
-
-  def addNodeStatusListener(
-                             listener: Seq[NodeStatus] => Unit
-                           ): () => Unit =
+  def addNodeStatusListener(listener: Seq[NodeStatus] => Unit): () => Unit =
     val id = nodeStatusListenerId.incrementAndGet()
     nodeStatusListeners.put(id, listener)
-    listener(
-      allNodeStatuses
-    )
+    listener(allNodeStatuses)
     () => nodeStatusListeners.remove(id)
 
-  def addCellNodeListener(
-                           listener: CellNodeListener
-                         ): () => Unit =
-    val id = cellNodeListenerId.incrementAndGet()
-    cellNodeListeners.put(id, listener)
-    updateOnFxThread {
-      renderedCellNodes.foreach {
-        case ((nodeIdentity, field), cells) =>
-          nodeMap.get(nodeIdentity).foreach(
-            status =>
-              cells.foreach(
-                cell =>
-                  listener(
-                    status,
-                    field.label,
-                    cell
-                  )
-              )
-          )
-      }
-    }
-    () => cellNodeListeners.remove(id)
+  ageCellStyleRefresher.setPurgeCallback(nodeIdentity =>
+    logger.info("Purging", "Node" -> nodeIdentity.toString)
+    remove(nodeIdentity))
+  nodeStatusDispatcher.addNodeStatusListener(update)
+
+  def allNodeStatuses: Seq[NodeStatus] = nodeMap.values.toSeq
 
   def clear(): Unit =
     val localStatus = nodeMap.get(ourNodeIdentity)
-    nodeMap.keys.foreach(
-      nodeIdentity =>
-        ageCellStyleRefresher.remove(
-          nodeIdentity
-        )
-    )
+    nodeMap.keys.foreach(nodeIdentity => ageCellStyleRefresher.remove(nodeIdentity))
     nodeMap.clear()
-    localStatus.foreach(
-      status =>
-        nodeMap.put(
-          status.nodeIdentity,
-          status
-        )
-    )
+    localStatus.foreach(status => nodeMap.put(status.nodeIdentity, status))
     updateKnownCollectionsFromNodeMap()
     notifyNodeStatusListeners()
     logger.debug("Cleared swarm status data, retaining local node.")
 
-  def remove(nodeIdentity: NodeIdentity): Unit =
-    if nodeIdentity != ourNodeIdentity then
-      nodeMap.remove(nodeIdentity).foreach(
-        _ =>
-          ageCellStyleRefresher.remove(
-            nodeIdentity
-          )
-      )
-      updateKnownCollectionsFromNodeMap()
-      notifyNodeStatusListeners()
-      logger.debug(s"Removed node status for $nodeIdentity")
+  def remove(nodeIdentity: NodeIdentity): Unit = if nodeIdentity != ourNodeIdentity then
+    nodeMap.remove(nodeIdentity).foreach(_ => ageCellStyleRefresher.remove(nodeIdentity))
+    updateKnownCollectionsFromNodeMap()
+    notifyNodeStatusListeners()
+    logger.debug(s"Removed node status for $nodeIdentity")
+
+  def ourNodeIdentity: NodeIdentity = nodeIdentityManager.ourNodeIdentity
+
+  private def updateKnownCollectionsFromNodeMap(): Unit =
+    val nodeStatuses = nodeMap.values.toSeq
+    val nodes = nodeStatuses.sorted.map(_.nodeIdentity).distinct
+    updateOnFxThread {
+      knownNodeIdentity.clear()
+      knownNodeIdentity ++= nodes
+    }
+
+  private def updateOnFxThread(action: => Unit): Unit =
+    if Platform.isFxApplicationThread then action
+    else
+      try Platform.runLater(() => action)
+      catch case _: IllegalStateException => action
+
+  private def notifyNodeStatusListeners(): Unit =
+    val statuses = allNodeStatuses
+    nodeStatusListeners.values.foreach(listener => listener(statuses))
 
   def update(nodeStatus: NodeStatus): Unit =
-//    val receivedContestConfig = nodeStatus.statusMessage.contestConfig
-//    updateOnFxThread {
-//      val localContestConfig = contestConfigManager.contestConfigProperty.value
-//      if localContestConfig.stamp != receivedContestConfig.stamp then
-//        logger.info(
-//          "Replacing local contest config from node status update because stamp differs.",
-//          "nodeIdentity" -> nodeStatus.nodeIdentity.toString,
-//          "localStamp" -> localContestConfig.stamp.toString,
-//          "receivedStamp" -> receivedContestConfig.stamp.toString
-//        )
-//        if localContestConfig.contestType != receivedContestConfig.contestType then
-//          logger.error(
-//            "Contest type changed while replacing contest config from node status update.",
-//            "nodeIdentity" -> nodeStatus.nodeIdentity.toString,
-//            "localContestType" -> localContestConfig.contestType.toString,
-//            "receivedContestType" -> receivedContestConfig.contestType.toString,
-//            "localStamp" -> localContestConfig.stamp.toString,
-//            "receivedStamp" -> receivedContestConfig.stamp.toString
-//          )
-//        contestConfigManager.setConfig(
-//          receivedContestConfig
-//        )
-//    }
+    val receivedContestConfig = nodeStatus.statusMessage.contestConfig
+    updateOnFxThread {
+      val localContestConfig = contestConfigManager.contestConfigProperty.value
+      if localContestConfig.stamp != receivedContestConfig.stamp then
+        logger.info(
+          "Replacing local contest config from node status update because stamp differs.",
+          "nodeIdentity" -> nodeStatus.nodeIdentity.toString,
+          "localStamp" -> localContestConfig.stamp.toString,
+          "receivedStamp" -> receivedContestConfig.stamp.toString
+        )
+        if localContestConfig.contestType != receivedContestConfig.contestType then
+          logger.error(
+            "Contest type changed while replacing contest config from node status update.",
+            "nodeIdentity" -> nodeStatus.nodeIdentity.toString,
+            "localContestType" -> localContestConfig.contestType.toString,
+            "receivedContestType" -> receivedContestConfig.contestType.toString,
+            "localStamp" -> localContestConfig.stamp.toString,
+            "receivedStamp" -> receivedContestConfig.stamp.toString
+          )
+        contestConfigManager.setConfig(receivedContestConfig)
+    }
 
     val nodeIdentity = nodeStatus.nodeIdentity
     nodeMap.put(nodeIdentity, nodeStatus)
-    ageCellStyleRefresher.track(
-      nodeStatus = nodeStatus
-    )
+    ageCellStyleRefresher.track(nodeStatus = nodeStatus)
 
     updateOnFxThread {
       val staticValues = staticFieldValues(nodeStatus)
       staticValues.foreach { case (field, value) =>
         propertyFor(nodeIdentity, field).value = value
-        notifyCellNodeListeners(
-          nodeStatus,
-          field
-        )
+        notifyCellNodeListeners(nodeStatus, field)
       }
     }
     updateKnownCollectionsFromNodeMap()
     notifyNodeStatusListeners()
-
-  def buildGridPane(
-                     fields: Seq[NodeDataField]
-                   ): Parent =
-    val gridContainer = new StackPane()
-    val scrollPane = new ScrollPane:
-      content = gridContainer
-      hbarPolicy = ScrollPane.ScrollBarPolicy.Always
-      vbarPolicy = ScrollPane.ScrollBarPolicy.Never
-      fitToHeight = false
-      fitToWidth = false
-      pannable = true
-    var renderedByThisPane = Map.empty[(NodeIdentity, NodeDataField), Seq[Node]]
-
-    def rebuildGrid(): Unit =
-      unregisterRenderedCells(
-        renderedByThisPane
-      )
-      val result = buildGrid(fields.distinct)
-      renderedByThisPane = result.cellNodes
-      registerRenderedCells(
-        renderedByThisPane
-      )
-      gridContainer.children.setAll(
-        result.grid
-      )
-
-    rebuildGrid()
-    val nodeListener: ListChangeListener[NodeIdentity] =
-      (_: ListChangeListener.Change[? <: NodeIdentity]) => rebuildGrid()
-    knownNodeIdentity.delegate.addListener(nodeListener)
-
-    // Remove listener once the wrapper leaves the scene graph.
-    val sceneListener: ChangeListener[javafx.scene.Scene] = new ChangeListener[javafx.scene.Scene]:
-      override def changed(
-          observable: javafx.beans.value.ObservableValue[? <: javafx.scene.Scene],
-          oldScene: javafx.scene.Scene,
-          newScene: javafx.scene.Scene
-      ): Unit =
-        if newScene == null then
-          knownNodeIdentity.delegate.removeListener(nodeListener)
-          unregisterRenderedCells(
-            renderedByThisPane
-          )
-          renderedByThisPane = Map.empty
-          scrollPane.delegate.sceneProperty.removeListener(
-            this
-          )
-    scrollPane.delegate.sceneProperty.addListener(
-      sceneListener
-    )
-
-    scrollPane
-
-  private def buildGrid(fields: Seq[NodeDataField]): GridBuildResult =
-    val builder = GridBuilder()
-    builder.hgap = 1
-    builder.vgap = 1
-    builder.padding = scalafx.geometry.Insets(1)
-    builder.style = "-fx-background-color: #808080; -fx-background-insets: 0;"
-    val nodes = knownNodeIdentity.toSeq
-    val cellsByField = scala.collection.mutable.Map.empty[(NodeIdentity, NodeDataField), Vector[Node]]
-    fields.foreach { field =>
-      val values = nodes.map(
-        node =>
-          val cellNode = buildCellNode(
-            node,
-            field
-          )
-          val key = (
-            node,
-            field
-          )
-          val updated = cellsByField.getOrElse(
-            key,
-            Vector.empty
-          ) :+ cellNode
-          cellsByField.update(
-            key,
-            updated
-          )
-          cellNode
-      )
-      builder(
-        field.label,
-        values*
-      )
-    }
-    val grid = builder.result
-    grid.styleClass += "swarm-status-grid"
-    GridBuildResult(
-      grid,
-      cellsByField.view.mapValues(_.toSeq).toMap
-    )
-
-  private def buildCellNode(
-                             node: NodeIdentity,
-                             field: NodeDataField
-                           ): Node =
-    val valueProperty = propertyFor(
-      node,
-      field
-    )
-    if field == NodeDataField.Hash then
-      val shortHashBinding = Bindings.createStringBinding(
-        () => Option(valueProperty.value).getOrElse("").take(5),
-        valueProperty
-      )
-      new Label:
-        text <== shortHashBinding
-        tooltip = new Tooltip:
-          text <== valueProperty
-    else
-      GridBuilder.valueToLabel(
-        valueProperty
-      )
 
   private def staticFieldValues(nodeStatus: NodeStatus): Map[NodeDataField, String] =
     val bno = nodeStatus.statusMessage.bandNodeOperator
@@ -349,165 +177,127 @@ SwarmData @Inject() (
       NodeDataField.ContestStamp -> stampFormatter.format(contest.stamp)
     )
 
-  private def propertyFor(node: NodeIdentity, field: NodeDataField): StringProperty =
-    valueProperties.getOrElseUpdate((node, field), StringProperty(""))
+  private def notifyCellNodeListeners(nodeStatus: NodeStatus, field: NodeDataField): Unit =
+    val cells = renderedCellNodes.getOrElse((nodeStatus.nodeIdentity, field), Vector.empty)
+    notifyCellNodeListeners(nodeStatus, field, cells)
 
-  private def updateOnFxThread(action: => Unit): Unit =
-    if Platform.isFxApplicationThread then
-      action
-    else
-      try
-        Platform.runLater(() => action)
-      catch
-        case _: IllegalStateException =>
-          action
+  def buildGridPane(fields: Seq[NodeDataField]): Parent =
+    val gridContainer = new StackPane()
+    val scrollPane = new ScrollPane:
+      content = gridContainer
+      hbarPolicy = ScrollPane.ScrollBarPolicy.Always
+      vbarPolicy = ScrollPane.ScrollBarPolicy.Never
+      fitToHeight = false
+      fitToWidth = false
+      pannable = true
+    var renderedByThisPane = Map.empty[(NodeIdentity, NodeDataField), Seq[Node]]
 
-  private def updateKnownCollectionsFromNodeMap(): Unit =
-    val nodeStatuses = nodeMap.values.toSeq
-    val nodes = nodeStatuses.sorted.map(_.nodeIdentity).distinct
-    updateOnFxThread {
-      knownNodeIdentity.clear()
-      knownNodeIdentity ++= nodes
+    def rebuildGrid(): Unit =
+      unregisterRenderedCells(renderedByThisPane)
+      val result = buildGrid(fields.distinct)
+      renderedByThisPane = result.cellNodes
+      registerRenderedCells(renderedByThisPane)
+      gridContainer.children.setAll(result.grid)
+
+    rebuildGrid()
+    val nodeListener: ListChangeListener[NodeIdentity] =
+      (_: ListChangeListener.Change[? <: NodeIdentity]) => rebuildGrid()
+    knownNodeIdentity.delegate.addListener(nodeListener)
+
+    // Remove listener once the wrapper leaves the scene graph.
+    val sceneListener: ChangeListener[javafx.scene.Scene] = new ChangeListener[javafx.scene.Scene]:
+      override def changed(
+          observable: javafx.beans.value.ObservableValue[? <: javafx.scene.Scene],
+          oldScene: javafx.scene.Scene,
+          newScene: javafx.scene.Scene): Unit = if newScene == null then
+        knownNodeIdentity.delegate.removeListener(nodeListener)
+        unregisterRenderedCells(renderedByThisPane)
+        renderedByThisPane = Map.empty
+        scrollPane.delegate.sceneProperty.removeListener(this)
+    scrollPane.delegate.sceneProperty.addListener(sceneListener)
+
+    scrollPane
+
+  private def buildGrid(fields: Seq[NodeDataField]): GridBuildResult =
+    val builder = GridBuilder()
+    builder.hgap = 1
+    builder.vgap = 1
+    builder.padding = scalafx.geometry.Insets(1)
+    builder.style = "-fx-background-color: #808080; -fx-background-insets: 0;"
+    val nodes = knownNodeIdentity.toSeq
+    val cellsByField = scala.collection.mutable.Map.empty[(NodeIdentity, NodeDataField), Vector[Node]]
+    fields.foreach { field =>
+      val values = nodes.map(node =>
+        val cellNode = buildCellNode(node, field)
+        val key = (node, field)
+        val updated = cellsByField.getOrElse(key, Vector.empty) :+ cellNode
+        cellsByField.update(key, updated)
+        cellNode)
+      builder(field.label, values*)
+    }
+    val grid = builder.result
+    grid.styleClass += "swarm-status-grid"
+    GridBuildResult(grid, cellsByField.view.mapValues(_.toSeq).toMap)
+
+  private def buildCellNode(node: NodeIdentity, field: NodeDataField): Node =
+    val valueProperty = propertyFor(node, field)
+    if field == NodeDataField.Hash then
+      val shortHashBinding = Bindings
+        .createStringBinding(() => Option(valueProperty.value).getOrElse("").take(5), valueProperty)
+      new Label:
+        text <== shortHashBinding
+        tooltip = new Tooltip:
+          text <== valueProperty
+    else GridBuilder.valueToLabel(valueProperty)
+
+  private def propertyFor(node: NodeIdentity, field: NodeDataField): StringProperty = valueProperties
+    .getOrElseUpdate((node, field), StringProperty(""))
+
+  private def registerRenderedCells(cellsByField: Map[(NodeIdentity, NodeDataField), Seq[Node]]): Unit = cellsByField
+    .foreach { case (key, cells) =>
+      val merged = renderedCellNodes.getOrElse(key, Vector.empty) ++ cells
+      renderedCellNodes.put(key, merged)
+      nodeMap.get(key._1).foreach(status => cells.foreach(cell => notifyCellNodeListeners(status, key._2, Seq(cell))))
     }
 
-  private def notifyNodeStatusListeners(): Unit =
-    val statuses = allNodeStatuses
-    nodeStatusListeners.values.foreach(
-      listener =>
-        listener(
-          statuses
-        )
-    )
+  private def notifyCellNodeListeners(nodeStatus: NodeStatus, field: NodeDataField, targetCells: Seq[Node]): Unit =
+    targetCells.foreach(cell =>
+      doStyle(CellStyleContext(nodeStatus, field.label, cell))
+      if cellNodeListeners.nonEmpty then
+        cellNodeListeners.values.foreach(listener => listener(nodeStatus, field.label, cell)))
 
-  private def registerRenderedCells(
-                                     cellsByField: Map[(NodeIdentity, NodeDataField), Seq[Node]]
-                                   ): Unit =
-    cellsByField.foreach {
-      case (key, cells) =>
-        val merged = renderedCellNodes.getOrElse(key, Vector.empty) ++ cells
-        renderedCellNodes.put(
-          key,
-          merged
-        )
-        nodeMap.get(key._1).foreach(
-          status =>
-            cells.foreach(
-              cell =>
-                notifyCellNodeListeners(
-                  status,
-                  key._2,
-                  Seq(cell)
-                )
-            )
-        )
-    }
-
-  private def unregisterRenderedCells(
-                                       cellsByField: Map[(NodeIdentity, NodeDataField), Seq[Node]]
-                                     ): Unit =
-    cellsByField.foreach {
-      case (key, removedCells) =>
-        renderedCellNodes.get(key).foreach(
-          existing =>
-            val remaining = existing.filterNot(
-              existingCell =>
-                removedCells.exists(
-                  removed =>
-                    removed.delegate eq existingCell.delegate
-                )
-            )
-            if remaining.isEmpty then
-              renderedCellNodes.remove(key)
-            else
-              renderedCellNodes.put(
-                key,
-                remaining
-              )
-        )
-    }
-
-  private def notifyCellNodeListeners(
-                                       nodeStatus: NodeStatus,
-                                       field: NodeDataField,
-                                       targetCells: Seq[Node]
-                                     ): Unit =
-    targetCells.foreach(
-      cell =>
-        doStyle(
-          CellStyleContext(
-            nodeStatus,
-            field.label,
-            cell
-          )
-        )
-        if cellNodeListeners.nonEmpty then
-          cellNodeListeners.values.foreach(
-            listener =>
-              listener(
-                nodeStatus,
-                field.label,
-                cell
-              )
-          )
-    )
-
-  private def notifyCellNodeListeners(
-                                       nodeStatus: NodeStatus,
-                                       field: NodeDataField
-                                     ): Unit =
-    val cells = renderedCellNodes.getOrElse(
-      (nodeStatus.nodeIdentity, field),
-      Vector.empty
-    )
-    notifyCellNodeListeners(
-      nodeStatus,
-      field,
-      cells
-    )
-
-  /**
-   * Applies the appropriate styling and behavior to a given node based on its status and field name.
-   *
-   * @param nodeStyler wraps the status, field, and node to which styling rules will be applied
-   * @return Unit this method does not return a value; it modifies the node's style and event handlers directly
-   */
-  private def doStyle(
-                       nodeStyler: CellStyleContext
-                     ): Unit =
+  /** Applies the appropriate styling and behavior to a given node based on its status and field name.
+    *
+    * @param nodeStyler wraps the status, field, and node to which styling rules will be applied
+    * @return Unit this method does not return a value; it modifies the node's style and event handlers directly
+    */
+  private def doStyle(nodeStyler: CellStyleContext): Unit =
     val nodeStatus = nodeStyler.nodeStatus
     val fieldName = nodeStyler.fieldName
     val node = nodeStyler.node
     // Keep all current and future styling rules in one place.
     if nodeStatus.isLocal then
-      if !node.styleClass.contains(ourNodeStyleClass) then
-        node.styleClass += ourNodeStyleClass
-      else
-        while node.styleClass.contains(ourNodeStyleClass) do
-          node.styleClass -= ourNodeStyleClass
+      if !node.styleClass.contains(ourNodeStyleClass) then node.styleClass += ourNodeStyleClass
+      else while node.styleClass.contains(ourNodeStyleClass) do node.styleClass -= ourNodeStyleClass
 
     val isLocalOperatorField = nodeStatus.isLocal && fieldName == operatorFieldName
     if isLocalOperatorField then
-      if !node.styleClass.contains(operatorLinkStyleClass) then
-        node.styleClass += operatorLinkStyleClass
-      else
-        while node.styleClass.contains(operatorLinkStyleClass) do
-          node.styleClass -= operatorLinkStyleClass
+      if !node.styleClass.contains(operatorLinkStyleClass) then node.styleClass += operatorLinkStyleClass
+      else while node.styleClass.contains(operatorLinkStyleClass) do node.styleClass -= operatorLinkStyleClass
     if isLocalOperatorField then
       node.delegate.setOnMouseClicked(
         new EventHandler[MouseEvent]:
-          override def handle(
-                               event: MouseEvent
-                             ): Unit =
-            stationEditor.show(
-              FdLogUi.primaryStage
-            )
-      )
-    else
-      node.delegate.setOnMouseClicked(
-        null
-      )
+          override def handle(event: MouseEvent): Unit = stationEditor.show(FdLogUi.primaryStage))
+    else node.delegate.setOnMouseClicked(null)
 
-    if fieldName == NodeDataField.Received.label then
-      ageCellStyleRefresher.add(
-        nodeStyler
-      )
+    if fieldName == NodeDataField.Received.label then ageCellStyleRefresher.add(nodeStyler)
+
+  private def unregisterRenderedCells(cellsByField: Map[(NodeIdentity, NodeDataField), Seq[Node]]): Unit = cellsByField
+    .foreach { case (key, removedCells) =>
+      renderedCellNodes.get(key).foreach(existing =>
+        val remaining = existing
+          .filterNot(existingCell => removedCells.exists(removed => removed.delegate eq existingCell.delegate))
+        if remaining.isEmpty then renderedCellNodes.remove(key) else renderedCellNodes.put(key, remaining))
+    }
+
+  private case class GridBuildResult(grid: GridPane, cellNodes: Map[(NodeIdentity, NodeDataField), Seq[Node]])

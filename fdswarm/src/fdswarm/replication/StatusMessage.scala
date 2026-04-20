@@ -28,14 +28,12 @@ import io.circe.syntax.EncoderOps
 
 import java.nio.charset.StandardCharsets
 
-/** Represents a status message containing information about the current state
-  * of a contest communication system.
+/** Represents a status message containing information about the current state of a contest communication system.
   *
   * @param hashCount
   *   A SHA-512 hash of all the Qsos that have been loggedand how many QSOs.
   * @param bandNodeOperator
-  *   An instance of BandModeOperator containing information about the operator,
-  *   frequency band, and timestamp.
+  *   An instance of BandModeOperator containing information about the operator, frequency band, and timestamp.
   * @param contestConfig
   *   Configuration details of the contest, such as callsign, class, section,
   *   and other metadata.
@@ -54,7 +52,7 @@ case class StatusMessage(
 object StatusMessage:
   def apply(
       gzipped: Array[Byte]
-    ): StatusMessage =
+  ): StatusMessage =
     val jsonBytes = Gzip.decompress(gzipped)
     val json = new String(
       jsonBytes,
@@ -67,7 +65,6 @@ object StatusMessage:
           s"Failed to decode StatusMessage from JSON: ${error.getMessage}",
           error
         )
-
 
 case class HashCount(
     hash: String = "",

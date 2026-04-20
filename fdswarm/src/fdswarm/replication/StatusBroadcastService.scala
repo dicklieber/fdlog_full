@@ -31,6 +31,7 @@ import jakarta.inject.{Inject, Provider, Singleton}
 class StatusBroadcastService @Inject()(
                                         qsoStoreProvider: Provider[QsoStore],
                                         transport: Transport,
+                                        nodeStatusDispatcher: NodeStatusDispatcher,
                                         stationManager: StationConfigManager,
                                         selectedBandModeStore: SelectedBandModeManager,
                                         contestConfigManager: ContestConfigManager,
@@ -42,6 +43,10 @@ class StatusBroadcastService @Inject()(
 
   @volatile private var maybeThread: Option[Thread] = None
   @volatile private var stopRequested: Boolean = false
+
+  nodeStatusDispatcher.addSentStatusListener(
+    () => broadcastStatus()
+  )
 
   private def currentPeriodMillis: Long =
     defaultBroadcastPeriodSec * 1000L
