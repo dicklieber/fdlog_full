@@ -32,33 +32,24 @@ import scalafx.application.Platform
 
 import java.net.http.HttpClient
 
-/** Handles node status updates, status broadcasts, QSO processing, and contest
-  * restarts. This class is responsible for managing the processing of incoming
-  * UDP packets related to various services, such as node status, QSO, and
-  * contest configurations. It facilitates the updating of swarm data,
-  * processing of status messages, and communication with other components for
-  * replication and status broadcast.
+/** Handles node status updates, status broadcasts, QSO processing, and contest restarts. This class is responsible for
+  * managing the processing of incoming UDP packets related to various services, such as node status, QSO, and contest
+  * configurations. It facilitates the updating of swarm data, processing of status messages, and communication with
+  * other components for replication and status broadcast.
   *
-  * Dependencies are injected to enable functionality for swarm data updates,
-  * status processing, replication support, contest configuration management,
-  * and metrics instrumentation.
+  * Dependencies are injected to enable functionality for swarm data updates, status processing, replication support,
+  * contest configuration management, and metrics instrumentation.
   *
-  * Thread-based processing ensures continuous handling of incoming requests
-  * without blocking other operations.
+  * Thread-based processing ensures continuous handling of incoming requests without blocking other operations.
   *
   * Constructor parameters:
-  *   - `replicationSupportProvider`: Facilitates replication-related tasks,
-  *     such as checking and adding QSOs.
+  *   - `replicationSupportProvider`: Facilitates replication-related tasks, such as checking and adding QSOs.
   *   - `statusProcessor`: Processes and handles incoming status messages.
   *   - `swarmData`: Maintains information about node statuses in the swarm.
-  *   - `transport`: Enables communication through queues for handling various
-  *     service-related messages.
-  *   - `statusBroadcastService`: Manages the broadcasting of local node
-  *     statuses to other nodes.
-  *   - `contestManagerProvider`: Provides access to contest configuration
-  *     management.
-  *   - `meterRegistry`: Instrumentation for registering and tracking metrics
-  *     throughout the handler.
+  *   - `transport`: Enables communication through queues for handling various service-related messages.
+  *   - `statusBroadcastService`: Manages the broadcasting of local node statuses to other nodes.
+  *   - `contestManagerProvider`: Provides access to contest configuration management.
+  *   - `meterRegistry`: Instrumentation for registering and tracking metrics throughout the handler.
   */
 @Singleton
 class NodeStatusHandler @Inject() (
@@ -75,7 +66,6 @@ class NodeStatusHandler @Inject() (
     .newBuilder()
     .followRedirects(HttpClient.Redirect.NORMAL)
     .build()
-
 
   private val thread = new Thread(
     () =>
@@ -111,15 +101,14 @@ class NodeStatusHandler @Inject() (
               statusBroadcastService.broadcastStatus()
 
             case Service.RestartContest =>
-              logger.info(
-                s"Received RestartContest from ${udpHeader.nodeIdentity}"
-              )
+              logger.info(s"Received RestartContest from ${udpHeader.nodeIdentity}")
               val sJson = new String(udpHeader.payload, "UTF-8")
               decode[ContestConfig](sJson) match
                 case Right(newConfig) =>
                   // ContestConfigManager exposes JavaFX properties; update them on the FX thread.
                   Platform.runLater {
-                    contestManager.handleRestartContest(newConfig)
+                    contestManager.setConfig(newConfig)
+                    qsoStore.archiveAndClear()
                   }
                 case Left(error) =>
                   logger.error(
@@ -135,6 +124,15 @@ class NodeStatusHandler @Inject() (
     ,
     "Repl-Processor"
   )
+  private val receivedPacketCount = metrics.counter("received_packets")
+  private val statusMessageCount = metrics.counter("status_count")
+  private val statusPackets = metrics.counter("status_packets")
+  private val sendStatusCount = metrics.counter("send_status_count")
+  private val receivedQsoCount = metrics.counter("received_qso_count")
+
+  thread.setDaemon(true)
+  logger.debug("Starting NodeStatusHandler Thread")
+  thread.start()
   private var lastStatusMessagePayloadSize: Double = 0.0
 
   private def contestManager: ContestConfigManager =
@@ -155,7 +153,7 @@ class NodeStatusHandler @Inject() (
 
   private def processQsoMessage(
       udpHeader: UDPHeaderData
-    ): Unit =
+  ): Unit =
     receivedQsoCount.inc(1)
     val sJson = new String(udpHeader.payload, "UTF-8")
     decode[Qso](sJson) match
@@ -167,13 +165,3 @@ class NodeStatusHandler @Inject() (
 
   private def qsoStore: QsoStore =
     qsoStoreProvider.get()
-
-  thread.setDaemon(true)
-  logger.debug("Starting NodeStatusHandler Thread")
-  thread.start()
-
-  private val receivedPacketCount = metrics.counter("received_packets")
-  private val statusMessageCount = metrics.counter("status_count")
-  private val statusPackets = metrics.counter("status_packets")
-  private val sendStatusCount = metrics.counter("send_status_count")
-  private val receivedQsoCount = metrics.counter("received_qso_count")

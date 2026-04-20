@@ -1,25 +1,36 @@
 package fdswarm.fx.contest
 
 import com.google.inject.name.Named
-import fdswarm.logging.LazyStructuredLogging
 import fdswarm.io.DirectoryProvider
-import fdswarm.logging.StructuredLogger
+import fdswarm.logging.LazyStructuredLogging
+import fdswarm.logging.Locus.Scoring
 import fdswarm.model.Callsign
 import fdswarm.replication.NodeStatus
+import io.circe.generic.auto.{deriveDecoder, deriveEncoder}
 import io.circe.parser.decode
 import io.circe.syntax.*
 import jakarta.inject.{Inject, Provider, Singleton}
-import fdswarm.logging.Locus.Scoring
 import scalafx.beans.property.{ObjectProperty, ReadOnlyBooleanProperty, ReadOnlyBooleanWrapper}
 
 @Singleton
-final class ContestConfigManager @Inject()(
-                                            productionDirectory: DirectoryProvider,
-                                          qsoStoreProvider: Provider[fdswarm.store.QsoStore],
-                                          filenameStamp: fdswarm.util.FilenameStamp,
-                                          @Named("fdswarm.contestChangeIgnoreStatusSec") ignoreStatusSec: Int
-                                          ) extends ContestConfigFields with LazyStructuredLogging(Scoring):
-  private def qsoStore: fdswarm.store.QsoStore = qsoStoreProvider.get()
+final class ContestConfigManager @Inject() (
+    productionDirectory: DirectoryProvider,
+    filenameStamp: fdswarm.util.FilenameStamp,
+    @Named("fdswarm.contestChangeIgnoreStatusSec") ignoreStatusSec: Int
+) extends ContestConfigFields with LazyStructuredLogging(Scoring):
+  lazy val hasConfiguration: ReadOnlyBooleanProperty = _hasConfiguration.readOnlyProperty
+  private val contestFile: os.Path =
+    productionDirectory() / "contest.json"
+  private val _contestConfig: ObjectProperty[ContestConfig] =
+    ObjectProperty(
+      load()
+    )
+  private val _hasConfiguration = new ReadOnlyBooleanWrapper(
+    this,
+    "hasConfiguration",
+    _contestConfig.value.contestType != ContestType.NONE
+  )
+
 // These override methods expose the current value of the contestConfigProperty
   override def contestType: ContestType =
     contestConfigProperty.value.contestType
@@ -36,126 +47,42 @@ final class ContestConfigManager @Inject()(
   override def ourSection: String =
     contestConfigProperty.value.ourSection
 
-
-  private val contestFile: os.Path =
-    productionDirectory() / "contest.json"
-
-  private val _contestConfig: ObjectProperty[ContestConfig] =
-    ObjectProperty(
-      load()
-    )
-
-  private val _hasConfiguration = new ReadOnlyBooleanWrapper(
-    this,
-    "hasConfiguration",
-    _contestConfig.value.contestType != ContestType.NONE
-  )
-
-  _contestConfig.onChange(
-    (_, _, config) =>
-      _hasConfiguration.value = config.contestType != ContestType.NONE
-  )
-
-  val hasConfiguration: ReadOnlyBooleanProperty = _hasConfiguration.readOnlyProperty
+  _contestConfig.onChange((_, _, config) =>
+    _hasConfiguration.value = config.contestType != ContestType.NONE)
 
   def contestConfigProperty: ObjectProperty[ContestConfig] =
     _contestConfig
 
-  def setConfig(
-                 newConfig: ContestConfig
-               ): Unit =
+  def useAnotherNodesContestConfig(nodeStatus: NodeStatus): Unit =
+    val receivedConfig = nodeStatus.statusMessage.contestConfig
+    if receivedConfig.contestType == ContestType.NONE then
+      return // if another node is NONE we're not interested.
+
+    val localConfig = _contestConfig.value
+    if localConfig.contestType == ContestType.NONE then
+      // Were NONE, will take anybody's ContestConfig.
+      logger.info(
+        "Using ContestConfig from a swarm member.",
+        "contestType" -> receivedConfig.contestType.toString,
+        "nodeIdentity" -> nodeStatus.nodeIdentity,
+        "receivedStamp" -> receivedConfig.stamp
+      )
+      setConfig(receivedConfig)
+    else if receivedConfig.stamp.isBefore(localConfig.stamp) then
+      logger.info(
+        "Received Older ContestConfig",
+        "contestType" -> receivedConfig.contestType,
+        "nodeIdentity" -> nodeStatus.nodeIdentity,
+        "receivedStamp" -> receivedConfig.stamp
+      )
+      setConfig(receivedConfig)
+
+  def setConfig(newConfig: ContestConfig): Unit =
     _contestConfig.value = newConfig
     if newConfig.contestType == ContestType.NONE then
       removePersistedConfig()
     else
       persist()
-
-  def updateFromNodeStatus(
-                            nodeStatus: NodeStatus
-                          ): Unit =
-    val receivedConfig = nodeStatus.statusMessage.contestConfig
-    if receivedConfig.contestType == ContestType.NONE then
-      return
-
-    val localConfig = _contestConfig.value
-    if localConfig.contestType == ContestType.NONE then
-      logger.info(
-        "Applying received contest config because local contest type is NONE.",
-        ("contestType", receivedConfig.contestType.toString),
-        ("receivedStamp", receivedConfig.stamp.toString)
-      )
-      setConfig(
-        receivedConfig
-      )
-      return
-
-    if receivedConfig.stamp.isBefore(
-        localConfig.stamp
-      ) then
-      logger.info(
-        "Received Config",
-        ("contestType", receivedConfig.contestType.toString),
-        ("receivedStamp", receivedConfig.stamp.toString)
-      )
-      setConfig(
-        receivedConfig
-      )
-
-  def clearContestConfig(): Unit =
-    setConfig(
-      ContestConfig.noContest
-    )
-
-  /**
-   * 1. Rename/archive qsos journal
-   * 2. Clear in-memory stores
-   * 3. Save new config
-   */
-  def handleRestartContest(
-                           newConfig: ContestConfig
-                         ): Unit =
-    // archive + clear
-    qsoStore.archiveAndClear()
-
-    // update config + persist + notify
-    setConfig(
-      newConfig
-    )
-
-  private def load(): ContestConfig =
-    try
-      Option
-        .when(
-          os.exists(
-            contestFile
-          )
-        )(
-          contestFile
-        )
-        .map(
-          file =>
-            logger.debug(s"Loading contest config from", "file" -> file.toString())
-            val jsonString = os.read(
-              file
-            )
-            decode[ContestConfig](
-              jsonString
-            ) match
-            case Right(value) =>
-              value
-            case Left(err) =>
-              logger.error("Failed to decode ContestConfig", err, "json" -> jsonString)
-              ContestConfig.noContest
-        )
-        .getOrElse(
-          ContestConfig.noContest
-        )
-    catch
-      case e: Throwable =>
-        logger.error(
-          "Failed to load contest", e
-        )
-        ContestConfig.noContest
 
   private def persist(): Unit =
     try
@@ -201,3 +128,42 @@ final class ContestConfigManager @Inject()(
           s"Failed to remove contest config file $contestFile",
           e
         )
+
+  def clearContestConfig(): Unit =
+    setConfig(
+      ContestConfig.noContest
+    )
+
+  private def load(): ContestConfig =
+    try
+      Option
+        .when(
+          os.exists(
+            contestFile
+          )
+        )(
+          contestFile
+        )
+        .map(file =>
+          logger.debug(s"Loading contest config from", "file" -> file.toString())
+          val jsonString = os.read(
+            file
+          )
+          decode[ContestConfig](
+            jsonString
+          ) match
+            case Right(value) =>
+              value
+            case Left(err) =>
+              logger.error("Failed to decode ContestConfig", err, "json" -> jsonString)
+              ContestConfig.noContest)
+        .getOrElse(
+          ContestConfig.noContest
+        )
+    catch
+      case e: Throwable =>
+        logger.error(
+          "Failed to load contest",
+          e
+        )
+        ContestConfig.noContest

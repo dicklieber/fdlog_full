@@ -165,29 +165,29 @@ SwarmData @Inject() (
       logger.debug(s"Removed node status for $nodeIdentity")
 
   def update(nodeStatus: NodeStatus): Unit =
-    val receivedContestConfig = nodeStatus.statusMessage.contestConfig
-    updateOnFxThread {
-      val localContestConfig = contestConfigManager.contestConfigProperty.value
-      if localContestConfig.stamp != receivedContestConfig.stamp then
-        logger.info(
-          "Replacing local contest config from node status update because stamp differs.",
-          "nodeIdentity" -> nodeStatus.nodeIdentity.toString,
-          "localStamp" -> localContestConfig.stamp.toString,
-          "receivedStamp" -> receivedContestConfig.stamp.toString
-        )
-        if localContestConfig.contestType != receivedContestConfig.contestType then
-          logger.error(
-            "Contest type changed while replacing contest config from node status update.",
-            "nodeIdentity" -> nodeStatus.nodeIdentity.toString,
-            "localContestType" -> localContestConfig.contestType.toString,
-            "receivedContestType" -> receivedContestConfig.contestType.toString,
-            "localStamp" -> localContestConfig.stamp.toString,
-            "receivedStamp" -> receivedContestConfig.stamp.toString
-          )
-        contestConfigManager.setConfig(
-          receivedContestConfig
-        )
-    }
+//    val receivedContestConfig = nodeStatus.statusMessage.contestConfig
+//    updateOnFxThread {
+//      val localContestConfig = contestConfigManager.contestConfigProperty.value
+//      if localContestConfig.stamp != receivedContestConfig.stamp then
+//        logger.info(
+//          "Replacing local contest config from node status update because stamp differs.",
+//          "nodeIdentity" -> nodeStatus.nodeIdentity.toString,
+//          "localStamp" -> localContestConfig.stamp.toString,
+//          "receivedStamp" -> receivedContestConfig.stamp.toString
+//        )
+//        if localContestConfig.contestType != receivedContestConfig.contestType then
+//          logger.error(
+//            "Contest type changed while replacing contest config from node status update.",
+//            "nodeIdentity" -> nodeStatus.nodeIdentity.toString,
+//            "localContestType" -> localContestConfig.contestType.toString,
+//            "receivedContestType" -> receivedContestConfig.contestType.toString,
+//            "localStamp" -> localContestConfig.stamp.toString,
+//            "receivedStamp" -> receivedContestConfig.stamp.toString
+//          )
+//        contestConfigManager.setConfig(
+//          receivedContestConfig
+//        )
+//    }
 
     val nodeIdentity = nodeStatus.nodeIdentity
     nodeMap.put(nodeIdentity, nodeStatus)

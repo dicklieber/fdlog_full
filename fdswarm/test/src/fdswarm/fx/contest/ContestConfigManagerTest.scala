@@ -25,10 +25,6 @@ class ContestConfigManagerTest extends FunSuite:
   val directoryProvider = mock(classOf[DirectoryProvider])
   when(directoryProvider.apply()).thenReturn(os.Path(tempDir.toAbsolutePath.toString))
 
-  val qsoStore = mock(classOf[QsoStore])
-  val qsoStoreProvider = new Provider[QsoStore] {
-    override def get(): QsoStore = qsoStore
-  }
   val filenameStamp = mock(classOf[FilenameStamp])
   when(filenameStamp.build()).thenReturn("20260331-1526")
 
@@ -37,14 +33,11 @@ class ContestConfigManagerTest extends FunSuite:
   override def afterAll(): Unit =
     os.remove.all(os.Path(tempDir.toAbsolutePath.toString))
 
-  test("hasConfiguration is false when no config exists") {
-    val manager = new ContestConfigManager(directoryProvider, qsoStoreProvider, filenameStamp, ignoreStatusSec)
-    assert(!manager.hasConfiguration.value)
-  }
+
 
   test("hasConfiguration is true when config exists") {
     val config = ContestConfig(ContestType.WFD, Callsign("W1AW"), 2, "O", "CT")
-    val manager = new ContestConfigManager(directoryProvider, qsoStoreProvider, filenameStamp, ignoreStatusSec)
+    val manager = new ContestConfigManager(directoryProvider, filenameStamp, ignoreStatusSec)
     manager.setConfig(config)
     assert(manager.hasConfiguration.value)
   }
@@ -56,7 +49,7 @@ class ContestConfigManagerTest extends FunSuite:
     val subDirectoryProvider = mock(classOf[DirectoryProvider])
     when(subDirectoryProvider.apply()).thenReturn(os.Path(subTempDir.toAbsolutePath.toString))
     
-    val manager = new ContestConfigManager(subDirectoryProvider, qsoStoreProvider, filenameStamp, ignoreStatusSec)
+    val manager = new ContestConfigManager(subDirectoryProvider, filenameStamp, ignoreStatusSec)
     assert(!manager.hasConfiguration.value)
     manager.handleRestartContest(config)
     assert(manager.hasConfiguration.value)
@@ -70,7 +63,7 @@ class ContestConfigManagerTest extends FunSuite:
     val subDirectoryProvider = mock(classOf[DirectoryProvider])
     when(subDirectoryProvider.apply()).thenReturn(os.Path(subTempDir.toAbsolutePath.toString))
 
-    val manager = new ContestConfigManager(subDirectoryProvider, qsoStoreProvider, filenameStamp, ignoreStatusSec)
+    val manager = new ContestConfigManager(subDirectoryProvider, filenameStamp, ignoreStatusSec)
     assertEquals(
       manager.contestConfigProperty.value,
       ContestConfig.noContest
@@ -103,7 +96,6 @@ class ContestConfigManagerTest extends FunSuite:
 
     val manager = new ContestConfigManager(
       subDirectoryProvider,
-      qsoStoreProvider,
       filenameStamp,
       ignoreStatusSec
     )
@@ -167,7 +159,6 @@ class ContestConfigManagerTest extends FunSuite:
     )
     val manager = new ContestConfigManager(
       subDirectoryProvider,
-      qsoStoreProvider,
       filenameStamp,
       ignoreStatusSec
     )
@@ -180,7 +171,7 @@ class ContestConfigManagerTest extends FunSuite:
       stamp = Instant.parse("2026-04-01T00:00:00Z")
     )
 
-    manager.updateFromNodeStatus(
+    manager.useAnotherNodesContestConfig(
       nodeStatusWithConfig(
         receivedConfig
       )
@@ -209,7 +200,6 @@ class ContestConfigManagerTest extends FunSuite:
     )
     val manager = new ContestConfigManager(
       subDirectoryProvider,
-      qsoStoreProvider,
       filenameStamp,
       ignoreStatusSec
     )
@@ -233,7 +223,7 @@ class ContestConfigManagerTest extends FunSuite:
       localConfig
     )
 
-    manager.updateFromNodeStatus(
+    manager.useAnotherNodesContestConfig(
       nodeStatusWithConfig(
         receivedConfig
       )
@@ -262,7 +252,6 @@ class ContestConfigManagerTest extends FunSuite:
     )
     val manager = new ContestConfigManager(
       subDirectoryProvider,
-      qsoStoreProvider,
       filenameStamp,
       ignoreStatusSec
     )
@@ -278,7 +267,7 @@ class ContestConfigManagerTest extends FunSuite:
       localConfig
     )
 
-    manager.updateFromNodeStatus(
+    manager.useAnotherNodesContestConfig(
       nodeStatusWithConfig(
         ContestConfig.noContest
       )
