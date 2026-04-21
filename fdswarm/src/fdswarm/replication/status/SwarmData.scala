@@ -20,6 +20,7 @@ package fdswarm.replication.status
 
 import fdswarm.fx.station.StationEditor
 import fdswarm.fx.{FdLogUi, GridBuilder}
+import fdswarm.fx.contest.ContestConfig
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.logging.Locus.Replication
 import fdswarm.replication.{NodeStatus, NodeStatusDispatcher}
@@ -31,7 +32,7 @@ import javafx.event.EventHandler
 import javafx.scene.input.MouseEvent
 import scalafx.application.Platform
 import scalafx.beans.binding.Bindings
-import scalafx.beans.property.{IntegerProperty, StringProperty}
+import scalafx.beans.property.{BooleanProperty, IntegerProperty, StringProperty}
 import scalafx.collections.ObservableBuffer
 import scalafx.scene.control.{Label, ScrollPane, Tooltip}
 import scalafx.scene.layout.{GridPane, StackPane}
@@ -67,7 +68,21 @@ class SwarmData @Inject() (
   private val cellNodeListenerId = AtomicLong(0L)
   private val ourNodeStyleClass = "ourNode"
   private val operatorLinkStyleClass = "operatorLink"
+  private val contestConfigMajorityStyleClass = "contestConfigMajority"
+  private val contestConfigVariantStyleClasses = Vector(
+    "contestConfigVariant0",
+    "contestConfigVariant1",
+    "contestConfigVariant2",
+    "contestConfigVariant3"
+  )
+  private val contestConfigAllColorStyleClasses = contestConfigMajorityStyleClass +: contestConfigVariantStyleClasses
   private val operatorFieldName = NodeDataField.Operator.label
+  private var contestConfigFieldStyleByNodeAndField = Map.empty[(NodeIdentity, NodeDataField), String]
+  val contestConfigMismatchProperty: BooleanProperty = new BooleanProperty(
+    this,
+    "contestConfigMismatch",
+    false
+  )
   private val stampFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("MM-dd HH:mm:ss")
     .withZone(ZoneId.systemDefault())
 
@@ -94,6 +109,7 @@ class SwarmData @Inject() (
       retainedNodes = retainedNodes
     )
     updateKnownCollectionsFromNodeMap()
+    refreshContestConfigDifferenceState()
     notifyNodeStatusListeners()
     logger.debug("Cleared swarm status data, retaining local node.")
 
@@ -103,6 +119,7 @@ class SwarmData @Inject() (
       nodeIdentity = nodeIdentity
     )
     updateKnownCollectionsFromNodeMap()
+    refreshContestConfigDifferenceState()
     notifyNodeStatusListeners()
     logger.debug(s"Removed node status for $nodeIdentity")
 
@@ -122,7 +139,6 @@ class SwarmData @Inject() (
     else
       try Platform.runLater(() => action)
       catch case _: IllegalStateException => action
-
   private def notifyNodeStatusListeners(): Unit =
     val statuses = allNodeStatuses
     nodeStatusListeners.values.foreach(listener => listener(statuses))
@@ -140,6 +156,7 @@ class SwarmData @Inject() (
       }
     }
     updateKnownCollectionsFromNodeMap()
+    refreshContestConfigDifferenceState()
     notifyNodeStatusListeners()
 
   private def staticFieldValues(nodeStatus: NodeStatus): Map[NodeDataField, String] =
@@ -278,6 +295,11 @@ class SwarmData @Inject() (
       styleClassName = operatorLinkStyleClass,
       shouldHaveStyleClass = isLocalOperatorField
     )
+    applyContestConfigColorStyle(
+      nodeStatus = nodeStatus,
+      fieldName = fieldName,
+      node = node
+    )
     if isLocalOperatorField then
       node.delegate.setOnMouseClicked(
         new EventHandler[MouseEvent]:
@@ -287,6 +309,60 @@ class SwarmData @Inject() (
     else node.delegate.setOnMouseClicked(null)
 
     if fieldName == NodeDataField.Received.label then ageCellStyleRefresher.add(nodeStyler)
+
+  private def refreshContestConfigDifferenceState(): Unit =
+    val stylesByNodeAndField = SwarmData.contestConfigFieldStyles(
+      statuses = allNodeStatuses
+    )
+    val changed = stylesByNodeAndField != contestConfigFieldStyleByNodeAndField
+    contestConfigFieldStyleByNodeAndField = stylesByNodeAndField
+    updateOnFxThread {
+      contestConfigMismatchProperty.value = stylesByNodeAndField.nonEmpty
+      if changed then
+        refreshContestConfigFieldCellStyles()
+    }
+
+  private def refreshContestConfigFieldCellStyles(): Unit =
+    val contestFields = SwarmData.contestConfigDisplayFields.toSet
+    renderedCellNodes.foreach { case ((nodeIdentity, field), cells) =>
+      if contestFields.contains(field) then
+        nodeMap.get(nodeIdentity).foreach(nodeStatus =>
+          notifyCellNodeListeners(
+            nodeStatus = nodeStatus,
+            field = field,
+            targetCells = cells
+          )
+        )
+    }
+
+  private def applyContestConfigColorStyle(
+    nodeStatus: NodeStatus,
+    fieldName: String,
+    node: Node
+  ): Unit =
+    contestConfigAllColorStyleClasses.foreach(styleClassName =>
+      ensureStyleClass(
+        node = node,
+        styleClassName = styleClassName,
+        shouldHaveStyleClass = false
+      )
+    )
+    NodeDataField.values
+      .find(
+        _.label == fieldName
+      )
+      .flatMap(field =>
+        contestConfigFieldStyleByNodeAndField.get(
+          (nodeStatus.nodeIdentity, field)
+        )
+      )
+      .foreach(styleClassName =>
+        ensureStyleClass(
+          node = node,
+          styleClassName = styleClassName,
+          shouldHaveStyleClass = true
+        )
+      )
 
   private def ensureStyleClass(
       node: Node,
@@ -335,3 +411,70 @@ class SwarmData @Inject() (
     }
 
   private case class GridBuildResult(grid: GridPane, cellNodes: Map[(NodeIdentity, NodeDataField), Seq[Node]])
+
+object SwarmData:
+  private[status] val contestConfigDisplayFields: Seq[NodeDataField] = Seq(
+    NodeDataField.ContestType,
+    NodeDataField.ContestCallsign,
+    NodeDataField.Exchange
+  )
+
+  private[status] def contestConfigFieldStyles(
+    statuses: Seq[NodeStatus]
+  ): Map[(NodeIdentity, NodeDataField), String] =
+    val majorityStyleClass = "contestConfigMajority"
+    val variantStyleClasses = Vector(
+      "contestConfigVariant0",
+      "contestConfigVariant1",
+      "contestConfigVariant2",
+      "contestConfigVariant3"
+    )
+    if statuses.size < 2 then
+      Map.empty
+    else
+      contestConfigDisplayFields.foldLeft(Map.empty[(NodeIdentity, NodeDataField), String])(
+        (acc, field) =>
+          val valueByNode = statuses.map(nodeStatus =>
+            nodeStatus.nodeIdentity -> contestConfigFieldValue(
+              contestConfig = nodeStatus.statusMessage.contestConfig,
+              field = field
+            )
+          )
+          val countsByValue = valueByNode
+            .groupMap(_._2)(_ => 1)
+            .view
+            .mapValues(_.sum)
+            .toMap
+          val maxCount = countsByValue.values.maxOption.getOrElse(0)
+          if countsByValue.size <= 1 || maxCount == 0 then
+            acc
+          else
+            val majorityValues = countsByValue
+              .collect { case (value, count) if count == maxCount => value }
+              .toSet
+            val nonMajorityValues = countsByValue.keys
+              .filterNot(majorityValues.contains)
+              .toSeq
+              .sorted
+            val nonMajorityStyleByValue = nonMajorityValues.zipWithIndex.map { case (value, idx) =>
+              value -> variantStyleClasses(idx % variantStyleClasses.size)
+            }.toMap
+            val fieldStyles = valueByNode.map { case (nodeIdentity, value) =>
+              val styleClass = if majorityValues.contains(value) then
+                majorityStyleClass
+              else
+                nonMajorityStyleByValue(value)
+              (nodeIdentity, field) -> styleClass
+            }.toMap
+            acc ++ fieldStyles
+      )
+
+  private def contestConfigFieldValue(
+    contestConfig: ContestConfig,
+    field: NodeDataField
+  ): String =
+    field match
+      case NodeDataField.ContestType => contestConfig.contestType.toString
+      case NodeDataField.ContestCallsign => contestConfig.ourCallsign.toString
+      case NodeDataField.Exchange => contestConfig.exchange
+      case other => throw new IllegalArgumentException(s"Unsupported contest field: $other")

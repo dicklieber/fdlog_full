@@ -30,7 +30,7 @@ import java.nio.charset.StandardCharsets
 import scala.util.Try
 
 enum Service:
-  case Status, SendStatus, QSO, RestartContest
+  case Status, SendStatus, QSO, SyncContest, RestartContest
 
 case class UDPHeaderData(service: Service, nodeIdentity: NodeIdentity, payload: Array[Byte]):
 

@@ -235,6 +235,26 @@
     -fx-cursor: hand;
 }
 
+.grid-value.contestConfigMajority {
+    -fx-background-color: #d7f2d7;
+}
+
+.grid-value.contestConfigVariant0 {
+    -fx-background-color: #ffe0e0;
+}
+
+.grid-value.contestConfigVariant1 {
+    -fx-background-color: #fff2c6;
+}
+
+.grid-value.contestConfigVariant2 {
+    -fx-background-color: #dcecff;
+}
+
+.grid-value.contestConfigVariant3 {
+    -fx-background-color: #f0defe;
+}
+
 .countGood {
     -fx-background-color: lightgreen;
 }

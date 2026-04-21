@@ -18,6 +18,10 @@
 
 package fdswarm.replication.status
 
+import fdswarm.fx.contest.{ContestConfig, ContestType}
+import fdswarm.model.{BandMode, BandModeOperator, Callsign}
+import fdswarm.replication.{HashCount, NodeStatus, StatusMessage}
+import fdswarm.util.NodeIdentity
 import munit.FunSuite
 
 class SwarmDataTest extends FunSuite:
@@ -36,4 +40,148 @@ class SwarmDataTest extends FunSuite:
       NodeDataField.staticFields.contains(
         NodeDataField.Exchange
       )
+    )
+
+  test("contest config styles are empty when all nodes match"):
+    val styles = SwarmData.contestConfigFieldStyles(
+      statuses = Seq(
+        nodeStatus(
+          hostName = "alpha",
+          contestConfig = contestConfig(
+            contestType = ContestType.WFD,
+            callsign = "W9AAA",
+            transmitters = 1,
+            stationClass = "A",
+            section = "IL"
+          )
+        ),
+        nodeStatus(
+          hostName = "beta",
+          contestConfig = contestConfig(
+            contestType = ContestType.WFD,
+            callsign = "W9AAA",
+            transmitters = 1,
+            stationClass = "A",
+            section = "IL"
+          )
+        )
+      )
+    )
+    assertEquals(
+      obtained = styles,
+      expected = Map.empty[(NodeIdentity, NodeDataField), String]
+    )
+
+  test("contest config styles mark majority green and minority as variants"):
+    val styles = SwarmData.contestConfigFieldStyles(
+      statuses = Seq(
+        nodeStatus(
+          hostName = "alpha",
+          contestConfig = contestConfig(
+            contestType = ContestType.WFD,
+            callsign = "W9AAA",
+            transmitters = 1,
+            stationClass = "A",
+            section = "IL"
+          )
+        ),
+        nodeStatus(
+          hostName = "beta",
+          contestConfig = contestConfig(
+            contestType = ContestType.ARRL,
+            callsign = "W9BBB",
+            transmitters = 2,
+            stationClass = "A",
+            section = "IL"
+          )
+        )
+      )
+    )
+    assert(
+      styles(
+        (
+          NodeIdentity(
+            hostIp = "10.0.0.1",
+            port = 8090,
+            hostName = "alpha",
+            instanceId = "alpha-id"
+          ),
+          NodeDataField.Exchange
+        )
+      )
+      == "contestConfigMajority"
+    )
+    assert(
+      styles(
+        (
+          NodeIdentity(
+            hostIp = "10.0.0.1",
+            port = 8090,
+            hostName = "beta",
+            instanceId = "beta-id"
+          ),
+          NodeDataField.Exchange
+        )
+      )
+      != "contestConfigMajority"
+    )
+    assert(
+      styles(
+        (
+          NodeIdentity(
+            hostIp = "10.0.0.1",
+            port = 8090,
+            hostName = "beta",
+            instanceId = "beta-id"
+          ),
+          NodeDataField.ContestType
+        )
+      )
+      != "contestConfigMajority"
+    )
+
+  private def contestConfig(
+    contestType: ContestType,
+    callsign: String,
+    transmitters: Int,
+    stationClass: String,
+    section: String
+  ): ContestConfig =
+    ContestConfig(
+      contestType = contestType,
+      ourCallsign = Callsign(
+        callsign
+      ),
+      transmitters = transmitters,
+      ourClass = stationClass,
+      ourSection = section
+    )
+
+  private def nodeStatus(
+    hostName: String,
+    contestConfig: ContestConfig
+  ): NodeStatus =
+    NodeStatus(
+      statusMessage = StatusMessage(
+        hashCount = HashCount(
+          hash = "",
+          qsoCount = 0
+        ),
+        bandNodeOperator = BandModeOperator(
+          operator = Callsign(
+            "N0CALL"
+          ),
+          bandMode = BandMode(
+            "20M SSB"
+          )
+        ),
+        contestConfig = contestConfig
+      ),
+      nodeIdentity = NodeIdentity(
+        hostIp = "10.0.0.1",
+        port = 8090,
+        hostName = hostName,
+        instanceId = s"$hostName-id"
+      ),
+      isLocal = false
     )

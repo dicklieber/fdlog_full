@@ -82,6 +82,12 @@ class NodeStatusDispatcher @Inject() (transport: Transport)
               logger.info(s"Received RestartContest from ${udpHeader.nodeIdentity}")
               val newConfig: ContestConfig = udpHeader.decode[ContestConfig]
               notifyContestRestartListener(newConfig)
+            case Service.SyncContest =>
+              logger.info(s"Received SyncContest from ${udpHeader.nodeIdentity}")
+              val newConfig: ContestConfig = udpHeader.decode[ContestConfig]
+              notifyContestRestartListener(
+                newConfig = newConfig
+              )
         catch
           case _: InterruptedException => Thread.currentThread().interrupt()
 
