@@ -21,7 +21,7 @@ package fdswarm.replication.status
 import munit.FunSuite
 
 class SwarmDataTest extends FunSuite:
-  test("static status fields include qsoCount and hash columns"):
+  test("static status fields include qsoCount, hash, and exchange columns"):
     assert(
       NodeDataField.staticFields.contains(
         NodeDataField.QsoCount
@@ -30,5 +30,10 @@ class SwarmDataTest extends FunSuite:
     assert(
       NodeDataField.staticFields.contains(
         NodeDataField.Hash
+      )
+    )
+    assert(
+      NodeDataField.staticFields.contains(
+        NodeDataField.Exchange
       )
     )

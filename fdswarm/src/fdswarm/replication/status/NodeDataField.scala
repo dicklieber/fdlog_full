@@ -37,6 +37,7 @@ enum NodeDataField:
   case ContestTransmitters
   case ContestClass
   case ContestSection
+  case Exchange
   case ContestStamp
 
   def label: String = this match
@@ -58,6 +59,7 @@ enum NodeDataField:
     case ContestTransmitters => "contestTransmitters"
     case ContestClass => "contestClass"
     case ContestSection => "contestSection"
+    case Exchange => "exchange"
     case ContestStamp => "contestStamp"
 
 object NodeDataField:
@@ -80,5 +82,6 @@ object NodeDataField:
     NodeDataField.ContestTransmitters,
     NodeDataField.ContestClass,
     NodeDataField.ContestSection,
+    NodeDataField.Exchange,
     NodeDataField.ContestStamp
   )

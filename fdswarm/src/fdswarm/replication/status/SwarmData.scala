@@ -174,6 +174,7 @@ class SwarmData @Inject() (
       NodeDataField.ContestTransmitters -> contest.transmitters.toString,
       NodeDataField.ContestClass -> contest.ourClass,
       NodeDataField.ContestSection -> contest.ourSection,
+      NodeDataField.Exchange -> contest.exchange,
       NodeDataField.ContestStamp -> stampFormatter.format(contest.stamp)
     )
 
