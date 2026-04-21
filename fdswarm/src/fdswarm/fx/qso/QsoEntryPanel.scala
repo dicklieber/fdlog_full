@@ -26,6 +26,7 @@ import fdswarm.fx.sections.Section
 import fdswarm.fx.CallSignField
 import fdswarm.fx.GridColumns
 import fdswarm.model.*
+import fdswarm.replication.status.ContestConfigMismatchUi
 import fdswarm.replication.{Service, Transport}
 import fdswarm.store.{QsoStore, StyledMessage}
 import fdswarm.util.*
@@ -88,7 +89,8 @@ class QsoEntryPanel @Inject()(
                                contestClassField: ContestClassField,
                                sectionField: fdswarm.fx.sections.SectionField,
                                dupPanel: DupPanel,
-                               nodeIdentityManager: NodeIdentityManager
+                               nodeIdentityManager: NodeIdentityManager,
+                               contestConfigMismatchUi: ContestConfigMismatchUi
                              ) extends LazyStructuredLogging:
 
   private val _node = new VBox()
@@ -125,6 +127,13 @@ class QsoEntryPanel @Inject()(
     add(sectionField, 2, 1)
 
     add(clearButton, 3, 1)
+    add(
+      contestConfigMismatchUi.warningButton(
+        size = 18
+      ),
+      4,
+      1
+    )
   private val mainLayout = new VBox {
     spacing = 10
     children = Seq(
