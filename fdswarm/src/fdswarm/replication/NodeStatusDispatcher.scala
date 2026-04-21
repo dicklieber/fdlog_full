@@ -20,7 +20,6 @@ package fdswarm.replication
 
 import fdswarm.fx.contest.ContestConfig
 import fdswarm.logging.LazyStructuredLogging
-import fdswarm.logging.Locus.Replication
 import fdswarm.model.Qso
 import io.circe.generic.auto.deriveDecoder
 import io.circe.parser.decode
@@ -44,7 +43,7 @@ import scala.collection.mutable.ListBuffer
   */
 @Singleton
 class NodeStatusDispatcher @Inject() (transport: Transport)
-    extends LazyStructuredLogging(Replication) with DefaultInstrumented:
+    extends LazyStructuredLogging() with DefaultInstrumented:
 
   logger.debug("Starting NodeStatusHandler")
   private val nodeStatusListeners = ListBuffer.empty[NodeStatus => Unit]

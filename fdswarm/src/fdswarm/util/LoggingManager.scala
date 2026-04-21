@@ -28,31 +28,50 @@ import io.circe.Printer
 import jakarta.inject.{Inject, Singleton}
 import java.nio.file.Files
 
-class LoggingManager @Inject() (directoryProvider: DirectoryProvider) extends LazyStructuredLogging:
+class LoggingManager @Inject() (
+                                 directoryProvider: DirectoryProvider
+                               ) extends LazyStructuredLogging:
   private val loggingJsonPath = directoryProvider() / "logging.json"
   private var currentLoggers: List[LoggerLevel] = load()
 
 
   def getLoggers: List[LoggerLevel] = currentLoggers
 
-  def updateLogger(loggerName: String, level: LevelEnum): Unit =
-    val index = currentLoggers.indexWhere(_.logger == loggerName)
+  def updateLogger(
+                    loggerName: String,
+                    level: LevelEnum
+                  ): Unit =
+    val normalizedLoggerName = normalizeLoggerName(loggerName)
+    val index = currentLoggers.indexWhere(_.logger == normalizedLoggerName)
     if (index >= 0) 
-      currentLoggers = currentLoggers.updated(index, LoggerLevel(loggerName, level))
+      currentLoggers = currentLoggers.updated(index, LoggerLevel(normalizedLoggerName, level))
     else 
-      currentLoggers = currentLoggers :+ LoggerLevel(loggerName, level)
-    applyToLog4j2(loggerName, level)
+      currentLoggers = currentLoggers :+ LoggerLevel(normalizedLoggerName, level)
+    applyToLog4j2(
+      normalizedLoggerName,
+      level
+    )
     save()
 
 
   def removeAllLoggers(): Unit =
-    currentLoggers.foreach(ll => Configurator.setLevel(ll.logger, Level.INFO))
+    currentLoggers.foreach: ll =>
+      Configurator.setLevel(
+        normalizeLoggerName(ll.logger),
+        Level.INFO
+      )
     currentLoggers = List.empty
     save()
 
-  private def applyToLog4j2(loggerName: String, level: LevelEnum): Unit =
+  private def applyToLog4j2(
+                             loggerName: String,
+                             level: LevelEnum
+                           ): Unit =
     val l4jLevel = Level.toLevel(level.toString, Level.INFO)
-    Configurator.setLevel(loggerName, l4jLevel)
+    Configurator.setLevel(
+      normalizeLoggerName(loggerName),
+      l4jLevel
+    )
 
   private def save(): Unit =
     val json = currentLoggers.asJson.printWith(Printer.indented("  "))
@@ -63,7 +82,11 @@ class LoggingManager @Inject() (directoryProvider: DirectoryProvider) extends La
       try {
         val json = os.read(loggingJsonPath)
         decode[List[LoggerLevel]](json) match {
-          case Right(loggers) => loggers
+          case Right(loggers) =>
+            loggers.map: ll =>
+              ll.copy(
+                logger = normalizeLoggerName(ll.logger)
+              )
           case Left(error) =>
             System.err.println(s"Error decoding logging.json: ${error.getMessage}")
             defaultLoggers
@@ -84,8 +107,16 @@ class LoggingManager @Inject() (directoryProvider: DirectoryProvider) extends La
       System.out.println("Logging configuration from logging.json:")
       currentLoggers.foreach { ll =>
         System.out.println(s"  ${ll.logger}: ${ll.level}")
-        applyToLog4j2(ll.logger, ll.level)
+        applyToLog4j2(
+          ll.logger,
+          ll.level
+        )
       }
     } else {
       logger.debug("No logging configuration found in logging.json.")
     }
+
+  private def normalizeLoggerName(
+                                   loggerName: String
+                                 ): String =
+    loggerName.trim.stripSuffix("$")

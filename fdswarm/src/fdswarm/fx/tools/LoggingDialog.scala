@@ -19,8 +19,9 @@
 package fdswarm.fx.tools
 
 import fdswarm.fx.utils.IconButton
+import fdswarm.logging.dumpLogConfig
 import fdswarm.util.{LevelEnum, LoggerLevel, LoggingManager}
-import jakarta.inject.{Inject, Named, Singleton}
+import jakarta.inject.{Inject, Singleton}
 import fdswarm.logging.LazyStructuredLogging
 import scalafx.Includes.*
 import scalafx.beans.property.{ObjectProperty, StringProperty}
@@ -36,8 +37,7 @@ import scala.jdk.CollectionConverters.*
 
 @Singleton
 class LoggingDialog @Inject() (
-    loggingManager: LoggingManager,
-    @Named("discoveredLoggerNames") discoveredLoggerNamesInjected: Seq[String]
+    loggingManager: LoggingManager
 ):
 
   class LoggerRow(logger: String, level: LevelEnum):
@@ -47,11 +47,8 @@ class LoggingDialog @Inject() (
   def show(ownerWindow: Window): Unit =
     val rows = ObservableBuffer.from(loggingManager.getLoggers.map(ll => new LoggerRow(ll.logger, ll.level)))
 
-    // Discovered logger names from injected sequence
-    val discoveredLoggerNames: Seq[String] =
-      discoveredLoggerNamesInjected
-        .distinct
-        .sorted(using Ordering.String)
+    val selectableLoggerNames: Seq[String] =
+      LazyStructuredLogging.selectableLoggerNames
 
     lazy val tv: TableView[LoggerRow] = new TableView[LoggerRow](rows):
       columns ++= Seq(
@@ -102,7 +99,7 @@ class LoggingDialog @Inject() (
     val pickButton = IconButton("search", 24, "Find from list possible loggers")
     pickButton.onAction = _ =>
         // Build popup dialog with filter and list
-        val namesAll = discoveredLoggerNames
+        val namesAll = selectableLoggerNames
         val namesBuf = ObservableBuffer.from(namesAll)
 
         val filterField = new TextField {
@@ -175,9 +172,13 @@ class LoggingDialog @Inject() (
         loggingManager.removeAllLoggers()
         rows.clear()
 
+    val dumpConfigButton = new Button("Dump Config") {
+      onAction = _ => dumpLogConfig()
+    }
+
     val addBox = new HBox {
       spacing = 10
-      children = Seq(pickButton, newLoggerField, newLevelCombo, addButton, removeAllButton)
+      children = Seq(pickButton, newLoggerField, newLevelCombo, addButton, removeAllButton, dumpConfigButton)
     }
 
     val dialog = new Dialog[Unit] {

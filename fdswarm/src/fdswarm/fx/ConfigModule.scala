@@ -54,8 +54,6 @@ class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModu
     bind[fdswarm.util.NodeIdentityManager].asEagerSingleton()
 
     val pkgs = Seq("fdswarm.api", "fdswarm.grafana")
-    val allPkgs = Seq("fdswarm")
-    val fxPkgs = Seq("fdswarm.fx")
 
     // unnamed set (inject with java.util.Set[ApiEndpoints])
     AutoBind.bindAllImplementationsOf[ApiEndpoints](
@@ -64,14 +62,6 @@ class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModu
       named = None,
       asSingleton = true
     )
-
-    // Bind FX components from fdswarm.fx
-    // We don't have a common trait for all FX components, so we can either list them or bind classes directly
-    // but here we just ensure they are discoverable if they have @Inject or no-arg constructor.
-    // However, Guice often does JIT bindings for concrete classes.
-
-    val discoveredLoggers: Seq[String] = AutoBind.discoverImplementationsOf[LazyStructuredLogging](allPkgs)
-    bind[Seq[String]].annotatedWith(Names.named("discoveredLoggerNames")).toInstance(discoveredLoggers)
 
     val primaryConfigFromFile = ConfigFactory.parseFile((os.pwd / "config" / "sarasec.conf").toIO)
     val defaultConfigFromFile: Config = ConfigFactory.load()
