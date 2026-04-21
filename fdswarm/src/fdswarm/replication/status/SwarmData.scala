@@ -287,7 +287,9 @@ class SwarmData @Inject() (
     if isLocalOperatorField then
       node.delegate.setOnMouseClicked(
         new EventHandler[MouseEvent]:
-          override def handle(event: MouseEvent): Unit = stationEditor.show(FdLogUi.primaryStage))
+          override def handle(event: MouseEvent): Unit =
+            stationEditor.show(FdLogUi.primaryStage)
+      )
     else node.delegate.setOnMouseClicked(null)
 
     if fieldName == NodeDataField.Received.label then ageCellStyleRefresher.add(nodeStyler)
