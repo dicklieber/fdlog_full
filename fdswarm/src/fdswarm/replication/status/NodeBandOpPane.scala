@@ -22,41 +22,33 @@ import com.google.inject.name.Named
 import fdswarm.fx.GridColumns
 import jakarta.inject.{Inject, Singleton}
 import scalafx.application.Platform
+import scalafx.beans.binding.Bindings
 import scalafx.scene.control.Label
 import scalafx.scene.layout.BorderPane
 
 import java.util.concurrent.atomic.AtomicLong
 
 @Singleton
-class NodeBandOpPane @Inject()(
-                                swarmData: SwarmData,
-                                @Named("fdswarm.nodeBandOpRefreshSeconds") nodeBandOpRefreshSeconds: Int
-                              ):
-
-  private val refreshIntervalMillis = math.max(0L, nodeBandOpRefreshSeconds.toLong * 1000L)
-  private val lastRefreshMillis = AtomicLong(0L)
+class NodeBandOpPane @Inject() (
+    swarmData: SwarmData,
+    @Named("fdswarm.nodeBandOpRefreshSeconds")
+    nodeBandOpRefreshSeconds: Int):
 
   private val titleLabel = new Label()
   private val contentPane = new BorderPane:
     center = buildGrid()
-  val node = GridColumns.fieldSet(
-    titleLabel,
-    contentPane
+  private val titleBinding = Bindings.createStringBinding(
+    () =>
+      val nodeCount = swarmData.size.value
+      if nodeCount == 1 then "Swarm" else s"Swarm ($nodeCount nodes)",
+    swarmData.size
   )
-  private val removeNodeStatusListener = swarmData.addNodeStatusListener(
-    statuses =>
-      Platform.runLater {
-        updateTitle(
-          statuses.size
-        )
-      }
-  )
+  titleLabel.text <== titleBinding
+  val node = GridColumns.fieldSet(titleLabel, contentPane)
+  private val refreshIntervalMillis = math.max(0L, nodeBandOpRefreshSeconds.toLong * 1000L)
+  private val lastRefreshMillis = AtomicLong(0L)
 
-  def refresh(): Unit =
-    refreshInternal(force = true)
-
-  def refreshIfDue(): Unit =
-    refreshInternal(force = false)
+  def refresh(): Unit = refreshInternal(force = true)
 
   private def refreshInternal(force: Boolean): Unit =
     val now = System.currentTimeMillis()
@@ -64,16 +56,10 @@ class NodeBandOpPane @Inject()(
       lastRefreshMillis.set(now)
       Platform.runLater {
         contentPane.center = buildGrid()
-        updateTitle(
-          swarmData.allNodeStatuses.size
-        )
       }
     else if markRefreshDue(now) then
       Platform.runLater {
         contentPane.center = buildGrid()
-        updateTitle(
-          swarmData.allNodeStatuses.size
-        )
       }
 
   private def markRefreshDue(now: Long): Boolean =
@@ -85,18 +71,7 @@ class NodeBandOpPane @Inject()(
       if lastRefreshMillis.compareAndSet(last, now) then return true
     false
 
-  private def buildGrid() =
-    swarmData.buildGridPane(
-      Seq(
-        NodeDataField.HostName,
-        NodeDataField.Operator,
-        NodeDataField.BandMode
-      )
-    )
+  private def buildGrid() = swarmData
+    .buildGridPane(Seq(NodeDataField.HostName, NodeDataField.Operator, NodeDataField.BandMode))
 
-  private def updateTitle(
-                           nodeCount: Int
-                         ): Unit =
-    titleLabel.text =
-      if nodeCount == 1 then "Swarm"
-      else s"Swarm ($nodeCount nodes)"
+  def refreshIfDue(): Unit = refreshInternal(force = false)

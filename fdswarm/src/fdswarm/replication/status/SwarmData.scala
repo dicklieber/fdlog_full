@@ -31,7 +31,7 @@ import javafx.event.EventHandler
 import javafx.scene.input.MouseEvent
 import scalafx.application.Platform
 import scalafx.beans.binding.Bindings
-import scalafx.beans.property.StringProperty
+import scalafx.beans.property.{IntegerProperty, StringProperty}
 import scalafx.collections.ObservableBuffer
 import scalafx.scene.control.{Label, ScrollPane, Tooltip}
 import scalafx.scene.layout.{GridPane, StackPane}
@@ -55,6 +55,11 @@ class SwarmData @Inject() (
   type CellNodeListener = (NodeStatus, String, Node) => Unit
   val knownNodeIdentity: ObservableBuffer[NodeIdentity] = ObservableBuffer.empty[NodeIdentity]
   val nodeMap: TrieMap[NodeIdentity, NodeStatus] = TrieMap.empty[NodeIdentity, NodeStatus]
+  val size: IntegerProperty = new IntegerProperty(
+    this,
+    "size",
+    0
+  )
   private val valueProperties = TrieMap.empty[(NodeIdentity, NodeDataField), StringProperty]
   private val renderedCellNodes = TrieMap.empty[(NodeIdentity, NodeDataField), Vector[Node]]
   private val nodeStatusListeners = TrieMap.empty[Long, Seq[NodeStatus] => Unit]
@@ -103,6 +108,7 @@ class SwarmData @Inject() (
     updateOnFxThread {
       knownNodeIdentity.clear()
       knownNodeIdentity ++= nodes
+      size.value = nodes.size
     }
 
   private def updateOnFxThread(action: => Unit): Unit =

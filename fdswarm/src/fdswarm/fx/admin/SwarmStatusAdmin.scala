@@ -20,8 +20,11 @@ package fdswarm.fx.admin
 
 import fdswarm.replication.status.{NodeDataField, SwarmData}
 import jakarta.inject.{Inject, Singleton}
+import scalafx.beans.binding.Bindings
 import scalafx.Includes.*
 import scalafx.scene.Scene
+import scalafx.scene.control.Label
+import scalafx.scene.layout.VBox
 import scalafx.stage.{Stage, Window}
 
 @Singleton
@@ -34,13 +37,24 @@ class SwarmStatusAdmin @Inject()(swarmData: SwarmData):
       case Some(s) =>
         s.toFront()
       case None =>
+        val swarmSizeLabel = new Label:
+          text <== Bindings.createStringBinding(
+            () => s"swarmdata.size: ${swarmData.size.value}",
+            swarmData.size
+          )
+
         val newStage = new Stage {
           initOwner(ownerWindow)
           title = "Swarm Status"
           scene = new Scene(
-            swarmData.buildGridPane(
-              NodeDataField.staticFields
-            )
+            new VBox:
+              spacing = 8
+              children = Seq(
+                swarmSizeLabel,
+                swarmData.buildGridPane(
+                  NodeDataField.staticFields
+                )
+              )
           ) {
             stylesheets = Seq(getClass.getResource("/styles/app.css").toExternalForm)
           }
