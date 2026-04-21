@@ -1,6 +1,6 @@
 package fdswarm.replication
 
-import fdswarm.fx.contest.ContestConfigManager
+import fdswarm.fx.contest.{ContestConfig, ContestConfigManager}
 import jakarta.inject.{Inject, Singleton}
 import scalafx.application.Platform
 
@@ -11,10 +11,18 @@ class ContestRestartHandler @Inject() (
 ):
 
   nodeStatusDispatcher.addContestRestartListener(
-    newConfig =>
-      Platform.runLater {
-        contestConfigManager.setConfig(
-          newConfig
-        )
-      }
+    listener = handleContestConfigUpdate
   )
+
+  nodeStatusDispatcher.addSyncContestListener(
+    listener = handleContestConfigUpdate
+  )
+
+  private def handleContestConfigUpdate(
+    newConfig: ContestConfig
+  ): Unit =
+    Platform.runLater {
+      contestConfigManager.setConfig(
+        newConfig
+      )
+    }

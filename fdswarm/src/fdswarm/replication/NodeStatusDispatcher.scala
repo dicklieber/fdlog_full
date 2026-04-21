@@ -85,7 +85,7 @@ class NodeStatusDispatcher @Inject() (transport: Transport)
             case Service.SyncContest =>
               logger.info(s"Received SyncContest from ${udpHeader.nodeIdentity}")
               val newConfig: ContestConfig = udpHeader.decode[ContestConfig]
-              notifyContestRestartListener(
+              notifySyncContestListener(
                 newConfig = newConfig
               )
         catch
@@ -105,6 +105,7 @@ class NodeStatusDispatcher @Inject() (transport: Transport)
   private var qsoListener: Option[Qso => Unit] = None
   private var sentStatusListener: Option[() => Unit] = None
   private var contestRestartListener: Option[ContestConfig => Unit] = None
+  private var syncContestListener: Option[ContestConfig => Unit] = None
 
   thread.setDaemon(true)
   logger.debug("Starting NodeStatusHandler Thread")
@@ -127,6 +128,12 @@ class NodeStatusDispatcher @Inject() (transport: Transport)
     require(contestRestartListener.isEmpty, "Contest restart listener already set")
     contestRestartListener = Some(listener)
 
+  def addSyncContestListener(
+    listener: ContestConfig => Unit
+  ): Unit =
+    require(syncContestListener.isEmpty, "Sync contest listener already set")
+    syncContestListener = Some(listener)
+
   private def notifyNodeStatusListeners(nodeStatus: NodeStatus): Unit = currentNodeStatusListeners.foreach(listener =>
     try listener(nodeStatus)
     catch case e: Exception => logger.error("Error in node status listener", e))
@@ -140,6 +147,16 @@ class NodeStatusDispatcher @Inject() (transport: Transport)
         try callback(newConfig)
         catch case e: Exception => logger.error("Error in contest restart listener", e)
       case None => logger.warn("Dropping RestartContest because no restart listener is registered")
+
+  private def notifySyncContestListener(
+    newConfig: ContestConfig
+  ): Unit =
+    val listener = this.synchronized { syncContestListener }
+    listener match
+      case Some(callback) =>
+        try callback(newConfig)
+        catch case e: Exception => logger.error("Error in sync contest listener", e)
+      case None => logger.warn("Dropping SyncContest because no sync contest listener is registered")
 
   private def drainQueuedMessagesAfterStatus(): Unit =
     var queuedMessage = transport.incomingQueue.poll()
