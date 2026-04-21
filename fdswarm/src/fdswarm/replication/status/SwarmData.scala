@@ -89,12 +89,19 @@ class SwarmData @Inject() (
     nodeMap.keys.foreach(nodeIdentity => ageCellStyleRefresher.remove(nodeIdentity))
     nodeMap.clear()
     localStatus.foreach(status => nodeMap.put(status.nodeIdentity, status))
+    val retainedNodes = localStatus.map(_.nodeIdentity).toSet
+    purgeStaleNodeCaches(
+      retainedNodes = retainedNodes
+    )
     updateKnownCollectionsFromNodeMap()
     notifyNodeStatusListeners()
     logger.debug("Cleared swarm status data, retaining local node.")
 
   def remove(nodeIdentity: NodeIdentity): Unit = if nodeIdentity != ourNodeIdentity then
     nodeMap.remove(nodeIdentity).foreach(_ => ageCellStyleRefresher.remove(nodeIdentity))
+    purgeNodeCaches(
+      nodeIdentity = nodeIdentity
+    )
     updateKnownCollectionsFromNodeMap()
     notifyNodeStatusListeners()
     logger.debug(s"Removed node status for $nodeIdentity")
@@ -259,14 +266,18 @@ class SwarmData @Inject() (
     val fieldName = nodeStyler.fieldName
     val node = nodeStyler.node
     // Keep all current and future styling rules in one place.
-    if nodeStatus.isLocal then
-      if !node.styleClass.contains(ourNodeStyleClass) then node.styleClass += ourNodeStyleClass
-      else while node.styleClass.contains(ourNodeStyleClass) do node.styleClass -= ourNodeStyleClass
+    ensureStyleClass(
+      node = node,
+      styleClassName = ourNodeStyleClass,
+      shouldHaveStyleClass = nodeStatus.isLocal
+    )
 
     val isLocalOperatorField = nodeStatus.isLocal && fieldName == operatorFieldName
-    if isLocalOperatorField then
-      if !node.styleClass.contains(operatorLinkStyleClass) then node.styleClass += operatorLinkStyleClass
-      else while node.styleClass.contains(operatorLinkStyleClass) do node.styleClass -= operatorLinkStyleClass
+    ensureStyleClass(
+      node = node,
+      styleClassName = operatorLinkStyleClass,
+      shouldHaveStyleClass = isLocalOperatorField
+    )
     if isLocalOperatorField then
       node.delegate.setOnMouseClicked(
         new EventHandler[MouseEvent]:
@@ -276,6 +287,44 @@ class SwarmData @Inject() (
     else node.delegate.setOnMouseClicked(null)
 
     if fieldName == NodeDataField.Received.label then ageCellStyleRefresher.add(nodeStyler)
+
+  private def ensureStyleClass(
+      node: Node,
+      styleClassName: String,
+      shouldHaveStyleClass: Boolean
+  ): Unit =
+    if shouldHaveStyleClass then
+      if !node.styleClass.contains(styleClassName) then node.styleClass += styleClassName
+    else
+      while node.styleClass.contains(styleClassName) do node.styleClass -= styleClassName
+
+  private def purgeStaleNodeCaches(
+      retainedNodes: Set[NodeIdentity]
+  ): Unit =
+    val staleNodes = valueProperties.keysIterator
+      .map(_._1)
+      .filterNot(retainedNodes.contains)
+      .toSet ++ renderedCellNodes.keysIterator
+      .map(_._1)
+      .filterNot(retainedNodes.contains)
+      .toSet
+    staleNodes.foreach(nodeIdentity =>
+      purgeNodeCaches(
+        nodeIdentity = nodeIdentity
+      )
+    )
+
+  private def purgeNodeCaches(
+      nodeIdentity: NodeIdentity
+  ): Unit =
+    valueProperties.keysIterator
+      .filter(_._1 == nodeIdentity)
+      .toList
+      .foreach(key => valueProperties.remove(key))
+    renderedCellNodes.keysIterator
+      .filter(_._1 == nodeIdentity)
+      .toList
+      .foreach(key => renderedCellNodes.remove(key))
 
   private def unregisterRenderedCells(cellsByField: Map[(NodeIdentity, NodeDataField), Seq[Node]]): Unit = cellsByField
     .foreach { case (key, removedCells) =>
