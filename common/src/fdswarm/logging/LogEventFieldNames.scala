@@ -25,5 +25,6 @@ object LogEventFieldNames:
       "$Timestamp": {"$$resolver": "timestamp"},
       "$Level": {"$$resolver": "level", "field": "name"},
       "$Locus": {"$$resolver": "logger", "field": "name"},
+      "$Message": {"$$resolver": "message", "stringified": true},
       "mdc": {"$$resolver": "mdc", "flatten": true}
     }"""
