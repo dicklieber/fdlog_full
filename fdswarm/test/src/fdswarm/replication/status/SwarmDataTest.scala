@@ -94,6 +94,16 @@ class SwarmDataTest extends FunSuite:
             stationClass = "A",
             section = "IL"
           )
+        ),
+        nodeStatus(
+          hostName = "gamma",
+          contestConfig = contestConfig(
+            contestType = ContestType.WFD,
+            callsign = "W9AAA",
+            transmitters = 1,
+            stationClass = "A",
+            section = "IL"
+          )
         )
       )
     )

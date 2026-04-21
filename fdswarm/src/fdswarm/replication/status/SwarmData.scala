@@ -68,9 +68,16 @@ class SwarmData @Inject() (
   private val cellNodeListenerId = AtomicLong(0L)
   private val ourNodeStyleClass = "ourNode"
   private val operatorLinkStyleClass = "operatorLink"
-  private val contestConfigMismatchStyleClass = "contestConfigMismatch"
+  private val contestConfigMajorityStyleClass = "contestConfigMajority"
+  private val contestConfigVariantStyleClasses = Vector(
+    "contestConfigVariant0",
+    "contestConfigVariant1",
+    "contestConfigVariant2",
+    "contestConfigVariant3"
+  )
+  private val contestConfigAllColorStyleClasses = contestConfigMajorityStyleClass +: contestConfigVariantStyleClasses
   private val operatorFieldName = NodeDataField.Operator.label
-  private var contestConfigDifferenceFieldsSet = Set.empty[NodeDataField]
+  private var contestConfigFieldStyleByNodeAndField = Map.empty[(NodeIdentity, NodeDataField), String]
   val contestConfigMismatchProperty: BooleanProperty = new BooleanProperty(
     this,
     "contestConfigMismatch",
@@ -313,12 +320,10 @@ class SwarmData @Inject() (
       styleClassName = operatorLinkStyleClass,
       shouldHaveStyleClass = isLocalOperatorField
     )
-    ensureStyleClass(
-      node = node,
-      styleClassName = contestConfigMismatchStyleClass,
-      shouldHaveStyleClass = isContestConfigDifferenceField(
-        fieldName = fieldName
-      )
+    applyContestConfigColorStyle(
+      nodeStatus = nodeStatus,
+      fieldName = fieldName,
+      node = node
     )
     if isLocalOperatorField then
       node.delegate.setOnMouseClicked(
@@ -331,13 +336,13 @@ class SwarmData @Inject() (
     if fieldName == NodeDataField.Received.label then ageCellStyleRefresher.add(nodeStyler)
 
   private def refreshContestConfigDifferenceState(): Unit =
-    val differenceFields = SwarmData.contestConfigDifferenceFields(
+    val stylesByNodeAndField = SwarmData.contestConfigFieldStyles(
       statuses = allNodeStatuses
     )
-    val changed = differenceFields != contestConfigDifferenceFieldsSet
-    contestConfigDifferenceFieldsSet = differenceFields
+    val changed = stylesByNodeAndField != contestConfigFieldStyleByNodeAndField
+    contestConfigFieldStyleByNodeAndField = stylesByNodeAndField
     updateOnFxThread {
-      contestConfigMismatchProperty.value = differenceFields.nonEmpty
+      contestConfigMismatchProperty.value = stylesByNodeAndField.nonEmpty
       if changed then
         refreshContestConfigFieldCellStyles()
     }
@@ -355,12 +360,34 @@ class SwarmData @Inject() (
         )
     }
 
-  private def isContestConfigDifferenceField(
-    fieldName: String
-  ): Boolean =
-    contestConfigDifferenceFieldsSet.exists(
-      _.label == fieldName
+  private def applyContestConfigColorStyle(
+    nodeStatus: NodeStatus,
+    fieldName: String,
+    node: Node
+  ): Unit =
+    contestConfigAllColorStyleClasses.foreach(styleClassName =>
+      ensureStyleClass(
+        node = node,
+        styleClassName = styleClassName,
+        shouldHaveStyleClass = false
+      )
     )
+    NodeDataField.values
+      .find(
+        _.label == fieldName
+      )
+      .flatMap(field =>
+        contestConfigFieldStyleByNodeAndField.get(
+          (nodeStatus.nodeIdentity, field)
+        )
+      )
+      .foreach(styleClassName =>
+        ensureStyleClass(
+          node = node,
+          styleClassName = styleClassName,
+          shouldHaveStyleClass = true
+        )
+      )
 
   private def ensureStyleClass(
       node: Node,
@@ -422,25 +449,61 @@ object SwarmData:
     NodeDataField.Exchange
   )
 
-  private[status] def contestConfigDifferenceFields(
+  private[status] def contestConfigFieldStyles(
     statuses: Seq[NodeStatus]
-  ): Set[NodeDataField] =
+  ): Map[(NodeIdentity, NodeDataField), String] =
+    val majorityStyleClass = "contestConfigMajority"
+    val variantStyleClasses = Vector(
+      "contestConfigVariant0",
+      "contestConfigVariant1",
+      "contestConfigVariant2",
+      "contestConfigVariant3"
+    )
     if statuses.size < 2 then
-      Set.empty
+      Map.empty
     else
-      contestConfigDisplayFields
-        .filter(field =>
-          statuses
-            .map(nodeStatus =>
-              contestConfigFieldValue(
-                contestConfig = nodeStatus.statusMessage.contestConfig,
-                field = field
-              )
+      contestConfigDisplayFields.foldLeft(
+        Map.empty[(NodeIdentity, NodeDataField), String]
+      )(
+        (acc, field) =>
+          val valueByNode = statuses.map(nodeStatus =>
+            nodeStatus.nodeIdentity -> contestConfigFieldValue(
+              contestConfig = nodeStatus.statusMessage.contestConfig,
+              field = field
             )
-            .distinct
-            .size > 1
-        )
-        .toSet
+          )
+          val countsByValue = valueByNode
+            .groupMap(_._2)(_ => 1)
+            .view
+            .mapValues(_.sum)
+            .toMap
+          val maxCount = countsByValue.values.maxOption.getOrElse(0)
+          if countsByValue.size <= 1 || maxCount == 0 then
+            acc
+          else
+            val topValues = countsByValue
+              .collect { case (value, count) if count == maxCount => value }
+              .toSet
+            val majorityValues =
+              if topValues.size == 1 then topValues else Set.empty[String]
+            val nonMajorityValues = countsByValue.keys
+              .filterNot(majorityValues.contains)
+              .toSeq
+              .sorted
+            val nonMajorityStyleByValue = nonMajorityValues.zipWithIndex
+              .map { case (value, idx) =>
+                value -> variantStyleClasses(idx % variantStyleClasses.size)
+              }
+              .toMap
+            val fieldStyles = valueByNode.map { case (nodeIdentity, value) =>
+              val styleClass = if majorityValues.contains(value) then
+                majorityStyleClass
+              else
+                nonMajorityStyleByValue(value)
+              (nodeIdentity, field) -> styleClass
+            }.toMap
+            acc ++ fieldStyles
+      )
 
   private def contestConfigFieldValue(
     contestConfig: ContestConfig,

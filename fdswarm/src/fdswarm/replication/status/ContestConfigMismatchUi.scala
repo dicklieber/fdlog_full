@@ -57,6 +57,21 @@ class ContestConfigMismatchUi @Inject() (
               size = 16,
               tooltipText = "Use for all nodes"
             )
+            val baseStyle =
+              """
+                -fx-background-color: white;
+                -fx-border-color: transparent;
+                -fx-padding: 6;
+              """
+            val hoverStyle =
+              """
+                -fx-background-color: rgba(0,0,0,0.08);
+                -fx-border-color: transparent;
+                -fx-padding: 6;
+              """
+            syncButton.style = baseStyle
+            syncButton.onMouseEntered = _ => syncButton.style = hoverStyle
+            syncButton.onMouseExited = _ => syncButton.style = baseStyle
             syncButton.onAction = _ =>
               swarmData.nodeMap
                 .get(nodeIdentity)
@@ -64,6 +79,7 @@ class ContestConfigMismatchUi @Inject() (
                   _.statusMessage.contestConfig
                 )
                 .foreach(contestConfig =>
+                  val payload = contestConfig
                     .asJson
                     .noSpaces
                     .getBytes(
