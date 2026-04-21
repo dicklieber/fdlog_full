@@ -10,8 +10,6 @@ import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
 import scalafx.scene.control.ButtonType
 import scalafx.scene.layout.VBox
 
-import java.time.Instant
-
 /**
  * Dialog for configuring contest settings.
  */
@@ -31,7 +29,6 @@ class ContestConfigDialog @Inject() (
   private val contestTypeProperty: ObjectProperty[ContestType] = configEditor.getProperty("contestType")
   configEditor.setCustomEditor("ourClass", contestCatalog.comboBox(contestTypeProperty))
   configEditor.setCustomEditor("ourSection", new SectionComboBox(sectionsProvider))
-  configEditor.hideField("stamp")
 
   private val configPane = configEditor.horizontal
   private val currentContestConfigProperty: ReadOnlyObjectProperty[ContestConfig] = configEditor.currentValueProperty
@@ -52,8 +49,6 @@ class ContestConfigDialog @Inject() (
     javafx.event.ActionEvent.ACTION,
     (_: javafx.event.ActionEvent) =>
       contestManager.setConfig(
-        configEditor.finish().copy(
-          stamp = Instant.now()
-        )
+        configEditor.finish()
       )
   )

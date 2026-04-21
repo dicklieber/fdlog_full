@@ -23,7 +23,6 @@ import fdswarm.fx.contest.{ContestConfigManager, ContestType}
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.replication.status.SwarmData
 import fdswarm.replication.{Service, Transport}
-import fdswarm.util.TimeHelpers
 import jakarta.inject.Inject
 
 import java.time.Duration
@@ -104,9 +103,6 @@ class ContestDiscovery @Inject() (
       .filter(nodeStatus =>
         nodeStatus.statusMessage.contestConfig.contestType != ContestType.NONE
       )
-      .sortBy(
-        _.statusMessage.contestConfig.stamp
-      )
       .headOption
     selectedStatus.foreach(nodeStatus =>
       logger.debug(s"Selected status: $nodeStatus")
@@ -115,7 +111,7 @@ class ContestDiscovery @Inject() (
         selectedConfig
       )
       logger.info(
-        s"Contest discovery selected config ${selectedConfig.contestType} from ${nodeStatus.nodeIdentity} (stamp: ${TimeHelpers.instantToString(selectedConfig.stamp)}"
+        s"Contest discovery selected config ${selectedConfig.contestType} from ${nodeStatus.nodeIdentity}"
       )
     )
     if selectedStatus.isEmpty then

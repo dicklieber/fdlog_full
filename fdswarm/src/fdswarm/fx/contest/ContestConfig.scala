@@ -22,9 +22,6 @@ import fdswarm.model.Callsign
 import fdswarm.util.HamPhonetic.fromString
 import io.circe.Codec
 
-import java.time.{Instant, ZoneId}
-import java.time.format.DateTimeFormatter
-
 trait ContestConfigFields:
   def contestType: ContestType
   def ourCallsign: Callsign
@@ -38,20 +35,18 @@ trait ContestConfigFields:
  * @param ourClass     our class
  * @param ourSection   our section
  * @param contestType WFD or ARRL
- * @param stamp        when the config was created. The latest is considered authorative.
  */
-case class ContestConfig(contestType: ContestType,
-                         ourCallsign: Callsign,
-                         transmitters: Int = 1,
-                         ourClass: String,
-                         ourSection: String,
-                         stamp: Instant = Instant.now()) extends ContestConfigFields derives Codec.AsObject:
+case class ContestConfig(
+    contestType: ContestType,
+    ourCallsign: Callsign,
+    transmitters: Int = 1,
+    ourClass: String,
+    ourSection: String)
+    extends ContestConfigFields
+    derives Codec.AsObject:
   require(ourClass.nonEmpty, "ourClass must not be empty")
   require(ourSection.nonEmpty, "ourSection must not be empty")
-  private val stampFormatter: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("dd:HH:mm:ss").withZone(ZoneId.systemDefault())
-
-  val exchange:String=
+  val exchange: String =
     s"$transmitters$ourClass $ourSection"
   def weAre(usePhonetic: Boolean): String =
     val callsignValue = Option(ourCallsign).map(_.toString).getOrElse("")
@@ -60,8 +55,8 @@ case class ContestConfig(contestType: ContestType,
     else
       s"We are $callsignValue $transmitters$ourClass $ourSection"
 
-  val display:String=
-    s"$exchange ${stampFormatter.format(stamp)}"
+  val display: String =
+    exchange
 
 
 object ContestConfig:

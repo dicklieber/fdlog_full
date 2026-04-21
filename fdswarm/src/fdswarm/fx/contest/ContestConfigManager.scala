@@ -5,7 +5,6 @@ import fdswarm.io.DirectoryProvider
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.logging.Locus.Scoring
 import fdswarm.model.Callsign
-import fdswarm.replication.NodeStatus
 import io.circe.generic.auto.{deriveDecoder, deriveEncoder}
 import io.circe.parser.decode
 import io.circe.syntax.*
@@ -52,30 +51,6 @@ final class ContestConfigManager @Inject() (
 
   def contestConfigProperty: ObjectProperty[ContestConfig] =
     _contestConfig
-
-  def useAnotherNodesContestConfig(nodeStatus: NodeStatus): Unit =
-    val receivedConfig = nodeStatus.statusMessage.contestConfig
-    if receivedConfig.contestType == ContestType.NONE then
-      return // if another node is NONE we're not interested.
-
-    val localConfig = _contestConfig.value
-    if localConfig.contestType == ContestType.NONE then
-      // Were NONE, will take anybody's ContestConfig.
-      logger.info(
-        "Using ContestConfig from a swarm member.",
-        "contestType" -> receivedConfig.contestType.toString,
-        "nodeIdentity" -> nodeStatus.nodeIdentity,
-        "receivedStamp" -> receivedConfig.stamp
-      )
-      setConfig(receivedConfig)
-    else if receivedConfig.stamp.isBefore(localConfig.stamp) then
-      logger.info(
-        "Received Older ContestConfig",
-        "contestType" -> receivedConfig.contestType,
-        "nodeIdentity" -> nodeStatus.nodeIdentity,
-        "receivedStamp" -> receivedConfig.stamp
-      )
-      setConfig(receivedConfig)
 
   def setConfig(newConfig: ContestConfig): Unit =
     _contestConfig.value = newConfig
