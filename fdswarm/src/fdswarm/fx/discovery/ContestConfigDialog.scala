@@ -2,13 +2,20 @@ package fdswarm.fx.discovery
 
 import fdswarm.fx.contest.*
 import fdswarm.fx.sections.SectionsProvider
+import fdswarm.fx.utils.BootstrapIcons
 import fdswarm.fx.utils.StyledDialog
 import fdswarm.fx.utils.editor.{CallsignCustomField, CaseClassPropertyEditor, IntSpinner}
+import fdswarm.replication.{Service, Transport}
+import io.circe.syntax.EncoderOps
 import jakarta.inject.Inject
 import scalafx.Includes.*
 import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
-import scalafx.scene.control.ButtonType
-import scalafx.scene.layout.VBox
+import scalafx.geometry.Pos
+import scalafx.scene.control.{ButtonType, Label}
+import scalafx.scene.layout.{HBox, VBox}
+import scalafx.scene.paint.Color
+
+import java.nio.charset.StandardCharsets
 
 /**
  * Dialog for configuring contest settings.
@@ -17,7 +24,8 @@ class ContestConfigDialog @Inject() (
     contestCatalog: ContestCatalog,
     sectionsProvider: SectionsProvider,
     contestManager: ContestConfigManager,
-    exchangePane: ExchangePane)
+    exchangePane: ExchangePane,
+    transport: Transport)
     extends StyledDialog[ButtonType]:
 
   private val configEditor: CaseClassPropertyEditor[ContestConfig] =
@@ -33,10 +41,36 @@ class ContestConfigDialog @Inject() (
   private val configPane = configEditor.horizontal
   private val currentContestConfigProperty: ReadOnlyObjectProperty[ContestConfig] = configEditor.currentValueProperty
 
+  private val warningIcon = BootstrapIcons.svgPath(
+    name = "exclamation-triangle-fill",
+    size = 16,
+    color = Color.web("#b8860b")
+  )
+
+  private val warningLabel = new Label:
+    text = "This will change the contest on every node currently in the swarm!"
+    textFill = Color.web("#664d03")
+    style = "-fx-font-weight: 600;"
+
+  private val warningPane = new HBox(spacing = 8):
+    alignment = Pos.CenterLeft
+    style =
+      "-fx-background-color: #fff3cd; -fx-border-color: #ffecb5; -fx-border-radius: 4; -fx-background-radius: 4; -fx-padding: 8 10 8 10;"
+    children ++= Seq(
+      warningIcon,
+      warningLabel
+    )
+
   title = "Contest Configuration"
   resizable = true
   dialogPane().content = new VBox(spacing = 8):
-    children ++= Seq(configPane, exchangePane.pane(currentContestConfigProperty))
+    children ++= Seq(
+      configPane,
+      exchangePane.pane(
+        currentContestConfigProperty
+      ),
+      warningPane
+    )
 
   dialogPane().buttonTypes = Seq(ButtonType.OK, ButtonType.Cancel)
 
@@ -48,7 +82,13 @@ class ContestConfigDialog @Inject() (
   updateButton.addEventFilter(
     javafx.event.ActionEvent.ACTION,
     (_: javafx.event.ActionEvent) =>
+      val config = configEditor.finish()
       contestManager.setConfig(
-        configEditor.finish()
+        config
+      )
+      val payload = config.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+      transport.send(
+        service = Service.SyncContest,
+        data = payload
       )
   )
