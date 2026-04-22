@@ -25,6 +25,7 @@ import fdswarm.replication.status.SwarmData
 import fdswarm.replication.{Service, Transport}
 import jakarta.inject.Inject
 
+import java.nio.charset.StandardCharsets
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 
@@ -85,7 +86,12 @@ class ContestDiscovery @Inject() (
     logger.info("Starting contest discovery", "Timeout" -> timeout)
 
     swarmData.clear()
-    transport.send(Service.SendStatus, Array.emptyByteArray)
+    transport.send(
+      Service.SendStatus,
+      "{}".getBytes(
+        StandardCharsets.UTF_8
+      )
+    )
     TimeUnit.MILLISECONDS.sleep(
       timeout.toMillis
     )

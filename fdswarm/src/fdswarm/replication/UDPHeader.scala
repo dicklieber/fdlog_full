@@ -18,23 +18,25 @@
 
 package fdswarm.replication
 
+import com.codahale.metrics.SharedMetricRegistries
 import com.organization.BuildInfo
 import fdswarm.fx.contest.ContestConfig
 import fdswarm.model.Qso
-import fdswarm.util.NodeIdentity
-import fdswarm.util.Gzip
+import fdswarm.util.{Gzip, NodeIdentity}
 import io.circe.Decoder
-import com.codahale.metrics.SharedMetricRegistries
+import io.circe.generic.auto.deriveDecoder
 import org.slf4j.LoggerFactory
 
-import java.net.{DatagramPacket, InetAddress}
+import java.net.DatagramPacket
 import java.nio.charset.StandardCharsets
 import scala.util.Try
 
-enum Service[T]:
+enum Service[T](
+  using private val payloadDecoder: Decoder[T]
+):
   type Payload = T
   case Status extends Service[StatusMessage]
-  case SendStatus extends Service[Unit]
+  case SendStatus extends Service[NoPayload]
   case QSO extends Service[Qso]
   case SyncContest extends Service[ContestConfig]
   case RestartContest extends Service[ContestConfig]
@@ -42,17 +44,16 @@ enum Service[T]:
   def decode(
     udpHeaderData: UDPHeaderData
   ): T =
-    this match
-      case Service.Status =>
-        udpHeaderData.decodePayload[StatusMessage]
-      case Service.SendStatus =>
-        ()
-      case Service.QSO =>
-        udpHeaderData.decodePayload[Qso]
-      case Service.SyncContest =>
-        udpHeaderData.decodePayload[ContestConfig]
-      case Service.RestartContest =>
-        udpHeaderData.decodePayload[ContestConfig]
+    udpHeaderData.decodePayload[T](
+      using payloadDecoder
+    )
+
+final case class NoPayload()
+
+object NoPayload:
+  given Decoder[NoPayload] = Decoder.const(
+    NoPayload()
+  )
 
 case class UDPHeaderData(
   service: Service[?],
@@ -82,11 +83,6 @@ case class UDPHeaderData(
       this
     )
 
-  def decodeByService: service.Payload =
-    service.decode(
-      this
-    )
-
   private def maybeDecompressGzip(
                                   input: Array[Byte]
                                 ): Array[Byte] =
@@ -113,12 +109,12 @@ case class UDPHeaderData(
  * Node identity used in the cluster.
  * e.g. "fdswarm|Status|8078-s123232131)|0\n"
  *
- * | Field      | Type   | Description                              |
+ * | Field | Type | Description |
  * |------------|--------|------------------------------------------|
- * | `fdswarm`     | String | the fdswarm app, helps in WireShark                   |
- * | `service`     | String | from [[fdswarm.replication.Service]]                   |
- * | `port`     | String    | TCP Port and instnaceID
- * | \n | end of line   | marks end of header.  |
+ * | `fdswarm | String | the fdswarm app, helps in WireShark |
+ * | `service | String | from [[fdswarm.replication.Service]]                   |
+ * | `port | String | TCP Port and instnaceID
+ * | \n | end of line | marks end of header.  |
  *
  *
  */
@@ -144,7 +140,7 @@ object UDPHeader:
     """^FDSWARM\|([^|]+)\|([^|]+)\|(\d+)\|$""".r
   /**
    * Constructs a byte array representing a UDP header along with an optional payload.
-   * The header adheres to the format: `FDSWARM|SERVICE|NODE|DATAVERSION|.
+   * The header adheres to the format: `SWARM|SERVICE|NODE|DATAVERSION|.
    * e.g. "fdswarm|Status|10.10.10.10:8078(s123232131)|0"
    *
    * @param service      the service type, represented as an instance of the `Service` enum (e.g., Status or QSO).
