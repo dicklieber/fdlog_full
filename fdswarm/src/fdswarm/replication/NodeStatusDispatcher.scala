@@ -95,7 +95,6 @@ class NodeStatusDispatcher @Inject() (transport: Transport) extends LazyStructur
     }
 
   thread.setDaemon(true)
-  logger.debug("Starting NodeStatusHandler Thread")
   thread.start()
 
   private def notifyFromRegistry(udpHeader: UDPHeaderData): Unit =
