@@ -24,19 +24,12 @@ import java.util.concurrent.LinkedBlockingQueue
 
 trait Transport:
   val nodeIdentityManager: NodeIdentityManager
-  def isUs(
-    candidate: NodeIdentity
-  ): Boolean =
-    nodeIdentityManager.isUs(candidate)
   val mode: String
-  val incomingQueue: LinkedBlockingQueue[UDPHeaderData] =
-    new LinkedBlockingQueue[UDPHeaderData]()
+  val incomingQueue: LinkedBlockingQueue[UDPHeaderData] = new LinkedBlockingQueue[UDPHeaderData]()
 
-  /**
-   * Just send a message of type [[Service]] with a given payload.
-   */
-  def send(
-    service: Service[?],
-    data: Array[Byte]
-  ): Unit
+  def isUs(candidate: NodeIdentity): Boolean = nodeIdentityManager.isUs(candidate)
+
+  /** Just send a message of type [[Service]] with a given payload.
+    */
+  def send(service: Service[?], data: Array[Byte]): Unit
   def stop(): Unit

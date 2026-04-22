@@ -62,6 +62,9 @@ final class LocalNodeStatus @Inject()(
   selectedBandModeStore.selected.onChange { (_, _, _) =>
     rebuildAndNotify()
   }
+  contestConfigManager.contestConfigProperty.onChange { (_, _, _) =>
+    rebuildAndNotify()
+  }
 
   rebuildAndNotify()
 
