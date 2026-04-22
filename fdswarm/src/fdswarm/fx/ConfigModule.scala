@@ -22,15 +22,11 @@ package fdswarm.fx
 import com.google.inject.AbstractModule
 import com.google.inject.name.Names
 import com.typesafe.config.{Config, ConfigFactory}
-import fdswarm.logging.LazyStructuredLogging
-import fdswarm.{AutoBind, StartupInfo}
 import fdswarm.api.ApiEndpoints
 import fdswarm.io.{DirectoryProvider, ProductionDirectory}
-import fdswarm.logging.ElasticShipper
-import fdswarm.store.QsoStore
-import fdswarm.replication.status.SwarmData
-import fdswarm.replication.{BroadcastTransport, NodeStatusDispatcher, StatusBroadcastService, Transport}
-import fdswarm.telemetry.Metrics
+import fdswarm.logging.LazyStructuredLogging
+import fdswarm.replication.{BroadcastTransport, Transport}
+import fdswarm.{AutoBind, StartupInfo}
 import net.codingwell.scalaguice.ScalaModule
 
 import java.time.Duration
@@ -78,9 +74,10 @@ class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModu
       throw new Exception("Transport type not supported: " + transportType)
 //      bind[Transport].to[MulticastTransport].asEagerSingleton()
 
-    bind[QsoStore].asEagerSingleton()
-    bind[ElasticShipper].asEagerSingleton()
-
+//    bind[QsoStore].asEagerSingleton()
+//    bind[ContestStartStore].asEagerSingleton()
+//    bind[ElasticShipper].asEagerSingleton()
+//
 
     val entries = fullConfig.entrySet().asScala.toSeq
     for (entry <- entries) {

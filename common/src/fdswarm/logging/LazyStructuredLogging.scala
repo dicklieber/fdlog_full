@@ -5,55 +5,22 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 object LazyStructuredLogging:
   private val classNameLoggers = ConcurrentHashMap.newKeySet[String]()
-  private val explicitLocusLoggers: Seq[String] =
-    Locus.values
-      .filter(
-        _ != Locus.ClassName
-      )
-      .map(
-        _.value
-      )
-      .toSeq
+  private val explicitLocusLoggers: Seq[String] = Locus.values.filter(_ != Locus.ClassName).map(_.value).toSeq
 
-  private def normalizeClassName(
-                                  className: String
-                                ): String =
-    className
-      .stripSuffix(
-        "$"
-      )
-      .trim
+  private def registerClassNameLogger(className: String): Unit =
+    val normalized = normalizeClassName(className)
+    if normalized.nonEmpty then classNameLoggers.add(normalized)
 
-  def registerClassNameLogger(
-                               className: String
-                             ): Unit =
-    val normalized = normalizeClassName(
-      className
-    )
-    if normalized.nonEmpty then
-      classNameLoggers.add(
-        normalized
-      )
+  private def normalizeClassName(className: String): String = className.stripSuffix("$").trim
 
-  def selectableLoggerNames: Seq[String] =
-    (classNameLoggers.asScala.toSeq ++ explicitLocusLoggers)
-      .distinct
-      .sorted(using Ordering.String)
+  def selectableLoggerNames: Seq[String] = (classNameLoggers.asScala.toSeq ++ explicitLocusLoggers).distinct
+    .sorted(using Ordering.String)
 
-trait LazyStructuredLogging(
-                             locus: Locus = Locus.ClassName
-                           ):
-  if locus == Locus.ClassName then
-    LazyStructuredLogging.registerClassNameLogger(
-      getClass.getName
-    )
+trait LazyStructuredLogging(locus: Locus = Locus.ClassName):
+  if locus == Locus.ClassName then LazyStructuredLogging.registerClassNameLogger(getClass.getName)
 
   protected lazy val logger: StructuredLogger =
     val loggerName = locus match
-      case Locus.ClassName =>
-        getClass.getName.stripSuffix("$")
-      case _ =>
-        locus.value
-    StructuredLogger(
-      loggerName
-    )
+      case Locus.ClassName => getClass.getName.stripSuffix("$")
+      case _               => locus.value
+    StructuredLogger(loggerName)
