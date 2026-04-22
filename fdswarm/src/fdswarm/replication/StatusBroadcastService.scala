@@ -1,17 +1,17 @@
 /*
  * Copyright (c) 2026. Dick Lieber, WA9NNN
  *
- * This program is free software: you can redistribute it and/or modify 
- * it under the terms of the GNU General Public License as published by 
- * the Free Software Foundation, either version 3 of the License, or    
- * (at your option) any later version.                                  
- *                                                                      
- * This program is distributed in the hope that it will be useful,      
- * but WITHOUT ANY WARRANTY; without even the implied warranty of       
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the        
- * GNU General Public License for more details.                         
- *                                                                      
- * You should have received a copy of the GNU General Public License    
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
@@ -27,75 +27,70 @@ import fdswarm.model.BandModeOperator
 import fdswarm.store.QsoStore
 import jakarta.inject.{Inject, Provider, Singleton}
 
+/**
+ * Periodically sends broadcasts [[StatusMessage]]s to other nodes.
+ */
 @Singleton
-class StatusBroadcastService @Inject()(
-                                        qsoStoreProvider: Provider[QsoStore],
-                                        transport: Transport,
-                                        nodeStatusDispatcher: NodeStatusDispatcher,
-                                        stationManager: StationConfigManager,
-                                        selectedBandModeStore: SelectedBandModeManager,
-                                        contestConfigManager: ContestConfigManager,
-                                        @Named("fdswarm.broadcastPeriodSec") val defaultBroadcastPeriodSec: Int,
-                                        localNodeStatus: LocalNodeStatus
-                                      ) extends LazyStructuredLogging:
+class StatusBroadcastService @Inject() (
+    qsoStoreProvider: Provider[QsoStore],
+    transport: Transport,
+    nodeStatusDispatcher: NodeStatusDispatcher,
+    stationManager: StationConfigManager,
+    selectedBandModeStore: SelectedBandModeManager,
+    contestConfigManager: ContestConfigManager,
+    @Named("fdswarm.broadcastPeriodSec")
+    val defaultBroadcastPeriodSec: Int,
+    localNodeStatus: LocalNodeStatus)
+    extends LazyStructuredLogging:
 
-  private def qsoStore: QsoStore = qsoStoreProvider.get()
+  @volatile
+  private var maybeThread: Option[Thread] = None
+  @volatile
+  private var stopRequested: Boolean = false
 
-  @volatile private var maybeThread: Option[Thread] = None
-  @volatile private var stopRequested: Boolean = false
-
-  nodeStatusDispatcher.addListener(
-    service = Service.SendStatus
-  )(
-    (_, _) => broadcastStatus()
-  )
-
-  private def currentPeriodMillis: Long =
-    defaultBroadcastPeriodSec * 1000L
-
-  def start(): Unit =
-    this.synchronized {
-      if maybeThread.isEmpty then
-        stopRequested = false
-        val period = defaultBroadcastPeriodSec
-        logger.debug(s"Starting periodic Status broadcasts (every $period s)")
-        val t = new Thread(() => {
+  def start(): Unit = this.synchronized {
+    if maybeThread.isEmpty then
+      stopRequested = false
+      val period = defaultBroadcastPeriodSec
+      val t = new Thread(
+        () => {
           while !Thread.currentThread().isInterrupted do
             try
               Thread.sleep(currentPeriodMillis)
               broadcastStatus()
             catch
-              case _: InterruptedException =>
-                if stopRequested then
+              case _: InterruptedException => if stopRequested then
                   // Exit loop
                   Thread.currentThread().interrupt()
-        }, "Status-Broadcaster")
-        t.setDaemon(true)
-        t.start()
-        maybeThread = Some(t)
-    }
+        },
+        "Status-Broadcaster"
+      )
+      t.setDaemon(true)
+      t.start()
+      maybeThread = Some(t)
+  }
 
-  def stop(): Unit =
-    this.synchronized {
-      logger.debug("Stopping periodic Status broadcasts")
-      stopRequested = true
-      maybeThread.foreach(_.interrupt())
-      maybeThread = None
-    }
+  nodeStatusDispatcher.addListener(service = Service.SendStatus)((_, _) =>
+    broadcastStatus())
 
-  def broadcastStatus(): Unit =
+  private def currentPeriodMillis: Long = defaultBroadcastPeriodSec * 1000L
+
+  private def broadcastStatus(): Unit =
     if !contestConfigManager.hasConfiguration.value then return
     try
       val operator = stationManager.station.operator
       val bandMode = selectedBandModeStore.selected.value
-      val bandModeOperator = BandModeOperator(
-        operator,
-        bandMode
-      )
+      val bandModeOperator = BandModeOperator(operator, bandMode)
 
       val statusMessage: StatusMessage = localNodeStatus.statusMessage
       val gzipBytes = statusMessage.toPacket
       transport.send(Service.Status, gzipBytes)
-    catch
-      case e: Exception =>
-        logger.error("Error broadcasting node status", e)
+    catch case e: Exception => logger.error("Error broadcasting node status", e)
+
+  def stop(): Unit = this.synchronized {
+    stopRequested = true
+    maybeThread.foreach(_.interrupt())
+    maybeThread = None
+  }
+
+  private def qsoStore: QsoStore = qsoStoreProvider.get()
