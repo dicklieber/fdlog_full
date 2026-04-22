@@ -98,6 +98,7 @@ class NodeStatusDispatcher @Inject() (transport: Transport) extends LazyStructur
   thread.start()
 
   private def notifyFromRegistry(udpHeader: UDPHeaderData): Unit =
+    logServicesWithoutListeners()
     val registrations = listenersByService.getOrElse(udpHeader.service, Seq.empty)
     if registrations.isEmpty then
       logger.warn("Dropping because no listener is registered", "Service" -> udpHeader.service)
@@ -105,6 +106,23 @@ class NodeStatusDispatcher @Inject() (transport: Transport) extends LazyStructur
       registrations.foreach(registration =>
         try registration.handle(udpHeader = udpHeader)
         catch case e: Exception => logger.error(s"Error in ${registration.service} listener", e))
+
+  private def logServicesWithoutListeners(): Unit =
+    logger.whenDebugEnabled:
+      val servicesWithoutListeners =
+        Service.values
+          .filter(
+            service => listenersByService.get(service).forall(_.isEmpty)
+          )
+          .map(
+            _.toString
+          )
+
+      if servicesWithoutListeners.nonEmpty then
+        logger.debug(
+          "Services without listeners",
+          "Services" -> servicesWithoutListeners
+        )
 
   private trait ListenerRegistration:
     def service: Service[?]
@@ -115,6 +133,7 @@ class NodeStatusDispatcher @Inject() (transport: Transport) extends LazyStructur
     private val receivedCounter = metrics.counter(s"received.$service")
 
     override def handle(udpHeader: UDPHeaderData): Unit =
+
       val value: T = udpHeader.decodeFor(expectedService = service)
       receivedCounter.inc(1)
       listener(udpHeader.nodeIdentity, value)
