@@ -29,7 +29,7 @@ import fdswarm.io.{DirectoryProvider, ProductionDirectory}
 import fdswarm.logging.ElasticShipper
 import fdswarm.store.QsoStore
 import fdswarm.replication.status.SwarmData
-import fdswarm.replication.{BroadcastTransport, ContestRestartHandler, NodeStatusDispatcher, StatusBroadcastService, Transport}
+import fdswarm.replication.{BroadcastTransport, NodeStatusDispatcher, StatusBroadcastService, Transport}
 import fdswarm.telemetry.Metrics
 import net.codingwell.scalaguice.ScalaModule
 
@@ -68,7 +68,6 @@ class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModu
     val fullConfig: Config = primaryConfigFromFile.withFallback(defaultConfigFromFile)
 //    bind[StatusBroadcastService].asEagerSingleton()
 //    bind[NodeStatusDispatcher].asEagerSingleton()
-//    bind[ContestRestartHandler].asEagerSingleton()
 //    bind[MulticastTransport].asEagerSingleton()
 //    bind[BroadcastTransport].asEagerSingleton()
 

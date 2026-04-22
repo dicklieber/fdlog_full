@@ -23,7 +23,7 @@ import fdswarm.fx.{FdLogUi, GridBuilder}
 import fdswarm.fx.contest.ContestConfig
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.logging.Locus.Replication
-import fdswarm.replication.{NodeStatus, NodeStatusDispatcher}
+import fdswarm.replication.{NodeStatus, NodeStatusDispatcher, Service}
 import fdswarm.util.{NodeIdentity, NodeIdentityManager}
 import jakarta.inject.{Inject, Singleton}
 import javafx.beans.value.ChangeListener
@@ -95,7 +95,19 @@ class SwarmData @Inject() (
   ageCellStyleRefresher.setPurgeCallback(nodeIdentity =>
     logger.info("Purging", "Node" -> nodeIdentity.toString)
     remove(nodeIdentity))
-  nodeStatusDispatcher.addNodeStatusListener(update)
+  nodeStatusDispatcher.addListener(
+    service = Service.Status,
+    singleListener = false
+  )(
+    (nodeIdentity, statusMessage) =>
+      update(
+        NodeStatus(
+          statusMessage = statusMessage,
+          nodeIdentity = nodeIdentity,
+          isLocal = false
+        )
+      )
+  )
 
   def allNodeStatuses: Seq[NodeStatus] = nodeMap.values.toSeq
 

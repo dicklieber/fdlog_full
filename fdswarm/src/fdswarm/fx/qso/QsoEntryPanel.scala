@@ -97,6 +97,9 @@ class QsoEntryPanel @Inject()(
   def node: Node = _node
 
   private var uiBuilt = false
+  callsignField.id = "qsoCallsignField"
+  contestClassField.id = "qsoClassField"
+  sectionField.id = "qsoSectionField"
 
   def buildUi(): Unit =
     if uiBuilt then return

@@ -75,7 +75,10 @@ class BroadcastTransport @Inject() (
   def send(data: Array[Byte]): Unit =
     send(Service.QSO, data)
 
-  def send(service: Service, data: Array[Byte]): Unit =
+  def send(
+    service: Service[?],
+    data: Array[Byte]
+  ): Unit =
     try
       val packetBytes = UDPHeader(service, nodeIdentityManager.ourNodeIdentity, data)
       lastPacketBytes = packetBytes.length

@@ -2,7 +2,7 @@ package fdswarm.fx.contest
 
 import fdswarm.io.DirectoryProvider
 import fdswarm.model.{BandMode, BandModeOperator, Callsign}
-import fdswarm.replication.{NodeStatus, StatusMessage}
+import fdswarm.replication.{NodeStatus, NodeStatusDispatcher, StatusMessage}
 import fdswarm.store.QsoStore
 import fdswarm.util.NodeIdentity
 import fdswarm.util.FilenameStamp
@@ -29,6 +29,8 @@ class ContestConfigManagerTest extends FunSuite:
   when(filenameStamp.build()).thenReturn("20260331-1526")
 
   val ignoreStatusSec = 60
+  val nodeStatusDispatcher: NodeStatusDispatcher =
+    null.asInstanceOf[NodeStatusDispatcher]
 
   override def afterAll(): Unit =
     os.remove.all(os.Path(tempDir.toAbsolutePath.toString))
@@ -37,7 +39,12 @@ class ContestConfigManagerTest extends FunSuite:
 
   test("hasConfiguration is true when config exists") {
     val config = ContestConfig(ContestType.WFD, Callsign("W1AW"), 2, "O", "CT")
-    val manager = new ContestConfigManager(directoryProvider, filenameStamp, ignoreStatusSec)
+    val manager = new ContestConfigManager(
+      directoryProvider,
+      filenameStamp,
+      nodeStatusDispatcher,
+      ignoreStatusSec
+    )
     manager.setConfig(config)
     assert(manager.hasConfiguration.value)
   }
@@ -50,7 +57,12 @@ class ContestConfigManagerTest extends FunSuite:
     val subDirectoryProvider = mock(classOf[DirectoryProvider])
     when(subDirectoryProvider.apply()).thenReturn(os.Path(subTempDir.toAbsolutePath.toString))
 
-    val manager = new ContestConfigManager(subDirectoryProvider, filenameStamp, ignoreStatusSec)
+    val manager = new ContestConfigManager(
+      subDirectoryProvider,
+      filenameStamp,
+      nodeStatusDispatcher,
+      ignoreStatusSec
+    )
     assertEquals(
       manager.contestConfigProperty.value,
       ContestConfig.noContest
@@ -84,6 +96,7 @@ class ContestConfigManagerTest extends FunSuite:
     val manager = new ContestConfigManager(
       subDirectoryProvider,
       filenameStamp,
+      nodeStatusDispatcher,
       ignoreStatusSec
     )
     manager.setConfig(
@@ -142,6 +155,7 @@ class ContestConfigManagerTest extends FunSuite:
     val manager = new ContestConfigManager(
       subDirectoryProvider,
       filenameStamp,
+      nodeStatusDispatcher,
       ignoreStatusSec
     )
     val receivedConfig = ContestConfig(
@@ -183,6 +197,7 @@ class ContestConfigManagerTest extends FunSuite:
     val manager = new ContestConfigManager(
       subDirectoryProvider,
       filenameStamp,
+      nodeStatusDispatcher,
       ignoreStatusSec
     )
     val localConfig = ContestConfig(
@@ -235,6 +250,7 @@ class ContestConfigManagerTest extends FunSuite:
     val manager = new ContestConfigManager(
       subDirectoryProvider,
       filenameStamp,
+      nodeStatusDispatcher,
       ignoreStatusSec
     )
     val localConfig = ContestConfig(

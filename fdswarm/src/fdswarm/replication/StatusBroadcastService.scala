@@ -44,8 +44,10 @@ class StatusBroadcastService @Inject()(
   @volatile private var maybeThread: Option[Thread] = None
   @volatile private var stopRequested: Boolean = false
 
-  nodeStatusDispatcher.addSentStatusListener(
-    () => broadcastStatus()
+  nodeStatusDispatcher.addListener(
+    service = Service.SendStatus
+  )(
+    (_, _) => broadcastStatus()
   )
 
   private def currentPeriodMillis: Long =

@@ -5,16 +5,19 @@ import fdswarm.io.DirectoryProvider
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.logging.Locus.Scoring
 import fdswarm.model.Callsign
+import fdswarm.replication.{NodeStatusDispatcher, Service}
 import io.circe.generic.auto.{deriveDecoder, deriveEncoder}
 import io.circe.parser.decode
 import io.circe.syntax.*
 import jakarta.inject.{Inject, Provider, Singleton}
 import scalafx.beans.property.{ObjectProperty, ReadOnlyBooleanProperty, ReadOnlyBooleanWrapper}
+import scalafx.application.Platform
 
 @Singleton
 final class ContestConfigManager @Inject() (
     productionDirectory: DirectoryProvider,
     filenameStamp: fdswarm.util.FilenameStamp,
+    nodeStatusDispatcher: NodeStatusDispatcher,
     @Named("fdswarm.contestChangeIgnoreStatusSec") ignoreStatusSec: Int
 ) extends ContestConfigFields with LazyStructuredLogging(Scoring):
   lazy val hasConfiguration: ReadOnlyBooleanProperty = _hasConfiguration.readOnlyProperty
@@ -49,8 +52,30 @@ final class ContestConfigManager @Inject() (
   _contestConfig.onChange((_, _, config) =>
     _hasConfiguration.value = config.contestType != ContestType.NONE)
 
+  nodeStatusDispatcher.addListener(
+    service = Service.RestartContest
+  )(
+    (_, newConfig) => handleContestConfigUpdate(
+      newConfig = newConfig
+    )
+  )
+
+
   def contestConfigProperty: ObjectProperty[ContestConfig] =
     _contestConfig
+
+  private def handleContestConfigUpdate(
+    newConfig: ContestConfig
+  ): Unit =
+    logger.debug(
+      "Received Contest",
+      "ContestConfig" -> newConfig
+    )
+    Platform.runLater {
+      setConfig(
+        newConfig
+      )
+    }
 
   def setConfig(newConfig: ContestConfig): Unit =
     _contestConfig.value = newConfig

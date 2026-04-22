@@ -40,8 +40,18 @@ class StatusProcessor @Inject() (
     with DefaultInstrumented:
 
   private var processTimer = metrics.timer("fdswarm_process_status_duration")
-  nodeStatusDispatcher.addNodeStatusListener(
-    processStatus
+  nodeStatusDispatcher.addListener(
+    service = Service.Status,
+    singleListener = false
+  )(
+    (nodeIdentity, statusMessage) =>
+      processStatus(
+        NodeStatus(
+          statusMessage = statusMessage,
+          nodeIdentity = nodeIdentity,
+          isLocal = false
+        )
+      )
   )
 
   /**

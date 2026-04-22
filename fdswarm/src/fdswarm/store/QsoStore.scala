@@ -55,8 +55,10 @@ class QsoStore @Inject() (
   private val qsoCollectionSizeGauge =
     metrics.gauge("qsoCollectionSize")(qsoCollection.size)
   private val journalFile = directoryProvider() / "qsosJournal.json"
-  nodeStatusDispatcher.addQsoListener(
-    qso => {
+  nodeStatusDispatcher.addListener(
+    service = Service.QSO
+  )(
+    (_, qso) => {
       add(
         qso
       )

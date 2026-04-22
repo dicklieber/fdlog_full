@@ -19,9 +19,11 @@
 package fdswarm.replication
 
 import com.organization.BuildInfo
+import fdswarm.fx.contest.ContestConfig
+import fdswarm.model.Qso
 import fdswarm.util.NodeIdentity
 import fdswarm.util.Gzip
-import io.circe.{Decoder, Json, parser}
+import io.circe.Decoder
 import com.codahale.metrics.SharedMetricRegistries
 import org.slf4j.LoggerFactory
 
@@ -29,12 +31,38 @@ import java.net.{DatagramPacket, InetAddress}
 import java.nio.charset.StandardCharsets
 import scala.util.Try
 
-enum Service:
-  case Status, SendStatus, QSO, SyncContest, RestartContest
+enum Service[T]:
+  type Payload = T
+  case Status extends Service[StatusMessage]
+  case SendStatus extends Service[Unit]
+  case QSO extends Service[Qso]
+  case SyncContest extends Service[ContestConfig]
+  case RestartContest extends Service[ContestConfig]
 
-case class UDPHeaderData(service: Service, nodeIdentity: NodeIdentity, payload: Array[Byte]):
+  def decode(
+    udpHeaderData: UDPHeaderData
+  ): T =
+    this match
+      case Service.Status =>
+        udpHeaderData.decodePayload[StatusMessage]
+      case Service.SendStatus =>
+        ()
+      case Service.QSO =>
+        udpHeaderData.decodePayload[Qso]
+      case Service.SyncContest =>
+        udpHeaderData.decodePayload[ContestConfig]
+      case Service.RestartContest =>
+        udpHeaderData.decodePayload[ContestConfig]
 
-  def decode[T](using Decoder[T]): T =
+case class UDPHeaderData(
+  service: Service[?],
+  nodeIdentity: NodeIdentity,
+  payload: Array[Byte]
+):
+
+  def decodePayload[T](
+    using Decoder[T]
+  ): T =
     val decodedPayload = maybeDecompressGzip(payload)
     val jsonString = new String(decodedPayload, StandardCharsets.UTF_8)
     io.circe.parser.parse(jsonString) match
@@ -42,6 +70,22 @@ case class UDPHeaderData(service: Service, nodeIdentity: NodeIdentity, payload: 
       case Right(json) => json.as[T] match
         case Left(error) => throw new RuntimeException(s"Failed to decode JSON to T: ${error.getMessage}", error)
         case Right(value) => value
+
+  def decodeFor[T](
+    expectedService: Service[T]
+  ): T =
+    require(
+      service == expectedService,
+      s"Expected service $expectedService but got $service"
+    )
+    expectedService.decode(
+      this
+    )
+
+  def decodeByService: service.Payload =
+    service.decode(
+      this
+    )
 
   private def maybeDecompressGzip(
                                   input: Array[Byte]
@@ -108,7 +152,11 @@ object UDPHeader:
    * @param payload      optional byte array representing additional data to append after the header, defaulting to an empty array.
    * @return a byte array combining the formatted header and the optional payload.
    */
-  def apply(service: Service, nodeIdentity: NodeIdentity, payload: Array[Byte] = Array.emptyByteArray): Array[Byte] =
+  def apply(
+    service: Service[?],
+    nodeIdentity: NodeIdentity,
+    payload: Array[Byte] = Array.emptyByteArray
+  ): Array[Byte] =
     val header = s"FDSWARM|$service|${nodeIdentity.udpHeaderPiece}|${BuildInfo.dataVersion}|\n"
     val headerBytes: Array[Byte] = header.getBytes("UTF-8")
     val result: Array[Byte] = headerBytes ++ payload

@@ -35,5 +35,8 @@ trait Transport:
   /**
    * Just send a message of type [[Service]] with a given payload.
    */
-  def send(service: Service, data: Array[Byte]): Unit
+  def send(
+    service: Service[?],
+    data: Array[Byte]
+  ): Unit
   def stop(): Unit

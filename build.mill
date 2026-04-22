@@ -474,13 +474,23 @@ object fdswarm
     override def mvnDeps = super.mvnDeps() ++ Seq(
       mvn"org.scalameta::munit:1.0.3",
       mvn"org.testfx:testfx-core:4.0.18",
-      mvn"org.testfx:openjfx-monocle:17.0.10"
+      mvn"org.testfx:openjfx-monocle:17.0.10",
+      mvn"org.mockito:mockito-core:4.11.0"
     )
 
     override def forkArgs = Seq(
       "-Dtestfx.robot=glass",
-      "-Dtestfx.headless=false",
+      "-Dtestfx.headless=true",
+      "-Djava.awt.headless=true",
+      "-Dglass.platform=Monocle",
+      "-Dmonocle.platform=Headless",
       "-Dprism.order=sw",
+      "--add-exports=javafx.graphics/com.sun.glass.ui=ALL-UNNAMED",
+      "--add-exports=javafx.graphics/com.sun.javafx.util=ALL-UNNAMED",
+      "--add-exports=javafx.base/com.sun.javafx.logging=ALL-UNNAMED",
+      "--add-opens=javafx.graphics/com.sun.glass.ui=ALL-UNNAMED",
+      "--add-opens=javafx.graphics/com.sun.javafx.util=ALL-UNNAMED",
+      "--add-opens=javafx.base/com.sun.javafx.logging=ALL-UNNAMED",
       "--add-opens=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED"
     )
 
