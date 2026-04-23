@@ -13,8 +13,8 @@ final class ContestStartManager @Inject() (fileHelper: FileHelper) extends LazyS
   private lazy val fileName = "contestStart.json"
 
   def update(nextContestStart: ContestStart): Unit =
-    contestStart.value = nextContestStart
     fileHelper.save(fileName, nextContestStart)
+    contestStart.value = nextContestStart
 
   private def load(): ContestStart =
     fileHelper.loadOrDefault[ContestStart](fileName)(ContestStart())

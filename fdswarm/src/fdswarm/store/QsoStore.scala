@@ -19,6 +19,7 @@
 package fdswarm.store
 
 import fdswarm.StartupInfo
+import fdswarm.contestStart.ContestStartManager
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.logging.Locus.LogEntry
 import fdswarm.model.*
@@ -33,12 +34,14 @@ import nl.grons.metrics4.scala.DefaultInstrumented
 import scalafx.collections.ObservableBuffer
 
 import scala.collection.concurrent.TrieMap
+import java.time.Instant
 
 @Singleton
 class QsoStore @Inject() (
                            directoryProvider: fdswarm.DirectoryProvider,
                            transport: Transport,
                            startupInfo: StartupInfo,
+                           contestStartManager: ContestStartManager,
                            filenameStamp: fdswarm.util.FilenameStamp,
                            localNodeStatus: LocalNodeStatus,
                            contestScoringService: ContestScoringService,
@@ -54,6 +57,7 @@ class QsoStore @Inject() (
   private val qsoCollectionSizeGauge =
     metrics.gauge("qsoCollectionSize")(qsoCollection.size)
   private val journalFile = directoryProvider() / "qsosJournal.json"
+  private def activeContestStart: Instant = contestStartManager.contestStart.value.start
   nodeStatusDispatcher.addListener(
     service = Service.QSO
   )(
@@ -163,7 +167,18 @@ class QsoStore @Inject() (
     logger.info("StartupInfo Clearing QSOs journal")
     os.remove(journalFile)
 
+  contestStartManager.contestStart.onChange(
+    (_, oldContestStart, nextContestStart) =>
+      if nextContestStart.start.isAfter(oldContestStart.start) then
+        removeOlderThanAndRewrite(
+          cutoff = nextContestStart.start
+        )
+  )
+
   if os.exists(journalFile) then
+    val cutoff = activeContestStart
+    var loaded = 0
+    var ignoredOlderThanContestStart = 0
     os.read
       .lines(journalFile)
       .iterator
@@ -172,13 +187,22 @@ class QsoStore @Inject() (
       .foreach { line =>
         decode[Qso](line) match
           case Right(qso) =>
-            if map.putIfAbsent(qso.uuid, qso).isEmpty then
+            if qso.stamp.isBefore(cutoff) then
+              ignoredOlderThanContestStart += 1
+            else if map.putIfAbsent(qso.uuid, qso).isEmpty then
+              loaded += 1
               mutateQsoCollection {
                 qsoCollection.prepend(qso)
               }
           case Left(error) =>
             logger.error(s"Failed to decode Qso from line: $line", error)
       }
+    logger.info(
+      "event" -> "qso-journal-load",
+      "contestStart" -> cutoff,
+      "loaded" -> loaded,
+      "ignoredOlderThanContestStart" -> ignoredOlderThanContestStart
+    )
     calculateHash()
 
   def hasQsos: Boolean = map.nonEmpty
@@ -213,3 +237,55 @@ class QsoStore @Inject() (
     calculateHash()
 
   def size: Int = map.size
+
+  private def removeOlderThanAndRewrite(
+      cutoff: Instant
+    ): Unit =
+    val currentQsos = map.values.toSeq
+    val (removed, kept) = currentQsos.partition(
+      _.stamp.isBefore(cutoff)
+    )
+    if removed.nonEmpty then
+      val timestampedFile =
+        directoryProvider() / s"${filenameStamp.build()}.qsosJournal.json"
+      if os.exists(journalFile) then
+        os.move(journalFile, timestampedFile)
+      val orderedKept = kept.sorted
+      val lines = orderedKept.map(_.asJsonCompact + "\n").mkString
+      os.write.over(
+        journalFile,
+        lines,
+        createFolders = true
+      )
+      map.clear()
+      orderedKept.foreach(
+        qso =>
+          map.put(
+            qso.uuid,
+            qso
+          )
+      )
+      mutateQsoCollection {
+        qsoCollection.clear()
+        orderedKept.foreach(
+          qso =>
+            qsoCollection.prepend(
+              qso
+            )
+        )
+      }
+      logger.info(
+        "event" -> "qso-journal-prune-for-contest-start",
+        "contestStart" -> cutoff,
+        "removed" -> removed.size,
+        "kept" -> orderedKept.size,
+        "archivedTo" -> timestampedFile.toString
+      )
+      calculateHash()
+    else
+      logger.info(
+        "event" -> "qso-journal-prune-for-contest-start",
+        "contestStart" -> cutoff,
+        "removed" -> 0,
+        "kept" -> currentQsos.size
+      )
