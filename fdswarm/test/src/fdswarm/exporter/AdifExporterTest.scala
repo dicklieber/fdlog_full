@@ -26,7 +26,6 @@ import os.*
 import io.circe.syntax.*
 import fdswarm.StationConfigManager
 import fdswarm.MockStartupInfo
-import fdswarm.io.DirectoryProvider
 import fdswarm.exporter.AdifExporter
 import fdswarm.fx.station.StationConfig
 
@@ -37,7 +36,7 @@ class AdifExporterTest extends FunSuite:
   val station = StationConfig(Callsign("WA9NNN"), "FT-891", "End Fed")
   val stationJson = station.asJson.noSpaces
   os.write.over(testDir / "station.json", stationJson)
-  val dummyDirProvider: DirectoryProvider = () => testDir
+  val dummyDirProvider: fdswarm.DirectoryProvider = () => testDir
   val stationManager = new StationConfigManager(dummyDirProvider, MockStartupInfo)
   val exporter = new AdifExporter(stationManager)
 

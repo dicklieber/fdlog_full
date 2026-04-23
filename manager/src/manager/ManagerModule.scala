@@ -23,7 +23,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager, BandCatalog, BandModeBuilder, ModeCatalog}
 import fdswarm.fx.bandmodes.{BandModeMatrixPane, SelectedBandModeManager}
 import fdswarm.StartupInfo
-import fdswarm.io.DirectoryProvider
+import fdswarm.DirectoryProvider
 import manager.io.ManagerDirectory
 import net.codingwell.scalaguice.ScalaModule
 

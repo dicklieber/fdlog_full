@@ -21,7 +21,6 @@ package fdswarm.fx.bandmodes
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.StartupInfo
 import fdswarm.fx.bands.BandModeBuilder
-import fdswarm.io.DirectoryProvider
 import fdswarm.model.BandMode
 import io.circe.parser.*
 import io.circe.syntax.*
@@ -29,7 +28,7 @@ import jakarta.inject.{Inject, Singleton}
 import scalafx.beans.property.ObjectProperty
 
 @Singleton
-final class SelectedBandModeManager @Inject()(dirProvider: DirectoryProvider,
+final class SelectedBandModeManager @Inject()(dirProvider: fdswarm.DirectoryProvider,
                                               bandModeBuilder: BandModeBuilder,
                                               startupInfo: StartupInfo) extends LazyStructuredLogging:
 

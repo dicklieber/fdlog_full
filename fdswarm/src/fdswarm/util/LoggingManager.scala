@@ -19,7 +19,6 @@
 package fdswarm.util
 
 import fdswarm.logging.LazyStructuredLogging
-import fdswarm.io.DirectoryProvider
 import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.core.config.Configurator
 import io.circe.parser.*
@@ -29,7 +28,7 @@ import jakarta.inject.{Inject, Singleton}
 import java.nio.file.Files
 
 class LoggingManager @Inject() (
-                                 directoryProvider: DirectoryProvider
+                                 directoryProvider: fdswarm.DirectoryProvider
                                ) extends LazyStructuredLogging:
   private val loggingJsonPath = directoryProvider() / "logging.json"
   private var currentLoggers: List[LoggerLevel] = load()

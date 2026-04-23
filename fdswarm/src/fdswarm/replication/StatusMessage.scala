@@ -27,6 +27,7 @@ import io.circe.parser.decode
 import io.circe.syntax.EncoderOps
 
 import java.nio.charset.StandardCharsets
+import java.time.Instant
 
 /** Represents a status message containing information about the current state of a contest communication system.
   *
@@ -37,36 +38,26 @@ import java.nio.charset.StandardCharsets
   * @param contestConfig
   *   Configuration details of the contest, such as callsign, class, section,
   *   and other metadata.
+  *   @param contestStart
+  *   When we think the contest was started.
   */
 case class StatusMessage(
     hashCount: HashCount,
     bandNodeOperator: BandModeOperator,
-    contestConfig: ContestConfig)
+    contestConfig: ContestConfig,
+    contestStart: Instant)
     derives Codec.AsObject:
   def toPacket: Array[Byte] =
-    val jsonBytes = this.asJson.noSpaces.getBytes(
-      StandardCharsets.UTF_8
-    )
+    val jsonBytes = this.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     Gzip.compress(jsonBytes)
 
 object StatusMessage:
-  def apply(
-      gzipped: Array[Byte]
-  ): StatusMessage =
+  def apply(gzipped: Array[Byte]): StatusMessage =
     val jsonBytes = Gzip.decompress(gzipped)
-    val json = new String(
-      jsonBytes,
-      StandardCharsets.UTF_8
-    )
+    val json = new String(jsonBytes, StandardCharsets.UTF_8)
     decode[StatusMessage](json) match
       case Right(streamMessage) => streamMessage
       case Left(error) =>
-        throw new RuntimeException(
-          s"Failed to decode StatusMessage from JSON: ${error.getMessage}",
-          error
-        )
+        throw new RuntimeException(s"Failed to decode StatusMessage from JSON: ${error.getMessage}", error)
 
-case class HashCount(
-    hash: String = "",
-    qsoCount: Int = 0)
-    derives Codec.AsObject
+case class HashCount(hash: String = "", qsoCount: Int = 0) derives Codec.AsObject

@@ -18,7 +18,6 @@
 
 package fdswarm.exporter
 
-import fdswarm.io.DirectoryProvider
 import jakarta.inject.{Inject, Singleton}
 import _root_.io.circe.Printer
 import _root_.io.circe.parser.decode
@@ -26,7 +25,7 @@ import _root_.io.circe.syntax.*
 import scalafx.beans.property.ObjectProperty
 
 @Singleton
-final class CabrilloHeaderStore @Inject() (directoryProvider: DirectoryProvider) {
+final class CabrilloHeaderStore @Inject() (directoryProvider: fdswarm.DirectoryProvider) {
 
   private val headerFile: os.Path =
     directoryProvider() / "cabrillo-header.json"

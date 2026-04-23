@@ -24,7 +24,6 @@ import scalafx.scene.control.{Alert, Button, Hyperlink, Label, MenuItem, ScrollP
 import scalafx.scene.control.Alert.AlertType
 import scalafx.scene.layout.{GridPane, HBox, Priority, VBox}
 import scalafx.stage.Window
-import fdswarm.io.DirectoryProvider
 import jakarta.inject.Inject
 import scalafx.Includes.*
 import fdswarm.fx.utils.JsonPrettyPrinter
@@ -40,7 +39,7 @@ import scalafx.scene.paint.Color
 import scalafx.geometry.Pos
 
 import com.typesafe.config.Config
-class AboutMenuItem @Inject()(directoryProvider: DirectoryProvider,
+class AboutMenuItem @Inject()(directoryProvider: fdswarm.DirectoryProvider,
                               nodeIdentityManager: NodeIdentityManager,
                               transport: Transport,
                               startupInfo: StartupInfo,

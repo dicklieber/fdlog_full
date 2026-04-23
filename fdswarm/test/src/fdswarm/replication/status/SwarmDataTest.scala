@@ -172,21 +172,9 @@ class SwarmDataTest extends FunSuite:
     contestConfig: ContestConfig
   ): NodeStatus =
     NodeStatus(
-      statusMessage = StatusMessage(
-        hashCount = HashCount(
-          hash = "",
-          qsoCount = 0
-        ),
-        bandNodeOperator = BandModeOperator(
-          operator = Callsign(
-            "N0CALL"
-          ),
-          bandMode = BandMode(
-            "20M SSB"
-          )
-        ),
-        contestConfig = contestConfig
-      ),
+      statusMessage = StatusMessage(hashCount = HashCount(hash = "", qsoCount = 0),
+        bandNodeOperator = BandModeOperator(operator = Callsign("N0CALL"), bandMode = BandMode("20M SSB")),
+        contestConfig = contestConfig,),
       nodeIdentity = NodeIdentity(
         hostIp = "10.0.0.1",
         port = 8090,

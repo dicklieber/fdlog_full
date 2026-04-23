@@ -19,6 +19,7 @@
 package fdswarm.replication
 
 import fdswarm.StationConfigManager
+import fdswarm.contestStart.ContestStartManager
 import fdswarm.fx.bandmodes.SelectedBandModeManager
 import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.logging.LazyStructuredLogging
@@ -39,6 +40,7 @@ final class LocalNodeStatus @Inject()(
                                        stationManager: StationConfigManager,
                                        selectedBandModeStore: SelectedBandModeManager,
                                        contestConfigManager: ContestConfigManager,
+                                       contestStartManager: ContestStartManager,
                                        swarmData: SwarmData
                                      ) extends LazyStructuredLogging(Replication):
 
@@ -51,7 +53,10 @@ final class LocalNodeStatus @Inject()(
         stationManager.station.operator,
         selectedBandModeStore.selected.value
       )
-    StatusMessage(hashCount = lastHashCount, bandNodeOperator = bandNodeOperator, contestConfig = contestConfig)
+    StatusMessage(hashCount = lastHashCount,
+      bandNodeOperator = bandNodeOperator,
+      contestConfig = contestConfig,
+      contestStart = contestStartManager.contestStart.value.start)
 
   private val currentBuffer: ReadOnlyObjectWrapper[NodeStatus] = new ReadOnlyObjectWrapper[NodeStatus](null)
   val current: ReadOnlyObjectProperty[NodeStatus] = currentBuffer.getReadOnlyProperty

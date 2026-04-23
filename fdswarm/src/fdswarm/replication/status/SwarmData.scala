@@ -193,7 +193,10 @@ class SwarmData @Inject() (
       NodeDataField.ContestTransmitters -> contest.transmitters.toString,
       NodeDataField.ContestClass -> contest.ourClass,
       NodeDataField.ContestSection -> contest.ourSection,
-      NodeDataField.Exchange -> contest.exchange
+      NodeDataField.Exchange -> contest.exchange,
+      NodeDataField.ContestStart -> stampFormatter.format(
+        nodeStatus.statusMessage.contestStart
+      )
     )
 
   private def notifyCellNodeListeners(nodeStatus: NodeStatus, field: NodeDataField): Unit =

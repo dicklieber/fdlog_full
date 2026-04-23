@@ -18,7 +18,6 @@
 
 package fdswarm.fx
 
-import fdswarm.io.DirectoryProvider
 import jakarta.inject.{Inject, Singleton}
 import _root_.io.circe.{Decoder, Encoder, Json, Printer}
 import _root_.io.circe.parser.decode
@@ -26,7 +25,7 @@ import _root_.io.circe.syntax.*
 import scalafx.beans.property.{BooleanProperty, IntegerProperty, Property}
 
 @Singleton
-final class UserConfig @Inject()(directoryProvider: DirectoryProvider) {
+final class UserConfig @Inject()(directoryProvider: fdswarm.DirectoryProvider) {
 
   private val propertyList: List[Property[?, ?]] = List(
     new BooleanProperty(this, "usePhonetic", true),

@@ -1,6 +1,5 @@
 package fdswarm.scoring
 
-import fdswarm.io.DirectoryProvider
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.logging.Locus.Scoring
 import io.circe.Encoder.AsArray.importedAsArrayEncoder
@@ -14,7 +13,7 @@ import scalafx.beans.property.ObjectProperty
 
 @Singleton
 class ContestScoringConfigManager @Inject() (
-                                              directoryProvider: DirectoryProvider
+                                              directoryProvider: fdswarm.DirectoryProvider
                                             ) extends LazyStructuredLogging(Scoring):
 
   private val configFile =

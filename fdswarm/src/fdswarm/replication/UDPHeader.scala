@@ -20,6 +20,7 @@ package fdswarm.replication
 
 import com.codahale.metrics.SharedMetricRegistries
 import com.organization.BuildInfo
+import fdswarm.contestStart.ContestStart
 import fdswarm.fx.contest.ContestConfig
 import fdswarm.model.Qso
 import fdswarm.util.{Gzip, NodeIdentity}
@@ -39,7 +40,7 @@ enum Service[T](
   case SendStatus extends Service[NoPayload]
   case QSO extends Service[Qso]
   case SyncContest extends Service[ContestConfig]
-  case RestartContest extends Service[ContestConfig]
+  case ContestStart extends Service[ContestStart]
 
   def decode(
     udpHeaderData: UDPHeaderData

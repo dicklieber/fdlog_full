@@ -23,14 +23,13 @@ import _root_.io.circe.parser.decode
 import _root_.io.circe.syntax.*
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.station.StationConfig
-import fdswarm.io.DirectoryProvider
 import fdswarm.model.Callsign
 import jakarta.inject.{Inject, Singleton}
 import scalafx.beans.property.ObjectProperty
 
 @Singleton
 final class StationConfigManager @Inject()(
-                                      productionDirectory: DirectoryProvider,
+                                      productionDirectory: fdswarm.DirectoryProvider,
                                       startupInfo: StartupInfo
                                     ) extends LazyStructuredLogging:
 

@@ -18,7 +18,6 @@
 
 package fdswarm.fx.bands
 
-import fdswarm.io.DirectoryProvider
 import fdswarm.model.BandMode.Mode
 import jakarta.inject.{Inject, Singleton}
 import scalafx.collections.ObservableBuffer
@@ -28,7 +27,7 @@ import io.circe.syntax.*
 
 @Singleton
 final class AvailableModesManager @Inject()(
-                                             dirProvider: DirectoryProvider
+                                             dirProvider: fdswarm.DirectoryProvider
                                            ):
   private val path: os.Path =
     dirProvider() / "modes.json"

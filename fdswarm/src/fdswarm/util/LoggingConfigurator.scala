@@ -1,6 +1,5 @@
 package fdswarm.util
 
-import fdswarm.io.DirectoryProvider
 import fdswarm.logging.LogEventFieldNames
 import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.core.config.Configurator
@@ -8,7 +7,7 @@ import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFact
 
 object LoggingConfigurator:
 
-  def addFileAppender(directoryProvider: DirectoryProvider): Unit =
+  def addFileAppender(directoryProvider: fdswarm.DirectoryProvider): Unit =
     val logDir = directoryProvider()
     os.makeDir.all(logDir)
 

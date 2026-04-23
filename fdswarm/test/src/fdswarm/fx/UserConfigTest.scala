@@ -18,19 +18,18 @@
 
 package fdswarm.fx
 
-import fdswarm.io.DirectoryProvider
 import munit.FunSuite
 import scalafx.beans.property.{BooleanProperty, IntegerProperty, Property}
 
 class UserConfigTest extends FunSuite {
 
-  class MockDirectoryProvider extends DirectoryProvider {
+  class MockFileHelper extends fdswarm.DirectoryProvider {
     private val tempDir = os.temp.dir()
     override def apply(): os.Path = tempDir
   }
 
   test("UserConfig should persist and load values") {
-    val provider = new MockDirectoryProvider()
+    val provider = new MockFileHelper()
     val config = new UserConfig(provider)
 
     config.getProperty[BooleanProperty]("developerMode").value = true
@@ -45,7 +44,7 @@ class UserConfigTest extends FunSuite {
   }
 
   test("UserConfig get[T] should work") {
-    val provider = new MockDirectoryProvider()
+    val provider = new MockFileHelper()
     val config = new UserConfig(provider)
     config.getProperty[BooleanProperty]("developerMode").value = true
     config.getProperty[IntegerProperty]("qsoListLines").value = 25
@@ -55,9 +54,9 @@ class UserConfigTest extends FunSuite {
   }
 
   test("UserConfig should support adding a new property to the list") {
-    val provider = new MockDirectoryProvider()
+    val provider = new MockFileHelper()
     // Define a variant of UserConfig (cannot inherit because it's final, but the pattern is clear)
-    class VariantUserConfig(dp: DirectoryProvider) {
+    class VariantUserConfig(dp: fdswarm.DirectoryProvider) {
       val propertyList: List[Property[?, ?]] = List(
         new BooleanProperty(this, "developerMode", false),
         new IntegerProperty(this, "qsoListLines", 10),

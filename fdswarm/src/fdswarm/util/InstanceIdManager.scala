@@ -19,7 +19,6 @@
 package fdswarm.util
 
 import fdswarm.StartupInfo
-import fdswarm.io.DirectoryProvider
 import fdswarm.util.Ids.Id
 import io.circe.*
 import io.circe.syntax.*
@@ -27,7 +26,7 @@ import jakarta.inject.{Inject, Singleton}
 import fdswarm.logging.LazyStructuredLogging
 
 @Singleton
-class InstanceIdManager @Inject()(directoryProvider: DirectoryProvider,
+class InstanceIdManager @Inject()(directoryProvider: fdswarm.DirectoryProvider,
                                   startupInfo: StartupInfo) extends LazyStructuredLogging:
   private val dir = directoryProvider()
   private val file = dir / "instance.json"

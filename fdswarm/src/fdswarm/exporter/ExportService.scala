@@ -20,7 +20,6 @@ package fdswarm.exporter
 
 import fdswarm.fx.contest.{ContestConfig, ContestConfigManager, ContestType}
 import fdswarm.fx.station.StationStore
-import fdswarm.io.DirectoryProvider
 import fdswarm.store.QsoStore
 import fdswarm.model.Qso
 import jakarta.inject.{Inject, Singleton}
@@ -28,7 +27,7 @@ import jakarta.inject.{Inject, Singleton}
 @Singleton
 final class ExportService @Inject()(
                                      qsoStore: QsoStore,
-                                     directoryProvider: DirectoryProvider,
+                                     directoryProvider: fdswarm.DirectoryProvider,
                                      contestManager: ContestConfigManager,
                                      stationStore: StationStore,
                                      val adifExporter: AdifExporter,

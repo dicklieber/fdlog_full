@@ -18,7 +18,6 @@
 
 package fdswarm.fx.bands
 
-import fdswarm.io.DirectoryProvider
 import jakarta.inject.{Inject, Singleton}
 import io.circe.parser.*
 import io.circe.syntax.*
@@ -29,7 +28,7 @@ import javafx.collections.ListChangeListener
 
 @Singleton
 final class AvailableBandsManager @Inject()(
-                                             dirProvider: DirectoryProvider
+                                             dirProvider: fdswarm.DirectoryProvider
                                            ):
   private val path: os.Path =
     dirProvider() / "bands.json"

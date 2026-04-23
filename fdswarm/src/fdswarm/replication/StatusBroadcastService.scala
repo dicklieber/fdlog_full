@@ -20,6 +20,7 @@ package fdswarm.replication
 
 import com.google.inject.name.Named
 import fdswarm.StationConfigManager
+import fdswarm.contestStart.ContestStartManager
 import fdswarm.fx.bandmodes.SelectedBandModeManager
 import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.logging.LazyStructuredLogging
@@ -27,9 +28,8 @@ import fdswarm.model.BandModeOperator
 import fdswarm.store.QsoStore
 import jakarta.inject.{Inject, Provider, Singleton}
 
-/**
- * Periodically sends broadcasts [[StatusMessage]]s to other nodes.
- */
+/** Periodically sends broadcasts of [[StatusMessage]]s to other nodes.
+  */
 @Singleton
 class StatusBroadcastService @Inject() (
     qsoStoreProvider: Provider[QsoStore],
@@ -70,8 +70,7 @@ class StatusBroadcastService @Inject() (
       maybeThread = Some(t)
   }
 
-  nodeStatusDispatcher.addListener(service = Service.SendStatus)((_, _) =>
-    broadcastStatus())
+  nodeStatusDispatcher.addListener(service = Service.SendStatus)((_, _) => broadcastStatus())
 
   private def currentPeriodMillis: Long = defaultBroadcastPeriodSec * 1000L
 

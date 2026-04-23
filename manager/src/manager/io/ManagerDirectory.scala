@@ -18,9 +18,8 @@
 
 package manager.io
 
-import fdswarm.io.DirectoryProvider
+import fdswarm.DirectoryProvider
 
 class ManagerDirectory extends DirectoryProvider:
   def apply(): os.Path = 
     os.home / "fdswarm" / "manager"
-

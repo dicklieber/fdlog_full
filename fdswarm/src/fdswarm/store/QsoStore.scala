@@ -19,7 +19,6 @@
 package fdswarm.store
 
 import fdswarm.StartupInfo
-import fdswarm.io.DirectoryProvider
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.logging.Locus.LogEntry
 import fdswarm.model.*
@@ -37,7 +36,7 @@ import scala.collection.concurrent.TrieMap
 
 @Singleton
 class QsoStore @Inject() (
-                           directoryProvider: DirectoryProvider,
+                           directoryProvider: fdswarm.DirectoryProvider,
                            transport: Transport,
                            startupInfo: StartupInfo,
                            filenameStamp: fdswarm.util.FilenameStamp,

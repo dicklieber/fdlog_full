@@ -23,7 +23,7 @@ import com.google.inject.AbstractModule
 import com.google.inject.name.Names
 import com.typesafe.config.{Config, ConfigFactory}
 import fdswarm.api.ApiEndpoints
-import fdswarm.io.{DirectoryProvider, ProductionDirectory}
+import fdswarm.io.FileHelper
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.replication.{BroadcastTransport, Transport}
 import fdswarm.{AutoBind, StartupInfo}
@@ -36,15 +36,14 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
 class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModule with LazyStructuredLogging:
 
   override def configure(): Unit =
-    val productionDirectory = new ProductionDirectory
-    //
-    val loggingManager = new fdswarm.util.LoggingManager(new ProductionDirectory)
+    val fileHelper = new FileHelper()
+    val loggingManager = new fdswarm.util.LoggingManager(fileHelper)
     bind[fdswarm.util.LoggingManager].toInstance(loggingManager)
+    bind[fdswarm.DirectoryProvider].toInstance(fileHelper)
 
     val startupInfo = new StartupInfo(rawArgs)
     bind[StartupInfo].toInstance(startupInfo)
-    bind[DirectoryProvider].toInstance(productionDirectory)
-    fdswarm.util.LoggingConfigurator.addFileAppender(new ProductionDirectory)
+    fdswarm.util.LoggingConfigurator.addFileAppender(new FileHelper)
     loggingManager.applyInitialConfig()
 
     bind[fdswarm.util.NodeIdentityManager].asEagerSingleton()
@@ -75,7 +74,7 @@ class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModu
 //      bind[Transport].to[MulticastTransport].asEagerSingleton()
 
 //    bind[QsoStore].asEagerSingleton()
-//    bind[ContestStartStore].asEagerSingleton()
+//    bind[ContestStartManager].asEagerSingleton()
 //    bind[ElasticShipper].asEagerSingleton()
 //
 

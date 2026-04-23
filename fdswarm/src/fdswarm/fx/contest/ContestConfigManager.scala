@@ -1,7 +1,6 @@
 package fdswarm.fx.contest
 
 import com.google.inject.name.Named
-import fdswarm.io.DirectoryProvider
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.logging.Locus.Scoring
 import fdswarm.model.Callsign
@@ -15,7 +14,7 @@ import scalafx.beans.property.{ObjectProperty, ReadOnlyBooleanProperty, ReadOnly
 
 @Singleton
 final class ContestConfigManager @Inject() (
-    productionDirectory: DirectoryProvider,
+    productionDirectory: fdswarm.DirectoryProvider,
     filenameStamp: fdswarm.util.FilenameStamp,
     nodeStatusDispatcher: NodeStatusDispatcher,
     @Named("fdswarm.contestChangeIgnoreStatusSec")

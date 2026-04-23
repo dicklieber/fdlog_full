@@ -21,7 +21,7 @@ package manager
 import _root_.io.circe.syntax.*
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.StartupConfig
-import fdswarm.io.DirectoryProvider
+import fdswarm.DirectoryProvider
 import jakarta.inject.Inject
 
 import java.util.concurrent.atomic.AtomicInteger

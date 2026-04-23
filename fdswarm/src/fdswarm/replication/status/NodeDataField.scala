@@ -38,6 +38,7 @@ enum NodeDataField:
   case ContestClass
   case ContestSection
   case Exchange
+  case ContestStart
 
   def label: String = this match
     case HostIp => "hostIp"
@@ -59,6 +60,7 @@ enum NodeDataField:
     case ContestClass => "contestClass"
     case ContestSection => "contestSection"
     case Exchange => "exchange"
+    case ContestStart => "contestStart"
 
 object NodeDataField:
   val staticFields: Seq[NodeDataField] = Seq(
@@ -80,5 +82,6 @@ object NodeDataField:
     NodeDataField.ContestTransmitters,
     NodeDataField.ContestClass,
     NodeDataField.ContestSection,
-    NodeDataField.Exchange
+    NodeDataField.Exchange,
+    NodeDataField.ContestStart
   )

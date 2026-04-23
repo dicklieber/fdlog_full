@@ -19,13 +19,13 @@
 package manager
 
 import fdswarm.StartupConfig
+import fdswarm.DirectoryProvider
 import fdswarm.util.Ids.Id
 import _root_.io.circe.Printer
 import _root_.io.circe.generic.auto.*
 import _root_.io.circe.parser.decode
 import _root_.io.circe.syntax.*
 import fdswarm.logging.LazyStructuredLogging
-import fdswarm.io.DirectoryProvider
 import jakarta.inject.{Inject, Singleton}
 import scalafx.collections.ObservableBuffer
 

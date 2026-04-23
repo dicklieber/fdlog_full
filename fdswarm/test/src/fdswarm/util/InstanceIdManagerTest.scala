@@ -21,14 +21,13 @@ package fdswarm.util
 import fdswarm.{DebugMode, StartupConfig, StartupInfo}
 import fdswarm.model.{BandMode, Callsign}
 import munit.FunSuite
-import fdswarm.io.DirectoryProvider
 import io.circe.syntax.*
 
 class InstanceIdManagerTest extends FunSuite:
 
-  test("instanceId is persisted and reloaded from DirectoryProvider"):
+  test("instanceId is persisted and reloaded from fdswarm.DirectoryProvider"):
     val tmpDir = os.temp.dir()
-    val provider = new DirectoryProvider:
+    val provider = new fdswarm.DirectoryProvider:
       def apply(): os.Path = tmpDir
 
     // First initialization
@@ -55,7 +54,7 @@ class InstanceIdManagerTest extends FunSuite:
 
   test("generates new ID if JSON is invalid"):
     val tmpDir = os.temp.dir()
-    val provider = new DirectoryProvider:
+    val provider = new fdswarm.DirectoryProvider:
       def apply(): os.Path = tmpDir
 
     os.write.over(tmpDir / "instance.json", "invalid json")
@@ -65,7 +64,7 @@ class InstanceIdManagerTest extends FunSuite:
 
   test("uses instanceId from StartupInfo when provided"):
     val tmpDir = os.temp.dir()
-    val provider = new DirectoryProvider:
+    val provider = new fdswarm.DirectoryProvider:
       def apply(): os.Path = tmpDir
 
     val startupJson = tmpDir / "startup.json"
