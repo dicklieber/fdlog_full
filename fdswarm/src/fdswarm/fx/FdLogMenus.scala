@@ -27,6 +27,7 @@ import fdswarm.scoring.ContestScoringConfigDialog
 import fdswarm.scoring.ContestScoreResultsDialog
 import fdswarm.fx.station.StationEditor
 import fdswarm.fx.tools.*
+import fdswarm.replication.status.ContestConfigMismatchUi
 import fdswarm.logging.LazyStructuredLogging
 import io.circe.parser.decode
 import io.circe.syntax.*
@@ -63,6 +64,7 @@ final class FdLogMenus @Inject() (
                                    metricsDialog: MetricsDialog,
                                    contestScoreResultsDialog: ContestScoreResultsDialog,
                                    startContestDialog: StartContestDialog,
+                                   contestConfigMismatchUi: ContestConfigMismatchUi,
 )
     extends LazyStructuredLogging:
   aboutMenuItem.onAction = _ => showAboutDialog()
@@ -141,6 +143,10 @@ final class FdLogMenus @Inject() (
         ,
         new MenuItem("Clear Contest"):
           onAction = _ => contestConfigManager.clearContestConfig()
+        ,
+        new SeparatorMenuItem(),
+        new MenuItem("Contest Config Mismatch"):
+          onAction = _ => contestConfigMismatchUi.showMismatchDialog()
       )
   private val adminMenu: Menu =
     new Menu("Admin"):

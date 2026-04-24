@@ -26,10 +26,10 @@ class ContestConfigMismatchUi @Inject() (swarmData: SwarmData,
       color = Color.Red)
     button.visible <== swarmData.contestConfigMismatchProperty
     button.managed <== button.visible
-    button.onAction = _ => showDialog()
+    button.onAction = _ => showMismatchDialog()
     button
 
-  private def showDialog(): Unit =
+  def showMismatchDialog(): Unit =
     val allStatuses = swarmData.allNodeStatuses.sorted
     if allStatuses.isEmpty then return
 
