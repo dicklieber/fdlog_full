@@ -44,7 +44,7 @@ class ContestConfigMismatchUi @Inject() (swarmData: SwarmData,
       bottomRow = Some(SwarmData.BottomRow(
         label = "Sync Contest",
         cellBuilder = nodeIdentity =>
-          val syncButton = IconButton(name = "repeat", size = 16, tooltipText = "Use for all nodes")
+          val syncButton = IconButton(name = "repeat", tooltipText = "Use for all nodes")
           val baseStyle = """
                 -fx-background-color: white;
                 -fx-border-color: transparent;

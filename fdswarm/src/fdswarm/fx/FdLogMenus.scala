@@ -228,7 +228,7 @@ final class FdLogMenus @Inject() (
 
   private def loadArrlRegionMap(): Map[String, String] =
     if os.exists(arrlRegionMapPath) then
-      val txt:String = os.read(arrlRegionMapPath)
+      val txt:String = os.read(arg = arrlRegionMapPath)
       decode[Map[String, String]](txt) match
         case Right(m) =>
           m
@@ -253,7 +253,8 @@ final class FdLogMenus @Inject() (
         finally source.close()
       else
         val dev = os.pwd / "arrl_sections_autotrace.svg"
-        if os.exists(dev) then os.read(dev)
+        if os.exists(dev) then
+          os.read(arg = dev)
         else
           """<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"800\" height=\"200\">
             <rect width=\"100%\" height=\"100%\" fill=\"#f7f7f7\"/>
