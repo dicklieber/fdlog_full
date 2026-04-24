@@ -170,6 +170,11 @@ class QsoStore @Inject() (
   contestStartManager.contestStart.onChange(
     (_, oldContestStart, nextContestStart) =>
       if nextContestStart.start.isAfter(oldContestStart.start) then
+        logger.info(
+          "event" -> "ContestStart",
+          "contestStart" -> nextContestStart.start
+        )
+
         removeOlderThanAndRewrite(
           cutoff = nextContestStart.start
         )
