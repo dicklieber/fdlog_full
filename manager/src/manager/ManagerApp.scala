@@ -24,6 +24,7 @@ import fdswarm.StartupConfig
 import fdswarm.fx.bands.*
 import fdswarm.model.{BandMode, Callsign}
 import fdswarm.util.CallsignGenerator
+import mainargs.{ParserForMethods, arg, main}
 import net.codingwell.scalaguice.InjectorExtensions.*
 import scalafx.application.JFXApp3
 import scalafx.application.Platform
@@ -46,15 +47,30 @@ import java.util.concurrent.atomic.AtomicBoolean
  * on this host.
  */
 object ManagerApp extends JFXApp3 with LazyStructuredLogging :
+  private val startAllReadyMarker = "MANAGER_START_ALL_COMPLETE"
 
   private lazy val injector: Injector =
     Guice.createInjector(new ManagerModule())
   private lazy val runner: Runner = injector.instance[Runner]
+  private var autostartEnabled = false
   private val shutdownOnce = new AtomicBoolean(false)
   private val shutdownHook = new Thread("manager-shutdown-hook"):
     override def run(): Unit = stopManagedInstances()
   Runtime.getRuntime.addShutdownHook(shutdownHook)
 
+  @main
+  def run(
+    @arg(
+      name = "autostart",
+      doc = "Automatically run the same action as the Start All button after launch"
+    )
+    autostart: Boolean = false
+  ): Unit =
+    autostartEnabled = autostart
+    super.main(Array.empty)
+
+  override def main(args: Array[String]): Unit =
+    ParserForMethods(this).runOrExit(args.toIndexedSeq)
 
   override def start(): Unit = {
 
@@ -110,10 +126,7 @@ object ManagerApp extends JFXApp3 with LazyStructuredLogging :
             }
           },
           new Button("Start All") {
-            onAction = _ => {
-              val view: IndexedSeqView[StartupConfig] = nodeConfigManager.observableBuffer.view
-              runner.start(view)
-            }
+            onAction = _ => startAll(nodeConfigManager)
           },
           new Button("Stop All") {
             onAction = _ => runner.stop()
@@ -125,6 +138,10 @@ object ManagerApp extends JFXApp3 with LazyStructuredLogging :
     stage.scene = new Scene {
       root = borderPane
     }
+
+    if autostartEnabled then
+      logger.info("Autostart enabled; starting all managed instances")
+      startAll(nodeConfigManager)
   }
 
   override def stopApp(): Unit =
@@ -143,6 +160,15 @@ object ManagerApp extends JFXApp3 with LazyStructuredLogging :
       catch
         case e: Exception =>
           logger.warn("Failed to stop managed instances during shutdown")
+
+  private def startAll(nodeConfigManager: NodeConfigManager): Unit =
+    val view: IndexedSeqView[StartupConfig] = nodeConfigManager.observableBuffer.view
+    runner.start(view)
+    val startedCount = view.count(_.enable)
+    val marker = s"$startAllReadyMarker count=$startedCount"
+    logger.info(marker)
+    println(marker)
+    System.out.flush()
 
   private def setAppIcon(stage: Stage): Unit = {
       try {

@@ -546,6 +546,10 @@ object SwarmData:
       field: NodeDataField
   ): Option[String] =
     field match
+      case NodeDataField.QsoCount =>
+        Some(nodeStatus.statusMessage.hashCount.qsoCount.toString)
+      case NodeDataField.Hash =>
+        Some(nodeStatus.statusMessage.hashCount.hash)
       case NodeDataField.ContestType =>
         Some(nodeStatus.statusMessage.contestConfig.contestType.toString)
       case NodeDataField.ContestCallsign =>
