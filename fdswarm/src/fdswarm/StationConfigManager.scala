@@ -78,9 +78,3 @@ final class StationConfigManager @Inject()(
         logger.warn(s"Failed to load station from $file: ${e.getMessage}")
         StationConfig(Callsign(""), "", "")
 
-/*
-  def pane(): Pane =
-    logger.debug(s"Creating station form for $station")
-    val myCaseForm = MyCaseForm[Station](station)
-    logger.trace("New station result will be handled by container")
-    myCaseForm.pane()*/
