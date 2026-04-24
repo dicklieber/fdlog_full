@@ -70,6 +70,9 @@ final class LocalNodeStatus @Inject()(
   contestConfigManager.contestConfigProperty.onChange { (_, _, _) =>
     rebuildAndNotify()
   }
+  contestStartManager.contestStart.onChange { (_, _, _) =>
+    rebuildAndNotify()
+  }
 
   rebuildAndNotify()
 

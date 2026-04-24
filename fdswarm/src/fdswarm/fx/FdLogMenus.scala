@@ -18,6 +18,7 @@
 
 package fdswarm.fx
 
+import fdswarm.contestStart.StartContestDialog
 import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.bandmodes.BandsAndModesPane
 import fdswarm.fx.contest.ContestConfigManager
@@ -61,6 +62,7 @@ final class FdLogMenus @Inject() (
                                    contestConfigManager: ContestConfigManager,
                                    metricsDialog: MetricsDialog,
                                    contestScoreResultsDialog: ContestScoreResultsDialog,
+                                   startContestDialog: StartContestDialog,
 )
     extends LazyStructuredLogging:
   aboutMenuItem.onAction = _ => showAboutDialog()
@@ -146,6 +148,12 @@ final class FdLogMenus @Inject() (
         new MenuItem("Swarm Status"):
           onAction = _ =>
             swarmStatusAdmin.show(
+              FdLogUi.primaryStage
+            )
+        ,
+        new MenuItem("Start Contest"):
+          onAction = _ =>
+            startContestDialog.showStartContestDialog(
               FdLogUi.primaryStage
             )
       )
