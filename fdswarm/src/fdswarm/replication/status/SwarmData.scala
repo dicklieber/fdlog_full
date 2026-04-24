@@ -18,7 +18,6 @@
 
 package fdswarm.replication.status
 
-import fdswarm.fx.contest.ContestConfig
 import fdswarm.fx.station.StationEditor
 import fdswarm.fx.{FdLogUi, GridBuilder}
 import fdswarm.logging.LazyStructuredLogging
@@ -187,7 +186,7 @@ class SwarmData @Inject() (
       catch case _: IllegalStateException => action
 
   private def refreshContestConfigFieldCellStyles(): Unit =
-    val contestFields = SwarmData.contestConfigDisplayFields.toSet
+    val contestFields = SwarmData.rowCellDifferenceValueColorFields.toSet
     renderedCellNodes.foreach { case ((nodeIdentity, field), cells) =>
       if contestFields.contains(field) then
         nodeMap.get(nodeIdentity).foreach(nodeStatus =>
@@ -361,6 +360,7 @@ class SwarmData @Inject() (
   private def doStyle(nodeStyler: CellStyleContext): Unit =
     val nodeStatus = nodeStyler.nodeStatus
     val fieldName = nodeStyler.fieldName
+    val field = NodeDataField.values.find(_.label == fieldName)
     val node = nodeStyler.node
     // Keep all current and future styling rules in one place.
     ensureStyleClass(
@@ -377,7 +377,7 @@ class SwarmData @Inject() (
     )
     applyContestConfigColorStyle(
       nodeStatus = nodeStatus,
-      fieldName = fieldName,
+      field = field,
       node = node
     )
     if isLocalOperatorField then
@@ -392,7 +392,7 @@ class SwarmData @Inject() (
 
   private def applyContestConfigColorStyle(
       nodeStatus: NodeStatus,
-      fieldName: String,
+      field: Option[NodeDataField],
       node: Node
   ): Unit =
     contestConfigAllColorStyleClasses.foreach(styleClassName =>
@@ -402,10 +402,8 @@ class SwarmData @Inject() (
         shouldHaveStyleClass = false
       )
     )
-    NodeDataField.values
-      .find(
-        _.label == fieldName
-      )
+    field
+      .filter(_.colorDeffCells)
       .flatMap(field =>
         contestConfigFieldStyleByNodeAndField.get(
           (nodeStatus.nodeIdentity, field)
@@ -480,11 +478,10 @@ class SwarmData @Inject() (
   )
 
 object SwarmData:
-  private[status] val contestConfigDisplayFields: Seq[NodeDataField] = Seq(
-    NodeDataField.ContestType,
-    NodeDataField.ContestCallsign,
-    NodeDataField.Exchange
-  )
+  private[status] val rowCellDifferenceValueColorFields: Seq[NodeDataField] =
+    NodeDataField.values.filter(
+      _.colorDeffCells
+    ).toSeq
 
   private[status] def contestConfigFieldStyles(
       statuses: Seq[NodeStatus]
@@ -499,57 +496,72 @@ object SwarmData:
     if statuses.size < 2 then
       Map.empty
     else
-      contestConfigDisplayFields.foldLeft(
+      rowCellDifferenceValueColorFields.foldLeft(
         Map.empty[(NodeIdentity, NodeDataField), String]
       )((acc, field) =>
-        val valueByNode = statuses.map(nodeStatus =>
-          nodeStatus.nodeIdentity -> contestConfigFieldValue(
-            contestConfig = nodeStatus.statusMessage.contestConfig,
+        val valueByNode = statuses.flatMap(nodeStatus =>
+          differenceColorFieldValue(
+            nodeStatus = nodeStatus,
             field = field
-          )
+          ).map(fieldValue => nodeStatus.nodeIdentity -> fieldValue)
         )
-        val countsByValue = valueByNode
-          .groupMap(_._2)(_ => 1)
-          .view
-          .mapValues(_.sum)
-          .toMap
-        val maxCount = countsByValue.values.maxOption.getOrElse(0)
-        if countsByValue.size <= 1 || maxCount == 0 then
+        if valueByNode.size != statuses.size then
           acc
         else
-          val topValues = countsByValue
-            .collect { case (value, count) if count == maxCount => value }
-            .toSet
-          val majorityValues =
-            if topValues.size == 1 then topValues else Set.empty[String]
-          val nonMajorityValues = countsByValue.keys
-            .filterNot(majorityValues.contains)
-            .toSeq
-            .sorted
-          val nonMajorityStyleByValue = nonMajorityValues.zipWithIndex
-            .map { case (value, idx) =>
-              value -> variantStyleClasses(idx % variantStyleClasses.size)
-            }
+          val countsByValue = valueByNode
+            .groupMap(_._2)(_ => 1)
+            .view
+            .mapValues(_.sum)
             .toMap
-          val fieldStyles = valueByNode.map { case (nodeIdentity, value) =>
-            val styleClass = if majorityValues.contains(value) then
-              majorityStyleClass
-            else
-              nonMajorityStyleByValue(value)
-            (nodeIdentity, field) -> styleClass
-          }.toMap
-          acc ++ fieldStyles
+          val maxCount = countsByValue.values.maxOption.getOrElse(0)
+          if countsByValue.size <= 1 || maxCount == 0 then
+            acc
+          else
+            val topValues = countsByValue
+              .collect { case (value, count) if count == maxCount => value }
+              .toSet
+            val majorityValues =
+              if topValues.size == 1 then topValues else Set.empty[String]
+            val nonMajorityValues = countsByValue.keys
+              .filterNot(majorityValues.contains)
+              .toSeq
+              .sorted
+            val nonMajorityStyleByValue = nonMajorityValues.zipWithIndex
+              .map { case (value, idx) =>
+                value -> variantStyleClasses(idx % variantStyleClasses.size)
+              }
+              .toMap
+            val fieldStyles = valueByNode.map { case (nodeIdentity, value) =>
+              val styleClass = if majorityValues.contains(value) then
+                majorityStyleClass
+              else
+                nonMajorityStyleByValue(value)
+              (nodeIdentity, field) -> styleClass
+            }.toMap
+            acc ++ fieldStyles
       )
 
-  private def contestConfigFieldValue(
-      contestConfig: ContestConfig,
+  private def differenceColorFieldValue(
+      nodeStatus: NodeStatus,
       field: NodeDataField
-  ): String =
+  ): Option[String] =
     field match
-      case NodeDataField.ContestType     => contestConfig.contestType.toString
-      case NodeDataField.ContestCallsign => contestConfig.ourCallsign.toString
-      case NodeDataField.Exchange        => contestConfig.exchange
-      case other => throw new IllegalArgumentException(s"Unsupported contest field: $other")
+      case NodeDataField.ContestType =>
+        Some(nodeStatus.statusMessage.contestConfig.contestType.toString)
+      case NodeDataField.ContestCallsign =>
+        Some(nodeStatus.statusMessage.contestConfig.ourCallsign.toString)
+      case NodeDataField.ContestTransmitters =>
+        Some(nodeStatus.statusMessage.contestConfig.transmitters.toString)
+      case NodeDataField.ContestClass =>
+        Some(nodeStatus.statusMessage.contestConfig.ourClass)
+      case NodeDataField.ContestSection =>
+        Some(nodeStatus.statusMessage.contestConfig.ourSection)
+      case NodeDataField.Exchange =>
+        Some(nodeStatus.statusMessage.contestConfig.exchange)
+      case NodeDataField.ContestStart =>
+        Some(nodeStatus.statusMessage.contestStart.toString)
+      case _ =>
+        None
 
   final case class BottomRow(
       label: String,

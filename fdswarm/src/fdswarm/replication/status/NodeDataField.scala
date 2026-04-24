@@ -18,49 +18,27 @@
 
 package fdswarm.replication.status
 
-enum NodeDataField:
-  case HostIp
-  case Port
-  case HostName
-  case InstanceId
-  case Received
-  case IsLocal
-  case QsoCount
-  case Hash
-  case Operator
-  case Band
-  case Mode
-  case BandMode
-  case BandModeStamp
-  case ContestType
-  case ContestCallsign
-  case ContestTransmitters
-  case ContestClass
-  case ContestSection
-  case Exchange
-  case ContestStart
-
-  def label: String = this match
-    case HostIp => "hostIp"
-    case Port => "port"
-    case HostName => "hostName"
-    case InstanceId => "instanceId"
-    case Received => "received"
-    case IsLocal => "isLocal"
-    case QsoCount => "qsoCount"
-    case Hash => "hash"
-    case Operator => "operator"
-    case Band => "band"
-    case Mode => "mode"
-    case BandMode => "bandMode"
-    case BandModeStamp => "bandModeStamp"
-    case ContestType => "contestType"
-    case ContestCallsign => "contestCallsign"
-    case ContestTransmitters => "contestTransmitters"
-    case ContestClass => "contestClass"
-    case ContestSection => "contestSection"
-    case Exchange => "exchange"
-    case ContestStart => "contestStart"
+enum NodeDataField(val label: String, val colorDeffCells: Boolean = false):
+  case HostIp extends NodeDataField("hostIp")
+  case Port extends NodeDataField("port")
+  case HostName extends NodeDataField("hostName")
+  case InstanceId extends NodeDataField("instanceId")
+  case Received extends NodeDataField("received")
+  case IsLocal extends NodeDataField("isLocal")
+  case QsoCount extends NodeDataField("qsoCount", colorDeffCells = true)
+  case Hash extends NodeDataField("hash", colorDeffCells = true)
+  case Operator extends NodeDataField("operator")
+  case Band extends NodeDataField("band")
+  case Mode extends NodeDataField("mode")
+  case BandMode extends NodeDataField("bandMode")
+  case BandModeStamp extends NodeDataField("bandModeStamp")
+  case ContestType extends NodeDataField("contestType", colorDeffCells = true)
+  case ContestCallsign extends NodeDataField("contestCallsign", colorDeffCells = true)
+  case ContestTransmitters extends NodeDataField("contestTransmitters", colorDeffCells = true)
+  case ContestClass extends NodeDataField("contestClass", colorDeffCells = true)
+  case ContestSection extends NodeDataField("contestSection", colorDeffCells = true)
+  case Exchange extends NodeDataField("exchange", colorDeffCells = true)
+  case ContestStart extends NodeDataField("contestStart", colorDeffCells = true)
 
 object NodeDataField:
   val staticFields: Seq[NodeDataField] = Seq(

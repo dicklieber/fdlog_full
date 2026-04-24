@@ -42,6 +42,27 @@ class SwarmDataTest extends FunSuite:
       )
     )
 
+  test("row cell difference coloring is enabled for contest comparison fields"):
+    assert(NodeDataField.ContestType.colorDeffCells)
+    assert(NodeDataField.ContestCallsign.colorDeffCells)
+    assert(NodeDataField.ContestTransmitters.colorDeffCells)
+    assert(NodeDataField.ContestClass.colorDeffCells)
+    assert(NodeDataField.ContestSection.colorDeffCells)
+    assert(NodeDataField.Exchange.colorDeffCells)
+    assert(NodeDataField.ContestStart.colorDeffCells)
+    assertEquals(
+      obtained = SwarmData.rowCellDifferenceValueColorFields.toSet,
+      expected = Set(
+        NodeDataField.ContestType,
+        NodeDataField.ContestCallsign,
+        NodeDataField.ContestTransmitters,
+        NodeDataField.ContestClass,
+        NodeDataField.ContestSection,
+        NodeDataField.Exchange,
+        NodeDataField.ContestStart
+      )
+    )
+
   test("contest config styles are empty when all nodes match"):
     val styles = SwarmData.contestConfigFieldStyles(
       statuses = Seq(
@@ -174,7 +195,7 @@ class SwarmDataTest extends FunSuite:
     NodeStatus(
       statusMessage = StatusMessage(hashCount = HashCount(hash = "", qsoCount = 0),
         bandNodeOperator = BandModeOperator(operator = Callsign("N0CALL"), bandMode = BandMode("20M SSB")),
-        contestConfig = contestConfig,),
+        contestConfig = contestConfig),
       nodeIdentity = NodeIdentity(
         hostIp = "10.0.0.1",
         port = 8090,
