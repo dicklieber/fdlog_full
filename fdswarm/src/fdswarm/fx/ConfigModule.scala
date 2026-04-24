@@ -47,6 +47,7 @@ class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModu
     loggingManager.applyInitialConfig()
 
     bind[fdswarm.util.NodeIdentityManager].asEagerSingleton()
+    bind[fdswarm.replication.StatusProcessor].asEagerSingleton()
 
     val pkgs = Seq("fdswarm.api", "fdswarm.grafana")
 
