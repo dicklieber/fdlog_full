@@ -114,7 +114,7 @@ class UDPHeaderTest extends FunSuite:
       payload = gzipped
     )
 
-    val result = udpHeaderData.decode[String]
+    val result = udpHeaderData.decodePayload[String]
     assertEquals(
       result,
       "status-ok"

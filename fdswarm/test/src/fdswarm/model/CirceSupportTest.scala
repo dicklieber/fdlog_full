@@ -22,6 +22,7 @@ import fdswarm.fx.bands.*
 import fdswarm.fx.contest.*
 import fdswarm.replication.*
 import fdswarm.util.NodeIdentity
+import io.circe.generic.auto.{deriveDecoder, deriveEncoder}
 import io.circe.parser.decode
 import io.circe.syntax.*
 import munit.FunSuite
@@ -54,7 +55,7 @@ class CirceSupportTest extends FunSuite:
     assertEquals(ContestType.ARRL.name, "ARRL Field Day")
 
   test("Exchange round trip"):
-    val exchange = Exchange(FdClass(2, 'A'), "IL")
+    val exchange = Exchange(FdClass(2, 'A'))
     val json = exchange.asJson.noSpaces
     assertEquals(json, "\"2A IL\"")
     val decoded = decode[Exchange](json).toOption.get
@@ -73,16 +74,16 @@ class CirceSupportTest extends FunSuite:
     val config = ContestConfig(ContestType.ARRL, Callsign("WA9NNN"), 1, "A", "IL")
     val status = StatusMessage(hashCount = fdswarm.replication.HashCount(),
       bandNodeOperator = bno,
-      contestConfig = config,)
+      contestConfig = config,
+      contestStart = Instant.parse("2026-03-16T15:00:00Z"))
     val json = status.asJson.noSpaces
     val decoded = decode[StatusMessage](json).toOption.get
     assertEquals(decoded, status)
 
   test("Node round trip"):
-    val config = ContestConfig(ContestType.ARRL, Callsign("W1AW"), 1, "O", "CT", Instant.now())
+    val config = ContestConfig(ContestType.ARRL, Callsign("W1AW"), 1, "O", "CT")
     val node = Node(new URL("http://localhost:8080"), config, Callsign("WA9NNN"))
     val json = node.asJson.noSpaces
     val decoded = decode[Node](json).toOption.get
     assertEquals(decoded.url.toString, node.url.toString)
     assertEquals(decoded.ourStation, node.ourStation)
-
