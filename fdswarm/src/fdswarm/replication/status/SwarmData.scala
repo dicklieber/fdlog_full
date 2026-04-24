@@ -18,9 +18,9 @@
 
 package fdswarm.replication.status
 
+import fdswarm.fx.contest.ContestConfig
 import fdswarm.fx.station.StationEditor
 import fdswarm.fx.{FdLogUi, GridBuilder}
-import fdswarm.fx.contest.ContestConfig
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.logging.Locus.Replication
 import fdswarm.replication.{NodeStatus, NodeStatusDispatcher, Service}
@@ -50,8 +50,8 @@ class SwarmData @Inject() (
     nodeIdentityManager: NodeIdentityManager,
     stationEditor: StationEditor,
     ageCellStyleRefresher: AgeCellStyleRefresher,
-    nodeStatusDispatcher: NodeStatusDispatcher)
-    extends LazyStructuredLogging(Replication):
+    nodeStatusDispatcher: NodeStatusDispatcher
+) extends LazyStructuredLogging(Replication):
   type CellNodeListener = (NodeStatus, String, Node) => Unit
   val knownNodeIdentity: ObservableBuffer[NodeIdentity] = ObservableBuffer.empty[NodeIdentity]
   val nodeMap: TrieMap[NodeIdentity, NodeStatus] = TrieMap.empty[NodeIdentity, NodeStatus]
@@ -59,6 +59,11 @@ class SwarmData @Inject() (
     this,
     "size",
     0
+  )
+  val contestConfigMismatchProperty: BooleanProperty = new BooleanProperty(
+    this,
+    "contestConfigMismatch",
+    false
   )
   private val valueProperties = TrieMap.empty[(NodeIdentity, NodeDataField), StringProperty]
   private val renderedCellNodes = TrieMap.empty[(NodeIdentity, NodeDataField), Vector[Node]]
@@ -75,16 +80,13 @@ class SwarmData @Inject() (
     "contestConfigVariant2",
     "contestConfigVariant3"
   )
-  private val contestConfigAllColorStyleClasses = contestConfigMajorityStyleClass +: contestConfigVariantStyleClasses
+  private val contestConfigAllColorStyleClasses =
+    contestConfigMajorityStyleClass +: contestConfigVariantStyleClasses
   private val operatorFieldName = NodeDataField.Operator.label
-  private var contestConfigFieldStyleByNodeAndField = Map.empty[(NodeIdentity, NodeDataField), String]
-  val contestConfigMismatchProperty: BooleanProperty = new BooleanProperty(
-    this,
-    "contestConfigMismatch",
-    false
-  )
   private val stampFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("MM-dd HH:mm:ss")
     .withZone(ZoneId.systemDefault())
+  private var contestConfigFieldStyleByNodeAndField =
+    Map.empty[(NodeIdentity, NodeDataField), String]
 
   def addNodeStatusListener(listener: Seq[NodeStatus] => Unit): () => Unit =
     val id = nodeStatusListenerId.incrementAndGet()
@@ -94,22 +96,20 @@ class SwarmData @Inject() (
 
   ageCellStyleRefresher.setPurgeCallback(nodeIdentity =>
     logger.info("Purging", "Node" -> nodeIdentity.toString)
-    remove(nodeIdentity))
+    remove(nodeIdentity)
+  )
   nodeStatusDispatcher.addListener(
     service = Service.Status,
     singleListener = false
-  )(
-    (nodeIdentity, statusMessage) =>
-      update(
-        NodeStatus(
-          statusMessage = statusMessage,
-          nodeIdentity = nodeIdentity,
-          isLocal = false
-        )
+  )((nodeIdentity, statusMessage) =>
+    update(
+      NodeStatus(
+        statusMessage = statusMessage,
+        nodeIdentity = nodeIdentity,
+        isLocal = false
       )
+    )
   )
-
-  def allNodeStatuses: Seq[NodeStatus] = nodeMap.values.toSeq
 
   def clear(): Unit =
     val localStatus = nodeMap.get(ourNodeIdentity)
@@ -124,6 +124,22 @@ class SwarmData @Inject() (
     refreshContestConfigDifferenceState()
     notifyNodeStatusListeners()
     logger.debug("Cleared swarm status data, retaining local node.")
+
+  private def purgeStaleNodeCaches(
+      retainedNodes: Set[NodeIdentity]
+  ): Unit =
+    val staleNodes = valueProperties.keysIterator
+      .map(_._1)
+      .filterNot(retainedNodes.contains)
+      .toSet ++ renderedCellNodes.keysIterator
+      .map(_._1)
+      .filterNot(retainedNodes.contains)
+      .toSet
+    staleNodes.foreach(nodeIdentity =>
+      purgeNodeCaches(
+        nodeIdentity = nodeIdentity
+      )
+    )
 
   def remove(nodeIdentity: NodeIdentity): Unit = if nodeIdentity != ourNodeIdentity then
     nodeMap.remove(nodeIdentity).foreach(_ => ageCellStyleRefresher.remove(nodeIdentity))
@@ -146,14 +162,54 @@ class SwarmData @Inject() (
       size.value = nodes.size
     }
 
+  private def notifyNodeStatusListeners(): Unit =
+    val statuses = allNodeStatuses
+    nodeStatusListeners.values.foreach(listener => listener(statuses))
+
+  def allNodeStatuses: Seq[NodeStatus] = nodeMap.values.toSeq
+
+  private def refreshContestConfigDifferenceState(): Unit =
+    val stylesByNodeAndField = SwarmData.contestConfigFieldStyles(
+      statuses = allNodeStatuses
+    )
+    val changed = stylesByNodeAndField != contestConfigFieldStyleByNodeAndField
+    contestConfigFieldStyleByNodeAndField = stylesByNodeAndField
+    updateOnFxThread {
+      contestConfigMismatchProperty.value = stylesByNodeAndField.nonEmpty
+      if changed then
+        refreshContestConfigFieldCellStyles()
+    }
+
   private def updateOnFxThread(action: => Unit): Unit =
     if Platform.isFxApplicationThread then action
     else
       try Platform.runLater(() => action)
       catch case _: IllegalStateException => action
-  private def notifyNodeStatusListeners(): Unit =
-    val statuses = allNodeStatuses
-    nodeStatusListeners.values.foreach(listener => listener(statuses))
+
+  private def refreshContestConfigFieldCellStyles(): Unit =
+    val contestFields = SwarmData.contestConfigDisplayFields.toSet
+    renderedCellNodes.foreach { case ((nodeIdentity, field), cells) =>
+      if contestFields.contains(field) then
+        nodeMap.get(nodeIdentity).foreach(nodeStatus =>
+          notifyCellNodeListeners(
+            nodeStatus = nodeStatus,
+            field = field,
+            targetCells = cells
+          )
+        )
+    }
+
+  private def purgeNodeCaches(
+      nodeIdentity: NodeIdentity
+  ): Unit =
+    valueProperties.keysIterator
+      .filter(_._1 == nodeIdentity)
+      .toList
+      .foreach(key => valueProperties.remove(key))
+    renderedCellNodes.keysIterator
+      .filter(_._1 == nodeIdentity)
+      .toList
+      .foreach(key => renderedCellNodes.remove(key))
 
   def update(nodeStatus: NodeStatus): Unit =
     val nodeIdentity = nodeStatus.nodeIdentity
@@ -171,40 +227,8 @@ class SwarmData @Inject() (
     refreshContestConfigDifferenceState()
     notifyNodeStatusListeners()
 
-  private def staticFieldValues(nodeStatus: NodeStatus): Map[NodeDataField, String] =
-    val bno = nodeStatus.statusMessage.bandNodeOperator
-    val contest = nodeStatus.statusMessage.contestConfig
-    Map(
-      NodeDataField.HostIp -> nodeStatus.nodeIdentity.hostIp,
-      NodeDataField.Port -> nodeStatus.nodeIdentity.port.toString,
-      NodeDataField.HostName -> nodeStatus.nodeIdentity.hostName,
-      NodeDataField.InstanceId -> nodeStatus.nodeIdentity.instanceId,
-      NodeDataField.Received -> stampFormatter.format(nodeStatus.received),
-      NodeDataField.IsLocal -> nodeStatus.isLocal.toString,
-      NodeDataField.QsoCount -> nodeStatus.statusMessage.hashCount.qsoCount.toString,
-      NodeDataField.Hash -> nodeStatus.statusMessage.hashCount.hash,
-      NodeDataField.Operator -> bno.operator.toString,
-      NodeDataField.Band -> bno.bandMode.band,
-      NodeDataField.Mode -> bno.bandMode.mode,
-      NodeDataField.BandMode -> bno.bandMode.toString,
-      NodeDataField.BandModeStamp -> stampFormatter.format(bno.stamp),
-      NodeDataField.ContestType -> contest.contestType.toString,
-      NodeDataField.ContestCallsign -> contest.ourCallsign.toString,
-      NodeDataField.ContestTransmitters -> contest.transmitters.toString,
-      NodeDataField.ContestClass -> contest.ourClass,
-      NodeDataField.ContestSection -> contest.ourSection,
-      NodeDataField.Exchange -> contest.exchange,
-      NodeDataField.ContestStart -> stampFormatter.format(
-        nodeStatus.statusMessage.contestStart
-      )
-    )
-
-  private def notifyCellNodeListeners(nodeStatus: NodeStatus, field: NodeDataField): Unit =
-    val cells = renderedCellNodes.getOrElse((nodeStatus.nodeIdentity, field), Vector.empty)
-    notifyCellNodeListeners(nodeStatus, field, cells)
-
   def buildGridPane(
-    fields: Seq[NodeDataField]
+      fields: Seq[NodeDataField]
   ): Parent =
     buildGridPane(
       fields = fields,
@@ -212,8 +236,8 @@ class SwarmData @Inject() (
     )
 
   def buildGridPane(
-    fields: Seq[NodeDataField],
-    bottomRow: Option[SwarmData.BottomRow]
+      fields: Seq[NodeDataField],
+      bottomRow: Option[SwarmData.BottomRow]
   ): Parent =
     val gridContainer = new StackPane()
     val scrollPane = new ScrollPane:
@@ -245,7 +269,8 @@ class SwarmData @Inject() (
       override def changed(
           observable: javafx.beans.value.ObservableValue[? <: javafx.scene.Scene],
           oldScene: javafx.scene.Scene,
-          newScene: javafx.scene.Scene): Unit = if newScene == null then
+          newScene: javafx.scene.Scene
+      ): Unit = if newScene == null then
         knownNodeIdentity.delegate.removeListener(nodeListener)
         unregisterRenderedCells(renderedByThisPane)
         renderedByThisPane = Map.empty
@@ -255,8 +280,8 @@ class SwarmData @Inject() (
     scrollPane
 
   private def buildGrid(
-    fields: Seq[NodeDataField],
-    bottomRow: Option[SwarmData.BottomRow]
+      fields: Seq[NodeDataField],
+      bottomRow: Option[SwarmData.BottomRow]
   ): GridBuildResult =
     val builder = GridBuilder()
     builder.hgap = 1
@@ -264,14 +289,16 @@ class SwarmData @Inject() (
     builder.padding = scalafx.geometry.Insets(1)
     builder.style = "-fx-background-color: #808080; -fx-background-insets: 0;"
     val nodes = knownNodeIdentity.toSeq
-    val cellsByField = scala.collection.mutable.Map.empty[(NodeIdentity, NodeDataField), Vector[Node]]
+    val cellsByField =
+      scala.collection.mutable.Map.empty[(NodeIdentity, NodeDataField), Vector[Node]]
     fields.foreach { field =>
       val values = nodes.map(node =>
         val cellNode = buildCellNode(node, field)
         val key = (node, field)
         val updated = cellsByField.getOrElse(key, Vector.empty) :+ cellNode
         cellsByField.update(key, updated)
-        cellNode)
+        cellNode
+      )
       builder(field.label, values*)
     }
     bottomRow.foreach(footer =>
@@ -297,26 +324,39 @@ class SwarmData @Inject() (
           text <== valueProperty
     else GridBuilder.valueToLabel(valueProperty)
 
-  private def propertyFor(node: NodeIdentity, field: NodeDataField): StringProperty = valueProperties
-    .getOrElseUpdate((node, field), StringProperty(""))
+  private def propertyFor(node: NodeIdentity, field: NodeDataField): StringProperty =
+    valueProperties
+      .getOrElseUpdate((node, field), StringProperty(""))
 
-  private def registerRenderedCells(cellsByField: Map[(NodeIdentity, NodeDataField), Seq[Node]]): Unit = cellsByField
+  private def registerRenderedCells(cellsByField: Map[(NodeIdentity, NodeDataField), Seq[Node]])
+      : Unit = cellsByField
     .foreach { case (key, cells) =>
       val merged = renderedCellNodes.getOrElse(key, Vector.empty) ++ cells
       renderedCellNodes.put(key, merged)
-      nodeMap.get(key._1).foreach(status => cells.foreach(cell => notifyCellNodeListeners(status, key._2, Seq(cell))))
+      nodeMap.get(key._1).foreach(status =>
+        cells.foreach(cell => notifyCellNodeListeners(status, key._2, Seq(cell)))
+      )
     }
 
-  private def notifyCellNodeListeners(nodeStatus: NodeStatus, field: NodeDataField, targetCells: Seq[Node]): Unit =
+  private def notifyCellNodeListeners(
+      nodeStatus: NodeStatus,
+      field: NodeDataField,
+      targetCells: Seq[Node]
+  ): Unit =
     targetCells.foreach(cell =>
       doStyle(CellStyleContext(nodeStatus, field.label, cell))
       if cellNodeListeners.nonEmpty then
-        cellNodeListeners.values.foreach(listener => listener(nodeStatus, field.label, cell)))
+        cellNodeListeners.values.foreach(listener => listener(nodeStatus, field.label, cell))
+    )
 
-  /** Applies the appropriate styling and behavior to a given node based on its status and field name.
+  /** Applies the appropriate styling and behavior to a given node based on its status and field
+    * name.
     *
-    * @param nodeStyler wraps the status, field, and node to which styling rules will be applied
-    * @return Unit this method does not return a value; it modifies the node's style and event handlers directly
+    * @param nodeStyler
+    *   wraps the status, field, and node to which styling rules will be applied
+    * @return
+    *   Unit this method does not return a value; it modifies the node's style and event handlers
+    *   directly
     */
   private def doStyle(nodeStyler: CellStyleContext): Unit =
     val nodeStatus = nodeStyler.nodeStatus
@@ -350,35 +390,10 @@ class SwarmData @Inject() (
 
     if fieldName == NodeDataField.Received.label then ageCellStyleRefresher.add(nodeStyler)
 
-  private def refreshContestConfigDifferenceState(): Unit =
-    val stylesByNodeAndField = SwarmData.contestConfigFieldStyles(
-      statuses = allNodeStatuses
-    )
-    val changed = stylesByNodeAndField != contestConfigFieldStyleByNodeAndField
-    contestConfigFieldStyleByNodeAndField = stylesByNodeAndField
-    updateOnFxThread {
-      contestConfigMismatchProperty.value = stylesByNodeAndField.nonEmpty
-      if changed then
-        refreshContestConfigFieldCellStyles()
-    }
-
-  private def refreshContestConfigFieldCellStyles(): Unit =
-    val contestFields = SwarmData.contestConfigDisplayFields.toSet
-    renderedCellNodes.foreach { case ((nodeIdentity, field), cells) =>
-      if contestFields.contains(field) then
-        nodeMap.get(nodeIdentity).foreach(nodeStatus =>
-          notifyCellNodeListeners(
-            nodeStatus = nodeStatus,
-            field = field,
-            targetCells = cells
-          )
-        )
-    }
-
   private def applyContestConfigColorStyle(
-    nodeStatus: NodeStatus,
-    fieldName: String,
-    node: Node
+      nodeStatus: NodeStatus,
+      fieldName: String,
+      node: Node
   ): Unit =
     contestConfigAllColorStyleClasses.foreach(styleClassName =>
       ensureStyleClass(
@@ -414,50 +429,57 @@ class SwarmData @Inject() (
     else
       while node.styleClass.contains(styleClassName) do node.styleClass -= styleClassName
 
-  private def purgeStaleNodeCaches(
-      retainedNodes: Set[NodeIdentity]
-  ): Unit =
-    val staleNodes = valueProperties.keysIterator
-      .map(_._1)
-      .filterNot(retainedNodes.contains)
-      .toSet ++ renderedCellNodes.keysIterator
-      .map(_._1)
-      .filterNot(retainedNodes.contains)
-      .toSet
-    staleNodes.foreach(nodeIdentity =>
-      purgeNodeCaches(
-        nodeIdentity = nodeIdentity
-      )
-    )
-
-  private def purgeNodeCaches(
-      nodeIdentity: NodeIdentity
-  ): Unit =
-    valueProperties.keysIterator
-      .filter(_._1 == nodeIdentity)
-      .toList
-      .foreach(key => valueProperties.remove(key))
-    renderedCellNodes.keysIterator
-      .filter(_._1 == nodeIdentity)
-      .toList
-      .foreach(key => renderedCellNodes.remove(key))
-
-  private def unregisterRenderedCells(cellsByField: Map[(NodeIdentity, NodeDataField), Seq[Node]]): Unit = cellsByField
+  private def unregisterRenderedCells(cellsByField: Map[(NodeIdentity, NodeDataField), Seq[Node]])
+      : Unit = cellsByField
     .foreach { case (key, removedCells) =>
       renderedCellNodes.get(key).foreach(existing =>
         val remaining = existing
-          .filterNot(existingCell => removedCells.exists(removed => removed.delegate eq existingCell.delegate))
-        if remaining.isEmpty then renderedCellNodes.remove(key) else renderedCellNodes.put(key, remaining))
+          .filterNot(existingCell =>
+            removedCells.exists(removed => removed.delegate eq existingCell.delegate)
+          )
+        if remaining.isEmpty then renderedCellNodes.remove(key)
+        else renderedCellNodes.put(key, remaining)
+      )
     }
 
-  private case class GridBuildResult(grid: GridPane, cellNodes: Map[(NodeIdentity, NodeDataField), Seq[Node]])
+  private def staticFieldValues(nodeStatus: NodeStatus): Map[NodeDataField, String] =
+    val bno = nodeStatus.statusMessage.bandNodeOperator
+    val contest = nodeStatus.statusMessage.contestConfig
+    Map(
+      NodeDataField.HostIp -> nodeStatus.nodeIdentity.hostIp,
+      NodeDataField.Port -> nodeStatus.nodeIdentity.port.toString,
+      NodeDataField.HostName -> nodeStatus.nodeIdentity.hostName,
+      NodeDataField.InstanceId -> nodeStatus.nodeIdentity.instanceId,
+      NodeDataField.Received -> stampFormatter.format(nodeStatus.received),
+      NodeDataField.IsLocal -> nodeStatus.isLocal.toString,
+      NodeDataField.QsoCount -> nodeStatus.statusMessage.hashCount.qsoCount.toString,
+      NodeDataField.Hash -> nodeStatus.statusMessage.hashCount.hash,
+      NodeDataField.Operator -> bno.operator.toString,
+      NodeDataField.Band -> bno.bandMode.band,
+      NodeDataField.Mode -> bno.bandMode.mode,
+      NodeDataField.BandMode -> bno.bandMode.toString,
+      NodeDataField.BandModeStamp -> stampFormatter.format(bno.stamp),
+      NodeDataField.ContestType -> contest.contestType.toString,
+      NodeDataField.ContestCallsign -> contest.ourCallsign.toString,
+      NodeDataField.ContestTransmitters -> contest.transmitters.toString,
+      NodeDataField.ContestClass -> contest.ourClass,
+      NodeDataField.ContestSection -> contest.ourSection,
+      NodeDataField.Exchange -> contest.exchange,
+      NodeDataField.ContestStart -> stampFormatter.format(
+        nodeStatus.statusMessage.contestStart
+      )
+    )
 
-object SwarmData:
-  final case class BottomRow(
-    label: String,
-    cellBuilder: NodeIdentity => Node
+  private def notifyCellNodeListeners(nodeStatus: NodeStatus, field: NodeDataField): Unit =
+    val cells = renderedCellNodes.getOrElse((nodeStatus.nodeIdentity, field), Vector.empty)
+    notifyCellNodeListeners(nodeStatus, field, cells)
+
+  private case class GridBuildResult(
+      grid: GridPane,
+      cellNodes: Map[(NodeIdentity, NodeDataField), Seq[Node]]
   )
 
+object SwarmData:
   private[status] val contestConfigDisplayFields: Seq[NodeDataField] = Seq(
     NodeDataField.ContestType,
     NodeDataField.ContestCallsign,
@@ -465,7 +487,7 @@ object SwarmData:
   )
 
   private[status] def contestConfigFieldStyles(
-    statuses: Seq[NodeStatus]
+      statuses: Seq[NodeStatus]
   ): Map[(NodeIdentity, NodeDataField), String] =
     val majorityStyleClass = "contestConfigMajority"
     val variantStyleClasses = Vector(
@@ -479,53 +501,57 @@ object SwarmData:
     else
       contestConfigDisplayFields.foldLeft(
         Map.empty[(NodeIdentity, NodeDataField), String]
-      )(
-        (acc, field) =>
-          val valueByNode = statuses.map(nodeStatus =>
-            nodeStatus.nodeIdentity -> contestConfigFieldValue(
-              contestConfig = nodeStatus.statusMessage.contestConfig,
-              field = field
-            )
+      )((acc, field) =>
+        val valueByNode = statuses.map(nodeStatus =>
+          nodeStatus.nodeIdentity -> contestConfigFieldValue(
+            contestConfig = nodeStatus.statusMessage.contestConfig,
+            field = field
           )
-          val countsByValue = valueByNode
-            .groupMap(_._2)(_ => 1)
-            .view
-            .mapValues(_.sum)
+        )
+        val countsByValue = valueByNode
+          .groupMap(_._2)(_ => 1)
+          .view
+          .mapValues(_.sum)
+          .toMap
+        val maxCount = countsByValue.values.maxOption.getOrElse(0)
+        if countsByValue.size <= 1 || maxCount == 0 then
+          acc
+        else
+          val topValues = countsByValue
+            .collect { case (value, count) if count == maxCount => value }
+            .toSet
+          val majorityValues =
+            if topValues.size == 1 then topValues else Set.empty[String]
+          val nonMajorityValues = countsByValue.keys
+            .filterNot(majorityValues.contains)
+            .toSeq
+            .sorted
+          val nonMajorityStyleByValue = nonMajorityValues.zipWithIndex
+            .map { case (value, idx) =>
+              value -> variantStyleClasses(idx % variantStyleClasses.size)
+            }
             .toMap
-          val maxCount = countsByValue.values.maxOption.getOrElse(0)
-          if countsByValue.size <= 1 || maxCount == 0 then
-            acc
-          else
-            val topValues = countsByValue
-              .collect { case (value, count) if count == maxCount => value }
-              .toSet
-            val majorityValues =
-              if topValues.size == 1 then topValues else Set.empty[String]
-            val nonMajorityValues = countsByValue.keys
-              .filterNot(majorityValues.contains)
-              .toSeq
-              .sorted
-            val nonMajorityStyleByValue = nonMajorityValues.zipWithIndex
-              .map { case (value, idx) =>
-                value -> variantStyleClasses(idx % variantStyleClasses.size)
-              }
-              .toMap
-            val fieldStyles = valueByNode.map { case (nodeIdentity, value) =>
-              val styleClass = if majorityValues.contains(value) then
-                majorityStyleClass
-              else
-                nonMajorityStyleByValue(value)
-              (nodeIdentity, field) -> styleClass
-            }.toMap
-            acc ++ fieldStyles
+          val fieldStyles = valueByNode.map { case (nodeIdentity, value) =>
+            val styleClass = if majorityValues.contains(value) then
+              majorityStyleClass
+            else
+              nonMajorityStyleByValue(value)
+            (nodeIdentity, field) -> styleClass
+          }.toMap
+          acc ++ fieldStyles
       )
 
   private def contestConfigFieldValue(
-    contestConfig: ContestConfig,
-    field: NodeDataField
+      contestConfig: ContestConfig,
+      field: NodeDataField
   ): String =
     field match
-      case NodeDataField.ContestType => contestConfig.contestType.toString
+      case NodeDataField.ContestType     => contestConfig.contestType.toString
       case NodeDataField.ContestCallsign => contestConfig.ourCallsign.toString
-      case NodeDataField.Exchange => contestConfig.exchange
+      case NodeDataField.Exchange        => contestConfig.exchange
       case other => throw new IllegalArgumentException(s"Unsupported contest field: $other")
+
+  final case class BottomRow(
+      label: String,
+      cellBuilder: NodeIdentity => Node
+  )

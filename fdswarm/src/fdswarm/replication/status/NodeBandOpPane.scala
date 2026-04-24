@@ -36,7 +36,7 @@ class NodeBandOpPane @Inject() (
 
   private val titleLabel = new Label()
   private val contentPane = new BorderPane:
-    center = buildGrid()
+    center = swarmData.buildGridPane(Seq(NodeDataField.HostName, NodeDataField.Operator, NodeDataField.BandMode))
   private val titleBinding = Bindings.createStringBinding(
     () =>
       val nodeCount = swarmData.size.value
@@ -58,11 +58,15 @@ class NodeBandOpPane @Inject() (
     if force then
       lastRefreshMillis.set(now)
       Platform.runLater {
-        contentPane.center = buildGrid()
+        contentPane.center = swarmData.buildGridPane(Seq(NodeDataField.HostName,
+          NodeDataField.Operator,
+          NodeDataField.BandMode))
       }
     else if markRefreshDue(now) then
       Platform.runLater {
-        contentPane.center = buildGrid()
+        contentPane.center = swarmData.buildGridPane(Seq(NodeDataField.HostName,
+          NodeDataField.Operator,
+          NodeDataField.BandMode))
       }
 
   private def markRefreshDue(now: Long): Boolean =
@@ -73,14 +77,5 @@ class NodeBandOpPane @Inject() (
       if now - last < refreshIntervalMillis then return false
       if lastRefreshMillis.compareAndSet(last, now) then return true
     false
-
-  private def buildGrid() = swarmData
-    .buildGridPane(
-      Seq(
-        NodeDataField.HostName,
-        NodeDataField.Operator,
-        NodeDataField.BandMode
-      )
-    )
 
   def refreshIfDue(): Unit = refreshInternal(force = false)
