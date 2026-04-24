@@ -27,7 +27,7 @@ import io.circe.parser.decode
 import io.circe.syntax.*
 import munit.FunSuite
 
-import java.net.URL
+import java.net.URI
 import java.time.*
 
 class CirceSupportTest extends FunSuite:
@@ -82,7 +82,7 @@ class CirceSupportTest extends FunSuite:
 
   test("Node round trip"):
     val config = ContestConfig(ContestType.ARRL, Callsign("W1AW"), 1, "O", "CT")
-    val node = Node(new URL("http://localhost:8080"), config, Callsign("WA9NNN"))
+    val node = Node(URI.create("http://localhost:8080").toURL, config, Callsign("WA9NNN"))
     val json = node.asJson.noSpaces
     val decoded = decode[Node](json).toOption.get
     assertEquals(decoded.url.toString, node.url.toString)
