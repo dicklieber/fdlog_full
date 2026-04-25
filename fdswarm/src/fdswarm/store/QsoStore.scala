@@ -307,4 +307,4 @@ object QsoStore:
       .filter(_.startsWith(normalizedStart))
       .toSet
       .toSeq
-      .sorted
+      .sortBy(_.value)

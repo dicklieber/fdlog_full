@@ -18,13 +18,10 @@
 
 package fdswarm.util
 
-import jakarta.inject.{Inject, Named}
-
 class MockNodeIdentityManager(val mockNodeIdentity: NodeIdentity, instanceIdManager: InstanceIdManager = null) extends NodeIdentityManager(mockNodeIdentity.port, instanceIdManager):
 
   override def suitableInterfaces: Seq[AnIpAddress] = Seq(AnIpAddress("mock", mockNodeIdentity.hostIp))
   override def currentIp: AnIpAddress = AnIpAddress("mock", mockNodeIdentity.hostIp)
-  override def setIp(newIp: AnIpAddress): Unit = ()
 
   override def hostPort: String = s"${mockNodeIdentity.hostIp}:${mockNodeIdentity.port}"
   override def ourNodeIdentity: NodeIdentity = mockNodeIdentity
