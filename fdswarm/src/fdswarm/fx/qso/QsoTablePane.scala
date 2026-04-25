@@ -60,6 +60,9 @@ class QsoTablePane @Inject()(qsoStore: QsoStore, userConfig: UserConfig):
     isSearching.value = false
     currentQsos.setAll(filteredQsos)
 
+  def displayedQsos: Seq[Qso] =
+    currentQsos.toSeq
+
   currentQsos.setAll(filteredQsos)
 
 

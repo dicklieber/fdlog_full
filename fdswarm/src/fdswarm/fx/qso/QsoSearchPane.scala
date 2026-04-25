@@ -76,19 +76,21 @@ class QsoSearchPane @Inject()(
     classFilter.value,
     operatorFilter.optionValueProperty,
     expandedProperty)
-      val isSearching = expandedProperty.value && (callsignFilter.value.isDefined ||
-        comboSelection(
-          bandFilter
-        ).isDefined ||
-        comboSelection(
-          modeFilter
-        ).isDefined ||
-        transmittersFilter.value.value.isDefined ||
-        comboSelection(
-          classFilter
-        ).isDefined ||
-        operatorFilter.optionValueProperty.value.isDefined)
   val node: VBox = new VBox()
+
+  private def isSearching: Boolean =
+    expandedProperty.value && (callsignFilter.value.isDefined ||
+      comboSelection(
+        bandFilter
+      ).isDefined ||
+      comboSelection(
+        modeFilter
+      ).isDefined ||
+      transmittersFilter.value.value.isDefined ||
+      comboSelection(
+        classFilter
+      ).isDefined ||
+      operatorFilter.optionValueProperty.value.isDefined)
 
   anyChange.onChange((_, _, newVal) =>
     if contestManager.hasConfiguration.value then
@@ -114,7 +116,6 @@ class QsoSearchPane @Inject()(
       operatorFilter.text = ""
     btn
   }
-  var filteredQsosSupplier: () => Seq[Qso] = () => Seq.empty
   private var uiBuilt = false
 
   def filter(qso: Qso): Boolean = {
@@ -171,7 +172,7 @@ class QsoSearchPane @Inject()(
     )
     val file = fileChooser.showSaveDialog(node.getScene.getWindow)
     if file != null then
-      val filteredQsos = filteredQsosSupplier()
+      val filteredQsos = qsoTablePane.displayedQsos
       val writer = new PrintWriter(file)
       try
         if asJson then
