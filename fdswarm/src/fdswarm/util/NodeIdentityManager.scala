@@ -42,12 +42,9 @@ class NodeIdentityManager @Inject()(@Named("fdswarm.httpPort") httpPort: Int,
     logger.trace(s"anIpo: $anIpo")
     anIpo).toSeq
 
-  private var ourIp: AnIpAddress = suitableInterfaces.headOption.getOrElse(AnIpAddress("loopback", "127.0.0.1"))
+  private val ourIp: AnIpAddress = suitableInterfaces.headOption.getOrElse(AnIpAddress("loopback", "127.0.0.1"))
 
   def currentIp: AnIpAddress = ourIp
-  def setIp(newIp: AnIpAddress): Unit =
-    ourIp = newIp
-    logger.info(s"ourIp updated to: $ourIp")
 
   // Override port with PORT env var if present
   val port: Int = sys.env.get("PORT").map { sPort =>
@@ -55,7 +52,7 @@ class NodeIdentityManager @Inject()(@Named("fdswarm.httpPort") httpPort: Int,
   }.getOrElse(httpPort)
 
   def hostPort: String = s"${currentIp.ip}:$port"
-  val ourHostName: String = java.net.InetAddress.getLocalHost.getHostName.split('.').head
+  private val ourHostName: String = java.net.InetAddress.getLocalHost.getHostName.split('.').head
 
   def ourNodeIdentity: NodeIdentity = NodeIdentity(
     hostIp = currentIp.ip,

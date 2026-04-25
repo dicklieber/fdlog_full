@@ -85,7 +85,6 @@ class ContestClassField @Inject() (
 
   text.onChange { (_, _, nv) =>
     validProperty.value = isValid(nv)
-    if nv.matches(typingPattern) then dupPanel.clear
   }
 
   override def isTransitionKey(key: scalafx.scene.input.KeyCode): Boolean =

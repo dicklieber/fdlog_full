@@ -214,18 +214,15 @@ class QsoStore @Inject() (
 
   def potentialDups(
       startOfCallsign: String,
-      bandmode: BandMode
+      _bandmode: BandMode
     ): DupInfo =
-    val allPotentialDups: Seq[Qso] = map
-      .filter { case (id, qso) =>
-        val bandModeMatch = qso.bandMode == bandmode
-        val startMatch = qso.callsign.startsWith(startOfCallsign)
-        startMatch && bandModeMatch
-      }
-      .values
-      .toSeq
-    val frustNDups = allPotentialDups.take(70).map(_.callsign)
-    DupInfo(frustNDups, allPotentialDups.size)
+    val allPotentialDupCallsigns =
+      QsoStore.potentialDupCallsigns(
+        callsigns = map.valuesIterator.map(_.callsign),
+        startOfCallsign = startOfCallsign
+      )
+    val frustNDups = allPotentialDupCallsigns.take(70)
+    DupInfo(frustNDups, allPotentialDupCallsigns.size)
 
   def archiveAndClear(): Unit =
     val timestampedFile =
@@ -294,3 +291,20 @@ class QsoStore @Inject() (
         "removed" -> 0,
         "kept" -> currentQsos.size
       )
+
+object QsoStore:
+  private[store] def sameBandMode(left: BandMode, right: BandMode): Boolean =
+    left.band.equalsIgnoreCase(right.band) &&
+      left.mode.equalsIgnoreCase(right.mode)
+
+  private[store] def potentialDupCallsigns(
+      callsigns: IterableOnce[Callsign],
+      startOfCallsign: String
+    ): Seq[Callsign] =
+    val normalizedStart = startOfCallsign.trim.toUpperCase
+    callsigns
+      .iterator
+      .filter(_.startsWith(normalizedStart))
+      .toSet
+      .toSeq
+      .sorted
