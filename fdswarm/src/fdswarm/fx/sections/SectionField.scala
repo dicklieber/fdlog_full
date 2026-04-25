@@ -48,3 +48,20 @@ class SectionField @Inject()(sectionsProvider: SectionsProvider, override val us
     else
       val upper = str.trim.toUpperCase
       sectionsProvider.allSections.exists(_.code.toUpperCase == upper)
+
+  def uniqueMatchingCode(str: String): Option[String] =
+    val upper = Option(str).getOrElse("").trim.toUpperCase
+    if upper.isEmpty then None
+    else
+      val matches = sectionsProvider.allSections
+        .map(_.code.toUpperCase)
+        .distinct
+        .filter(_.startsWith(upper))
+      if matches.size == 1 then Some(matches.head) else None
+
+  def applyUniqueMatchForCurrentInput(): Boolean =
+    uniqueMatchingCode(text.value) match
+      case Some(code) =>
+        text = code
+        true
+      case None => false

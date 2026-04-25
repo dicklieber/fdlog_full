@@ -26,6 +26,7 @@ import fdswarm.store.{DupInfo, QsoStore, StyledMessage}
 import fdswarm.util.TimeHelpers.localFrom
 import jakarta.inject.{Inject, Singleton}
 import scalafx.application.Platform
+import scalafx.beans.property.BooleanProperty
 import scalafx.beans.property.StringProperty
 import scalafx.scene.control.{Label, Tooltip}
 import scalafx.scene.layout.{GridPane, Pane, StackPane, VBox}
@@ -44,9 +45,11 @@ class DupPanel @Inject()(
   }
   private var root: Pane = uninitialized
   private var titleLabel: Label = uninitialized
+  private val showingPotentialDuplicates = BooleanProperty(false)
 
   def show(styledMessage: StyledMessage): Unit =
     Platform.runLater {
+      showingPotentialDuplicates.value = false
       titleLabel.text = "Saving Qso"
       grid.children.clear()
 
@@ -63,6 +66,7 @@ class DupPanel @Inject()(
       titleLabel.text = "Potential Duplicates"
       grid.children.clear()
       if (dupInfo.totalDups > 0) {
+        showingPotentialDuplicates.value = true
         dupInfo.firstNDups.zipWithIndex.foreach { (callsign, index) =>
           val callLabel = new Label(callsign.value) {
             styleClass += "dup-callsign"
@@ -80,6 +84,7 @@ class DupPanel @Inject()(
         root.visible = true
         root.managed = true
       } else {
+        showingPotentialDuplicates.value = false
         root.visible = false
         root.managed = false
       }
@@ -97,6 +102,7 @@ class DupPanel @Inject()(
    */
   def show(title: String, items: Seq[(String, String)]): Unit =
     Platform.runLater {
+      showingPotentialDuplicates.value = false
       titleLabel.text = title
       grid.children.clear()
       items.zipWithIndex.foreach { case ((code, desc), index) =>
@@ -116,10 +122,14 @@ class DupPanel @Inject()(
 
   def clear: Unit =
     Platform.runLater {
+      showingPotentialDuplicates.value = false
       root.visible = false
       root.managed = false
       grid.children.clear()
     }
+
+  def showingPotentialDuplicatesProperty: scalafx.beans.property.ReadOnlyBooleanProperty =
+    showingPotentialDuplicates
 
   def pane(): Pane =
     val stackPane = GridColumns.fieldSet("XYZZY", grid)

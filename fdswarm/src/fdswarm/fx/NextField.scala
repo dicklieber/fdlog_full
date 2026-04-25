@@ -67,15 +67,18 @@ trait NextField extends TextInputControl with WithDisposition:
     javafx.scene.input.KeyEvent.KEY_PRESSED,
     (event: javafx.scene.input.KeyEvent) => {
       val key: KeyCode = event.getCode
+      val isBackwardTab = key == KeyCode.Tab && event.isShiftDown
       val isFieldValid = isValid(text.value)
       val useNextField = userConfig.get[Boolean]("useNextField")
 
-      if (isFieldValid && isTransitionKey(key) && useNextField) {
+      if (isBackwardTab) {
+        // Preserve normal reverse focus traversal.
+      } else if (isFieldValid && isTransitionKey(key) && useNextField) {
         event.consume()
         val str: String =
           if (key.isDigitKey || key.isLetterKey) NextField.toChar(key).toString else ""
         onDoneFunction(str)
-      } else if (key == javafx.scene.input.KeyCode.ENTER || key == javafx.scene.input.KeyCode.TAB) {
+      } else if (key == javafx.scene.input.KeyCode.ENTER) {
         event.consume()
         onDoneFunction("")
       }

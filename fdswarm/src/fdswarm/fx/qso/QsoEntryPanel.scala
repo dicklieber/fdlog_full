@@ -33,6 +33,7 @@ import fdswarm.util.*
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
 import scalafx.application.Platform
+import scalafx.beans.binding.Bindings
 import scalafx.scene.Node
 import scalafx.scene.control.*
 import scalafx.scene.layout.{GridPane, VBox}
@@ -140,8 +141,7 @@ class QsoEntryPanel @Inject()(
   private val mainLayout = new VBox {
     spacing = 10
     children = Seq(
-      grid,
-      dupPanel.pane()
+      grid
     )
   }
   def callsignValidProperty: scalafx.beans.property.BooleanProperty =
@@ -155,6 +155,28 @@ class QsoEntryPanel @Inject()(
 
   def sectionFieldFocusedProperty: scalafx.beans.property.ReadOnlyBooleanProperty =
     sectionField.focused
+
+  def callsignFocusedProperty: scalafx.beans.property.ReadOnlyBooleanProperty =
+    callsignField.focused
+
+  def contestClassFocusedProperty: scalafx.beans.property.ReadOnlyBooleanProperty =
+    contestClassField.focused
+
+  def contestClassTextProperty: scalafx.beans.property.StringProperty =
+    contestClassField.text
+
+  def canSubmitProperty: scalafx.beans.binding.BooleanBinding =
+    Bindings.createBooleanBinding(
+      () => callsignValidProperty.value && contestClassValidProperty.value,
+      callsignValidProperty,
+      contestClassValidProperty
+    )
+
+  def applyClassChoice(classLetter: String): Unit =
+    val digits = Option(contestClassField.text.value).getOrElse("").takeWhile(_.isDigit).take(2)
+    contestClassField.text = s"$digits${classLetter.toUpperCase}"
+    sectionField.requestFocus()
+    sectionField.end()
 
   callsignField.text.onChange { (_, _, newValue) =>
     if newValue.length < 3 then dupPanel.clear
@@ -181,10 +203,23 @@ class QsoEntryPanel @Inject()(
 
   sectionField.onDoneFunction = _ =>
     Platform.runLater {
-      submit()
+      if !sectionField.validProperty.value then sectionField.applyUniqueMatchForCurrentInput()
+      if canSubmitNow then submit()
     }
 
   def submit(): Unit =
+    if !canSubmitNow then
+      logger.debug(
+        "Skipping submit due to invalid qso entry fields",
+        "callsign" -> callsignField.text.value,
+        "callsignValid" -> callsignField.validProperty.value,
+        "contestClass" -> contestClassField.text.value,
+        "contestClassValid" -> contestClassField.validProperty.value,
+        "section" -> sectionField.text.value,
+        "sectionValid" -> sectionField.validProperty.value
+      )
+      return
+
     val qso = Qso(
       callsign = Callsign(callsignField.text.value),
       exchange = Exchange(FdClass(contestClassField.text.value), sectionField.text.value),
@@ -196,7 +231,9 @@ class QsoEntryPanel @Inject()(
     clearControls
     dupPanel.show(styledMessage)
 
-  sectionField.onAction = _ => submit()
+  sectionField.onAction = _ =>
+    if !sectionField.validProperty.value then sectionField.applyUniqueMatchForCurrentInput()
+    if canSubmitNow then submit()
 
   private def qsoMetadata =
     val contestType: ContestType = contestManager.contestConfigProperty.value.contestType
@@ -211,3 +248,8 @@ class QsoEntryPanel @Inject()(
     contestClassField.text = ""
     sectionField.text = ""
     callsignField.requestFocus()
+
+  private def canSubmitNow: Boolean =
+    callsignField.validProperty.value &&
+      contestClassField.validProperty.value &&
+      sectionField.validProperty.value
