@@ -165,12 +165,15 @@ class QsoEntryPanel @Inject()(
   def contestClassTextProperty: scalafx.beans.property.StringProperty =
     contestClassField.text
 
-  def canSubmitProperty: scalafx.beans.binding.BooleanBinding =
+  private lazy val canSubmitBinding: scalafx.beans.binding.BooleanBinding =
     Bindings.createBooleanBinding(
       () => callsignValidProperty.value && contestClassValidProperty.value,
       callsignValidProperty,
       contestClassValidProperty
     )
+
+  def canSubmitProperty: scalafx.beans.binding.BooleanBinding =
+    canSubmitBinding
 
   def applyClassChoice(classLetter: String): Unit =
     val digits = Option(contestClassField.text.value).getOrElse("").takeWhile(_.isDigit).take(2)

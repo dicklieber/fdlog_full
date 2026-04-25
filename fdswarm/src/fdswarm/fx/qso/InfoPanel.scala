@@ -38,6 +38,7 @@ class InfoPanel @Inject()(
 ):
   private val _node = new VBox()
   private val dupNode = dupPanel.pane()
+  private var contestConfigListenerRegistered = false
 
   qsoEntryPanel.callsignFocusedProperty.onChange((_, _, _) => refresh())
   qsoEntryPanel.contestClassFocusedProperty.onChange((_, _, _) => refresh())
@@ -49,12 +50,17 @@ class InfoPanel @Inject()(
   contestManager.hasConfiguration.onChange { (_, _, hasConfig) =>
     refresh()
     if hasConfig then
-      contestManager.contestConfigProperty.onChange((_, _, _) => refresh())
+      registerContestConfigListenerIfNeeded()
   }
   if contestManager.hasConfiguration.value then
-    contestManager.contestConfigProperty.onChange((_, _, _) => refresh())
+    registerContestConfigListenerIfNeeded()
 
   refresh()
+
+  private def registerContestConfigListenerIfNeeded(): Unit =
+    if !contestConfigListenerRegistered then
+      contestManager.contestConfigProperty.onChange((_, _, _) => refresh())
+      contestConfigListenerRegistered = true
 
   private def classChoices: Seq[ClassChoice] =
     contestCatalog

@@ -18,7 +18,9 @@
 
 package fdswarm.fx.sections
 
+import com.typesafe.config.ConfigFactory
 import fdswarm.JavaFxTestKit
+import fdswarm.fx.UserConfig
 import munit.FunSuite
 
 class SectionFieldValidatorTest extends FunSuite:
@@ -73,4 +75,48 @@ class SectionFieldValidatorTest extends FunSuite:
     assert(!isValidPartial("X"))
     assert(!isValidPartial("ILL"))
     assert(!isValidPartial("SVA"))
+  }
+
+  private def mkField(): SectionField =
+    val config = ConfigFactory.parseString(
+      """
+        |fdswarm {
+        |  sections = [
+        |    {
+        |      name = "all"
+        |      sections = [
+        |        { code = "IL", name = "Illinois" },
+        |        { code = "IN", name = "Indiana" },
+        |        { code = "SJV", name = "San Joaquin Valley" }
+        |      ]
+        |    }
+        |  ]
+        |}
+        |""".stripMargin
+    )
+    val sectionsProvider = new SectionsProvider(config)
+    val userConfig = new UserConfig(new fdswarm.DirectoryProvider:
+      private val dir = os.temp.dir()
+      override def apply(): os.Path = dir
+    )
+    JavaFxTestKit.runOnFx {
+      new SectionField(sectionsProvider, userConfig)
+    }
+
+  test("uniqueMatchingCode returns code only for unique prefix") {
+    val field = mkField()
+    assertEquals(field.uniqueMatchingCode("SJ"), Some("SJV"))
+    assertEquals(field.uniqueMatchingCode("I"), None)
+    assertEquals(field.uniqueMatchingCode(""), None)
+  }
+
+  test("applyUniqueMatchForCurrentInput applies unique match to text") {
+    val field = mkField()
+    val matched = JavaFxTestKit.runOnFx {
+      field.text = "sj"
+      field.applyUniqueMatchForCurrentInput()
+    }
+
+    assertEquals(matched, true)
+    assertEquals(field.text.value, "SJV")
   }
