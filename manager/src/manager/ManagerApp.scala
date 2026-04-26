@@ -19,10 +19,9 @@
 package manager
 
 import com.google.inject.{Guice, Injector}
-import fdswarm.model.{Band, BandClass}
+import fdswarm.model.Band
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.StartupConfig
-import fdswarm.fx.bands.*
 import fdswarm.model.{BandMode, Callsign, Mode}
 import fdswarm.util.CallsignGenerator
 import mainargs.{ParserForMethods, arg, main}
@@ -77,16 +76,6 @@ object ManagerApp extends JFXApp3 with LazyStructuredLogging :
     if !runner.verifyRequiredJar() then
       sys.exit(1)
 
-    // Force all HF, VHF, and UHF bands and all modes to be available for selection in manager
-    val bandsManager = injector.instance[AvailableBandsManager]
-    val modesManager = injector.instance[AvailableModesManager]
-
-    val allRequiredBands = Band.values
-      .filter(b => b.bandClass == BandClass.HF || b.bandClass == BandClass.VHF || b.bandClass == BandClass.UHF)
-      .toIndexedSeq
-    bandsManager.bands.setAll(allRequiredBands*)
-    modesManager.modes.setAll(Mode.values*)
-
     val nodeConfigManager = injector.instance[NodeConfigManager]
 
     stage = new JFXApp3.PrimaryStage {
@@ -99,7 +88,6 @@ object ManagerApp extends JFXApp3 with LazyStructuredLogging :
 
     val nodeConfigGridPane = new NodeConfigGridPane(
       nodeConfigManager = nodeConfigManager,
-      injector = injector,
       ownerStage = stage
     )
 
@@ -114,8 +102,8 @@ object ManagerApp extends JFXApp3 with LazyStructuredLogging :
               val generator = CallsignGenerator.callsignIterator("N0")
               val callsignStr = Iterator.continually(generator.next()).find(cs => !usedCallsigns.contains(cs)).get
               val callsign = Callsign(callsignStr)
-              val bands = bandsManager.bands.toIndexedSeq
-              val modes = modesManager.modes.toIndexedSeq
+              val bands = Band.values.toIndexedSeq
+              val modes = Mode.values.toIndexedSeq
               val band = bands(Random.nextInt(bands.length))
               val mode = modes(Random.nextInt(modes.length))
               val bandModeStr = s"$band $mode"

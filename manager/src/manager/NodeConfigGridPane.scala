@@ -18,22 +18,18 @@
 
 package manager
 
-import com.google.inject.Injector
 import fdswarm.{DebugMode, StartupConfig}
-import fdswarm.model.{BandMode, Callsign}
+import fdswarm.model.{Band, BandMode, Callsign, Mode}
 import javafx.collections.ListChangeListener
-import net.codingwell.scalaguice.InjectorExtensions.*
 import scalafx.Includes.*
 import scalafx.geometry.Insets
 import scalafx.scene.control.*
 import scalafx.collections.ObservableBuffer
-import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority, VBox}
+import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority, VBox, HBox}
 import scalafx.application.Platform
-import scalafx.stage.Stage
 
 final class NodeConfigGridPane(
   nodeConfigManager: NodeConfigManager,
-  injector: Injector,
   ownerStage: scalafx.stage.Stage
 ) extends VBox:
 
@@ -115,20 +111,30 @@ final class NodeConfigGridPane(
   private def openBandModeDialog(index: Int): Unit =
     if index >= 0 && index < nodeConfigManager.observableBuffer.size then
       val oldConfig = nodeConfigManager.observableBuffer(index)
-      val matrixPane = injector.instance[BandModeMatrixPane]
-      val selectedStore = injector.instance[SelectedBandModeManager]
-      selectedStore.save(oldConfig.bandMode)
+      val bandCombo = new ComboBox[Band](ObservableBuffer(Band.values.toIndexedSeq*)):
+        value = oldConfig.bandMode.band
+      val modeCombo = new ComboBox[Mode](ObservableBuffer(Mode.values.toIndexedSeq*)):
+        value = oldConfig.bandMode.mode
 
       val dialog = new Dialog[BandMode]:
         initOwner(ownerStage.delegate)
         title = "Select BandMode"
-        headerText = s"Select BandMode for ${oldConfig.id}"
+        headerText = s"Select band and mode for ${oldConfig.id}"
 
-      matrixPane.showConfigButton.value = false
-      dialog.dialogPane().content = matrixPane.node
+      dialog.dialogPane().content = new HBox:
+        spacing = 10
+        children = Seq(
+          new VBox:
+            spacing = 4
+            children = Seq(new Label("Band"), bandCombo),
+          new VBox:
+            spacing = 4
+            children = Seq(new Label("Mode"), modeCombo)
+        )
       dialog.dialogPane().buttonTypes = Seq(ButtonType.OK, ButtonType.Cancel)
       dialog.resultConverter = {
-        case ButtonType.OK => selectedStore.selected.value
+        case ButtonType.OK if bandCombo.value.value != null && modeCombo.value.value != null =>
+          BandMode(bandCombo.value.value.name, modeCombo.value.value.toString)
         case _             => null
       }
 
