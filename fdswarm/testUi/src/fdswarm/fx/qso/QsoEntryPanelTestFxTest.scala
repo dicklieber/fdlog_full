@@ -13,8 +13,9 @@ import fdswarm.model.{BandMode, Callsign, Qso}
 import fdswarm.replication.Transport
 import fdswarm.replication.status.ContestConfigMismatchUi
 import fdswarm.store.{DupInfo, QsoStore, StyledMessage}
+import fdswarm.support.TempDirFileHelperSuite
 import fdswarm.util.{FilenameStamp, InstanceIdManager, NodeIdentityManager}
-import munit.{AfterEach, BeforeEach, FunSuite}
+import munit.AfterEach
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.{any, anyDouble, anyString}
 import org.mockito.Mockito.{mock, verify, when}
@@ -22,32 +23,12 @@ import org.testfx.api.{FxRobot, FxToolkit}
 import org.testfx.util.WaitForAsyncUtils
 import scalafx.beans.property.BooleanProperty
 
-class QsoEntryPanelTestFxTest extends FunSuite:
-  private var testDir: Option[os.Path] = None
-
-  override def beforeEach(
-      context: BeforeEach
-    ): Unit =
-    testDir = Some(
-      os.temp.dir(
-        prefix = "qso-entry-panel-testfx"
-      )
-    )
+class QsoEntryPanelTestFxTest extends TempDirFileHelperSuite:
 
   override def afterEach(
       context: AfterEach
     ): Unit =
     FxToolkit.cleanupStages()
-    testDir.foreach(
-      dir =>
-        if os.exists(
-          dir
-        ) then
-          os.remove.all(
-            dir
-          )
-    )
-    testDir = None
 
   test("enters QSO WA9ZZZ 1H IL"):
     FxToolkit.registerPrimaryStage()
@@ -55,14 +36,6 @@ class QsoEntryPanelTestFxTest extends FunSuite:
       new Runnable:
         override def run(): Unit = ()
     )
-
-    val directoryProvider = new fdswarm.DirectoryProvider:
-      override def apply(): os.Path =
-        testDir.getOrElse(
-          throw new IllegalStateException(
-            "testDir was not initialized"
-          )
-        )
 
     val startupInfo = new StartupInfo(
       Array.empty
@@ -79,13 +52,13 @@ class QsoEntryPanelTestFxTest extends FunSuite:
       modeCatalog = modeCatalog
     )
     val selectedBandModeManager = new SelectedBandModeManager(
-      dirProvider = directoryProvider,
+      fileHelper = fileHelper,
       bandModeBuilder = bandModeBuilder,
       startupInfo = startupInfo
     )
 
     val stationManager = new StationConfigManager(
-      fileHelper = directoryProvider,
+      fileHelper = fileHelper,
       startupInfo = startupInfo
     )
     stationManager.setStation(
@@ -97,7 +70,7 @@ class QsoEntryPanelTestFxTest extends FunSuite:
     )
 
     val contestManager = new ContestConfigManager(
-      fileHelper = directoryProvider,
+      fileHelper = fileHelper,
       filenameStamp = new FilenameStamp(),
       nodeStatusDispatcher = null.asInstanceOf[fdswarm.replication.NodeStatusDispatcher],
       ignoreStatusSec = 0
@@ -145,7 +118,7 @@ class QsoEntryPanelTestFxTest extends FunSuite:
     )
 
     val userConfig = new UserConfig(
-      directoryProvider
+      fileHelper
     )
     userConfig
       .getProperty[BooleanProperty](
@@ -223,7 +196,7 @@ class QsoEntryPanelTestFxTest extends FunSuite:
     val nodeIdentityManager = new NodeIdentityManager(
       httpPort = 19000,
       instanceIdManager = new InstanceIdManager(
-        fileHelper = directoryProvider,
+        fileHelper = fileHelper,
         startupInfo = startupInfo
       )
     )

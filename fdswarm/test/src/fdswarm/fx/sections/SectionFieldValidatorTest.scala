@@ -21,12 +21,12 @@ package fdswarm.fx.sections
 import com.typesafe.config.ConfigFactory
 import fdswarm.JavaFxTestKit
 import fdswarm.fx.UserConfig
-import munit.FunSuite
+import fdswarm.support.TempDirFileHelperSuite
 
-class SectionFieldValidatorTest extends FunSuite:
+class SectionFieldValidatorTest extends TempDirFileHelperSuite:
   JavaFxTestKit.init()
 
-  lazy val sections = Seq(
+  lazy val sections: Seq[Section] = Seq(
     Section("IL", "Illinois"),
     Section("QC", "Quebec"),
     Section("DX", "DX"),
@@ -95,13 +95,10 @@ class SectionFieldValidatorTest extends FunSuite:
         |""".stripMargin
     )
     val sectionsProvider = new SectionsProvider(config)
-    val userConfig = new UserConfig(new fdswarm.DirectoryProvider:
-      private val dir = os.temp.dir()
-      override def apply(): os.Path = dir
+    val userConfig = new UserConfig(fileHelper
     )
     JavaFxTestKit.runOnFx {
-      new SectionField(sectionsProvider, userConfig)
-    }
+      new SectionField(sectionsProvider, userConfig)}
 
   test("uniqueMatchingCode returns code only for unique prefix") {
     val field = mkField()

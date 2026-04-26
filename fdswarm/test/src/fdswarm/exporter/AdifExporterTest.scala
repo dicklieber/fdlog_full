@@ -28,8 +28,9 @@ import fdswarm.StationConfigManager
 import fdswarm.MockStartupInfo
 import fdswarm.exporter.AdifExporter
 import fdswarm.fx.station.StationConfig
+import fdswarm.support.TempDirFileHelperSuite
 
-class AdifExporterTest extends FunSuite:
+class AdifExporterTest extends TempDirFileHelperSuite :
   val qsoMetadata = fdswarm.model.QsoMetadata.testQsoMetadata
 
   val testDir = os.temp.dir()
@@ -37,7 +38,7 @@ class AdifExporterTest extends FunSuite:
   val stationJson = station.asJson.noSpaces
   os.write.over(testDir / "station.json", stationJson)
   val dummyDirProvider: fdswarm.DirectoryProvider = () => testDir
-  val stationManager = new StationConfigManager(dummyDirProvider, MockStartupInfo)
+  val stationManager = new StationConfigManager(fileHelper, MockStartupInfo)
   val exporter = new AdifExporter(stationManager)
 
   test("AdifExporter should generate correct ADIF"):

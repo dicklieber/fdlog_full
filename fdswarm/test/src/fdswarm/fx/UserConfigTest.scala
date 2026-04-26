@@ -18,10 +18,10 @@
 
 package fdswarm.fx
 
-import munit.FunSuite
+import fdswarm.support.TempDirFileHelperSuite
 import scalafx.beans.property.{BooleanProperty, IntegerProperty, Property}
 
-class UserConfigTest extends FunSuite {
+class UserConfigTest extends TempDirFileHelperSuite {
 
   class MockFileHelper extends fdswarm.DirectoryProvider {
     private val tempDir = os.temp.dir()
@@ -30,13 +30,13 @@ class UserConfigTest extends FunSuite {
 
   test("UserConfig should persist and load values") {
     val provider = new MockFileHelper()
-    val config = new UserConfig(provider)
+    val config = new UserConfig(fileHelper)
 
     config.getProperty[BooleanProperty]("developerMode").value = true
     config.getProperty[IntegerProperty]("qsoListLines").value = 42
     config.save()
 
-    val config2 = new UserConfig(provider)
+    val config2 = new UserConfig(fileHelper)
     config2.load()
 
     assertEquals(config2.get[Boolean]("developerMode"), true)
@@ -45,7 +45,7 @@ class UserConfigTest extends FunSuite {
 
   test("UserConfig get[T] should work") {
     val provider = new MockFileHelper()
-    val config = new UserConfig(provider)
+    val config = new UserConfig(fileHelper)
     config.getProperty[BooleanProperty]("developerMode").value = true
     config.getProperty[IntegerProperty]("qsoListLines").value = 25
 

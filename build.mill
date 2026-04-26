@@ -451,7 +451,6 @@ object fdswarm
       rel: String
     ): os.Path =
     os.Path(rel, os.pwd)
-
   object test extends ScoverageTests with TestModule.Munit:
     override def mvnDeps = super.mvnDeps() ++ Seq(
       mvn"org.apache.logging.log4j:log4j-core:$log4jV",
@@ -469,6 +468,10 @@ object fdswarm
   object testUi extends ScalaTests with TestModule.Munit:
     override def moduleDeps = Seq(
       fdswarm
+    )
+
+    override def sources = super.sources() ++ Seq(
+      PathRef(moduleDir / "test" / "src" / "fdswarm" / "support")
     )
 
     override def mvnDeps = super.mvnDeps() ++ Seq(
