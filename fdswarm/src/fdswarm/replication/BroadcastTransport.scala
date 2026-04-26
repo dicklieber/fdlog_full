@@ -45,23 +45,32 @@ class BroadcastTransport @Inject() (
 
   val port = 8090
   val thread = new Thread(this, "Broadcast-Receiver")
-  private val sentCounter = metrics.counter("broadcast_packets_total")
-  private val receivedCounter = metrics.counter("broadcast_packets_received_total")
+  private val sentCounter = metrics.counter("udp_broadcast_packets_sent")
+  private val receivedCounter = metrics.counter("udp_broadcast_packets_received")
+  private val sentBytesCounter = metrics.counter("udp_broadcast_bytes_sent")
+  private val receivedBytesCounter = metrics.counter("udp_broadcast_bytes_received")
+  private var lastPacketBytesSent: Int = 0
+  private var lastPacketBytesReceived: Int = 0
+  metrics.gauge("udp_broadcast_last_packet_bytes_sent")(lastPacketBytesSent.toDouble)
+  metrics.gauge("udp_broadcast_last_packet_bytes_received")(lastPacketBytesReceived.toDouble)
+
+  private var socket: DatagramSocket = uninitialized
   socket = new DatagramSocket(null)
   socket.setReuseAddress(true)
   socket.setBroadcast(true)
   socket.bind(new InetSocketAddress("0.0.0.0", port))
-  private var lastPacketBytes: Int = 0
 
   thread.setDaemon(true)
   thread.start()
-  private var socket: DatagramSocket = uninitialized
 
   override def run(): Unit =
     while !Thread.currentThread().isInterrupted do
       val packet: DatagramPacket = new DatagramPacket(buffer, buffer.length)
       logger.trace(s"Waiting for a UDP packet")
       socket.receive(packet)
+      receivedCounter.inc()
+      receivedBytesCounter.inc(packet.getLength.toLong)
+      lastPacketBytesReceived = packet.getLength
       val senderAddr = packet.getAddress
       val senderPort = packet.getPort
       logger.trace(s"Received a UDP packet")
@@ -81,12 +90,13 @@ class BroadcastTransport @Inject() (
   ): Unit =
     try
       val packetBytes = UDPHeader(service, nodeIdentityManager.ourNodeIdentity, data)
-      lastPacketBytes = packetBytes.length
+      lastPacketBytesSent = packetBytes.length
       val broadcastAddr = InetAddress.getByName("255.255.255.255")
       val packet =
         new DatagramPacket(packetBytes, packetBytes.length, broadcastAddr, port)
       socket.send(packet)
       sentCounter.inc()
+      sentBytesCounter.inc(packetBytes.length.toLong)
 
     catch
       case e: Exception  =>
