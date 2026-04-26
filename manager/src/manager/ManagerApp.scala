@@ -34,7 +34,6 @@ import scalafx.scene.layout.{BorderPane, HBox, StackPane}
 
 import scala.collection.IndexedSeqView
 import scala.util.Random
-
 import scalafx.scene.paint.Color
 import scalafx.scene.image.Image
 import scalafx.stage.Stage

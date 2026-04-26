@@ -18,6 +18,7 @@
 
 package fdswarm.fx.bands
 
+import fdswarm.bands.{AvailableModesManager, ModeCatalog}
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.GridColumns
 import fdswarm.fx.bands.*

@@ -18,6 +18,7 @@
 
 package fdswarm.model
 
+import fdswarm.bands.{BandClass, HamBand, ItuRegion}
 import fdswarm.fx.bands.*
 import fdswarm.fx.contest.*
 import fdswarm.replication.*

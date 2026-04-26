@@ -22,10 +22,11 @@ import jakarta.inject.{Inject, Singleton}
 import _root_.io.circe.{Decoder, Encoder, Json, Printer}
 import _root_.io.circe.parser.decode
 import _root_.io.circe.syntax.*
+import fdswarm.io.FileHelper
 import scalafx.beans.property.{BooleanProperty, IntegerProperty, Property}
 
 @Singleton
-final class UserConfig @Inject()(directoryProvider: fdswarm.DirectoryProvider) {
+final class UserConfig @Inject()(fileHelper:FileHelper) :
 
   private val propertyList: List[Property[?, ?]] = List(
     new BooleanProperty(this, "usePhonetic", true),
@@ -50,7 +51,7 @@ final class UserConfig @Inject()(directoryProvider: fdswarm.DirectoryProvider) {
       case Some(p) => p.asInstanceOf[T]
       case None => throw new NoSuchElementException(s"Property $name not found")
 
-  private val configFile: os.Path = directoryProvider() / "userConfig.json"
+  private val configFile = fileHelper.directory / "userConfig.json"
 
   def load(): Unit =
     if os.exists(configFile) then
@@ -79,7 +80,7 @@ final class UserConfig @Inject()(directoryProvider: fdswarm.DirectoryProvider) {
       name -> jsonValue
     }
     val printer = Printer.spaces2
-    os.makeDir.all(configFile / os.up)
+//    os.makeDir.all(configFile / os.up)
     os.write.over(configFile, printer.print(map.asJson))
 
   // Initial load
@@ -87,4 +88,3 @@ final class UserConfig @Inject()(directoryProvider: fdswarm.DirectoryProvider) {
 
   // Auto-save on change
   propertyList.foreach(_.onChange(save()))
-}

@@ -21,8 +21,8 @@ package fdswarm.bandmodes
 import scalafx.application.Platform
 import scalafx.beans.property.BooleanProperty
 import com.typesafe.config.Config
+import fdswarm.bands.{AvailableBandsManager, AvailableModesManager, BandModeBuilder, HamBand}
 import fdswarm.fx.GridColumns
-import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager, BandModeBuilder, HamBand}
 import fdswarm.fx.utils.IconButton
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.model.BandMode

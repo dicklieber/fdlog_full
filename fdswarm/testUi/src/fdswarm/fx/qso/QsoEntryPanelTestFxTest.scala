@@ -2,10 +2,10 @@ package fdswarm.fx.qso
 
 import com.typesafe.config.ConfigFactory
 import fdswarm.bandmodes.SelectedBandModeManager
+import fdswarm.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
 import fdswarm.{StartupInfo, StationConfigManager}
 import fdswarm.fx.CallSignField
 import fdswarm.fx.UserConfig
-import fdswarm.fx.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
 import fdswarm.fx.contest.{ContestCatalog, ContestConfig, ContestConfigManager, ContestType}
 import fdswarm.fx.sections.{SectionField, SectionsProvider}
 import fdswarm.fx.station.StationConfig

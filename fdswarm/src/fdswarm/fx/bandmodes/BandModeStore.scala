@@ -18,6 +18,7 @@
 
 package fdswarm.fx.bandmodes
 
+import fdswarm.io.FileHelper
 import jakarta.inject.{Inject, Singleton}
 import scalafx.beans.property.ObjectProperty
 import io.circe.Codec
@@ -25,29 +26,17 @@ import io.circe.parser.*
 import io.circe.syntax.*
 
 @Singleton
-final class BandModeStore @Inject() (dirProvider: fdswarm.DirectoryProvider) {
+final class BandModeStore @Inject() (fileHelper:FileHelper) {
   import BandModeStore.BandModes
 
-  private val dir: os.Path = {
-    val p = dirProvider()
-    os.makeDir.all(p)
-    p
-  }
-
-  private val path: os.Path = dir / "bandmodes.json"
+  private val file = "bandmodes.json"
 
   private def load(): BandModes =
-    if os.exists(path) then
-      decode[BandModes](os.read(path)).getOrElse(BandModes(Set.empty, Set.empty, Map.empty))
-    else
-      BandModes(Set.empty, Set.empty, Map.empty)
+    fileHelper.loadOrDefault(file)(BandModes(Set.empty, Set.empty, Map.empty))
 
-  private def save(bm: BandModes): Unit = {
-    val json = bm.asJson.spaces2
-    val tmp  = path / os.up / s".${path.last}.tmp"
-    os.write.over(tmp, json, createFolders = true)
-    os.move.over(tmp, path)
-  }
+  private def save(bandModes: BandModes): Unit =
+    fileHelper.save(file, bandModes)
+
 
   private val state: ObjectProperty[BandModes] =
     ObjectProperty(load())

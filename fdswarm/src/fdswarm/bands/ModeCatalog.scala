@@ -16,16 +16,21 @@
  *
  */
 
-package fdswarm.fx.bands
+package fdswarm.bands
 
-import com.typesafe.config.ConfigFactory
-import fdswarm.bands.BandCatalog
-import munit.FunSuite
+import com.typesafe.config.{Config, ConfigRenderOptions}
+import fdswarm.model.BandMode.Mode
+import jakarta.inject.{Inject, Singleton}
+import fdswarm.model.Choice
+import java.util
+import fdswarm.model.ChoiceItem
+import scala.jdk.CollectionConverters.*
 
-class BandCatalogTest extends FunSuite:
-
-  test("happy path"):
-    val hamBandCatalog = BandCatalog(ConfigFactory.load())
-    assertEquals(hamBandCatalog.hamBands.size, 19)
-
-
+/**
+ * This is loaded from application.conf.
+ */
+@Singleton
+final class ModeCatalog @Inject()(config: Config):
+  val modes: Seq[Mode] = config.getStringList("fdswarm.modes").asScala.toSeq
+  val choices: Seq[Choice[Mode]] = modes.map((p: Mode) => ChoiceItem(p))
+  

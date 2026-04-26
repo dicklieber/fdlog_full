@@ -18,8 +18,8 @@
 
 package fdswarm.fx.qso
 
+import fdswarm.bands.{AvailableModesManager, BandCatalog, ModeCatalog}
 import fdswarm.fx.UserConfig
-import fdswarm.fx.bands.{AvailableModesManager, BandCatalog, ModeCatalog}
 import fdswarm.fx.components.{AnyComboBox, CountComboBox, OptionTextField}
 import fdswarm.fx.contest.*
 import fdswarm.fx.utils.{IconButton, MultiChangeWatcher}

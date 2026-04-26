@@ -18,8 +18,10 @@
 
 package fdswarm.fx.bands
 
+import fdswarm.bands.{AvailableBandsManager, BandCatalog, BandClass, HamBand}
 import fdswarm.fx.GridColumns
 import fdswarm.fx.bands.*
+import fdswarm.io.FileHelper
 import fdswarm.model.BandMode.Band
 import jakarta.inject.{Inject, Singleton}
 import os.Path
@@ -29,7 +31,7 @@ import scalafx.scene.layout.GridPane
 
 @Singleton
 final class BandCheckBoxPane @Inject()(
-                                        dirProvider: fdswarm.DirectoryProvider,
+                                        fileHelper: FileHelper,
                                         hamBandCatalog: BandCatalog,
                                         availableBandsManager: AvailableBandsManager
                                       ):

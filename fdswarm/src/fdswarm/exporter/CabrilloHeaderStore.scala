@@ -18,46 +18,34 @@
 
 package fdswarm.exporter
 
-import jakarta.inject.{Inject, Singleton}
 import _root_.io.circe.Printer
-import _root_.io.circe.parser.decode
-import _root_.io.circe.syntax.*
+import fdswarm.io.FileHelper
+import jakarta.inject.{Inject, Singleton}
 import scalafx.beans.property.ObjectProperty
 
 @Singleton
-final class CabrilloHeaderStore @Inject() (directoryProvider: fdswarm.DirectoryProvider) {
-
-  private val headerFile: os.Path =
-    directoryProvider() / "cabrillo-header.json"
+final class CabrilloHeaderStore @Inject() (fileHelper: FileHelper):
 
   /** Observable current header. */
   val header: ObjectProperty[CabrilloHeader] =
     ObjectProperty[CabrilloHeader](this, "header", loadOrDefault())
+  private lazy val file = "cabrillo-header.json"
+  private val printer: Printer = Printer.spaces2.copy(dropNullValues = true)
 
-  /** Persist current header value to cabrillo-header.json */
-  def save(): Unit =
-    saveToDisk(header.value)
+//  /** Persist current header value to cabrillo-header.json */
+//  def save(): Unit =
+//    save(header.value)
+
+  // ---------- internals ----------
 
   /** Replace header (fires change listeners) + persist */
   def update(newHeader: CabrilloHeader): Unit = {
     header.value = newHeader
-    saveToDisk(newHeader)
+    save(newHeader)
   }
 
-  // ---------- internals ----------
+  private def save(cabrilloHeader: CabrilloHeader): Unit =
+    fileHelper.save(file, cabrilloHeader)
 
   private def loadOrDefault(): CabrilloHeader =
-    if os.exists(headerFile) then
-      decode[CabrilloHeader](os.read(headerFile)) match
-        case Right(h) => h
-        case Left(_)  => CabrilloHeader()
-    else
-      CabrilloHeader()
-
-  private val printer: Printer = Printer.spaces2.copy(dropNullValues = true)
-
-  private def saveToDisk(h: CabrilloHeader): Unit = {
-    os.makeDir.all(headerFile / os.up)
-    os.write.over(headerFile, printer.print(h.asJson))
-  }
-}
+    fileHelper.loadOrDefault(file)(CabrilloHeader())

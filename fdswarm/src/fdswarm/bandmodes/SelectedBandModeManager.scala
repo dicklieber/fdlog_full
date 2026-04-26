@@ -20,7 +20,7 @@ package fdswarm.bandmodes
 
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.StartupInfo
-import fdswarm.fx.bands.BandModeBuilder
+import fdswarm.bands.BandModeBuilder
 import fdswarm.io.FileHelper
 import fdswarm.model.BandMode
 import io.circe.parser.*

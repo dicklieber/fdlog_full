@@ -20,14 +20,14 @@ package fdswarm.exporter
 
 import fdswarm.fx.contest.{ContestConfig, ContestConfigManager, ContestType}
 import fdswarm.fx.station.StationStore
+import fdswarm.io.FileHelper
 import fdswarm.store.QsoStore
-import fdswarm.model.Qso
 import jakarta.inject.{Inject, Singleton}
 
 @Singleton
 final class ExportService @Inject()(
                                      qsoStore: QsoStore,
-                                     directoryProvider: fdswarm.DirectoryProvider,
+                                     fileHelper: FileHelper,
                                      contestManager: ContestConfigManager,
                                      stationStore: StationStore,
                                      val adifExporter: AdifExporter,
@@ -61,4 +61,4 @@ final class ExportService @Inject()(
         val json = JsonExporter.exportQsos(qsos)
         os.write.over(path, json)
       case ExportFormat.ZIP =>
-        ZipExporter.zipDirectory(directoryProvider(), path)
+        ZipExporter.zipDirectory(fileHelper.directory, path)

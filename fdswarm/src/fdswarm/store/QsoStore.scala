@@ -18,6 +18,7 @@
 
 package fdswarm.store
 
+import com.codahale.metrics.Gauge
 import fdswarm.{DirectoryProvider, StartupInfo}
 import fdswarm.contestStart.ContestStartManager
 import fdswarm.io.FileHelper
@@ -54,13 +55,23 @@ class QsoStore @Inject() (
   val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()
   protected val map: TrieMap[Id, Qso] = new TrieMap
   private val path = fileHelper.directory / "qsosJournal.json"
-  private val archiveDirectory: Path = path / "qsosJournal.archive"
+  private val archiveDirectory: Path = fileHelper.directory / "qsosJournal.archive"
   // Metrics
   private val qsoEnteryCounter = metrics.counter("qsoEntries")
   private val hashCalculatorTimer = metrics.timer("hashCalculation")
-  private val qsoCollectionSizeGauge =
-    metrics.gauge("qsoCollectionSize")(qsoCollection.size)
-  private val journalFile = fileHelper.directory / "qsosJournal.json"
+  private val qsoCollectionSizeGaugeName = s"${this.getClass.getSimpleName}.qsoCollectionSize"
+  private val qsoCollectionSizeGauge: Gauge[Int] =
+    metricRegistry.synchronized {
+      val existing = metricRegistry.getGauges.get(qsoCollectionSizeGaugeName)
+      if existing != null then
+        existing.asInstanceOf[Gauge[Int]]
+      else
+        metricRegistry.register(
+          qsoCollectionSizeGaugeName,
+          new Gauge[Int]:
+            override def getValue: Int = qsoCollection.size
+        )
+    }
 
   def add(
       qso: Qso
@@ -152,8 +163,11 @@ class QsoStore @Inject() (
     os.makeDir.all(archiveDirectory)
     val timestampedFile =
       archiveDirectory / s"${filenameStamp.build()}.qsosJournal.json"
-    os.move(path, timestampedFile)
-    logger.info(s"Archived QSOs to $timestampedFile")
+    if os.isFile(path) then
+      os.move(path, timestampedFile)
+      logger.info(s"Archived QSOs to $timestampedFile")
+    else if os.exists(path) then
+      logger.error("Cannot archive QSO journal because path is not a file", "path" -> path.toString)
 
     map.clear()
 
@@ -184,7 +198,10 @@ class QsoStore @Inject() (
 
   if startupInfo.info.exists(_.clearQsos) then
     logger.info("StartupInfo Clearing QSOs journal")
-    os.remove(path)
+    if os.isFile(path) then
+      os.remove(path)
+    else if os.isDir(path) then
+      os.remove.all(path)
 
   contestStartManager.contestStart.onChange((_, oldContestStart, nextContestStart) =>
     if nextContestStart.start.isAfter(oldContestStart.start) then
@@ -198,7 +215,7 @@ class QsoStore @Inject() (
       )
   )
 
-  if os.exists(path) then
+  if os.isFile(path) then
     val cutoff = activeContestStart
     var loaded = 0
     var ignoredOlderThanContestStart = 0
@@ -227,6 +244,8 @@ class QsoStore @Inject() (
       "ignoredOlderThanContestStart" -> ignoredOlderThanContestStart
     )
     calculateHash()
+  else if os.exists(path) then
+    logger.error("QSO journal path exists but is not a regular file", "path" -> path.toString)
 
   /** Thread-safe snapshot of all QSOs, sorted by stamp. Prefer this over reading `qsoCollection`
     * from non-JavaFX threads (e.g., Cask routes).
@@ -254,7 +273,7 @@ class QsoStore @Inject() (
     if removed.nonEmpty then
       val timestampedFile =
         archiveDirectory / s"${filenameStamp.build()}.qsosJournal.json"
-      if os.exists(path) then
+      if os.isFile(path) then
         os.move(path, timestampedFile)
       val orderedKept = kept.sorted
       val lines = orderedKept.map(_.asJsonCompact + "\n").mkString

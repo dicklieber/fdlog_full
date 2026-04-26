@@ -16,16 +16,24 @@
  *
  */
 
-package fdswarm.fx.bands
+package fdswarm.bands
 
-import com.typesafe.config.ConfigFactory
-import fdswarm.bands.BandCatalog
-import munit.FunSuite
+import com.typesafe.config.Config
+import fdswarm.model.BandMode.Band
+import fdswarm.model.{Choice, ChoiceItem}
+import io.circe.parser.decode
+import jakarta.inject.{Inject, Singleton}
+/**
+ * This is loaded from application.conf, defines all known radio bands.
+ */
+@Singleton
+final class BandCatalog @Inject()(config: Config):
+  private val key = "fdswarm.hamBands"
 
-class BandCatalogTest extends FunSuite:
-
-  test("happy path"):
-    val hamBandCatalog = BandCatalog(ConfigFactory.load())
-    assertEquals(hamBandCatalog.hamBands.size, 19)
+  val hamBands: Seq[HamBand] =
+    decode[Seq[HamBand]](config.getValue(key).render(com.typesafe.config.ConfigRenderOptions.concise().setJson(true))).toTry.get
 
 
+
+
+  

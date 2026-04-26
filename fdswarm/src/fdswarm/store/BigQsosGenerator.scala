@@ -18,7 +18,7 @@
 
 package fdswarm.store
 
-import fdswarm.fx.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
+import fdswarm.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
 import fdswarm.fx.contest.ContestType.WFD
 import fdswarm.fx.station.StationConfig
 import fdswarm.model.*

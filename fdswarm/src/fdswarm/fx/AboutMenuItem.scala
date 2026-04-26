@@ -28,18 +28,17 @@ import jakarta.inject.Inject
 import scalafx.Includes.*
 import fdswarm.fx.utils.JsonPrettyPrinter
 import fdswarm.util.NodeIdentityManager
-import fdswarm.replication.{UDPHeader, Transport}
+import fdswarm.replication.{Transport, UDPHeader}
 import fdswarm.{StartupConfig, StartupInfo}
-import io.circe.syntax._
+import io.circe.syntax.*
 import scalafx.scene.input.Clipboard
 import scalafx.scene.input.ClipboardContent
-
 import scalafx.scene.shape.SVGPath
 import scalafx.scene.paint.Color
 import scalafx.geometry.Pos
-
 import com.typesafe.config.Config
-class AboutMenuItem @Inject()(directoryProvider: fdswarm.DirectoryProvider,
+import fdswarm.io.FileHelper
+class AboutMenuItem @Inject()(fileHelper: FileHelper,
                               nodeIdentityManager: NodeIdentityManager,
                               transport: Transport,
                               startupInfo: StartupInfo,
@@ -94,7 +93,7 @@ class AboutMenuItem @Inject()(directoryProvider: fdswarm.DirectoryProvider,
       )
     }
 
-    val dataPath = directoryProvider()
+    val dataPath = fileHelper.directory
     val dataFilesNode = if os.exists(dataPath) && os.isDir(dataPath) then
       val files = os.list(dataPath)
         .filter(p => os.isFile(p) && !p.last.startsWith("."))
