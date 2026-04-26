@@ -19,8 +19,7 @@
 package manager
 
 import com.google.inject.Injector
-import fdswarm.{StartupConfig, DebugMode}
-import fdswarm.fx.bandmodes.{BandModeMatrixPane, SelectedBandModeManager}
+import fdswarm.{DebugMode, StartupConfig}
 import fdswarm.model.{BandMode, Callsign}
 import javafx.collections.ListChangeListener
 import net.codingwell.scalaguice.InjectorExtensions.*

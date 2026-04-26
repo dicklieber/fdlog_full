@@ -18,10 +18,10 @@
 
 package fdswarm.fx.qso
 
+import fdswarm.bandmodes.SelectedBandModeManager
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.GridColumns
 import fdswarm.fx.bandmodes.BandModeStore
-import fdswarm.fx.bandmodes.SelectedBandModeManager
 import fdswarm.store.{DupInfo, QsoStore, StyledMessage}
 import fdswarm.util.TimeHelpers.localFrom
 import jakarta.inject.{Inject, Singleton}

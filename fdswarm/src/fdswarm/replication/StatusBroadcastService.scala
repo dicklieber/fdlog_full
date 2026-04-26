@@ -20,8 +20,8 @@ package fdswarm.replication
 
 import com.google.inject.name.Named
 import fdswarm.StationConfigManager
+import fdswarm.bandmodes.SelectedBandModeManager
 import fdswarm.contestStart.ContestStartManager
-import fdswarm.fx.bandmodes.SelectedBandModeManager
 import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.model.BandModeOperator
@@ -77,7 +77,7 @@ class StatusBroadcastService @Inject() (
   private def broadcastStatus(): Unit =
     if !contestConfigManager.hasConfiguration.value then return
     try
-      val operator = stationManager.station.operator
+      val operator = stationManager.stationConfig.operator
       val bandMode = selectedBandModeStore.selected.value
       val bandModeOperator = BandModeOperator(operator, bandMode)
 

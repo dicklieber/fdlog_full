@@ -19,9 +19,9 @@
 package fdswarm.fx.qso
 
 import com.google.inject.Inject
+import fdswarm.bandmodes.BandModeMatrixPane
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.GridColumns
-import fdswarm.fx.bandmodes.BandModeMatrixPane
 import fdswarm.fx.sections.SectionPanel
 import fdswarm.replication.status.NodeBandOpPane
 import jakarta.inject.Singleton

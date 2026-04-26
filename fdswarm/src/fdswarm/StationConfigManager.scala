@@ -23,18 +23,16 @@ import _root_.io.circe.parser.decode
 import _root_.io.circe.syntax.*
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.station.StationConfig
+import fdswarm.io.FileHelper
 import fdswarm.model.Callsign
 import jakarta.inject.{Inject, Singleton}
 import scalafx.beans.property.ObjectProperty
 
 @Singleton
 final class StationConfigManager @Inject()(
-                                      productionDirectory: fdswarm.DirectoryProvider,
-                                      startupInfo: StartupInfo
+                                            fileHelper: FileHelper,
+                                            startupInfo: StartupInfo
                                     ) extends LazyStructuredLogging:
-
-  private val file: os.Path =
-    productionDirectory() / "station.json"
 
   val stationProperty:ObjectProperty[StationConfig] =
     ObjectProperty(startupInfo.info match
@@ -46,7 +44,7 @@ final class StationConfigManager @Inject()(
         load()
     )
 
-  def station: StationConfig =
+  def stationConfig: StationConfig =
     stationProperty.value
 
   def setStation(newStation: StationConfig): Unit =
@@ -60,21 +58,7 @@ final class StationConfigManager @Inject()(
   private val printer: Printer = Printer.spaces2.copy(dropNullValues = true)
 
   private def persist(): Unit =
-    val json = printer.print(station.asJson)
-    os.write.over(file, json, createFolders = true)
+    fileHelper.save("station.json", stationConfig)
 
   private def load(): StationConfig =
-    try {
-      if !os.exists(file) then return StationConfig(Callsign(""), "", "")
-      val sJson = os.read(file)
-      decode[StationConfig](sJson) match
-        case Right(st) => st
-        case Left(error) =>
-          logger.error(s"Failed to decode Station from $file: ${error.getMessage}")
-          StationConfig(Callsign(""), "", "")
-    }
-    catch
-      case e: Throwable =>
-        logger.warn(s"Failed to load station from $file: ${e.getMessage}")
-        StationConfig(Callsign(""), "", "")
-
+    fileHelper.loadOrDefault[StationConfig]("station.json")(StationConfig())

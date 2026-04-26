@@ -22,37 +22,43 @@ import fdswarm.logging.StructuredLogger
 import io.circe.parser.*
 import io.circe.syntax.*
 import io.circe.{Decoder, Encoder, Printer}
-class FileHelper extends fdswarm.DirectoryProvider:
+
+/** A utility class for handling file-related operations, such as reading and writing JSON-encoded
+  * data to files, and managing application-specific directory paths.
+  */
+class FileHelper:
   private lazy val logger = StructuredLogger("fileHelper")
+  val directory: os.Path =
+    val base = os.home / "fdswarm"
+    sys.env.get("PORT") match
+      case Some(port) =>
+        base / port
+      case None =>
+        base
 
   def loadOrDefault[T: Decoder](fileName: String)(default: => T): T =
 
-    val path = apply() / fileName
+    val path = directory / fileName
     try
-      val sJson = os.read(path)
+      val sJson: String = os.read(path)
       val r: T = parse(sJson).flatMap(_.as[T]).fold(
         err =>
           logger.error("Failed to parse/decode JSON", err, "File" -> fileName)
           default
         ,
-        identity)
+        identity
+      )
       r
     catch
       case e: Exception =>
         logger.error("Failed to read file", e, "File" -> fileName)
         default
 
-  /** At testing time, the port is not available we just use home directory/fdswarm.
-    * But for tests we provide a PORT environment variable.
-    * @return
-    */
-  def apply(): os.Path =
-    val base = os.home / "fdswarm"
-    sys.env.get("PORT") match
-      case Some(port) => base / port
-      case None       => base
-
   def save[T: Encoder](fileName: String, value: T): Unit =
-    val path = apply() / fileName
+    val path = directory / fileName
     val json = value.asJson.printWith(Printer.indented("  "))
     os.write.over(path, json, createFolders = true)
+
+  def remove(fileName: String): Unit =
+    val path = directory / fileName
+    os.remove(path)

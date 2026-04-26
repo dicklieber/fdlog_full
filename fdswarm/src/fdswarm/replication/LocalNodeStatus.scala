@@ -19,8 +19,8 @@
 package fdswarm.replication
 
 import fdswarm.StationConfigManager
+import fdswarm.bandmodes.SelectedBandModeManager
 import fdswarm.contestStart.ContestStartManager
-import fdswarm.fx.bandmodes.SelectedBandModeManager
 import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.logging.Locus.Replication
@@ -50,7 +50,7 @@ final class LocalNodeStatus @Inject()(
     val contestConfig = contestConfigManager.contestConfigProperty.value
     val bandNodeOperator =
       BandModeOperator(
-        stationManager.station.operator,
+        stationManager.stationConfig.operator,
         selectedBandModeStore.selected.value
       )
     StatusMessage(hashCount = lastHashCount,

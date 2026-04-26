@@ -20,7 +20,7 @@ package fdswarm.fx.qso
 
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.StationConfigManager
-import fdswarm.fx.bandmodes.SelectedBandModeManager
+import fdswarm.bandmodes.SelectedBandModeManager
 import fdswarm.fx.contest.{ContestConfigManager, ContestType}
 import fdswarm.fx.sections.Section
 import fdswarm.fx.CallSignField
@@ -241,7 +241,7 @@ class QsoEntryPanel @Inject()(
   private def qsoMetadata =
     val contestType: ContestType = contestManager.contestConfigProperty.value.contestType
     QsoMetadata(
-      station = stationManager.station,
+      station = stationManager.stationConfig,
       node = nodeIdentityManager.ourNodeIdentity,
       contest = contestType
     )

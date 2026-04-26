@@ -1,10 +1,10 @@
 package fdswarm.fx.qso
 
 import com.typesafe.config.ConfigFactory
+import fdswarm.bandmodes.SelectedBandModeManager
 import fdswarm.{StartupInfo, StationConfigManager}
 import fdswarm.fx.CallSignField
 import fdswarm.fx.UserConfig
-import fdswarm.fx.bandmodes.SelectedBandModeManager
 import fdswarm.fx.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
 import fdswarm.fx.contest.{ContestCatalog, ContestConfig, ContestConfigManager, ContestType}
 import fdswarm.fx.sections.{SectionField, SectionsProvider}
@@ -85,7 +85,7 @@ class QsoEntryPanelTestFxTest extends FunSuite:
     )
 
     val stationManager = new StationConfigManager(
-      productionDirectory = directoryProvider,
+      fileHelper = directoryProvider,
       startupInfo = startupInfo
     )
     stationManager.setStation(
@@ -97,7 +97,7 @@ class QsoEntryPanelTestFxTest extends FunSuite:
     )
 
     val contestManager = new ContestConfigManager(
-      productionDirectory = directoryProvider,
+      fileHelper = directoryProvider,
       filenameStamp = new FilenameStamp(),
       nodeStatusDispatcher = null.asInstanceOf[fdswarm.replication.NodeStatusDispatcher],
       ignoreStatusSec = 0
@@ -223,7 +223,7 @@ class QsoEntryPanelTestFxTest extends FunSuite:
     val nodeIdentityManager = new NodeIdentityManager(
       httpPort = 19000,
       instanceIdManager = new InstanceIdManager(
-        directoryProvider = directoryProvider,
+        fileHelper = directoryProvider,
         startupInfo = startupInfo
       )
     )

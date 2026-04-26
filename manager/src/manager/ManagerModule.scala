@@ -21,7 +21,6 @@ package manager
 import com.google.inject.AbstractModule
 import com.typesafe.config.{Config, ConfigFactory}
 import fdswarm.fx.bands.{AvailableBandsManager, AvailableModesManager, BandCatalog, BandModeBuilder, ModeCatalog}
-import fdswarm.fx.bandmodes.{BandModeMatrixPane, SelectedBandModeManager}
 import fdswarm.StartupInfo
 import fdswarm.DirectoryProvider
 import manager.io.ManagerDirectory

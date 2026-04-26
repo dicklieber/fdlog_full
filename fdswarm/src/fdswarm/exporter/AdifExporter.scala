@@ -45,7 +45,7 @@ class AdifExporter @Inject()(stationManager: StationConfigManager):
     val time = timeFormatter.format(qso.stamp)
     val classSent = qso.exchange.fdClass.toString
     val section = qso.exchange.sectionCode
-    val ownCall = stationManager.station.operator.value
+    val ownCall = stationManager.stationConfig.operator.value
 
     val fields = StringBuilder()
     appendField(fields, "CALL", call)

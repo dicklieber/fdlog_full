@@ -18,12 +18,13 @@
 
 package fdswarm.store
 
-import fdswarm.StartupInfo
+import fdswarm.{DirectoryProvider, StartupInfo}
 import fdswarm.contestStart.ContestStartManager
+import fdswarm.io.FileHelper
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.logging.Locus.LogEntry
 import fdswarm.model.*
-import fdswarm.replication.{HashCount, LocalNodeStatus, NodeStatusDispatcher, Service, Transport}
+import fdswarm.replication.*
 import fdswarm.scoring.ContestScoringService
 import fdswarm.util.Ids.Id
 import io.circe.generic.auto.deriveDecoder
@@ -31,47 +32,39 @@ import io.circe.parser.decode
 import jakarta.inject.*
 import javafx.application.Platform
 import nl.grons.metrics4.scala.DefaultInstrumented
+import os.Path
 import scalafx.collections.ObservableBuffer
 
-import scala.collection.concurrent.TrieMap
 import java.time.Instant
+import scala.collection.concurrent.TrieMap
 
 @Singleton
 class QsoStore @Inject() (
-                           directoryProvider: fdswarm.DirectoryProvider,
+                           fileHelper: FileHelper,
                            transport: Transport,
                            startupInfo: StartupInfo,
                            contestStartManager: ContestStartManager,
                            filenameStamp: fdswarm.util.FilenameStamp,
                            localNodeStatus: LocalNodeStatus,
                            contestScoringService: ContestScoringService,
-                           nodeStatusDispatcher: NodeStatusDispatcher)
-    extends DefaultInstrumented
+                           nodeStatusDispatcher: NodeStatusDispatcher
+) extends DefaultInstrumented
     with LazyStructuredLogging(LogEntry):
 
   val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()
   protected val map: TrieMap[Id, Qso] = new TrieMap
+  private val path = fileHelper.directory / "qsosJournal.json"
+  private val archiveDirectory: Path = path / "qsosJournal.archive"
   // Metrics
   private val qsoEnteryCounter = metrics.counter("qsoEntries")
   private val hashCalculatorTimer = metrics.timer("hashCalculation")
   private val qsoCollectionSizeGauge =
     metrics.gauge("qsoCollectionSize")(qsoCollection.size)
-  private val journalFile = directoryProvider() / "qsosJournal.json"
-  private def activeContestStart: Instant = contestStartManager.contestStart.value.start
-  nodeStatusDispatcher.addListener(
-    service = Service.QSO
-  )(
-    (_, qso) => {
-      add(
-        qso
-      )
-      ()
-    }
-  )
+  private val journalFile = fileHelper.directory / "qsosJournal.json"
 
   def add(
       qso: Qso
-    ): StyledMessage =
+  ): StyledMessage =
     val isDuplicateInStore =
       map.values.exists(existing => existing.dupCriterion == qso.dupCriterion)
     if isDuplicateInStore then
@@ -79,7 +72,7 @@ class QsoStore @Inject() (
     else
       qsoEnteryCounter.inc()
       val jsonString = qso.asJsonCompact
-      os.write.append(journalFile, jsonString + "\n", createFolders = true)
+      os.write.append(path, jsonString + "\n", createFolders = true)
       logger.info("qso" -> qso)
       addToMap(qso)
       mutateQsoCollection {
@@ -89,50 +82,28 @@ class QsoStore @Inject() (
       val bytes: Array[Byte] = jsonString.getBytes("UTF-8")
       transport.send(Service.QSO, bytes)
       StyledMessage(s"Added ${qso.dupCriterion} to store", "addQsoOk")
+  nodeStatusDispatcher.addListener(
+    service = Service.QSO
+  ) {
+    (_, qso) =>
+      add(
+        qso
+      )
+//      ()
+  }
 
   private def addToMap(
       qso: Qso
-    ): Unit =
+  ): Unit =
     val uuid = qso.uuid
     val maybeQso = map.putIfAbsent(uuid, qso)
     maybeQso.foreach(was =>
       logger.error(s"Was already a qso for uuid: $uuid $qso")
     )
 
-  private def calculateHash(): Unit =
-    refreshScores()
-    val idsHash:String =
-      hashCalculatorTimer.time(
-          fdswarm.replication.calcShaHash(
-            map.keys
-          ))
-    localNodeStatus.updateHashCount(
-      HashCount(
-        hash = idsHash,
-        qsoCount = map.size
-      )
-    )
-
-  private def refreshScores(): Unit =
-    contestScoringService.refresh(
-      qsos = all
-    )
-
-  private def mutateQsoCollection(
-      mutation: => Unit
-    ): Unit =
-    if Platform.isFxApplicationThread then mutation
-    else Platform.runLater(() => mutation)
-
-  /** Thread-safe snapshot of all QSOs, sorted by stamp. Prefer this over
-    * reading `qsoCollection` from non-JavaFX threads (e.g., Cask routes).
-    */
-  def all: Seq[Qso] =
-    map.values.toSeq.sorted
-
   def add(
       batch: Seq[Qso]
-    ): Unit = {
+  ): Unit = {
     val toAdd = batch.filter { qso =>
       val uuid = qso.uuid
       map.putIfAbsent(uuid, qso).isEmpty
@@ -140,7 +111,7 @@ class QsoStore @Inject() (
 
     if toAdd.nonEmpty then
       val lines = toAdd.map(_.asJsonCompact + "\n").mkString
-      os.write.append(journalFile, lines, createFolders = true)
+      os.write.append(path, lines, createFolders = true)
       mutateQsoCollection {
         qsoCollection.prependAll(toAdd)
       }
@@ -160,32 +131,79 @@ class QsoStore @Inject() (
 
   def get(
       uuid: Id
-    ): Option[Qso] =
+  ): Option[Qso] =
     map.get(uuid)
+
+  def hasQsos: Boolean = map.nonEmpty
+
+  def potentialDups(
+      startOfCallsign: String,
+      _bandmode: BandMode
+  ): DupInfo =
+    val allPotentialDupCallsigns =
+      QsoStore.potentialDupCallsigns(
+        callsigns = map.valuesIterator.map(_.callsign),
+        startOfCallsign = startOfCallsign
+      )
+    val frustNDups = allPotentialDupCallsigns.take(70)
+    DupInfo(frustNDups, allPotentialDupCallsigns.size)
+
+  def archiveAndClear(): Unit =
+    os.makeDir.all(archiveDirectory)
+    val timestampedFile =
+      archiveDirectory / s"${filenameStamp.build()}.qsosJournal.json"
+    os.move(path, timestampedFile)
+    logger.info(s"Archived QSOs to $timestampedFile")
+
+    map.clear()
+
+    mutateQsoCollection {
+      qsoCollection.clear()
+    }
+    calculateHash()
+
+  private def calculateHash(): Unit =
+    refreshScores()
+    val idsHash: String =
+      hashCalculatorTimer.time(
+        fdswarm.replication.calcShaHash(
+          map.keys
+        )
+      )
+    localNodeStatus.updateHashCount(
+      HashCount(
+        hash = idsHash,
+        qsoCount = map.size
+      )
+    )
+
+  private def refreshScores(): Unit =
+    contestScoringService.refresh(
+      qsos = all
+    )
 
   if startupInfo.info.exists(_.clearQsos) then
     logger.info("StartupInfo Clearing QSOs journal")
-    os.remove(journalFile)
+    os.remove(path)
 
-  contestStartManager.contestStart.onChange(
-    (_, oldContestStart, nextContestStart) =>
-      if nextContestStart.start.isAfter(oldContestStart.start) then
-        logger.info(
-          "event" -> "ContestStart",
-          "contestStart" -> nextContestStart.start
-        )
+  contestStartManager.contestStart.onChange((_, oldContestStart, nextContestStart) =>
+    if nextContestStart.start.isAfter(oldContestStart.start) then
+      logger.info(
+        "event" -> "ContestStart",
+        "contestStart" -> nextContestStart.start
+      )
 
-        removeOlderThanAndRewrite(
-          cutoff = nextContestStart.start
-        )
+      removeOlderThanAndRewrite(
+        cutoff = nextContestStart.start
+      )
   )
 
-  if os.exists(journalFile) then
+  if os.exists(path) then
     val cutoff = activeContestStart
     var loaded = 0
     var ignoredOlderThanContestStart = 0
     os.read
-      .lines(journalFile)
+      .lines(path)
       .iterator
       .map(_.trim)
       .filter(_.nonEmpty)
@@ -210,70 +228,54 @@ class QsoStore @Inject() (
     )
     calculateHash()
 
-  def hasQsos: Boolean = map.nonEmpty
+  /** Thread-safe snapshot of all QSOs, sorted by stamp. Prefer this over reading `qsoCollection`
+    * from non-JavaFX threads (e.g., Cask routes).
+    */
+  def all: Seq[Qso] =
+    map.values.toSeq.sorted
 
-  def potentialDups(
-      startOfCallsign: String,
-      _bandmode: BandMode
-    ): DupInfo =
-    val allPotentialDupCallsigns =
-      QsoStore.potentialDupCallsigns(
-        callsigns = map.valuesIterator.map(_.callsign),
-        startOfCallsign = startOfCallsign
-      )
-    val frustNDups = allPotentialDupCallsigns.take(70)
-    DupInfo(frustNDups, allPotentialDupCallsigns.size)
-
-  def archiveAndClear(): Unit =
-    val timestampedFile =
-      directoryProvider() / s"${filenameStamp.build()}.qsosJournal.json"
-    if os.exists(journalFile) then
-      os.move(journalFile, timestampedFile)
-      logger.info(s"Archived QSOs to $timestampedFile")
-
-    map.clear()
-
-    mutateQsoCollection {
-      qsoCollection.clear()
-    }
-    calculateHash()
+  private def mutateQsoCollection(
+      mutation: => Unit
+  ): Unit =
+    if Platform.isFxApplicationThread then mutation
+    else Platform.runLater(() => mutation)
 
   def size: Int = map.size
 
+  private def activeContestStart: Instant = contestStartManager.contestStart.value.start
+
   private def removeOlderThanAndRewrite(
       cutoff: Instant
-    ): Unit =
+  ): Unit =
     val currentQsos = map.values.toSeq
     val (removed, kept) = currentQsos.partition(
       _.stamp.isBefore(cutoff)
     )
     if removed.nonEmpty then
       val timestampedFile =
-        directoryProvider() / s"${filenameStamp.build()}.qsosJournal.json"
-      if os.exists(journalFile) then
-        os.move(journalFile, timestampedFile)
+        archiveDirectory / s"${filenameStamp.build()}.qsosJournal.json"
+      if os.exists(path) then
+        os.move(path, timestampedFile)
       val orderedKept = kept.sorted
       val lines = orderedKept.map(_.asJsonCompact + "\n").mkString
       os.write.over(
-        journalFile,
+        path,
         lines,
         createFolders = true
       )
       map.clear()
-      orderedKept.foreach(
-        qso =>
-          map.put(
-            qso.uuid,
-            qso
-          )
+      orderedKept.foreach(qso =>
+        map.put(
+          qso.uuid,
+          qso
+        )
       )
       mutateQsoCollection {
         qsoCollection.clear()
-        orderedKept.foreach(
-          qso =>
-            qsoCollection.prepend(
-              qso
-            )
+        orderedKept.foreach(qso =>
+          qsoCollection.prepend(
+            qso
+          )
         )
       }
       logger.info(
@@ -300,7 +302,7 @@ object QsoStore:
   private[store] def potentialDupCallsigns(
       callsigns: IterableOnce[Callsign],
       startOfCallsign: String
-    ): Seq[Callsign] =
+  ): Seq[Callsign] =
     val normalizedStart = startOfCallsign.trim.toUpperCase
     callsigns
       .iterator

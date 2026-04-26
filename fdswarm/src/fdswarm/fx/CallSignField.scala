@@ -20,7 +20,7 @@ package fdswarm.fx
 
 import _root_.scalafx.scene.control.{TextField, TextFormatter}
 import _root_.scalafx.scene.input.KeyCode
-import fdswarm.fx.bandmodes.SelectedBandModeManager
+import fdswarm.bandmodes.SelectedBandModeManager
 import fdswarm.model.Callsign
 import fdswarm.store.QsoStore
 import jakarta.inject.Inject

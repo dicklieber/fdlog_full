@@ -19,17 +19,17 @@
 package fdswarm.util
 
 import fdswarm.StartupInfo
+import fdswarm.io.FileHelper
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.util.Ids.Id
 import io.circe.*
-import io.circe.syntax.*
+import io.circe.generic.auto.deriveDecoder
 import jakarta.inject.{Inject, Singleton}
-import fdswarm.logging.LazyStructuredLogging
 
 @Singleton
-class InstanceIdManager @Inject()(directoryProvider: fdswarm.DirectoryProvider,
+class InstanceIdManager @Inject()(fileHelper: FileHelper,
                                   startupInfo: StartupInfo) extends LazyStructuredLogging:
-  private val dir = directoryProvider()
-  private val file = dir / "instance.json"
+  private val file =  "instance.json"
 
   var ourInstanceId: Id = startupInfo.info match
     case Some(config) =>
@@ -38,33 +38,12 @@ class InstanceIdManager @Inject()(directoryProvider: fdswarm.DirectoryProvider,
     case None =>
       loadOrCreate()
 
-  private def loadOrCreate(): Id =
-    if os.exists(file) then
-      try {
-        val content = os.read(file)
-        parser.decode[InstanceConfig](content) match {
-          case Right(config) => 
-            logger.info(s"Loaded instance ID from $file: ${config.instanceId}")
-            config.instanceId
-          case Left(error) =>
-            logger.error(s"Failed to decode $file: $error. Generating new one.")
-            generateAndSave()
-        }
-      } catch {
-        case e: Exception =>
-          logger.error(s"Error reading $file: ${e.getMessage}. Generating new one.")
-          generateAndSave()
-      }
-    else
-      generateAndSave()
+  private def loadOrCreate(): Id = {
+    val instanceConfig = InstanceConfig(Ids.generateInstanceId())
+    fileHelper.loadOrDefault(file)(instanceConfig)
+    instanceConfig.instanceId
+  }
 
-  private def generateAndSave(): Id =
-    val id = Ids.generateInstanceId()
-    val config = InstanceConfig(id)
-    os.makeDir.all(dir)
-    os.write.over(file, config.asJson.spaces2)
-    logger.info(s"Generated and saved new instance ID to $file: $id")
-    id
 
 
 case class InstanceConfig(instanceId: Id) derives Codec.AsObject
