@@ -26,8 +26,8 @@ import sttp.tapir.Schema
 class BandModeTest extends FunSuite:
 
   test("BandMode toString should format correctly"):
-    assertEquals(BandMode("40M", "CW").toString, "40M CW")
-    assertEquals(BandMode("20M", "PH").toString, "20M PH")
+    assertEquals(BandMode("40M", "CW").toString, "40m CW")
+    assertEquals(BandMode("20M", "PH").toString, "20m PH")
 
   test("BandMode apply(String) should parse correctly"):
     assertEquals(BandMode("40M CW"), BandMode("40M", "CW"))
@@ -55,7 +55,7 @@ class BandModeTest extends FunSuite:
   test("BandMode Circe round trip"):
     val bandMode = BandMode("20M", "PH")
     val json = bandMode.asJson.noSpaces
-    assertEquals(json, "\"20M PH\"")
+    assertEquals(json, "\"20m PH\"")
     val decoded = decode[BandMode](json).getOrElse(fail("failed to decode"))
     assertEquals(decoded, bandMode)
 

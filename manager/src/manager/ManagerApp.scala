@@ -84,7 +84,7 @@ object ManagerApp extends JFXApp3 with LazyStructuredLogging :
 
     val allRequiredBands = bandCatalog.hamBands
       .filter(b => b.bandClass == BandClass.HF || b.bandClass == BandClass.VHF || b.bandClass == BandClass.UHF)
-      .map(_.bandName)
+      .map(_.value)
     bandsManager.bands.setAll(allRequiredBands*)
     modesManager.modes.setAll(modeCatalog.modes*)
 

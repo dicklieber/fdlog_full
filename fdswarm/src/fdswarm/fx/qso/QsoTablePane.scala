@@ -91,7 +91,7 @@ class QsoTablePane @Inject()(qsoStore: QsoStore, userConfig: UserConfig):
   // --- columns ---------------------------------------------------------------
 
   private val timeCol = col[String]("Time", q => fmtInstant(q.stamp))
-  private val bandCol = col[String]("Band", _.bandMode.band)
+  private val bandCol = col[String]("Band", _.bandMode.band.name)
   private val modeCol = col[String]("Mode", _.bandMode.mode)
   private val theirCallCol = col[String]("Their Call", _.callsign.value)
   private val rcvdCol   = col[String]("Rcvd", q => q.exchange.toString)

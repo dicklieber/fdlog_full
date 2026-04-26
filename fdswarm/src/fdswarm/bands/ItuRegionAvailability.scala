@@ -62,7 +62,7 @@ final case class HamBand(
                           bandClass: BandClass,
                           regions: Set[ItuRegion] = Set(ItuRegion.ALL)
                         ) extends Choice[Band]:
-  override val value: Band = bandName
+  override val value: Band = Band.fromString(bandName)
   override val label: String = bandName
 
 object HamBand:

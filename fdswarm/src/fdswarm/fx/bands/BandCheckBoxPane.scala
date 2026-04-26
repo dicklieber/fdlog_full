@@ -92,7 +92,7 @@ final class BandCheckBoxPane @Inject()(
     text = hamBand.bandName
 
     // initialize selection from persisted bands
-    selected = availableBandsManager.bands.contains(hamBand.bandName)
+    selected = availableBandsManager.bands.contains(hamBand.value)
 
     tooltip = new Tooltip(
       s"${hamBand.bandClass}  ${hamBand.startFrequencyHz}–${hamBand.endFrequencyHz} Hz"
@@ -104,4 +104,4 @@ final class BandCheckBoxPane @Inject()(
     }
 
     val bandName: Band =
-      hamBand.bandName
+      hamBand.value

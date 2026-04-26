@@ -26,10 +26,9 @@ import jakarta.inject.{Inject, Singleton}
 class BandModeBuilder @Inject()(bandCatalog: BandCatalog, modeCatalog: ModeCatalog):
 
   def apply(band: Band, mode: Mode): BandMode =
-    val normalizedBand = band.toLowerCase
     val normalizedMode = mode.toUpperCase
 
-    val bandExists = bandCatalog.hamBands.exists(_.bandName.toLowerCase == normalizedBand)
+    val bandExists = bandCatalog.hamBands.exists(_.value == band)
     val modeExists = modeCatalog.modes.exists(_.toUpperCase == normalizedMode)
 
     if !bandExists then
@@ -38,4 +37,4 @@ class BandModeBuilder @Inject()(bandCatalog: BandCatalog, modeCatalog: ModeCatal
     if !modeExists then
       throw new IllegalArgumentException(s"Mode '$mode' not found in ModeCatalog")
 
-    new BandMode(normalizedBand, normalizedMode)
+    new BandMode(band, normalizedMode)

@@ -22,7 +22,7 @@ class ArrlFdScorer @Inject() (
       )
 
     val byBand =
-      qsos.groupBy(_.bandMode.band).view.mapValues(_.size).toMap
+      qsos.groupBy(_.bandMode.band.name).view.mapValues(_.size).toMap
 
     val rawPoints =
       qsos.map(qsoPoints).sum

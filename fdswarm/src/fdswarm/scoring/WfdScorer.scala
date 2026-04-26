@@ -22,7 +22,7 @@ class WfdScorer @Inject() (
       )
 
     val qsosByBand =
-      qsos.groupBy(_.bandMode.band)
+      qsos.groupBy(_.bandMode.band.name)
 
     val byBand =
       qsosByBand.view.mapValues(_.size).toMap

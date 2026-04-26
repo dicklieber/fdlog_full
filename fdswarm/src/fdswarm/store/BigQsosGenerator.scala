@@ -56,7 +56,7 @@ final class BigQsosGenerator @Inject()(qsoStore: QsoStore, bandModeBuilder: Band
       (callsign, index) <- generatedCallsigns
     yield
       val stamp = now.minusMillis(index * intervalMillis)
-      val randomBand = bandCatalog.hamBands(random.nextInt(bandCatalog.hamBands.size)).bandName
+      val randomBand = bandCatalog.hamBands(random.nextInt(bandCatalog.hamBands.size)).value
       val randomMode = modeCatalog.modes(random.nextInt(modeCatalog.modes.size))
       val bandMode = bandModeBuilder(randomBand, randomMode)
 

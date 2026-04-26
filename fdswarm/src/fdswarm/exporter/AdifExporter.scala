@@ -37,7 +37,7 @@ class AdifExporter @Inject()(stationManager: StationConfigManager):
 
   private def toAdifRecord(qso: Qso): String =
     val call = qso.callsign.value
-    val band = qso.bandMode.band
+    val band = qso.bandMode.band.name.toUpperCase
     val mode = mapMode(qso.bandMode.mode)
     val rstSent = "59" // Default for field day
     val rstRcvd = "59"

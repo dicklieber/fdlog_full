@@ -45,7 +45,7 @@ class QsoCirceTest extends FunSuite:
     assertEquals(withSpaces, """{
                                |  "callsign" : "K1ABC",
                                |  "exchange" : "1A CT",
-                               |  "bandMode" : "40M CW",
+                               |  "bandMode" : "40m CW",
                                |  "qsoMetadata" : {
                                |    "station" : {
                                |      "operator" : "",

@@ -64,7 +64,7 @@ final class BandModeMatrixPane @Inject()(availableBandsStore: AvailableBandsMana
       logger.debug(s"Selected BandMode changed to: $newValue. Updating UI toggles.")
       val toggle = tg.getToggles.iterator().asScala.find { t =>
         Option(t.getUserData).collect { case bm: BandMode => bm }.exists { bm =>
-          val matchResult = bm.band.equalsIgnoreCase(newValue.band) && bm.mode.equalsIgnoreCase(newValue.mode)
+          val matchResult = bm.band == newValue.band && bm.mode.equalsIgnoreCase(newValue.mode)
           logger.trace(s"Checking toggle '${bm.band}'/'${bm.mode}' against '${newValue.band}'/'${newValue.mode}': $matchResult")
           matchResult
         }
@@ -141,7 +141,7 @@ class ModeBandButton(band:Band,
                      selectedStore: SelectedBandModeManager
                     ) extends ToggleButton() with LazyStructuredLogging:
   val bandMode: BandMode = bandModeBuilder(band, mode)
-  text = band
+  text = band.name
   padding = Insets(2, 4, 2, 4)
   minWidth = 0
   graphic = null
@@ -154,5 +154,5 @@ class ModeBandButton(band:Band,
       logger.debug(s"Button $bandMode [${this.hashCode()}] selected (tg: ${tg.hashCode()}). Saving to store.")
       selectedStore.save(bandMode)
   }
-  if bandMode.band.equalsIgnoreCase(selectedHamBand.band) && bandMode.mode.equalsIgnoreCase(selectedHamBand.mode) then
+  if bandMode.band == selectedHamBand.band && bandMode.mode.equalsIgnoreCase(selectedHamBand.mode) then
     selected.value = true

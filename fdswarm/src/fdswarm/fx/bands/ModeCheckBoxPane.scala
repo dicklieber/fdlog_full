@@ -22,7 +22,7 @@ import fdswarm.bands.{AvailableModesManager, ModeCatalog}
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.GridColumns
 import fdswarm.fx.bands.*
-import fdswarm.model.BandMode.Band
+import fdswarm.model.BandMode.Mode
 import jakarta.inject.{Inject, Singleton}
 import scalafx.geometry.Insets
 import scalafx.scene.Node
@@ -50,13 +50,13 @@ final class ModeCheckBoxPane @Inject()(
     }
 
   private def saveSelected(): Unit =
-    val bands: Seq[Band] =
+    val modes: Seq[Mode] =
       checkBoxes.iterator
         .filter(_.selected.value)
-        .map(_.text.value: Band)
+        .map(_.text.value: Mode)
         .toSeq
 
-    availableModesManager.modes.setAll(bands*)
+    availableModesManager.modes.setAll(modes*)
 
 // Now wire listeners (after checkBoxes is fully initialized)
 //  checkBoxes.foreach { cb =>

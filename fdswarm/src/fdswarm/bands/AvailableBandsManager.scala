@@ -23,6 +23,7 @@ import fdswarm.model.BandMode.Band
 import jakarta.inject.{Inject, Singleton}
 import javafx.collections.ListChangeListener
 import scalafx.collections.ObservableBuffer
+import fdswarm.model.BandMode.Band.Band_20m
 
 @Singleton
 final class AvailableBandsManager @Inject()(fileHelper:FileHelper):
@@ -45,4 +46,4 @@ final class AvailableBandsManager @Inject()(fileHelper:FileHelper):
     fileHelper.save(file, bands)
 
   private def loadFromDisk(): Seq[Band] =
-    fileHelper.loadOrDefault(file)(Seq("20m"))
+    fileHelper.loadOrDefault(file)(Seq(Band_20m))

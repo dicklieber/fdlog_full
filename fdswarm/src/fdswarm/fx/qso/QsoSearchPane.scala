@@ -133,7 +133,7 @@ class QsoSearchPane @Inject()(
     val operatorFilterVal = Option(operatorFilter.text.value).getOrElse("").toUpperCase
 
     val matchesCallsign = callSignFilterVal.isEmpty || qso.callsign.value.toUpperCase.contains(callSignFilterVal)
-    val matchesBand = bandFilterVal.isEmpty || qso.bandMode.band.toUpperCase == bandFilterVal.get.toString.toUpperCase
+    val matchesBand = bandFilterVal.isEmpty || qso.bandMode.band == bandFilterVal.get
     val matchesMode = modeFilterVal.isEmpty || qso.bandMode.mode.toUpperCase == modeFilterVal.get.toString.toUpperCase
     val matchesClass = classFilterVal.isEmpty || qso.exchange.fdClass.classLetter.toString.toUpperCase == classFilterVal.get.toString.toUpperCase
     val matchesTransmitters = transmittersFilter.check(qso.exchange.fdClass.transmitters)
