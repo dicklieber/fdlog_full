@@ -2,7 +2,7 @@ package fdswarm.fx.qso
 
 import com.typesafe.config.ConfigFactory
 import fdswarm.bandmodes.SelectedBandModeManager
-import fdswarm.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
+import fdswarm.bands.{BandModeBuilder, ModeCatalog}
 import fdswarm.{StartupInfo, StationConfigManager}
 import fdswarm.fx.CallSignField
 import fdswarm.fx.UserConfig
@@ -41,14 +41,10 @@ class QsoEntryPanelTestFxTest extends TempDirFileHelperSuite:
       Array.empty
     )
     val config = ConfigFactory.load()
-    val bandCatalog = new BandCatalog(
-      config
-    )
     val modeCatalog = new ModeCatalog(
       config
     )
     val bandModeBuilder = new BandModeBuilder(
-      bandCatalog = bandCatalog,
       modeCatalog = modeCatalog
     )
     val selectedBandModeManager = new SelectedBandModeManager(

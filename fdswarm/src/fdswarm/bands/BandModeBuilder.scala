@@ -19,20 +19,22 @@
 package fdswarm.bands
 
 import fdswarm.model.BandMode
-import fdswarm.model.BandMode.{Band, Mode}
+import fdswarm.model.Band
+import fdswarm.model.BandMode.Mode
 import jakarta.inject.{Inject, Singleton}
 
 @Singleton
-class BandModeBuilder @Inject()(bandCatalog: BandCatalog, modeCatalog: ModeCatalog):
+class BandModeBuilder @Inject()(modeCatalog: ModeCatalog):
+  private val knownBands: Set[Band] = Band.values.toSet
 
   def apply(band: Band, mode: Mode): BandMode =
     val normalizedMode = mode.toUpperCase
 
-    val bandExists = bandCatalog.hamBands.exists(_.value == band)
+    val bandExists = knownBands.contains(band)
     val modeExists = modeCatalog.modes.exists(_.toUpperCase == normalizedMode)
 
     if !bandExists then
-      throw new IllegalArgumentException(s"Band '$band' not found in BandCatalog")
+      throw new IllegalArgumentException(s"Band '$band' not found in Band enum")
     
     if !modeExists then
       throw new IllegalArgumentException(s"Mode '$mode' not found in ModeCatalog")

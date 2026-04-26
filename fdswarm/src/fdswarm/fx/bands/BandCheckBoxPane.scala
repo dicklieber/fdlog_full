@@ -22,7 +22,7 @@ import fdswarm.bands.{AvailableBandsManager, BandCatalog, BandClass, HamBand}
 import fdswarm.fx.GridColumns
 import fdswarm.fx.bands.*
 import fdswarm.io.FileHelper
-import fdswarm.model.BandMode.Band
+import fdswarm.model.Band
 import jakarta.inject.{Inject, Singleton}
 import os.Path
 import scalafx.scene.Node

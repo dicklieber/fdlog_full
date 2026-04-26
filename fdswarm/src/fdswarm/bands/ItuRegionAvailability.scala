@@ -20,7 +20,7 @@ package fdswarm.bands
 
 import io.circe.{Codec, Decoder, Encoder}
 import fdswarm.model.Choice
-import fdswarm.model.BandMode.*
+import fdswarm.model.Band
 enum BandClass:
   case LF, VLF, MF, HF, VHF, UHF, SHF, EHF
 

@@ -25,8 +25,9 @@ import fdswarm.bands.{AvailableBandsManager, AvailableModesManager, BandModeBuil
 import fdswarm.fx.GridColumns
 import fdswarm.fx.utils.IconButton
 import fdswarm.logging.LazyStructuredLogging
+import fdswarm.model.Band
 import fdswarm.model.BandMode
-import fdswarm.model.BandMode.{Band, Mode}
+import fdswarm.model.BandMode.Mode
 import jakarta.inject.{Inject, Provider, Singleton}
 import scalafx.Includes.*
 import scalafx.geometry.{Insets, Pos}

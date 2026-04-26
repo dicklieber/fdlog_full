@@ -19,7 +19,7 @@
 package fdswarm.bands
 
 import com.typesafe.config.Config
-import fdswarm.model.BandMode.Band
+import fdswarm.model.Band
 import fdswarm.model.{Choice, ChoiceItem}
 import io.circe.parser.decode
 import jakarta.inject.{Inject, Singleton}

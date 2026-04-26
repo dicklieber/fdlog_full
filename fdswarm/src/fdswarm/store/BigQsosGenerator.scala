@@ -18,9 +18,10 @@
 
 package fdswarm.store
 
-import fdswarm.bands.{BandCatalog, BandModeBuilder, ModeCatalog}
+import fdswarm.bands.{BandModeBuilder, ModeCatalog}
 import fdswarm.fx.contest.ContestType.WFD
 import fdswarm.fx.station.StationConfig
+import fdswarm.model.Band
 import fdswarm.model.*
 import fdswarm.util.{CallsignGenerator, NodeIdentityManager}
 import jakarta.inject.*
@@ -28,7 +29,7 @@ import jakarta.inject.*
 import java.time.Instant
 
 @Singleton
-final class BigQsosGenerator @Inject()(qsoStore: QsoStore, bandModeBuilder: BandModeBuilder, nodeIdentityManager: NodeIdentityManager, bandCatalog: BandCatalog, modeCatalog: ModeCatalog):
+final class BigQsosGenerator @Inject()(qsoStore: QsoStore, bandModeBuilder: BandModeBuilder, nodeIdentityManager: NodeIdentityManager, modeCatalog: ModeCatalog):
 
   /** Generate synthetic QSOs and *immediately* add them to QsoStore.
    *
@@ -56,7 +57,7 @@ final class BigQsosGenerator @Inject()(qsoStore: QsoStore, bandModeBuilder: Band
       (callsign, index) <- generatedCallsigns
     yield
       val stamp = now.minusMillis(index * intervalMillis)
-      val randomBand = bandCatalog.hamBands(random.nextInt(bandCatalog.hamBands.size)).value
+      val randomBand = Band.values(random.nextInt(Band.values.length))
       val randomMode = modeCatalog.modes(random.nextInt(modeCatalog.modes.size))
       val bandMode = bandModeBuilder(randomBand, randomMode)
 

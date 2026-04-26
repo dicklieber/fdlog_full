@@ -18,13 +18,15 @@
 
 package fdswarm.fx.qso
 
-import fdswarm.bands.{AvailableModesManager, BandCatalog, ModeCatalog}
+import fdswarm.bands.{AvailableModesManager, ModeCatalog}
 import fdswarm.fx.UserConfig
 import fdswarm.fx.components.{AnyComboBox, CountComboBox, OptionTextField}
 import fdswarm.fx.contest.*
 import fdswarm.fx.utils.{IconButton, MultiChangeWatcher}
 import fdswarm.logging.LazyStructuredLogging
-import fdswarm.model.BandMode.*
+import fdswarm.model.Band
+import fdswarm.model.ChoiceItem
+import fdswarm.model.BandMode.Mode
 import fdswarm.model.Qso
 import fdswarm.store.QsoStore
 import fdswarm.telemetry.Metrics
@@ -46,7 +48,6 @@ class QsoSearchPane @Inject()(
                                contestCatalog: ContestCatalog,
                                modeCatalog: ModeCatalog,
                                modesManager: AvailableModesManager,
-                               bandCatalog:BandCatalog,
                                userConfig: UserConfig,
                                otelMetrics: Metrics,
                                qsoStore: QsoStore,
@@ -57,7 +58,7 @@ class QsoSearchPane @Inject()(
   val callsignFilter = new OptionTextField {
     promptText = "Callsign"
   }
-  val bandFilter = new AnyComboBox[Band](bandCatalog.hamBands)
+  val bandFilter = new AnyComboBox[Band](Band.values.toIndexedSeq.map(ChoiceItem(_)))
   val modeFilter = new AnyComboBox[Mode](modeCatalog.choices)
   val classFilter = new AnyComboBox[Char](Seq.empty)
   val operatorFilter = new OptionTextField() {
