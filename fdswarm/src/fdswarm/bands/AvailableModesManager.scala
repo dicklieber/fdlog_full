@@ -19,14 +19,10 @@
 package fdswarm.bands
 
 import fdswarm.io.FileHelper
-import fdswarm.model.BandMode.Mode
+import fdswarm.model.Mode
 import jakarta.inject.{Inject, Singleton}
 import scalafx.collections.ObservableBuffer
 import javafx.collections.ListChangeListener
-import io.circe.parser.*
-import io.circe.syntax.*
-
-import java.util.logging.FileHandler
 
 @Singleton
 final class AvailableModesManager @Inject()(fileHelper: FileHelper):
@@ -53,4 +49,4 @@ final class AvailableModesManager @Inject()(fileHelper: FileHelper):
     fileHelper.save(file, modes)
 
   private def loadFromDisk(): Seq[Mode] =
-    fileHelper.loadOrDefault(file)(Seq("PH"))
+    fileHelper.loadOrDefault(file)(Seq(Mode.PH))

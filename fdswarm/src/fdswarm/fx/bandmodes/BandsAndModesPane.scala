@@ -20,7 +20,6 @@ package fdswarm.fx.bandmodes
 
 import com.typesafe.config.Config
 import fdswarm.bandmodes.BandModeMatrixPane
-import fdswarm.bands.ModeCatalog
 import fdswarm.fx.bands.{BandCheckBoxPane, ModeCheckBoxPane}
 import jakarta.inject.{Inject, Singleton}
 import javafx.event.{EventHandler, ActionEvent as JfxActionEvent}

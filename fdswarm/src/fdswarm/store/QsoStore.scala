@@ -317,7 +317,7 @@ class QsoStore @Inject() (
 object QsoStore:
   private[store] def sameBandMode(left: BandMode, right: BandMode): Boolean =
     left.band == right.band &&
-      left.mode.equalsIgnoreCase(right.mode)
+      left.mode == right.mode
 
   private[store] def potentialDupCallsigns(
       callsigns: IterableOnce[Callsign],

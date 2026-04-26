@@ -1,6 +1,7 @@
 package fdswarm.scoring
 
 import fdswarm.model.Qso
+import fdswarm.model.Mode
 import jakarta.inject.{Inject, Singleton}
 
 @Singleton
@@ -17,7 +18,7 @@ class WfdScorer @Inject() (
     val byMode =
       Map(
         "CW" -> qsos.count(q => scoringModeOf(q) == "CW"),
-        "DI" -> qsos.count(q => scoringModeOf(q) == "DI"),
+        "DIGI" -> qsos.count(q => scoringModeOf(q) == "DIGI"),
         "PH" -> qsos.count(q => scoringModeOf(q) == "PH")
       )
 
@@ -68,11 +69,11 @@ class WfdScorer @Inject() (
   private def qsoPoints(qso: Qso): Int =
     scoringModeOf(qso) match
       case "CW" => 2
-      case "DI" => 2
+      case "DIGI" => 2
       case _    => 1
 
   private def scoringModeOf(qso: Qso): String =
-    qso.bandMode.mode.trim.toUpperCase match
-      case "CW" => "CW"
-      case "USB" | "LSB" | "SSB" | "FM" | "AM" | "PHONE" | "PH" => "PH"
-      case _ => "DI"
+    qso.bandMode.mode match
+      case Mode.CW => "CW"
+      case Mode.PH => "PH"
+      case Mode.DIGI => "DIGI"

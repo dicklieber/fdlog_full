@@ -50,7 +50,7 @@ object QsoDialog:
     addRow("Time:", timeFmt.format(qso.stamp), 0)
     addRow("Callsign:", qso.callsign.value, 1)
     addRow("Band:", qso.bandMode.band.name, 2)
-    addRow("Mode:", qso.bandMode.mode, 3)
+    addRow("Mode:", qso.bandMode.mode.toString, 3)
     addRow("Class:", qso.exchange.fdClass.toString, 4)
     addRow("Section:", qso.exchange.sectionCode, 5)
     addRow("Operator:", qso.qsoMetadata.station.operator.value, 6)

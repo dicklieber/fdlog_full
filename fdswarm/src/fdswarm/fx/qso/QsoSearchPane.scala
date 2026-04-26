@@ -18,7 +18,6 @@
 
 package fdswarm.fx.qso
 
-import fdswarm.bands.{AvailableModesManager, ModeCatalog}
 import fdswarm.fx.UserConfig
 import fdswarm.fx.components.{AnyComboBox, CountComboBox, OptionTextField}
 import fdswarm.fx.contest.*
@@ -26,7 +25,7 @@ import fdswarm.fx.utils.{IconButton, MultiChangeWatcher}
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.model.Band
 import fdswarm.model.ChoiceItem
-import fdswarm.model.BandMode.Mode
+import fdswarm.model.Mode
 import fdswarm.model.Qso
 import fdswarm.store.QsoStore
 import fdswarm.telemetry.Metrics
@@ -46,8 +45,6 @@ import java.io.PrintWriter
 class QsoSearchPane @Inject()(
                                contestManager: ContestConfigManager,
                                contestCatalog: ContestCatalog,
-                               modeCatalog: ModeCatalog,
-                               modesManager: AvailableModesManager,
                                userConfig: UserConfig,
                                otelMetrics: Metrics,
                                qsoStore: QsoStore,
@@ -59,7 +56,7 @@ class QsoSearchPane @Inject()(
     promptText = "Callsign"
   }
   val bandFilter = new AnyComboBox[Band](Band.values.toIndexedSeq.map(ChoiceItem(_)))
-  val modeFilter = new AnyComboBox[Mode](modeCatalog.choices)
+  val modeFilter = new AnyComboBox[Mode](Mode.values.toIndexedSeq.map(ChoiceItem(_)))
   val classFilter = new AnyComboBox[Char](Seq.empty)
   val operatorFilter = new OptionTextField() {
     promptText = "Operator"
@@ -135,7 +132,7 @@ class QsoSearchPane @Inject()(
 
     val matchesCallsign = callSignFilterVal.isEmpty || qso.callsign.value.toUpperCase.contains(callSignFilterVal)
     val matchesBand = bandFilterVal.isEmpty || qso.bandMode.band == bandFilterVal.get
-    val matchesMode = modeFilterVal.isEmpty || qso.bandMode.mode.toUpperCase == modeFilterVal.get.toString.toUpperCase
+    val matchesMode = modeFilterVal.isEmpty || qso.bandMode.mode == modeFilterVal.get
     val matchesClass = classFilterVal.isEmpty || qso.exchange.fdClass.classLetter.toString.toUpperCase == classFilterVal.get.toString.toUpperCase
     val matchesTransmitters = transmittersFilter.check(qso.exchange.fdClass.transmitters)
     val matchesOperator = operatorFilterVal.isEmpty || qso.qsoMetadata.station.operator.value.toUpperCase.contains(operatorFilterVal)

@@ -454,7 +454,7 @@ class SwarmData @Inject() (
       NodeDataField.Hash -> nodeStatus.statusMessage.hashCount.hash,
       NodeDataField.Operator -> bno.operator.toString,
       NodeDataField.Band -> bno.bandMode.band.name,
-      NodeDataField.Mode -> bno.bandMode.mode,
+      NodeDataField.Mode -> bno.bandMode.mode.toString,
       NodeDataField.BandMode -> bno.bandMode.toString,
       NodeDataField.BandModeStamp -> stampFormatter.format(bno.stamp),
       NodeDataField.ContestType -> contest.contestType.toString,

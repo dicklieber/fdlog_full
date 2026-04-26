@@ -18,8 +18,7 @@
 
 package fdswarm.model
 
-import fdswarm.model.BandMode.Mode
-import io.circe.{Codec, Decoder, Encoder}
+import io.circe.{Decoder, Encoder}
 import sttp.tapir.Schema
 
 /**
@@ -28,20 +27,15 @@ import sttp.tapir.Schema
 case class BandMode private[fdswarm] (band: Band, mode: Mode):
   def cabMode: Mode =
     mode match
-      case "USB" => "PH"
-      case "LSB" => "PH"
-      case "SSB" => "PH"
-      case "AM" => "PH"
-      case "CW" => "CW"
-      case _ => "DI"
+      case Mode.CW => Mode.CW
+      case Mode.PH => Mode.PH
+      case Mode.DIGI => Mode.DIGI
 
   override def toString: String =
     s"${band.name} $mode"
 
 
 object BandMode:
-  type Mode = String
-
   /**
    * Use when we don't have an explicit frequency
    */
@@ -62,12 +56,12 @@ object BandMode:
   private val Parse = """\s*([\d.]+[a-zA-Z]+)\s+([a-zA-Z]{1,5})\s*""".r
 
   def apply(band: String, mode: String): BandMode =
-    new BandMode(Band.fromString(band), mode.trim.toUpperCase)
+    new BandMode(Band.fromString(band), Mode.fromString(mode))
 
   def apply(s: String): BandMode =
     s match
       case Parse(band, mode) =>
-        new BandMode(Band.fromString(band), mode.trim.toUpperCase)
+        new BandMode(Band.fromString(band), Mode.fromString(mode))
       case _ => throw new IllegalArgumentException(s"Can't parse $s")
 
   def bandToFreq(band: Band): String =

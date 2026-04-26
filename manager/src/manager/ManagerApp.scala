@@ -23,7 +23,7 @@ import fdswarm.model.{Band, BandClass}
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.StartupConfig
 import fdswarm.fx.bands.*
-import fdswarm.model.{BandMode, Callsign}
+import fdswarm.model.{BandMode, Callsign, Mode}
 import fdswarm.util.CallsignGenerator
 import mainargs.{ParserForMethods, arg, main}
 import net.codingwell.scalaguice.InjectorExtensions.*
@@ -78,7 +78,6 @@ object ManagerApp extends JFXApp3 with LazyStructuredLogging :
       sys.exit(1)
 
     // Force all HF, VHF, and UHF bands and all modes to be available for selection in manager
-    val modeCatalog = injector.instance[ModeCatalog]
     val bandsManager = injector.instance[AvailableBandsManager]
     val modesManager = injector.instance[AvailableModesManager]
 
@@ -86,7 +85,7 @@ object ManagerApp extends JFXApp3 with LazyStructuredLogging :
       .filter(b => b.bandClass == BandClass.HF || b.bandClass == BandClass.VHF || b.bandClass == BandClass.UHF)
       .toIndexedSeq
     bandsManager.bands.setAll(allRequiredBands*)
-    modesManager.modes.setAll(modeCatalog.modes*)
+    modesManager.modes.setAll(Mode.values*)
 
     val nodeConfigManager = injector.instance[NodeConfigManager]
 

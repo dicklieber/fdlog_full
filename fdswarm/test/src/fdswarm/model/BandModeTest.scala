@@ -32,9 +32,9 @@ class BandModeTest extends FunSuite:
   test("BandMode apply(String) should parse correctly"):
     assertEquals(BandMode("40M CW"), BandMode("40M", "CW"))
     assertEquals(BandMode("20M PH"), BandMode("20M", "PH"))
-    assertEquals(BandMode("2M FM"), BandMode("2M", "FM"))
-    assertEquals(BandMode("1.25M SSB"), BandMode("1.25M", "SSB"))
-    assertEquals(BandMode("70cm DI"), BandMode("70cm", "DI"))
+    assertEquals(BandMode("2M FM"), BandMode("2M", "PH"))
+    assertEquals(BandMode("1.25M SSB"), BandMode("1.25M", "PH"))
+    assertEquals(BandMode("70cm DI"), BandMode("70cm", "DIGI"))
     assertEquals(BandMode("4m DIGI"), BandMode("4m", "DIGI"))
 
   test("BandMode apply(String) with extra spaces should parse correctly"):

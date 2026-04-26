@@ -18,42 +18,40 @@
 
 package fdswarm.fx.bands
 
-import fdswarm.bands.{AvailableModesManager, ModeCatalog}
+import fdswarm.bands.AvailableModesManager
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.GridColumns
 import fdswarm.fx.bands.*
-import fdswarm.model.BandMode.Mode
+import fdswarm.model.Mode
 import jakarta.inject.{Inject, Singleton}
-import scalafx.geometry.Insets
 import scalafx.scene.Node
 import scalafx.scene.control.{CheckBox, Label, Tooltip}
-import scalafx.scene.layout.{Pane, VBox}
+import scalafx.scene.layout.VBox
 
 @Singleton
 final class ModeCheckBoxPane @Inject()(
-                                        availableModesManager: AvailableModesManager,
-                                        modeCatalog: ModeCatalog
+                                        availableModesManager: AvailableModesManager
                                       ) extends LazyStructuredLogging:
 
-  private val spacingPx = 6.0
-
-  private val checkBoxes: Seq[CheckBox] =
-    modeCatalog.modes.map { mode =>
-      new CheckBox() {
-        text = mode
+  private val checkBoxesByMode: Seq[(Mode, CheckBox)] =
+    Mode.values.map(mode =>
+      mode -> new CheckBox() {
+        text = mode.toString
         selected = availableModesManager.modes.contains(mode)
         selected.onChange { (a, b, c) =>
           logger.debug(s"Change: a:$a b:$b c:$c")
           saveSelected()
         }
       }
-    }
+    ).toSeq
+
+  private val checkBoxes: Seq[CheckBox] = checkBoxesByMode.map(_._2)
 
   private def saveSelected(): Unit =
     val modes: Seq[Mode] =
-      checkBoxes.iterator
-        .filter(_.selected.value)
-        .map(_.text.value: Mode)
+      checkBoxesByMode.iterator
+        .filter(_._2.selected.value)
+        .map(_._1)
         .toSeq
 
     availableModesManager.modes.setAll(modes*)

@@ -19,6 +19,7 @@
 package fdswarm.exporter
 
 import fdswarm.model.Qso
+import fdswarm.model.Mode
 import java.time.format.DateTimeFormatter
 import java.time.ZoneOffset
 import fdswarm.StationConfigManager
@@ -62,11 +63,11 @@ class AdifExporter @Inject()(stationManager: StationConfigManager):
     fields.append("<EOR>")
     fields.toString()
 
-  private def mapMode(mode: String): String =
-    mode.toUpperCase match
-      case "PH" => "SSB"
-      case "DIGI" => "DATA"
-      case other => other
+  private def mapMode(mode: Mode): String =
+    mode match
+      case Mode.PH => "SSB"
+      case Mode.DIGI => "DATA"
+      case other => other.toString
 
   private def appendField(sb: StringBuilder, name: String, value: String): Unit =
     if value.nonEmpty then

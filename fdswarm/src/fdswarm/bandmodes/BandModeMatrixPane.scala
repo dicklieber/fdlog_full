@@ -27,7 +27,7 @@ import fdswarm.fx.utils.IconButton
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.model.Band
 import fdswarm.model.BandMode
-import fdswarm.model.BandMode.Mode
+import fdswarm.model.Mode
 import jakarta.inject.{Inject, Provider, Singleton}
 import scalafx.Includes.*
 import scalafx.geometry.{Insets, Pos}
@@ -65,7 +65,7 @@ final class BandModeMatrixPane @Inject()(availableBandsStore: AvailableBandsMana
       logger.debug(s"Selected BandMode changed to: $newValue. Updating UI toggles.")
       val toggle = tg.getToggles.iterator().asScala.find { t =>
         Option(t.getUserData).collect { case bm: BandMode => bm }.exists { bm =>
-          val matchResult = bm.band == newValue.band && bm.mode.equalsIgnoreCase(newValue.mode)
+          val matchResult = bm.band == newValue.band && bm.mode == newValue.mode
           logger.trace(s"Checking toggle '${bm.band}'/'${bm.mode}' against '${newValue.band}'/'${newValue.mode}': $matchResult")
           matchResult
         }
@@ -116,7 +116,7 @@ final class BandModeMatrixPane @Inject()(availableBandsStore: AvailableBandsMana
     for
       (mode,row) <- availableModesManager.modes.zipWithIndex
     do
-      grid.add(new Label(mode), 0, row)
+      grid.add(new Label(mode.toString), 0, row)
       for (band, col) <- availableBandsStore.bands.zipWithIndex do
         val button = new ModeBandButton(band,mode, selectedStore.selected.value, bandModeBuilder, tg, selectedStore)
         logger.trace(s"Adding button $button (bandMode: ${button.bandMode}) to grid and ToggleGroup $tg")
@@ -155,5 +155,5 @@ class ModeBandButton(band:Band,
       logger.debug(s"Button $bandMode [${this.hashCode()}] selected (tg: ${tg.hashCode()}). Saving to store.")
       selectedStore.save(bandMode)
   }
-  if bandMode.band == selectedHamBand.band && bandMode.mode.equalsIgnoreCase(selectedHamBand.mode) then
+  if bandMode.band == selectedHamBand.band && bandMode.mode == selectedHamBand.mode then
     selected.value = true
