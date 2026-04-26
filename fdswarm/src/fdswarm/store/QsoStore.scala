@@ -19,7 +19,7 @@
 package fdswarm.store
 
 import com.codahale.metrics.Gauge
-import fdswarm.{DirectoryProvider, StartupInfo}
+import fdswarm.StartupInfo
 import fdswarm.contestStart.ContestStartManager
 import fdswarm.io.FileHelper
 import fdswarm.logging.LazyStructuredLogging
@@ -64,6 +64,7 @@ class QsoStore @Inject() (
     metricRegistry.synchronized {
       val existing = metricRegistry.getGauges.get(qsoCollectionSizeGaugeName)
       if existing != null then
+        logger.error(s"Gauge $qsoCollectionSizeGaugeName already exists! Means QSOStore was instantiated twice!")
         existing.asInstanceOf[Gauge[Int]]
       else
         metricRegistry.register(
