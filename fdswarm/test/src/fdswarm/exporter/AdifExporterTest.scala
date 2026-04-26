@@ -33,11 +33,9 @@ import fdswarm.support.TempDirFileHelperSuite
 class AdifExporterTest extends TempDirFileHelperSuite :
   val qsoMetadata = fdswarm.model.QsoMetadata.testQsoMetadata
 
-  val testDir = os.temp.dir()
   val station = StationConfig(Callsign("WA9NNN"), "FT-891", "End Fed")
   val stationJson = station.asJson.noSpaces
-  os.write.over(testDir / "station.json", stationJson)
-  val dummyDirProvider: fdswarm.DirectoryProvider = () => testDir
+  os.write.over(fileHelper.directory / "station.json", stationJson)
   val stationManager = new StationConfigManager(fileHelper, MockStartupInfo)
   val exporter = new AdifExporter(stationManager)
 
