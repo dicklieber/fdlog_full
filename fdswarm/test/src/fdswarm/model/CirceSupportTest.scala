@@ -18,7 +18,6 @@
 
 package fdswarm.model
 
-import fdswarm.bands.{BandClass, HamBand, ItuRegion}
 import fdswarm.fx.bands.*
 import fdswarm.fx.contest.*
 import fdswarm.replication.*
@@ -33,10 +32,10 @@ import java.time.*
 
 class CirceSupportTest extends FunSuite:
 
-  test("HamBand round trip"):
-    val band = HamBand("40m", 7000000L, 7300000L, BandClass.HF, Set(ItuRegion.R2))
+  test("Band round trip"):
+    val band = Band.Band_40m
     val json = band.asJson.noSpaces
-    val decoded = decode[HamBand](json).toOption.get
+    val decoded = decode[Band](json).toOption.get
     assertEquals(decoded, band)
 
   test("ContestConfig round trip"):

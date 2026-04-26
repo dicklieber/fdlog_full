@@ -19,6 +19,7 @@
 package manager
 
 import com.google.inject.{Guice, Injector}
+import fdswarm.model.{Band, BandClass}
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.StartupConfig
 import fdswarm.fx.bands.*
@@ -77,14 +78,13 @@ object ManagerApp extends JFXApp3 with LazyStructuredLogging :
       sys.exit(1)
 
     // Force all HF, VHF, and UHF bands and all modes to be available for selection in manager
-    val bandCatalog = injector.instance[BandCatalog]
     val modeCatalog = injector.instance[ModeCatalog]
     val bandsManager = injector.instance[AvailableBandsManager]
     val modesManager = injector.instance[AvailableModesManager]
 
-    val allRequiredBands = bandCatalog.hamBands
+    val allRequiredBands = Band.values
       .filter(b => b.bandClass == BandClass.HF || b.bandClass == BandClass.VHF || b.bandClass == BandClass.UHF)
-      .map(_.value)
+      .toIndexedSeq
     bandsManager.bands.setAll(allRequiredBands*)
     modesManager.modes.setAll(modeCatalog.modes*)
 

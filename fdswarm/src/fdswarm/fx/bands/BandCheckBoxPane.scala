@@ -18,21 +18,17 @@
 
 package fdswarm.fx.bands
 
-import fdswarm.bands.{AvailableBandsManager, BandCatalog, BandClass, HamBand}
+import fdswarm.bands.AvailableBandsManager
 import fdswarm.fx.GridColumns
 import fdswarm.fx.bands.*
-import fdswarm.io.FileHelper
-import fdswarm.model.Band
+import fdswarm.model.{Band, BandClass}
 import jakarta.inject.{Inject, Singleton}
-import os.Path
 import scalafx.scene.Node
 import scalafx.scene.control.{CheckBox, Label, Tooltip}
 import scalafx.scene.layout.GridPane
 
 @Singleton
 final class BandCheckBoxPane @Inject()(
-                                        fileHelper: FileHelper,
-                                        hamBandCatalog: BandCatalog,
                                         availableBandsManager: AvailableBandsManager
                                       ):
 
@@ -41,10 +37,10 @@ final class BandCheckBoxPane @Inject()(
     vgap = 6.0
 
   private val checkBoxes: Seq[BandCheckBox] =
-    hamBandCatalog.hamBands.map(BandCheckBox(_))
+    Band.values.toIndexedSeq.map(BandCheckBox(_))
 
   private val byBandClass: Map[BandClass, Seq[BandCheckBox]] =
-    checkBoxes.groupBy(_.hamBand.bandClass)
+    checkBoxes.groupBy(_.band.bandClass)
 
   // layout
   for
@@ -86,22 +82,19 @@ final class BandCheckBoxPane @Inject()(
     GridColumns.fieldSet(headerLabel, grid)
 
   private def checked: Seq[Band] =
-    checkBoxes.iterator.filter(_.selected.value).map(_.bandName).toSeq
+    checkBoxes.iterator.filter(_.selected.value).map(_.band).toSeq
 
-  final case class BandCheckBox(hamBand: HamBand) extends CheckBox:
-    text = hamBand.bandName
+  final case class BandCheckBox(band: Band) extends CheckBox:
+    text = band.name
 
     // initialize selection from persisted bands
-    selected = availableBandsManager.bands.contains(hamBand.value)
+    selected = availableBandsManager.bands.contains(band)
 
     tooltip = new Tooltip(
-      s"${hamBand.bandClass}  ${hamBand.startFrequencyHz}–${hamBand.endFrequencyHz} Hz"
+      s"${band.bandClass}  ${band.startFrequencyHz}–${band.endFrequencyHz} Hz"
     )
 
     selected.onChange { (_, _, _) =>
       // replace everything in the store from current UI state
       availableBandsManager.bands.setAll(checked*)
     }
-
-    val bandName: Band =
-      hamBand.value

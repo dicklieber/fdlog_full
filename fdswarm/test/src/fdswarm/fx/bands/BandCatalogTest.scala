@@ -18,14 +18,11 @@
 
 package fdswarm.fx.bands
 
-import com.typesafe.config.ConfigFactory
-import fdswarm.bands.BandCatalog
+import fdswarm.model.Band
 import munit.FunSuite
 
 class BandCatalogTest extends FunSuite:
 
-  test("happy path"):
-    val hamBandCatalog = BandCatalog(ConfigFactory.load())
-    assertEquals(hamBandCatalog.hamBands.size, 19)
-
+  test("Band enum has all configured bands"):
+    assertEquals(Band.values.length, 19)
 

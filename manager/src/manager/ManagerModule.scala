@@ -33,7 +33,6 @@ class ManagerModule extends AbstractModule with ScalaModule {
     bind[Config].toInstance(ConfigFactory.load())
     
     // Bind FX components from common
-    bind[BandCatalog].asEagerSingleton()
     bind[ModeCatalog].asEagerSingleton()
     bind[BandModeBuilder].asEagerSingleton()
     bind[StartupInfo].toInstance(new StartupInfo(Array.empty[String]))
