@@ -18,14 +18,11 @@
 
 package monitor
 
-import com.google.inject.{Guice, Injector}
-import net.codingwell.scalaguice.InjectorExtensions.*
-import scalafx.application.JFXApp3
+import com.google.inject.AbstractModule
+import com.typesafe.config.{Config, ConfigFactory}
+import net.codingwell.scalaguice.ScalaModule
 
-object MonitorApp extends JFXApp3:
-  private lazy val injector: Injector =
-    Guice.createInjector(new MonitorModule)
-
-  override def start(): Unit =
-    stage = new JFXApp3.PrimaryStage
-    injector.instance[MonitorUi].start(stage)
+class MonitorModule extends AbstractModule with ScalaModule:
+  override def configure(): Unit =
+    bind[Config].toInstance(ConfigFactory.load())
+    bind[MonitorUi].asEagerSingleton()

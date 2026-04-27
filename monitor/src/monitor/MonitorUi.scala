@@ -18,14 +18,22 @@
 
 package monitor
 
-import com.google.inject.{Guice, Injector}
-import net.codingwell.scalaguice.InjectorExtensions.*
-import scalafx.application.JFXApp3
+import com.google.inject.Inject
+import scalafx.geometry.{Insets, Pos}
+import scalafx.scene.Scene
+import scalafx.scene.control.Label
+import scalafx.scene.layout.StackPane
+import scalafx.scene.text.Font
+import scalafx.stage.Stage
 
-object MonitorApp extends JFXApp3:
-  private lazy val injector: Injector =
-    Guice.createInjector(new MonitorModule)
-
-  override def start(): Unit =
-    stage = new JFXApp3.PrimaryStage
-    injector.instance[MonitorUi].start(stage)
+final class MonitorUi @Inject() ():
+  def start(primaryStage: Stage): Unit =
+    primaryStage.title = "Monitor"
+    primaryStage.scene = new Scene:
+      root = new StackPane:
+        padding = Insets(24)
+        alignment = Pos.Center
+        children = Seq(
+          new Label("hello monitor"):
+            font = Font.font(28)
+        )

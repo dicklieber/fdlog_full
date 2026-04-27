@@ -469,7 +469,10 @@ object monitor extends CommonSettings:
   override def moduleDeps = Seq(common)
 
   def mvnDeps = Seq(
-    mvn"org.scalafx:scalafx_3:20.0.0-R31"
+    mvn"org.scalafx:scalafx_3:20.0.0-R31",
+    mvn"net.codingwell::scala-guice:7.0.0",
+    mvn"com.google.inject:guice:7.0.0",
+    mvn"com.typesafe:config:1.4.3"
   )
 
   def mainClass = Some("monitor.MonitorApp")
