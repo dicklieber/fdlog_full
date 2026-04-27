@@ -465,6 +465,20 @@ object fdswarm
     def munitVersion = munitV
     override def testReportXml = Some("test-report.xml")
 
+object monitor extends CommonSettings:
+  override def moduleDeps = Seq(common)
+
+  def mvnDeps = Seq(
+    mvn"org.scalafx:scalafx_3:20.0.0-R31"
+  )
+
+  def mainClass = Some("monitor.MonitorApp")
+
+  object test extends ScalaTests with TestModule.Munit:
+    override def mvnDeps = super.mvnDeps() ++ Seq(
+      mvn"org.scalameta::munit:1.0.3"
+    )
+
 object manager extends CommonSettings:
   override def moduleDeps = Seq(common)
 
