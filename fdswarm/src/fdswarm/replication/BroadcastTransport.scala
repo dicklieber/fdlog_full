@@ -49,21 +49,19 @@ class BroadcastTransport @Inject() (val nodeIdentityManager: NodeIdentityManager
   // Define metrics for UDP packet statistics
   private val metricName = NodeIdentityManager.nodeIdentity.metricNameBuilder(Locus.Transport)
   private val sentMetric = metricName(Direction.Send)
-  private val sentPacketTotal = metrics.counter(sentMetric("packet.total").toString)
-  private val sentBytesTotal = metrics.counter(sentMetric("bytes.total").toString)
-  private val sentHistogram = metrics.histogram(sentMetric("packetSize").toString)
+  private val sentPacketTotal = metrics.counter(sentMetric("packet.total"))
+  private val sentBytesTotal = metrics.counter(sentMetric("bytes.total"))
+  private val sentHistogram = metrics.histogram(sentMetric("packetSize"))
+  private val sentMeter = metrics.meter(sentMetric("rate"))
 
   private val receivedMetric = metricName(Direction.Received)
   private val receivedPacketTotal: Counter =
-    metrics.counter(receivedMetric("packet.total").toString)
-  private val receivedBytesTotal: Counter = metrics.counter(receivedMetric("bytes.total").toString)
+    metrics.counter(receivedMetric("packet.total"))
+  private val receivedBytesTotal: Counter = metrics.counter(receivedMetric("bytes.total"))
   private val receivedHistogram: Histogram =
-    metrics.histogram(receivedMetric("packetSize").toString)
+    metrics.histogram(receivedMetric("packetSize"))
+  private val receivedMeter = metrics.meter(receivedMetric("rate"))
 
-//  private var lastPacketBytesSent: Int = 0
-//  private var lastPacketBytesReceived: Int = 0
-//  metrics.gauge("udp_broadcast_last_packet_bytes_sent")(lastPacketBytesSent.toDouble)
-//  metrics.gauge("udp_broadcast_last_packet_bytes_received")(lastPacketBytesReceived.toDouble)
 
   private var socket: DatagramSocket = uninitialized
   socket = new DatagramSocket(null)
@@ -82,6 +80,7 @@ class BroadcastTransport @Inject() (val nodeIdentityManager: NodeIdentityManager
       receivedPacketTotal.inc()
       receivedBytesTotal.inc(packet.getLength.toLong)
       receivedHistogram += packet.getLength
+      receivedMeter.mark()
 
       val senderAddr = packet.getAddress
       val senderPort = packet.getPort
@@ -109,6 +108,7 @@ class BroadcastTransport @Inject() (val nodeIdentityManager: NodeIdentityManager
       sentPacketTotal.inc()
       sentBytesTotal.inc(packetBytes.length.toLong)
       sentHistogram += packetBytes.length
+      sentMeter.mark()
 
     catch
       case e: Exception =>
