@@ -31,7 +31,7 @@ import scalafx.collections.ObservableBuffer
 import scalafx.geometry.Insets
 import scalafx.scene.chart.{LineChart, NumberAxis, XYChart}
 import scalafx.scene.control.*
-import scalafx.scene.input.MouseButton
+import scalafx.scene.input.{Clipboard, ClipboardContent, MouseButton}
 import scalafx.scene.layout.{HBox, VBox}
 import scalafx.stage.Window
 import scalafx.util.Duration as FxDuration
@@ -149,6 +149,27 @@ final class MetricsDialog @Inject() (
       columnResizePolicy = TableView.ConstrainedResizePolicy
       rowFactory = { _ =>
         val row = new TableRow[MetricRow]()
+        val copyMetricNameItem = new MenuItem("Copy Metric Name")
+        copyMetricNameItem.onAction = _ =>
+          Option(
+            row.item.value
+          ).foreach(
+            rowItem =>
+              val content = new ClipboardContent()
+              content.putString(
+                rowItem.nameProp.value
+              )
+              Clipboard.systemClipboard.setContent(
+                content
+              )
+          )
+        row.contextMenu = new ContextMenu(
+          copyMetricNameItem
+        )
+        row.empty.onChange {
+          (_, _, isEmpty) =>
+            copyMetricNameItem.disable = isEmpty
+        }
         row.onMouseClicked = event =>
           if event.button == MouseButton.Primary && event.clickCount == 2 && !row.empty.value then
             Option(
