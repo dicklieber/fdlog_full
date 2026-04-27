@@ -1,16 +1,10 @@
 package fdswarm.fx.utils
 import scalafx.Includes.*
 import scalafx.beans.property.ObjectProperty
-import scalafx.geometry.Insets
-import scalafx.geometry.Pos
+import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.Node
 import scalafx.scene.control.Label
-import scalafx.scene.input.MouseEvent
-import scalafx.scene.layout.ColumnConstraints
-import scalafx.scene.layout.GridPane
-import scalafx.scene.layout.Priority
-import scalafx.scene.layout.Region
-import scalafx.scene.layout.StackPane
+import scalafx.scene.layout.*
 
 sealed trait GridCellValue
 

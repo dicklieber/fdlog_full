@@ -2,8 +2,7 @@ package fdswarm.fx.discovery
 
 import fdswarm.fx.contest.*
 import fdswarm.fx.sections.SectionsProvider
-import fdswarm.fx.utils.BootstrapIcons
-import fdswarm.fx.utils.StyledDialog
+import fdswarm.fx.utils.{BootstrapIcons, StyledDialog}
 import fdswarm.fx.utils.editor.{CallsignCustomField, CaseClassPropertyEditor, IntSpinner}
 import fdswarm.replication.{Service, Transport}
 import io.circe.syntax.EncoderOps

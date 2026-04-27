@@ -18,7 +18,6 @@
 
 package fdswarm
 
-import fdswarm.fx.contest.ContestType
 import munit.FunSuite
 
 class ContestDefinitionDateCalculatorTest extends FunSuite:

@@ -20,6 +20,7 @@ package fdswarm.util
 
 import com.typesafe.config.ConfigFactory
 import munit.FunSuite
+
 import java.time.Instant
 
 class AgeStyleServiceTest extends FunSuite:

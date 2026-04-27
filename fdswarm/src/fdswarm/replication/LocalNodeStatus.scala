@@ -36,7 +36,6 @@ import javafx.beans.property.{ReadOnlyObjectProperty, ReadOnlyObjectWrapper}
  */
 @Singleton
 final class LocalNodeStatus @Inject()(
-                                       nodeIdentityManager: NodeIdentityManager,
                                        stationManager: StationConfigManager,
                                        selectedBandModeStore: SelectedBandModeManager,
                                        contestConfigManager: ContestConfigManager,
@@ -84,7 +83,7 @@ final class LocalNodeStatus @Inject()(
     val next =
       NodeStatus(
         statusMessage = statusMessage,
-        nodeIdentity = nodeIdentityManager.ourNodeIdentity,
+        nodeIdentity = NodeIdentityManager.nodeIdentity,
         isLocal = true
       )
     swarmData.update(next)

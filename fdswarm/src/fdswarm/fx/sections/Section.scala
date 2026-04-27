@@ -18,11 +18,11 @@
 
 package fdswarm.fx.sections
 
+import io.circe.Codec
 import scalafx.beans.binding.BooleanBinding
-import scalafx.beans.property.{BooleanProperty, StringProperty}
+import scalafx.beans.property.StringProperty
 import scalafx.geometry.Insets
 import scalafx.scene.control.{Label, OverrunStyle, Tooltip}
-import io.circe.Codec
 
 case class SectionGroup(name: String, sections: Seq[Section]) derives Codec.AsObject, sttp.tapir.Schema
 

@@ -18,20 +18,17 @@
 
 package fdswarm.fx.qso
 
-import fdswarm.logging.LazyStructuredLogging
 import fdswarm.StationConfigManager
 import fdswarm.bandmodes.SelectedBandModeManager
+import fdswarm.fx.{CallSignField, GridColumns}
 import fdswarm.fx.contest.{ContestConfigManager, ContestType}
-import fdswarm.fx.sections.Section
-import fdswarm.fx.CallSignField
-import fdswarm.fx.GridColumns
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.model.*
+import fdswarm.replication.Transport
 import fdswarm.replication.status.ContestConfigMismatchUi
-import fdswarm.replication.{Service, Transport}
 import fdswarm.store.{QsoStore, StyledMessage}
 import fdswarm.util.*
 import jakarta.inject.{Inject, Singleton}
-import scalafx.Includes.*
 import scalafx.application.Platform
 import scalafx.beans.binding.Bindings
 import scalafx.scene.Node
@@ -90,7 +87,6 @@ class QsoEntryPanel @Inject()(
                                contestClassField: ContestClassField,
                                sectionField: fdswarm.fx.sections.SectionField,
                                dupPanel: DupPanel,
-                               nodeIdentityManager: NodeIdentityManager,
                                contestConfigMismatchUi: ContestConfigMismatchUi
                              ) extends LazyStructuredLogging:
 
@@ -231,7 +227,7 @@ class QsoEntryPanel @Inject()(
     )
 
     val styledMessage: StyledMessage = qsoStore.add(qso)
-    clearControls
+    clearControls()
     dupPanel.show(styledMessage)
 
   sectionField.onAction = _ =>
@@ -242,11 +238,11 @@ class QsoEntryPanel @Inject()(
     val contestType: ContestType = contestManager.contestConfigProperty.value.contestType
     QsoMetadata(
       station = stationManager.stationConfig,
-      node = nodeIdentityManager.ourNodeIdentity,
+      node = NodeIdentityManager.nodeIdentity,
       contest = contestType
     )
 
-  private def clearControls: Unit =
+  private def clearControls(): Unit =
     callsignField.text = ""
     contestClassField.text = ""
     sectionField.text = ""

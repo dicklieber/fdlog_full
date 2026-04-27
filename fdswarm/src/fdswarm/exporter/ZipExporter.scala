@@ -18,9 +18,10 @@
 
 package fdswarm.exporter
 
+import os.Path
+
 import java.io.{BufferedInputStream, FileInputStream, FileOutputStream}
 import java.util.zip.{ZipEntry, ZipOutputStream}
-import os.Path
 
 object ZipExporter:
   def zipDirectory(sourceDirectory: Path, zipFile: Path): Unit =

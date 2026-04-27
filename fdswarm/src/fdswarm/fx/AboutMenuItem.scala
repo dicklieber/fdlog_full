@@ -19,27 +19,24 @@
 package fdswarm.fx
 
 import com.organization.BuildInfo.*
-import scalafx.geometry.Insets
-import scalafx.scene.control.{Alert, Button, Hyperlink, Label, MenuItem, ScrollPane, TextArea}
-import scalafx.scene.control.Alert.AlertType
-import scalafx.scene.layout.{GridPane, HBox, Priority, VBox}
-import scalafx.stage.Window
+import com.typesafe.config.Config
+import fdswarm.StartupInfo
+import fdswarm.fx.utils.JsonPrettyPrinter
+import fdswarm.io.FileHelper
+import fdswarm.replication.Transport
+import fdswarm.util.NodeIdentityManager
+import io.circe.syntax.*
 import jakarta.inject.Inject
 import scalafx.Includes.*
-import fdswarm.fx.utils.JsonPrettyPrinter
-import fdswarm.util.NodeIdentityManager
-import fdswarm.replication.{Transport, UDPHeader}
-import fdswarm.{StartupConfig, StartupInfo}
-import io.circe.syntax.*
-import scalafx.scene.input.Clipboard
-import scalafx.scene.input.ClipboardContent
-import scalafx.scene.shape.SVGPath
+import scalafx.geometry.{Insets, Pos}
+import scalafx.scene.control.Alert.AlertType
+import scalafx.scene.control.*
+import scalafx.scene.input.{Clipboard, ClipboardContent}
+import scalafx.scene.layout.{GridPane, HBox, Priority, VBox}
 import scalafx.scene.paint.Color
-import scalafx.geometry.Pos
-import com.typesafe.config.Config
-import fdswarm.io.FileHelper
+import scalafx.scene.shape.SVGPath
+import scalafx.stage.Window
 class AboutMenuItem @Inject()(fileHelper: FileHelper,
-                              nodeIdentityManager: NodeIdentityManager,
                               transport: Transport,
                               startupInfo: StartupInfo,
                               config: Config)
@@ -160,11 +157,11 @@ class AboutMenuItem @Inject()(fileHelper: FileHelper,
     grid.add(new Label("Data Files:"), 0, 6)
     grid.add(dataFilesNode, 1, 6)
     grid.add(new Label("Node:"), 0, 7)
-    grid.add(new Label(nodeIdentityManager.ourNodeIdentity.toString), 1, 7)
+    grid.add(new Label(NodeIdentityManager.nodeIdentity.toString), 1, 7)
     grid.add(new Label("Transport:"), 0, 8)
     grid.add(new Label(transport.mode), 1, 8)
 
-    val docsUrl = s"http://${nodeIdentityManager.hostPort}/docs"
+    val docsUrl = s"http://${NodeIdentityManager.nodeIdentity.hostPort}/docs"
     val docsLink = new Hyperlink(docsUrl):
       onAction = _ =>
         try
@@ -283,7 +280,7 @@ class AboutMenuItem @Inject()(fileHelper: FileHelper,
     grid.add(new Label(groupAddr), 1, 14)
 
     grid.add(new Label("UDP Instance ID:"), 0, 15)
-    grid.add(new Label(nodeIdentityManager.ourNodeIdentity.instanceId), 1, 15)
+    grid.add(new Label(NodeIdentityManager.nodeIdentity.instanceId), 1, 15)
 
     val startupInfoNode = startupInfo.info match {
       case None =>
@@ -338,12 +335,12 @@ class AboutMenuItem @Inject()(fileHelper: FileHelper,
         sb.append(s"Scala Version: $scalaVersion\n")
         sb.append(s"Data Version: $dataVersion\n")
         sb.append(s"Data Directory: $dataPath\n")
-        sb.append(s"Host: ${nodeIdentityManager.ourNodeIdentity}\n")
+        sb.append(s"Host: ${NodeIdentityManager.nodeIdentity}\n")
         sb.append(s"Java Version: ${sys.props("java.version")}\n")
         sb.append(s"Java Home: ${sys.props("java.home")}\n")
         val groupAddr = if (config.hasPath("fdswarm.UDP.groupAddr")) config.getString("fdswarm.UDP.groupAddr") else "Not configured"
         sb.append(s"UDP Group Addr: $groupAddr\n")
-        sb.append(s"UDP Instance ID: ${nodeIdentityManager.ourNodeIdentity.instanceId}\n")
+        sb.append(s"UDP Instance ID: ${NodeIdentityManager.nodeIdentity.instanceId}\n")
         sb.append(s"StartupInfo: ${if (startupInfo.info.isEmpty) "Not Used" else "Used"}\n")
         val configStr = config.root().render(com.typesafe.config.ConfigRenderOptions.defaults().setOriginComments(false).setComments(true).setFormatted(true).setJson(false))
         sb.append(s"\n--- Application Config ---\n$configStr\n")

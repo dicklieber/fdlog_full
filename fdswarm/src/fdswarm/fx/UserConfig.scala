@@ -18,11 +18,11 @@
 
 package fdswarm.fx
 
-import jakarta.inject.{Inject, Singleton}
-import _root_.io.circe.{Decoder, Encoder, Json, Printer}
 import _root_.io.circe.parser.decode
 import _root_.io.circe.syntax.*
+import _root_.io.circe.{Json, Printer}
 import fdswarm.io.FileHelper
+import jakarta.inject.{Inject, Singleton}
 import scalafx.beans.property.{BooleanProperty, IntegerProperty, Property}
 
 @Singleton

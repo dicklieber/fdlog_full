@@ -9,4 +9,5 @@ enum Locus(
   case Startup extends Locus("Startup")
   case Metrics extends Locus("Metrics")
   case Scoring extends Locus("Scoring")
+  case Transport extends Locus("Transport")
   case ClassName extends Locus("ClassName")

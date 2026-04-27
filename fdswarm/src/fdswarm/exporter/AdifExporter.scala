@@ -18,12 +18,12 @@
 
 package fdswarm.exporter
 
-import fdswarm.model.Qso
-import fdswarm.model.Mode
-import java.time.format.DateTimeFormatter
-import java.time.ZoneOffset
 import fdswarm.StationConfigManager
+import fdswarm.model.{Mode, Qso}
 import jakarta.inject.{Inject, Singleton}
+
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 
 @Singleton
 class AdifExporter @Inject()(stationManager: StationConfigManager):

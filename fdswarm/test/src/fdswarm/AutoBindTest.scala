@@ -19,11 +19,10 @@
 package fdswarm
 
 import com.google.inject.*
-import com.google.inject.multibindings.Multibinder
 import com.google.inject.spi.{Elements, InstanceBinding}
 import fdswarm.logging.LazyStructuredLogging
-import fdswarm.AutoBind
 import munit.FunSuite
+
 import scala.jdk.CollectionConverters.*
 
 class AutoBindTest extends FunSuite:

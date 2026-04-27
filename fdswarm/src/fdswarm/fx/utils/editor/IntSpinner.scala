@@ -1,11 +1,11 @@
 package fdswarm.fx.utils.editor
 
-import scalafx.beans.property.IntegerProperty
+import scalafx.Includes.*
 import scalafx.application.Platform
+import scalafx.beans.property.IntegerProperty
 import scalafx.scene.Node
 import scalafx.scene.control.{Spinner, TextFormatter}
 import scalafx.util.StringConverter
-import scalafx.Includes.*
 
 class IntSpinner(
                   min: Int = 1,

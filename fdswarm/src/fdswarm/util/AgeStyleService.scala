@@ -18,10 +18,10 @@
 
 package fdswarm.util
 
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigValueType
-import java.time.Instant
+import com.typesafe.config.{Config, ConfigValueType}
 import jakarta.inject.{Inject, Singleton}
+
+import java.time.Instant
 import scala.jdk.CollectionConverters.*
 
 @Singleton

@@ -43,7 +43,7 @@ case class ContestConfig(
     ourClass: String,
     ourSection: String)
     extends ContestConfigFields
-    derives Codec.AsObject:
+    derives Codec.AsObject, sttp.tapir.Schema:
   require(ourClass.nonEmpty, "ourClass must not be empty")
   require(ourSection.nonEmpty, "ourSection must not be empty")
   val exchange: String =

@@ -4,7 +4,7 @@ import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.fx.utils.{IconButton, StyledDialog}
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.logging.Locus.Sync
-import fdswarm.replication.{LocalNodeStatus, Service, Transport}
+import fdswarm.replication.{Service, Transport}
 import io.circe.syntax.EncoderOps
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*

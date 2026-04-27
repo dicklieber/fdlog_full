@@ -18,11 +18,9 @@
 
 package fdswarm.fx.qso
 
+import fdswarm.fx.contest.{ContestCatalog, ContestConfigManager, ContestDefinition}
 import fdswarm.fx.{NextField, UserConfig}
-import fdswarm.fx.contest.{ContestCatalog, ContestConfig, ContestConfigManager, ContestDefinition, ContestType}
 import jakarta.inject.*
-import scalafx.Includes.*
-import scalafx.beans.property.ReadOnlyObjectProperty
 import scalafx.scene.control.{TextField, TextFormatter}
 
 class ContestClassField @Inject() (

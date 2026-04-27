@@ -19,6 +19,7 @@
 package fdswarm.util
 
 import munit.FunSuite
+
 import java.time.{Duration, Instant}
 
 class AgeStyleTest extends FunSuite:

@@ -19,13 +19,11 @@
 package fdswarm.exporter
 
 import fdswarm.fx.contest.ContestType
+import fdswarm.fx.station.StationConfig
 import fdswarm.model.*
+import munit.FunSuite
 
 import java.time.Instant
-import munit.FunSuite
-import fdswarm.exporter.CabrilloExporter
-import fdswarm.fx.station.StationConfig
-import fdswarm.util.NodeIdentity
 
 class CabrilloExporterTest extends FunSuite:
 

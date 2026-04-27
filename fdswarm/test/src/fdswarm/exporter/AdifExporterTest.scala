@@ -18,17 +18,13 @@
 
 package fdswarm.exporter
 
-import munit.FunSuite
+import fdswarm.{MockStartupInfo, StationConfigManager}
+import fdswarm.fx.station.StationConfig
 import fdswarm.model.*
+import fdswarm.support.TempDirFileHelperSuite
+import io.circe.syntax.*
 
 import java.time.Instant
-import os.*
-import io.circe.syntax.*
-import fdswarm.StationConfigManager
-import fdswarm.MockStartupInfo
-import fdswarm.exporter.AdifExporter
-import fdswarm.fx.station.StationConfig
-import fdswarm.support.TempDirFileHelperSuite
 
 class AdifExporterTest extends TempDirFileHelperSuite :
   val qsoMetadata = fdswarm.model.QsoMetadata.testQsoMetadata

@@ -1,15 +1,10 @@
 package fdswarm.telemetry
 
-import io.prometheus.metrics.expositionformats.ExpositionFormats
-import com.codahale.metrics.{Counter, Gauge, MetricRegistry, Timer}
-import com.codahale.metrics.SharedMetricRegistries
-import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter
+import com.codahale.metrics.{MetricRegistry, SharedMetricRegistries}
+import io.prometheus.metrics.expositionformats.{ExpositionFormats, PrometheusTextFormatWriter}
 import io.prometheus.metrics.instrumentation.dropwizard.DropwizardExports
 import io.prometheus.metrics.model.registry.PrometheusRegistry
 import jakarta.inject.*
-
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicReference
 
 @Singleton
 final class Metrics @Inject()():

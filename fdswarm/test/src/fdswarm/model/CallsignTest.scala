@@ -18,9 +18,9 @@
 
 package fdswarm.model
 
-import munit.FunSuite
 import io.circe.parser.*
 import io.circe.syntax.*
+import munit.FunSuite
 
 class CallsignTest extends FunSuite:
 

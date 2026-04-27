@@ -19,16 +19,11 @@
 package fdswarm.fx.contest
 
 import com.typesafe.config.{Config, ConfigRenderOptions, ConfigValue}
-import fdswarm.fx.utils.editor.CustomFieldEditor
 import fdswarm.model.Choice
 import io.circe.Codec
 import io.circe.parser.decode
 import jakarta.inject.{Inject, Singleton}
-import scalafx.Includes.*
-import scalafx.beans.property.{ObjectProperty, Property, StringProperty}
-import scalafx.collections.ObservableBuffer
-import scalafx.scene.Node
-import scalafx.scene.control.{ComboBox, ListCell, ListView}
+import scalafx.beans.property.ObjectProperty
 
 case class ClassChoice(
                             ch: String,

@@ -20,7 +20,6 @@ package fdswarm.fx.bands
 
 import fdswarm.bands.AvailableBandsManager
 import fdswarm.fx.GridColumns
-import fdswarm.fx.bands.*
 import fdswarm.model.{Band, BandClass}
 import jakarta.inject.{Inject, Singleton}
 import scalafx.scene.Node

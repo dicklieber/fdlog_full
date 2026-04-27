@@ -46,7 +46,7 @@ case class StatusMessage(
     bandNodeOperator: BandModeOperator,
     contestConfig: ContestConfig,
     contestStart: Instant)
-    derives Codec.AsObject:
+    derives Codec.AsObject, sttp.tapir.Schema:
   def toPacket: Array[Byte] =
     val jsonBytes = this.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     Gzip.compress(jsonBytes)
@@ -60,4 +60,4 @@ object StatusMessage:
       case Left(error) =>
         throw new RuntimeException(s"Failed to decode StatusMessage from JSON: ${error.getMessage}", error)
 
-case class HashCount(hash: String = "", qsoCount: Int = 0) derives Codec.AsObject
+case class HashCount(hash: String = "", qsoCount: Int = 0) derives Codec.AsObject, sttp.tapir.Schema

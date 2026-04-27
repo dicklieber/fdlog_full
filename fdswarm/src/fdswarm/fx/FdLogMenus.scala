@@ -23,12 +23,11 @@ import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.bandmodes.BandsAndModesPane
 import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.fx.discovery.ContestConfigDialog
-import fdswarm.scoring.ContestScoringConfigDialog
-import fdswarm.scoring.ContestScoreResultsDialog
 import fdswarm.fx.station.StationEditor
 import fdswarm.fx.tools.*
-import fdswarm.replication.status.ContestConfigMismatchUi
 import fdswarm.logging.LazyStructuredLogging
+import fdswarm.replication.status.ContestConfigMismatchUi
+import fdswarm.scoring.{ContestScoreResultsDialog, ContestScoringConfigDialog}
 import io.circe.parser.decode
 import io.circe.syntax.*
 import jakarta.inject.Inject

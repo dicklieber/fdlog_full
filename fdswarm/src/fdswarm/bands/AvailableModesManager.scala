@@ -21,8 +21,8 @@ package fdswarm.bands
 import fdswarm.io.FileHelper
 import fdswarm.model.Mode
 import jakarta.inject.{Inject, Singleton}
-import scalafx.collections.ObservableBuffer
 import javafx.collections.ListChangeListener
+import scalafx.collections.ObservableBuffer
 
 @Singleton
 final class AvailableModesManager @Inject()(fileHelper: FileHelper):

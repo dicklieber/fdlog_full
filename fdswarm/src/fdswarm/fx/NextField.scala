@@ -37,11 +37,10 @@
 
 package fdswarm.fx
 
-import _root_.scalafx.beans.binding.{Bindings, BooleanBinding}
 import _root_.scalafx.beans.property.BooleanProperty
 import _root_.scalafx.scene.control.TextInputControl
+import _root_.scalafx.scene.input.KeyCode
 import fdswarm.fx.InputHelper.forceCaps
-import _root_.scalafx.scene.input.{KeyCode, KeyEvent}
 import scalafx.Includes.*
 /**
  * Most of the common logic for any qso input field.

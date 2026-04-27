@@ -26,7 +26,7 @@ import scalafx.Includes.*
 import scalafx.beans.binding.Bindings
 import scalafx.geometry.Insets
 import scalafx.scene.control.*
-import scalafx.scene.layout.{GridPane, HBox, Priority}
+import scalafx.scene.layout.GridPane
 import scalafx.scene.paint.Color
 import scalafx.stage.Window
 

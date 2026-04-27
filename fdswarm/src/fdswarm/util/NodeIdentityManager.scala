@@ -19,9 +19,11 @@
 package fdswarm.util
 
 import fdswarm.logging.LazyStructuredLogging
+import fdswarm.util.NodeIdentityManager._ourNodeIdentity
 import jakarta.inject.{Inject, Named, Singleton}
 
 import java.net.{Inet4Address, NetworkInterface}
+import scala.compiletime.uninitialized
 import scala.jdk.CollectionConverters.*
 
 /**
@@ -51,17 +53,17 @@ class NodeIdentityManager @Inject()(@Named("fdswarm.httpPort") httpPort: Int,
     sPort.toInt
   }.getOrElse(httpPort)
 
-  def hostPort: String = s"${currentIp.ip}:$port"
   private val ourHostName: String = java.net.InetAddress.getLocalHost.getHostName.split('.').head
 
-  def ourNodeIdentity: NodeIdentity = NodeIdentity(
+  _ourNodeIdentity = NodeIdentity(
     hostIp = currentIp.ip,
     port = port,
     hostName = ourHostName,
     instanceId = instanceIdManager.ourInstanceId)
 
-
-
+object NodeIdentityManager:
+  var _ourNodeIdentity: NodeIdentity = uninitialized
+  lazy val nodeIdentity: NodeIdentity = _ourNodeIdentity
 
 case class AnIpAddress(interfaceName: String, ip: String):
   def hasIp:Boolean = ip.nonEmpty

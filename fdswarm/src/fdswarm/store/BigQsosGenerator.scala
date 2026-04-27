@@ -21,8 +21,6 @@ package fdswarm.store
 import fdswarm.bands.BandModeBuilder
 import fdswarm.fx.contest.ContestType.WFD
 import fdswarm.fx.station.StationConfig
-import fdswarm.model.Band
-import fdswarm.model.Mode
 import fdswarm.model.*
 import fdswarm.util.{CallsignGenerator, NodeIdentityManager}
 import jakarta.inject.*
@@ -69,7 +67,7 @@ final class BigQsosGenerator @Inject()(qsoStore: QsoStore, bandModeBuilder: Band
       val qsoMetadata = QsoMetadata(
         station = StationConfig(operator = Callsign(randomOperator)),
         contest = WFD,
-        node = nodeIdentityManager.ourNodeIdentity)
+        node = NodeIdentityManager.nodeIdentity)
       val exchange = Exchange(FdClass(randomTransmitters, randomClassLetter), "IL")
       Qso(callsign = Callsign(callsign),
         exchange = exchange,

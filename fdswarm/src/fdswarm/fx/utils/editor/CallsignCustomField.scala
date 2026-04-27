@@ -18,10 +18,10 @@
 
 package fdswarm.fx.utils.editor
 
-import scalafx.beans.property.{ObjectProperty, Property}
+import fdswarm.model.Callsign
+import scalafx.beans.property.ObjectProperty
 import scalafx.scene.Node
 import scalafx.scene.control.TextField
-import fdswarm.model.Callsign
 
 class CallsignCustomField extends CustomFieldEditor:
   private var callsignProperty: Option[ObjectProperty[Callsign]] =

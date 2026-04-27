@@ -20,7 +20,8 @@ package fdswarm.replication
 
 import fdswarm.fx.contest.ContestConfig
 import fdswarm.model.Callsign
-import io.circe.{Codec, Encoder, Decoder}
+import io.circe.{Codec, Decoder, Encoder}
+
 import java.net.{URI, URL}
 
 /**

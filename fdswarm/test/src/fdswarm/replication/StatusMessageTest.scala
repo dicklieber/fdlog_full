@@ -20,14 +20,9 @@ package fdswarm.replication
 
 import fdswarm.fx.contest.{ContestConfig, ContestType}
 import fdswarm.model.{BandMode, BandModeOperator, Callsign}
-import io.circe
-import io.circe.parser.decode
 import munit.FunSuite
 
-import java.io.ByteArrayInputStream
 import java.time.Instant
-import java.util.zip.GZIPInputStream
-import scala.util.Try
 
 class StatusMessageTest extends FunSuite:
   private val dummyBno = BandModeOperator(Callsign("WA9NNN"), BandMode("40M", "CW"), Instant.parse("2026-03-16T20:11:04Z"))

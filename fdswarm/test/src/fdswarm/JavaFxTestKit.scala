@@ -21,8 +21,7 @@ package fdswarm
 
 import javafx.application.Platform
 
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.atomic.AtomicBoolean
 
 object JavaFxTestKit :

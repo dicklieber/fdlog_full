@@ -19,9 +19,8 @@
 package fdswarm.fx.bands
 
 import fdswarm.bands.AvailableModesManager
-import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.GridColumns
-import fdswarm.fx.bands.*
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.model.Mode
 import jakarta.inject.{Inject, Singleton}
 import scalafx.scene.Node

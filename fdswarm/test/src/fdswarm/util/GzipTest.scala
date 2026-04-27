@@ -1,7 +1,8 @@
 package fdswarm.util
 
-import java.nio.charset.StandardCharsets
 import munit.FunSuite
+
+import java.nio.charset.StandardCharsets
 
 class GzipTest extends FunSuite:
 

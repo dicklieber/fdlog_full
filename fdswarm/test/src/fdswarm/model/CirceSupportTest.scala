@@ -18,7 +18,6 @@
 
 package fdswarm.model
 
-import fdswarm.fx.bands.*
 import fdswarm.fx.contest.*
 import fdswarm.replication.*
 import fdswarm.util.NodeIdentity

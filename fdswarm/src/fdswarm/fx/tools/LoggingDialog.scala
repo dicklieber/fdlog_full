@@ -19,21 +19,18 @@
 package fdswarm.fx.tools
 
 import fdswarm.fx.utils.IconButton
-import fdswarm.logging.dumpLogConfig
-import fdswarm.util.{LevelEnum, LoggerLevel, LoggingManager}
+import fdswarm.logging.{LazyStructuredLogging, dumpLogConfig}
+import fdswarm.util.{LevelEnum, LoggingManager}
 import jakarta.inject.{Inject, Singleton}
-import fdswarm.logging.LazyStructuredLogging
 import scalafx.Includes.*
 import scalafx.beans.property.{ObjectProperty, StringProperty}
 import scalafx.collections.ObservableBuffer
 import scalafx.geometry.Insets
 import scalafx.scene.control.*
 import scalafx.scene.input.KeyCode
-import scalafx.scene.layout.{GridPane, HBox, Priority, VBox}
+import scalafx.scene.layout.{HBox, Priority, VBox}
 import scalafx.scene.paint.Color
 import scalafx.stage.Window
-import scalafx.util.StringConverter
-import scala.jdk.CollectionConverters.*
 
 @Singleton
 class LoggingDialog @Inject() (

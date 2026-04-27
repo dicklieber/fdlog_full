@@ -18,13 +18,10 @@
 
 package fdswarm.model
 
-import com.organization.BuildInfo
-import fdswarm.util.NodeIdentity
 import fdswarm.util.Ids.Id
+import fdswarm.util.NodeIdentity
 import io.circe.Codec
 import sttp.tapir.Schema
-
-import java.time.Instant
 
 /** Header containing node metadata for API responses. */
 case class NodeHeader(version: String, hostAndPort: NodeIdentity, udpInstanceId: Id) derives Codec.AsObject, Schema

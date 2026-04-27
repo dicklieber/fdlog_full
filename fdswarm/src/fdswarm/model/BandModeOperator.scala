@@ -18,11 +18,12 @@
 
 package fdswarm.model
 
+import io.circe.Codec
+
 import java.time.Instant
-import io.circe.{Codec, Decoder, Encoder}
 
 case class  BandModeOperator(
     operator: Callsign,
     bandMode: BandMode,
     stamp: Instant = Instant.now()
-)derives Codec.AsObject
+)derives Codec.AsObject, sttp.tapir.Schema

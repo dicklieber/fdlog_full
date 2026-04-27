@@ -18,11 +18,10 @@
 
 package fdswarm.fx.sections
 
-import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.GridColumns
 import fdswarm.fx.qso.QsoEntryPanel
+import fdswarm.logging.LazyStructuredLogging
 import jakarta.inject.Inject
-import scalafx.Includes.*
 import scalafx.beans.binding.{Bindings, BooleanBinding}
 import scalafx.beans.property.StringProperty
 import scalafx.geometry.Insets

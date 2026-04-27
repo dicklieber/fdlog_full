@@ -46,7 +46,6 @@ import scala.collection.concurrent.TrieMap
   */
 @Singleton
 class SwarmData @Inject() (
-    nodeIdentityManager: NodeIdentityManager,
     stationEditor: StationEditor,
     ageCellStyleRefresher: AgeCellStyleRefresher,
     nodeStatusDispatcher: NodeStatusDispatcher
@@ -111,7 +110,7 @@ class SwarmData @Inject() (
   )
 
   def clear(): Unit =
-    val localStatus = nodeMap.get(ourNodeIdentity)
+    val localStatus = nodeMap.get(NodeIdentityManager.nodeIdentity)
     nodeMap.keys.foreach(nodeIdentity => ageCellStyleRefresher.remove(nodeIdentity))
     nodeMap.clear()
     localStatus.foreach(status => nodeMap.put(status.nodeIdentity, status))
@@ -140,7 +139,7 @@ class SwarmData @Inject() (
       )
     )
 
-  def remove(nodeIdentity: NodeIdentity): Unit = if nodeIdentity != ourNodeIdentity then
+  def remove(nodeIdentity: NodeIdentity): Unit = if nodeIdentity != NodeIdentityManager.nodeIdentity then
     nodeMap.remove(nodeIdentity).foreach(_ => ageCellStyleRefresher.remove(nodeIdentity))
     purgeNodeCaches(
       nodeIdentity = nodeIdentity
@@ -149,8 +148,6 @@ class SwarmData @Inject() (
     refreshContestConfigDifferenceState()
     notifyNodeStatusListeners()
     logger.debug(s"Removed node status for $nodeIdentity")
-
-  def ourNodeIdentity: NodeIdentity = nodeIdentityManager.ourNodeIdentity
 
   private def updateKnownCollectionsFromNodeMap(): Unit =
     val nodeStatuses = nodeMap.values.toSeq

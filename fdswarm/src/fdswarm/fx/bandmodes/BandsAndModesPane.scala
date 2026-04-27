@@ -18,13 +18,10 @@
 
 package fdswarm.fx.bandmodes
 
-import com.typesafe.config.Config
 import fdswarm.bandmodes.BandModeMatrixPane
 import fdswarm.fx.bands.{BandCheckBoxPane, ModeCheckBoxPane}
 import jakarta.inject.{Inject, Singleton}
-import javafx.event.{EventHandler, ActionEvent as JfxActionEvent}
 import scalafx.Includes.*
-import scalafx.beans.property.BooleanProperty
 import scalafx.geometry.Insets
 import scalafx.scene.control.*
 import scalafx.scene.layout.*

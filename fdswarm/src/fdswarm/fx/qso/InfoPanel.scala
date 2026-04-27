@@ -22,7 +22,6 @@ import fdswarm.fx.GridColumns
 import fdswarm.fx.contest.{ClassChoice, ContestCatalog, ContestConfigManager}
 import fdswarm.fx.sections.SectionsProvider
 import jakarta.inject.{Inject, Singleton}
-import scalafx.Includes.*
 import scalafx.scene.Node
 import scalafx.scene.control.Label
 import scalafx.scene.layout.{GridPane, VBox}

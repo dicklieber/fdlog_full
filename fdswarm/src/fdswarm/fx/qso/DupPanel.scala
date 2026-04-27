@@ -19,17 +19,16 @@
 package fdswarm.fx.qso
 
 import fdswarm.bandmodes.SelectedBandModeManager
-import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.GridColumns
 import fdswarm.fx.bandmodes.BandModeStore
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.store.{DupInfo, QsoStore, StyledMessage}
-import fdswarm.util.TimeHelpers.localFrom
 import jakarta.inject.{Inject, Singleton}
 import scalafx.application.Platform
 import scalafx.beans.property.BooleanProperty
-import scalafx.beans.property.StringProperty
-import scalafx.scene.control.{Label, Tooltip}
-import scalafx.scene.layout.{GridPane, Pane, StackPane, VBox}
+import scalafx.scene.control.Label
+import scalafx.scene.layout.{GridPane, Pane}
+
 import scala.compiletime.uninitialized
 
 @Singleton

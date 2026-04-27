@@ -19,12 +19,9 @@
 package fdswarm
 
 import _root_.io.circe.Printer
-import _root_.io.circe.parser.decode
-import _root_.io.circe.syntax.*
-import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.station.StationConfig
 import fdswarm.io.FileHelper
-import fdswarm.model.Callsign
+import fdswarm.logging.LazyStructuredLogging
 import jakarta.inject.{Inject, Singleton}
 import scalafx.beans.property.ObjectProperty
 

@@ -20,15 +20,13 @@ package fdswarm.fx.qso
 
 import com.google.inject.Inject
 import fdswarm.bandmodes.BandModeMatrixPane
-import fdswarm.logging.LazyStructuredLogging
-import fdswarm.fx.GridColumns
 import fdswarm.fx.sections.SectionPanel
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.replication.status.NodeBandOpPane
 import jakarta.inject.Singleton
 import scalafx.geometry.Insets
 import scalafx.scene.Node
 import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority}
-import fdswarm.fx.GridColumns.*
 
 @Singleton
 class ContestEntry @Inject()(qsoEntryPanel: QsoEntryPanel,

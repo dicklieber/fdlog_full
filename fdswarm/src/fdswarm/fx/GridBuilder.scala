@@ -23,11 +23,11 @@ import scalafx.Includes.*
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.Node
 import scalafx.scene.control.Label
-import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority, Region}
+import scalafx.scene.layout.{ColumnConstraints, GridPane, Region}
 
 import java.text.NumberFormat
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicInteger
 /**
  * A builder for creating a GridPane with label-value pairs.
  *

@@ -23,10 +23,7 @@ import fdswarm.fx.components.{AnyComboBox, CountComboBox, OptionTextField}
 import fdswarm.fx.contest.*
 import fdswarm.fx.utils.{IconButton, MultiChangeWatcher}
 import fdswarm.logging.LazyStructuredLogging
-import fdswarm.model.Band
-import fdswarm.model.ChoiceItem
-import fdswarm.model.Mode
-import fdswarm.model.Qso
+import fdswarm.model.{Band, ChoiceItem, Mode, Qso}
 import fdswarm.store.QsoStore
 import fdswarm.telemetry.Metrics
 import io.circe.syntax.*

@@ -19,7 +19,6 @@
 package fdswarm.exporter
 
 import io.circe.{Decoder, Encoder}
-import io.circe.generic.semiauto.*
 
 enum CategoryOperator(val value: String):
   case SINGLE_OP extends CategoryOperator("SINGLE-OP")

@@ -1,7 +1,6 @@
 package fdswarm.scoring
 
-import fdswarm.model.Qso
-import fdswarm.model.Mode
+import fdswarm.model.{Mode, Qso}
 import jakarta.inject.{Inject, Singleton}
 
 @Singleton

@@ -22,7 +22,6 @@ import fdswarm.fx.GridBuilder
 import fdswarm.fx.utils.{BootstrapIcons, IntLabel}
 import fdswarm.replication.NodeStatus
 import fdswarm.util.{AgeStyleService, DurationFormat, NodeIdentity}
-import scalafx.Includes.*
 import scalafx.beans.property.LongProperty
 import scalafx.scene.control.{Button, Label, Tooltip}
 import scalafx.scene.layout.HBox

@@ -18,8 +18,8 @@
 
 package fdswarm.fx.tools
 
-import fdswarm.logging.LazyStructuredLogging
 import fdswarm.exporter.ExportService
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.util.FilenameStamp
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*

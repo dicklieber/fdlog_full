@@ -20,10 +20,10 @@ package fdswarm.bands
 
 import fdswarm.io.FileHelper
 import fdswarm.model.Band
+import fdswarm.model.Band.Band_20m
 import jakarta.inject.{Inject, Singleton}
 import javafx.collections.ListChangeListener
 import scalafx.collections.ObservableBuffer
-import fdswarm.model.Band.Band_20m
 
 @Singleton
 final class AvailableBandsManager @Inject()(fileHelper:FileHelper):

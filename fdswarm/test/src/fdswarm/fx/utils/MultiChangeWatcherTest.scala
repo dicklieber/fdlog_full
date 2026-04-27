@@ -20,7 +20,6 @@ package fdswarm.fx.utils
 
 import munit.FunSuite
 import scalafx.beans.property.StringProperty
-import scalafx.Includes._
 
 class MultiChangeWatcherTest extends FunSuite:
 

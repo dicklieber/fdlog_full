@@ -18,9 +18,9 @@
 
 package fdswarm.model
 
-import munit.FunSuite
-import io.circe.syntax.*
 import io.circe.parser.decode
+import io.circe.syntax.*
+import munit.FunSuite
 import sttp.tapir.Schema
 
 class FdClassTest extends FunSuite:

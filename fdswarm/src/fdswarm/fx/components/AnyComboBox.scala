@@ -19,7 +19,6 @@
 package fdswarm.fx.components
 
 import fdswarm.model.Choice
-import scalafx.Includes.*
 import scalafx.collections.ObservableBuffer
 import scalafx.scene.control.{ComboBox, ListCell, ListView}
 import scalafx.scene.layout.Region

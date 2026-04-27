@@ -19,13 +19,14 @@
 package fdswarm.replication
 
 import cats.effect.IO
-import scala.concurrent.duration.*
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.util.NodeIdentity
 import jakarta.inject.Singleton
 import org.http4s.Uri
 import org.http4s.ember.client.EmberClientBuilder
 import sttp.tapir.client.http4s.Http4sClientInterpreter
+
+import scala.concurrent.duration.*
 
 @Singleton
 class CallEndpoint @jakarta.inject.Inject()() extends LazyStructuredLogging:

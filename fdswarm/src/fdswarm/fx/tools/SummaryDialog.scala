@@ -18,22 +18,20 @@
 
 package fdswarm.fx.tools
 
-import fdswarm.logging.LazyStructuredLogging
 import fdswarm.exporter.ExportService
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.model.Callsign
 import fdswarm.store.QsoStore
 import fdswarm.util.FilenameStamp
 import jakarta.inject.{Inject, Singleton}
+import javafx.scene.input.{Clipboard, ClipboardContent}
 import scalafx.Includes.*
-import scalafx.application.Platform
-import scalafx.beans.property.{IntegerProperty, StringProperty}
+import scalafx.beans.property.StringProperty
 import scalafx.collections.ObservableBuffer
 import scalafx.geometry.Insets
 import scalafx.scene.control.*
-import scalafx.scene.layout.{BorderPane, HBox, Priority, VBox}
+import scalafx.scene.layout.{BorderPane, HBox}
 import scalafx.stage.Window
-import javafx.scene.input.Clipboard
-import javafx.scene.input.ClipboardContent
 
 @Singleton
 class SummaryDialog @Inject()(

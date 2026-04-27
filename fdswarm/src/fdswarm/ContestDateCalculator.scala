@@ -18,10 +18,7 @@
 
 package fdswarm
 
-import fdswarm.fx.contest.ContestType
 import java.time.*
-import _root_.io.circe.Codec
-import fdswarm.util.JavaTimeCirce.given
 
 final case class ContestDates(startUtc: ZonedDateTime, endUtc: ZonedDateTime)
 

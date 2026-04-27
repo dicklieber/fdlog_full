@@ -18,16 +18,16 @@
 
 package fdswarm.fx.tools
 
-import fdswarm.fx.InputHelper.forceCaps
 import fdswarm.exporter.*
+import fdswarm.fx.InputHelper.forceCaps
 import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.fx.station.StationStore
-import fdswarm.fx.utils.{BootstrapIcons, IconButton}
+import fdswarm.fx.utils.BootstrapIcons
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
-import scalafx.geometry.{Insets, Pos}
+import scalafx.geometry.Insets
 import scalafx.scene.control.*
-import scalafx.scene.layout.{GridPane, Priority, Region, VBox}
+import scalafx.scene.layout.{GridPane, Priority, Region}
 import scalafx.stage.Window
 
 @Singleton

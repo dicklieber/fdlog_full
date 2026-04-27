@@ -21,7 +21,6 @@ package fdswarm.replication
 import com.google.inject.name.Named
 import fdswarm.StationConfigManager
 import fdswarm.bandmodes.SelectedBandModeManager
-import fdswarm.contestStart.ContestStartManager
 import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.model.BandModeOperator

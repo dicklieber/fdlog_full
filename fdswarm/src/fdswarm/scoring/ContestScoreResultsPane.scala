@@ -1,9 +1,8 @@
 package fdswarm.scoring
 
 import jakarta.inject.*
-import scalafx.geometry.Insets
+import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control.Label
-import scalafx.geometry.Pos
 import scalafx.scene.layout.{GridPane, Priority, VBox}
 
 import java.text.NumberFormat

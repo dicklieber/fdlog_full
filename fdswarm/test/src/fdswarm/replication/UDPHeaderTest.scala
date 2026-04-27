@@ -19,8 +19,7 @@
 package fdswarm.replication
 
 import com.organization.BuildInfo
-import fdswarm.util.NodeIdentity
-import fdswarm.util.Gzip
+import fdswarm.util.{Gzip, NodeIdentity}
 import munit.FunSuite
 
 import java.net.{DatagramPacket, InetAddress}

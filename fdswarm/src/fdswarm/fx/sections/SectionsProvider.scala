@@ -20,6 +20,7 @@ package fdswarm.fx.sections
 
 import com.typesafe.config.Config
 import jakarta.inject.{Inject, Singleton}
+
 import scala.jdk.CollectionConverters.*
 
 @Singleton

@@ -22,13 +22,12 @@ import cats.effect.IO
 import fdswarm.model.Qso
 import fdswarm.replication.{LocalNodeStatus, StatusMessage}
 import fdswarm.store.QsoStore
-import io.circe.{Codec, Printer}
 import io.circe.generic.semiauto.deriveCodec
 import io.circe.syntax.*
+import io.circe.{Codec, Printer}
 import jakarta.inject.{Inject, Singleton}
 import nl.grons.metrics4.scala.DefaultInstrumented
 import sttp.tapir.*
-import sttp.tapir.generic.auto.*
 import sttp.tapir.json.circe.*
 import sttp.tapir.server.ServerEndpoint
 

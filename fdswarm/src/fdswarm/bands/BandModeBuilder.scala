@@ -18,9 +18,7 @@
 
 package fdswarm.bands
 
-import fdswarm.model.BandMode
-import fdswarm.model.Band
-import fdswarm.model.Mode
+import fdswarm.model.{Band, BandMode, Mode}
 import jakarta.inject.Singleton
 
 @Singleton

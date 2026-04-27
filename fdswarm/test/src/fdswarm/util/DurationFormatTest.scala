@@ -18,8 +18,9 @@
 
 package fdswarm.util
 
-import java.time.Duration
 import munit.FunSuite
+
+import java.time.Duration
 
 class DurationFormatTest extends FunSuite:
 

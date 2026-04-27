@@ -1,9 +1,10 @@
 package fdswarm.util
 
-import munit.FunSuite
+import fdswarm.util.JavaTimeCirce.given
 import io.circe.parser.decode
+import munit.FunSuite
+
 import java.time.Instant
-import JavaTimeCirce.given
 
 class JavaTimeCirceTest extends FunSuite:
 

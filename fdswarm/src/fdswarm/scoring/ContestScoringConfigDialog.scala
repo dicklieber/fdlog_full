@@ -1,7 +1,7 @@
 package fdswarm.scoring
 
 import fdswarm.fx.FdLogUi
-import fdswarm.fx.contest.{ContestConfigManager}
+import fdswarm.fx.contest.ContestConfigManager
 import jakarta.inject.*
 import scalafx.Includes.*
 import scalafx.scene.control.{ButtonBar, ButtonType, Dialog}

@@ -19,12 +19,12 @@
 package fdswarm.fx.qso
 
 import fdswarm.model.Qso
-import scalafx.Includes.*
+import scalafx.geometry.Insets
 import scalafx.scene.control.*
 import scalafx.scene.layout.GridPane
-import scalafx.geometry.Insets
-import java.time.format.DateTimeFormatter
+
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 object QsoDialog:
   private val timeFmt =

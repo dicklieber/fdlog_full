@@ -19,8 +19,7 @@
 package fdswarm.fx.sections
 
 import fdswarm.fx.{NextField, UserConfig}
-import jakarta.inject.{Inject, Singleton}
-import scalafx.Includes.*
+import jakarta.inject.Inject
 import scalafx.scene.control.{TextField, TextFormatter}
 
 class SectionField @Inject()(sectionsProvider: SectionsProvider, override val userConfig: UserConfig) extends TextField with NextField:

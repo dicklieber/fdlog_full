@@ -18,18 +18,14 @@
 
 package fdswarm.bandmodes
 
-import scalafx.application.Platform
-import scalafx.beans.property.BooleanProperty
-import com.typesafe.config.Config
 import fdswarm.bands.{AvailableBandsManager, AvailableModesManager, BandModeBuilder}
 import fdswarm.fx.GridColumns
 import fdswarm.fx.utils.IconButton
 import fdswarm.logging.LazyStructuredLogging
-import fdswarm.model.Band
-import fdswarm.model.BandMode
-import fdswarm.model.Mode
-import jakarta.inject.{Inject, Provider, Singleton}
-import scalafx.Includes.*
+import fdswarm.model.{Band, BandMode, Mode}
+import jakarta.inject.Inject
+import scalafx.application.Platform
+import scalafx.beans.property.BooleanProperty
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.Node
 import scalafx.scene.control.*

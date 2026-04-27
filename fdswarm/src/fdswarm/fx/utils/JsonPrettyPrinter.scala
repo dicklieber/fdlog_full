@@ -18,11 +18,11 @@
 
 package fdswarm.fx.utils
 
-import scalafx.scene.layout.Pane
-import scalafx.scene.text.{Text, TextFlow}
-import scalafx.scene.paint.Color
 import io.circe.*
 import io.circe.parser.*
+import scalafx.scene.layout.Pane
+import scalafx.scene.paint.Color
+import scalafx.scene.text.{Text, TextFlow}
 
 object JsonPrettyPrinter:
 
@@ -92,9 +92,9 @@ object JsonPrettyPrinter:
     )
 
   def toTable(json: String): Pane =
-    import scalafx.scene.layout.{GridPane, Priority, VBox}
-    import scalafx.scene.control.Label
     import scalafx.geometry.Insets
+    import scalafx.scene.control.Label
+    import scalafx.scene.layout.{GridPane, Priority, VBox}
 
     try
       val parsed = parse(json).getOrElse(throw new Exception("Invalid JSON"))

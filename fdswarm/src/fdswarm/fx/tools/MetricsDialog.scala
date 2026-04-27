@@ -18,26 +18,26 @@
 
 package fdswarm.fx.tools
 
-import com.codahale.metrics.{Counter, Gauge, Histogram, Meter, Metric, Timer}
+import com.codahale.metrics.*
 import fdswarm.telemetry.Metrics
 import fdswarm.util.DurationFormat
 import jakarta.inject.{Inject, Singleton}
-import scalafx.application.Platform
+import javafx.scene.chart.XYChart as JfxXYChart
 import scalafx.Includes.*
 import scalafx.animation.{KeyFrame, Timeline}
+import scalafx.application.Platform
 import scalafx.beans.property.StringProperty
 import scalafx.collections.ObservableBuffer
 import scalafx.geometry.Insets
 import scalafx.scene.chart.{LineChart, NumberAxis, XYChart}
-import scalafx.scene.control.{ButtonType, CheckBox, Dialog, Label, TableColumn, TableRow, TableView, TextField}
+import scalafx.scene.control.*
 import scalafx.scene.input.MouseButton
 import scalafx.scene.layout.{HBox, VBox}
 import scalafx.stage.Window
 import scalafx.util.Duration as FxDuration
 
-import java.time.{Duration as JDuration, Instant, ZoneId}
 import java.time.format.DateTimeFormatter
-import javafx.scene.chart.{XYChart as JfxXYChart}
+import java.time.{Instant, ZoneId, Duration as JDuration}
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 

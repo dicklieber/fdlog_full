@@ -18,13 +18,11 @@
 
 package fdswarm.bandmodes
 
-import fdswarm.logging.LazyStructuredLogging
 import fdswarm.StartupInfo
 import fdswarm.bands.BandModeBuilder
 import fdswarm.io.FileHelper
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.model.BandMode
-import io.circe.parser.*
-import io.circe.syntax.*
 import jakarta.inject.{Inject, Singleton}
 import scalafx.beans.property.ObjectProperty
 

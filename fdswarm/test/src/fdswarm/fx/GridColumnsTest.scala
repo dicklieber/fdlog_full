@@ -20,7 +20,7 @@ package fdswarm.fx
 import fdswarm.JavaFxTestKit
 import munit.FunSuite
 import scalafx.scene.control.Label
-import scalafx.scene.layout.{GridPane, StackPane, BorderPane}
+import scalafx.scene.layout.{GridPane, StackPane}
 
 class GridColumnsTest extends FunSuite:
   JavaFxTestKit.init()

@@ -18,10 +18,11 @@
 
 package fdswarm.fx.components
 
-import java.util.function.UnaryOperator
 import javafx.scene.control.TextFormatter.Change
 import scalafx.beans.property.ObjectProperty
 import scalafx.scene.control.{TextField, TextFormatter}
+
+import java.util.function.UnaryOperator
 
 class OptionTextField(initial: Option[String] = None) extends TextField:
 

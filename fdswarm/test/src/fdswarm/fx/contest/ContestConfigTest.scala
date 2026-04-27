@@ -18,10 +18,8 @@
 
 package fdswarm.fx.contest
 
-import munit.FunSuite
 import fdswarm.model.Callsign
-import fdswarm.util.HamPhonetic
-import fdswarm.fx.contest.ContestType
+import munit.FunSuite
 
 class ContestConfigTest extends FunSuite:
 

@@ -17,8 +17,11 @@
 
 package fdswarm.util
 
+import fdswarm.logging.Locus
+import fdswarm.metric.{Direction, MetricNameBuilder}
 import fdswarm.util.Ids.Id
 import io.circe.*
+import nl.grons.metrics4.scala.MetricName
 import sttp.tapir.Schema
 
 import java.net.InetAddress
@@ -59,8 +62,7 @@ case class NodeIdentity(hostIp: String,
    */
   val udpHeaderPiece: String =
     toString
-
-  val short: String = s"$hostName:$port"
+  val external: String = s"$hostName:$instanceId"
   override def compare(that: NodeIdentity): Int =
     this.hostName.compareTo(that.hostName)
 
@@ -69,6 +71,10 @@ case class NodeIdentity(hostIp: String,
     case _ => false
 
   override def hashCode: Int = instanceId.hashCode
+
+  def hostPort: String = s"${hostIp}:$port"
+
+  def metricNameBuilder(locus: Locus): Direction => String => MetricNameBuilder = MetricNameBuilder(this)(locus)
 
 object NodeIdentity:
   val mockNodeIdentity = NodeIdentity(

@@ -18,25 +18,25 @@
 
 package fdswarm.replication
 
-import fdswarm.logging.LazyStructuredLogging
 import fdswarm.logging.Locus.Replication
+import fdswarm.logging.{LazyStructuredLogging, Locus}
+import fdswarm.metric.Direction
 import fdswarm.util.NodeIdentityManager
 import jakarta.inject.{Inject, Singleton}
-import nl.grons.metrics4.scala.DefaultInstrumented
+import nl.grons.metrics4.scala.{Counter, DefaultInstrumented, Histogram}
 
 import java.net.{DatagramPacket, DatagramSocket, InetAddress, InetSocketAddress}
 import scala.compiletime.uninitialized
 
-/**
- * Broadcasts UDP packets to all nodes in the network.
- * Receive any UDP packets from all nodes in the network.
- * Consumers read from the shared incoming queue exposed by [[Transport]].
- * @param nodeIdentityManager who we are.
- */
+/** Broadcasts UDP packets to all nodes in the network. Receive any UDP packets from all nodes in
+  * the network. Consumers read from the shared incoming queue exposed by [[Transport]].
+  * @param nodeIdentityManager
+  *   who we are.
+  */
 @Singleton
-class BroadcastTransport @Inject() (
-                                     val nodeIdentityManager: NodeIdentityManager
-                                   ) extends Transport with DefaultInstrumented with Runnable with LazyStructuredLogging(Replication):
+class BroadcastTransport @Inject() (val nodeIdentityManager: NodeIdentityManager)
+    extends Transport with DefaultInstrumented with Runnable
+    with LazyStructuredLogging(Replication):
 
   logger.info("Starting BroadcastTransport")
 
@@ -45,14 +45,25 @@ class BroadcastTransport @Inject() (
 
   val port = 8090
   val thread = new Thread(this, "Broadcast-Receiver")
-  private val sentCounter = metrics.counter("udp_broadcast_packets_sent")
-  private val receivedCounter = metrics.counter("udp_broadcast_packets_received")
-  private val sentBytesCounter = metrics.counter("udp_broadcast_bytes_sent")
-  private val receivedBytesCounter = metrics.counter("udp_broadcast_bytes_received")
-  private var lastPacketBytesSent: Int = 0
-  private var lastPacketBytesReceived: Int = 0
-  metrics.gauge("udp_broadcast_last_packet_bytes_sent")(lastPacketBytesSent.toDouble)
-  metrics.gauge("udp_broadcast_last_packet_bytes_received")(lastPacketBytesReceived.toDouble)
+
+  // Define metrics for UDP packet statistics
+  private val metricName = NodeIdentityManager.nodeIdentity.metricNameBuilder(Locus.Transport)
+  private val sentMetric = metricName(Direction.Send)
+  private val sentPacketTotal = metrics.counter(sentMetric("packet.total").toString)
+  private val sentBytesTotal = metrics.counter(sentMetric("bytes.total").toString)
+  private val sentHistogram = metrics.histogram(sentMetric("packetSize").toString)
+
+  private val receivedMetric = metricName(Direction.Received)
+  private val receivedPacketTotal: Counter =
+    metrics.counter(receivedMetric("packet.total").toString)
+  private val receivedBytesTotal: Counter = metrics.counter(receivedMetric("bytes.total").toString)
+  private val receivedHistogram: Histogram =
+    metrics.histogram(receivedMetric("packetSize").toString)
+
+//  private var lastPacketBytesSent: Int = 0
+//  private var lastPacketBytesReceived: Int = 0
+//  metrics.gauge("udp_broadcast_last_packet_bytes_sent")(lastPacketBytesSent.toDouble)
+//  metrics.gauge("udp_broadcast_last_packet_bytes_received")(lastPacketBytesReceived.toDouble)
 
   private var socket: DatagramSocket = uninitialized
   socket = new DatagramSocket(null)
@@ -68,9 +79,10 @@ class BroadcastTransport @Inject() (
       val packet: DatagramPacket = new DatagramPacket(buffer, buffer.length)
       logger.trace(s"Waiting for a UDP packet")
       socket.receive(packet)
-      receivedCounter.inc()
-      receivedBytesCounter.inc(packet.getLength.toLong)
-      lastPacketBytesReceived = packet.getLength
+      receivedPacketTotal.inc()
+      receivedBytesTotal.inc(packet.getLength.toLong)
+      receivedHistogram += packet.getLength
+
       val senderAddr = packet.getAddress
       val senderPort = packet.getPort
       logger.trace(s"Received a UDP packet")
@@ -85,21 +97,21 @@ class BroadcastTransport @Inject() (
     send(Service.QSO, data)
 
   def send(
-    service: Service[?],
-    data: Array[Byte]
+      service: Service[?],
+      data: Array[Byte]
   ): Unit =
     try
-      val packetBytes = UDPHeader(service, nodeIdentityManager.ourNodeIdentity, data)
-      lastPacketBytesSent = packetBytes.length
+      val packetBytes = UDPHeader(service, NodeIdentityManager.nodeIdentity, data)
       val broadcastAddr = InetAddress.getByName("255.255.255.255")
       val packet =
         new DatagramPacket(packetBytes, packetBytes.length, broadcastAddr, port)
       socket.send(packet)
-      sentCounter.inc()
-      sentBytesCounter.inc(packetBytes.length.toLong)
+      sentPacketTotal.inc()
+      sentBytesTotal.inc(packetBytes.length.toLong)
+      sentHistogram += packetBytes.length
 
     catch
-      case e: Exception  =>
+      case e: Exception =>
         logger.error("Send", e)
 
   def stop(): Unit =

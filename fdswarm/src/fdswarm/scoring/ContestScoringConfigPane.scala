@@ -1,9 +1,7 @@
 package fdswarm.scoring
 
 import fdswarm.fx.contest.{ContestConfigManager, ContestType}
-import fdswarm.scoring.{ContestScoringConfig, ContestScoringConfigManager, PowerSource}
 import jakarta.inject.*
-import scalafx.Includes.*
 import scalafx.beans.binding.{Bindings, BooleanBinding}
 import scalafx.beans.property.ObjectProperty
 import scalafx.collections.ObservableBuffer

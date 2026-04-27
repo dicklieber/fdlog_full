@@ -18,16 +18,14 @@
 
 package fdswarm.fx.qso
 
-import fdswarm.logging.LazyStructuredLogging
 import fdswarm.ContestDates
 import fdswarm.fx.GridColumns
-import fdswarm.fx.contest.{ContestConfig, ContestConfigManager, ContestType}
+import fdswarm.fx.contest.{ContestConfigManager, ContestType}
 import fdswarm.fx.discovery.ContestConfigDialog
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.util.DurationFormat
 import jakarta.inject.{Inject, Named, Singleton}
 import scalafx.animation.{KeyFrame, Timeline}
-import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
-import scalafx.Includes.*
 import scalafx.scene.Node
 import scalafx.scene.control.{Button, Label}
 import scalafx.scene.layout.VBox

@@ -19,11 +19,9 @@
 package fdswarm.fx.bandmodes
 
 import fdswarm.io.FileHelper
+import io.circe.Codec
 import jakarta.inject.{Inject, Singleton}
 import scalafx.beans.property.ObjectProperty
-import io.circe.Codec
-import io.circe.parser.*
-import io.circe.syntax.*
 
 @Singleton
 final class BandModeStore @Inject() (fileHelper:FileHelper) {

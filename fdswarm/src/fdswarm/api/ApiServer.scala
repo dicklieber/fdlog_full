@@ -20,6 +20,7 @@
 package fdswarm.api
 
 import cats.effect.IO
+import com.comcast.ip4s.*
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.util.NodeIdentityManager
 import jakarta.inject.{Inject, Singleton}
@@ -27,8 +28,7 @@ import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.Router
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
-import com.comcast.ip4s.*
-import cats.syntax.all.*
+
 import java.util.Set
 import scala.jdk.CollectionConverters.*
 

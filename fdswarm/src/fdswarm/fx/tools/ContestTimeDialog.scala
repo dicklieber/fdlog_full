@@ -18,9 +18,9 @@
 
 package fdswarm.fx.tools
 
-import fdswarm.logging.LazyStructuredLogging
 import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.fx.qso.ContestDetailPanel
+import fdswarm.logging.LazyStructuredLogging
 import jakarta.inject.{Inject, Singleton}
 import scalafx.geometry.Insets
 import scalafx.scene.Scene

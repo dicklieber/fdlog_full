@@ -20,8 +20,8 @@ package fdswarm.fx.admin
 
 import fdswarm.replication.status.{NodeDataField, SwarmData}
 import jakarta.inject.{Inject, Singleton}
-import scalafx.beans.binding.Bindings
 import scalafx.Includes.*
+import scalafx.beans.binding.Bindings
 import scalafx.scene.Scene
 import scalafx.scene.control.Label
 import scalafx.scene.layout.VBox

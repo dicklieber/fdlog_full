@@ -19,16 +19,16 @@
 package fdswarm.fx
 
 import cats.effect.unsafe.implicits.global
-import fdswarm.logging.LazyStructuredLogging
 import fdswarm.StartupInfo
 import fdswarm.fx.FdLogUi.isMac
 import fdswarm.fx.discovery.ContestDiscovery
 import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.utils.UiStyles
+import fdswarm.logging.LazyStructuredLogging
 import fdswarm.logging.Locus.Startup
 import fdswarm.replication.{NodeStatusDispatcher, StatusBroadcastService}
 import fdswarm.telemetry.Metrics
-import fdswarm.util.{DurationFormat, NodeIdentityManager}
+import fdswarm.util.NodeIdentityManager
 import jakarta.inject.{Inject, Singleton}
 import javafx.embed.swing.SwingFXUtils
 import scalafx.application.Platform
@@ -47,7 +47,6 @@ final class FdLogUi @Inject() (
                                 menus: FdLogMenus,
                                 repl: NodeStatusDispatcher,
                                 statusBroadcastService: StatusBroadcastService,
-                                nodeIdentityManager: NodeIdentityManager,
                                 otelMetrics: Metrics,
                                 qsoStore: fdswarm.store.QsoStore,
                                 apiServer: fdswarm.api.ApiServer,
@@ -103,7 +102,7 @@ final class FdLogUi @Inject() (
           "Could not set macOS handlers"
         )
 
-    stage.title = s"FdSwarm@${nodeIdentityManager.ourNodeIdentity.toString}"
+    stage.title = s"FdSwarm@${NodeIdentityManager.nodeIdentity}"
     val scene = new Scene(
       root,
       1100,

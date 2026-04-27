@@ -20,15 +20,15 @@ package fdswarm.fx.utils.editor
 
 import fdswarm.fx.utils.GridCells
 import fdswarm.util.camelToWords
-import javafx.scene.input.{KeyCode => JfxKeyCode, KeyEvent => JfxKeyEvent}
+import javafx.scene.input.{KeyCode as JfxKeyCode, KeyEvent as JfxKeyEvent}
 import scalafx.beans.property.*
 import scalafx.scene.Node
 import scalafx.scene.control.*
 import scalafx.scene.layout.*
 
 import java.lang.reflect.Constructor
-import scala.jdk.CollectionConverters.*
 import scala.collection.mutable
+import scala.jdk.CollectionConverters.*
 
 /**
  * Editor for an arbitrary case class.

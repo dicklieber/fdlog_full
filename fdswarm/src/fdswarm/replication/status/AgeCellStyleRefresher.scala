@@ -26,10 +26,9 @@ import scalafx.application.Platform
 import scalafx.scene.Node
 import scalafx.scene.control.{Label, Tooltip}
 
-import java.time.{Duration, Instant, ZoneId}
 import java.time.format.DateTimeFormatter
-import java.util.Timer
-import java.util.TimerTask
+import java.time.{Duration, Instant, ZoneId}
+import java.util.{Timer, TimerTask}
 import scala.collection.concurrent.TrieMap
 
 final case class CellStyleContext(

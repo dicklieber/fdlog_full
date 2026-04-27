@@ -18,7 +18,7 @@
  */
 
 package fdswarm.model
-import io.circe.{Codec, Decoder, Encoder}
+import io.circe.{Decoder, Encoder}
 import sttp.tapir.Schema
 
 /**

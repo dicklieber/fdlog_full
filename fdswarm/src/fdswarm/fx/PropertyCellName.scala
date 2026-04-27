@@ -18,8 +18,6 @@
 
 package fdswarm.fx
 
-import scalafx.scene.control.Tooltip
-
 trait PropertyCellName {
  def toolTip: String
 

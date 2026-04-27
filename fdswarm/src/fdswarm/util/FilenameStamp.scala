@@ -19,7 +19,8 @@
 package fdswarm.util
  
 import fdswarm.fx.contest.ContestConfigManager
-import jakarta.inject.{Inject, Provider, Singleton}
+import jakarta.inject.{Inject, Singleton}
+
 import java.time.*
 import java.time.format.DateTimeFormatter
  

@@ -20,14 +20,12 @@ package fdswarm.util
 
 import fdswarm.io.FileHelper
 import fdswarm.logging.LazyStructuredLogging
-import org.apache.logging.log4j.Level
-import org.apache.logging.log4j.core.config.Configurator
+import io.circe.Printer
 import io.circe.parser.*
 import io.circe.syntax.*
-import io.circe.Printer
-import jakarta.inject.{Inject, Singleton}
-
-import java.nio.file.Files
+import jakarta.inject.Inject
+import org.apache.logging.log4j.Level
+import org.apache.logging.log4j.core.config.Configurator
 
 class LoggingManager @Inject() (
                                  fileHelper: FileHelper
