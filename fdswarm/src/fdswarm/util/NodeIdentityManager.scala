@@ -32,9 +32,6 @@ import scala.jdk.CollectionConverters.*
 @Singleton
 class NodeIdentityManager @Inject()(@Named("fdswarm.httpPort") httpPort: Int,
                                     instanceIdManager: InstanceIdManager) extends LazyStructuredLogging:
-
-  def isUs(nodeIdentity: NodeIdentity):Boolean=
-    nodeIdentity.instanceId == instanceIdManager.ourInstanceId
     
   def suitableInterfaces: Seq[AnIpAddress] = (for
     interface: NetworkInterface <- NetworkInterface.getNetworkInterfaces.asScala

@@ -30,11 +30,10 @@ import scala.compiletime.uninitialized
 
 /** Broadcasts UDP packets to all nodes in the network. Receive any UDP packets from all nodes in
   * the network. Consumers read from the shared incoming queue exposed by [[Transport]].
-  * @param nodeIdentityManager
-  *   who we are.
+ * @param nodeIdentity doesnt' need this directly but needs to run to get  [[fdswarm.util.NodeIdentityManager.nodeIdentity]]
   */
 @Singleton
-class BroadcastTransport @Inject() (val nodeIdentityManager: NodeIdentityManager)
+class BroadcastTransport @Inject() (nodeIdentity: NodeIdentityManager)
     extends Transport with DefaultInstrumented with Runnable
     with LazyStructuredLogging(Replication):
 
@@ -86,7 +85,7 @@ class BroadcastTransport @Inject() (val nodeIdentityManager: NodeIdentityManager
       val senderPort = packet.getPort
       logger.trace(s"Received a UDP packet")
       val udpHeaderData = UDPHeader.parse(packet)
-      if isUs(udpHeaderData.nodeIdentity) then
+      if udpHeaderData.nodeIdentity.isUs then
         logger.trace(s"Received UDP packet from $senderAddr:$senderPort: ${udpHeaderData.service}")
       else
         logger.trace(s"Received UDP packet from $senderAddr:$senderPort: ${udpHeaderData.service}")

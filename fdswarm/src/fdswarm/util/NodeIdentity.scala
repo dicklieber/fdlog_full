@@ -74,6 +74,8 @@ case class NodeIdentity(hostIp: String,
 
   def hostPort: String = s"${hostIp}:$port"
 
+  def isUs: Boolean = this == NodeIdentityManager.nodeIdentity
+
   def metricNameBuilder(locus: Locus): Direction => String => MetricNameBuilder = MetricNameBuilder(this)(locus)
 
 object NodeIdentity:

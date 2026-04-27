@@ -23,9 +23,6 @@ class MockNodeIdentityManager(val mockNodeIdentity: NodeIdentity, instanceIdMana
   override def suitableInterfaces: Seq[AnIpAddress] = Seq(AnIpAddress("mock", mockNodeIdentity.hostIp))
   override def currentIp: AnIpAddress = AnIpAddress("mock", mockNodeIdentity.hostIp)
 
-  override def isUs(nodeIdentity: NodeIdentity): Boolean =
-    nodeIdentity.instanceId == mockNodeIdentity.instanceId
-
 object MockNodeIdentityManager:
   def apply(host: String = "127.0.0.1", port: Int = 8080): MockNodeIdentityManager =
     new MockNodeIdentityManager(mockNodeIdentity = NodeIdentity(host, port, hostName = "ccc", instanceId = "iii"))
