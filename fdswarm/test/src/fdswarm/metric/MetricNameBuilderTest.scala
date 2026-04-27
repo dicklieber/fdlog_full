@@ -1,7 +1,7 @@
 package fdswarm.metric
 
 import fdswarm.logging.Locus
-import fdswarm.metric.MetricName.Direction
+import fdswarm.metric.Direction
 import fdswarm.util.NodeIdentity
 import munit.FunSuite
 
@@ -13,5 +13,5 @@ class MetricNameBuilderTest extends FunSuite:
     val fromLocus = fromNodeIdentity(Locus.Replication)
     val fromDirection = fromLocus(Direction.Send)
     val metricNameBuilder = fromDirection("testMetric")
-    val metricName = metricNameBuilder.toString
-    assertEquals(metricName,  "testHost:=id.Replication.testMetric.In")
+    val metricName:String = metricNameBuilder // testing given conversion toString
+    assertEquals(metricName,  "testHost:=id.Replication.testMetric.Send")
