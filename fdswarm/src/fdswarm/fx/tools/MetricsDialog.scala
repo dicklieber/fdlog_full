@@ -109,6 +109,13 @@ final class MetricsDialog @Inject() (
     val lastUpdated = new Label("Last updated: -")
     val filterField = new TextField:
       promptText = "Filter metric names..."
+    val allTypesOption = "-all-"
+    val typeFilter = new ComboBox[String](
+      ObservableBuffer(
+        allTypesOption
+      )
+    ):
+      value = allTypesOption
 
     val table = new TableView[MetricRow](
       filteredRows
@@ -159,16 +166,40 @@ final class MetricsDialog @Inject() (
       val filter = Option(
         filterField.text.value
       ).map(_.trim.toLowerCase).getOrElse("")
-      if filter.isEmpty then
-        filteredRows.setAll(
-          allRows.toSeq*
+      val selectedType = Option(
+        typeFilter.value.value
+      ).getOrElse(
+        allTypesOption
+      )
+      filteredRows.setAll(
+        allRows.toSeq.filter(
+          row =>
+            row.nameProp.value.toLowerCase.contains(
+              filter
+            ) && (selectedType == allTypesOption || row.typeProp.value == selectedType)
+        )*
+      )
+
+    def refreshTypeOptions(): Unit =
+      val selectedType = Option(
+        typeFilter.value.value
+      ).getOrElse(
+        allTypesOption
+      )
+      val types = allRows.toSeq
+        .map(
+          _.typeProp.value
         )
-      else
-        filteredRows.setAll(
-          allRows.toSeq.filter(
-            row => row.nameProp.value.toLowerCase.contains(filter)
-          )*
-        )
+        .distinct
+        .sorted
+      typeFilter.items = ObservableBuffer(
+        (allTypesOption +: types)*
+      )
+      typeFilter.value =
+        if types.contains(
+            selectedType
+          ) then selectedType
+        else allTypesOption
 
     def refreshRows(): Unit =
       val currentMetrics = metrics.registryRef.getMetrics.asScala.toMap
@@ -180,10 +211,15 @@ final class MetricsDialog @Inject() (
           currentMetrics
         )*
       )
+      refreshTypeOptions()
       applyFilter()
       lastUpdated.text = s"Last updated: ${timestampFormatter.format(Instant.now())}"
 
     filterField.text.onChange {
+      (_, _, _) =>
+        applyFilter()
+    }
+    typeFilter.value.onChange {
       (_, _, _) =>
         applyFilter()
     }
@@ -217,7 +253,13 @@ final class MetricsDialog @Inject() (
       prefWidth = 900
       prefHeight = 600
       children = Seq(
-        filterField,
+        new HBox:
+          spacing = 8
+          children = Seq(
+            filterField,
+            typeFilter
+          )
+        ,
         lastUpdated,
         table
       )
