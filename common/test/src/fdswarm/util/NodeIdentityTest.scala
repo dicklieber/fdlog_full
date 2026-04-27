@@ -30,15 +30,16 @@ class NodeIdentityTest extends FunSuite:
     val nodeIdentity = NodeIdentity.mockNodeIdentity
     val string = nodeIdentity.toString
     val backAgain = NodeIdentity(string)
-    assertEquals( backAgain, nodeIdentity)
+    assertEquals(backAgain, nodeIdentity)
 
   test("udpPiece round trip"):
     val nodeIdentity = NodeIdentity.mockNodeIdentity
     val udpPiece = nodeIdentity.udpHeaderPiece
-    // The [[UDPHeder]] mechanism doens't send the IP address in the UDPHeader. Instead, it uses the IP address of rempote socket. 
+    // The UDPHeader mechanism doesn't send the IP address in the UDPHeader.
+    // Instead, it uses the IP address of remote socket.
     val inetAddress = InetAddress.getByName(nodeIdentity.hostIp)
     val backAgain = NodeIdentity.fromUdpHeader(inetAddress, udpPiece)
-    assertEquals( backAgain, nodeIdentity)
+    assertEquals(backAgain, nodeIdentity)
 
   test("circe round trip"):
     val nodeIdentity = NodeIdentity.mockNodeIdentity
@@ -52,5 +53,3 @@ class NodeIdentityTest extends FunSuite:
     val decoded = decode[NodeIdentity](sJson)
       .getOrElse(fail("failed to decode"))
     assertEquals(decoded, nodeIdentity)
-
-

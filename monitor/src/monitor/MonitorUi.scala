@@ -19,6 +19,7 @@
 package monitor
 
 import com.google.inject.Inject
+import fdswarm.logging.LazyStructuredLogging
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.Scene
 import scalafx.scene.control.Label
@@ -26,7 +27,10 @@ import scalafx.scene.layout.StackPane
 import scalafx.scene.text.Font
 import scalafx.stage.Stage
 
-final class MonitorUi @Inject() ():
+import java.util.concurrent.LinkedBlockingQueue
+
+final class MonitorUi @Inject() (udpPacketListener: UdpPacketListener) extends LazyStructuredLogging:
+
   def start(primaryStage: Stage): Unit =
     primaryStage.title = "Monitor"
     primaryStage.scene = new Scene:
@@ -37,3 +41,10 @@ final class MonitorUi @Inject() ():
           new Label("hello monitor"):
             font = Font.font(28)
         )
+
+  private val queue: LinkedBlockingQueue[Packet] = udpPacketListener.incomingQueue
+  while true
+  do {
+    val packet = queue.take()
+    logger.info( "packet"-> packet.toString)
+  }

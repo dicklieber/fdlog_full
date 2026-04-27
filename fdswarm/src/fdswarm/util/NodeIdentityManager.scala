@@ -61,6 +61,8 @@ class NodeIdentityManager @Inject()(@Named("fdswarm.httpPort") httpPort: Int,
 object NodeIdentityManager:
   var _ourNodeIdentity: NodeIdentity = uninitialized
   lazy val nodeIdentity: NodeIdentity = _ourNodeIdentity
+  def isUs(nodeIdentity: NodeIdentity): Boolean =
+    nodeIdentity == NodeIdentityManager.nodeIdentity
 
 case class AnIpAddress(interfaceName: String, ip: String):
   def hasIp:Boolean = ip.nonEmpty

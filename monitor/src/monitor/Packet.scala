@@ -18,12 +18,14 @@
 
 package monitor
 
-import com.google.inject.AbstractModule
-import com.typesafe.config.{Config, ConfigFactory}
-import net.codingwell.scalaguice.ScalaModule
+import fdswarm.util.NodeIdentity
 
-class MonitorModule extends AbstractModule with ScalaModule:
-  override def configure(): Unit =
-    bind[Config].toInstance(ConfigFactory.load())
-    bind[UdpPacketListener].asEagerSingleton()
-    bind[MonitorUi].asEagerSingleton()
+import java.time.Instant
+
+final case class Packet(service:String,
+                        bytes: Array[Byte],
+                        nodeIdentity: NodeIdentity,
+                        receivedAt: Instant = Instant.now())
+
+
+

@@ -20,7 +20,7 @@ package fdswarm.replication
 
 import fdswarm.logging.Locus.Replication
 import fdswarm.logging.{LazyStructuredLogging, Locus}
-import fdswarm.metric.Direction
+import fdswarm.metric.{Direction, MetricNameBuilder}
 import fdswarm.util.NodeIdentityManager
 import jakarta.inject.{Inject, Singleton}
 import nl.grons.metrics4.scala.{Counter, DefaultInstrumented, Histogram}
@@ -46,7 +46,8 @@ class BroadcastTransport @Inject() (nodeIdentity: NodeIdentityManager)
   val thread = new Thread(this, "Broadcast-Receiver")
 
   // Define metrics for UDP packet statistics
-  private val metricName = NodeIdentityManager.nodeIdentity.metricNameBuilder(Locus.Transport)
+  private val metricName =
+    MetricNameBuilder.forNodeAndLocus(NodeIdentityManager.nodeIdentity, Locus.Transport)
   private val sentMetric = metricName(Direction.Send)
   private val sentPacketTotal = metrics.counter(sentMetric("packet.total"))
   private val sentBytesTotal = metrics.counter(sentMetric("bytes.total"))
@@ -85,7 +86,7 @@ class BroadcastTransport @Inject() (nodeIdentity: NodeIdentityManager)
       val senderPort = packet.getPort
       logger.trace(s"Received a UDP packet")
       val udpHeaderData = UDPHeader.parse(packet)
-      if udpHeaderData.nodeIdentity.isUs then
+      if NodeIdentityManager.isUs(udpHeaderData.nodeIdentity) then
         logger.trace(s"Received UDP packet from $senderAddr:$senderPort: ${udpHeaderData.service}")
       else
         logger.trace(s"Received UDP packet from $senderAddr:$senderPort: ${udpHeaderData.service}")
