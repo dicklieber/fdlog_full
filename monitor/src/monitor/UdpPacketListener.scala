@@ -22,10 +22,8 @@ import com.google.inject.{Inject, Singleton}
 import com.typesafe.config.Config
 import fdswarm.logging.LazyStructuredLogging
 
-import java.net.{DatagramPacket, DatagramSocket, InetSocketAddress, SocketException}
+import java.net.*
 import java.nio.channels.DatagramChannel
-import java.net.StandardSocketOptions
-import java.time.Instant
 import java.util.concurrent.LinkedBlockingQueue
 import scala.compiletime.uninitialized
 import scala.util.control.NonFatal
