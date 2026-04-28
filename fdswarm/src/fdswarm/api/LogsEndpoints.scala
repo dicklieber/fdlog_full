@@ -22,14 +22,15 @@ import cats.effect.IO
 import fdswarm.io.FileHelper
 import fdswarm.logging.LogEventFieldNames
 import fdswarm.util.Gzip
-import io.circe.parser.parse
 import jakarta.inject.{Inject, Singleton}
 import sttp.tapir.*
 import sttp.tapir.server.ServerEndpoint
 
 import java.nio.charset.StandardCharsets
-import java.time.Instant
+import java.time.{Instant, OffsetDateTime}
+import java.time.format.DateTimeFormatter
 import java.util.Locale
+import scala.util.Try
 
 /** Tapir endpoints for downloading the current application log. */
 @Singleton
@@ -46,13 +47,14 @@ final class LogsEndpoints @Inject() (fileHelper: FileHelper) extends ApiEndpoint
   private def logResponse(
       input: (Option[Instant], Option[String])
   ): IO[(String, String, Option[String], String, Array[Byte])] =
-    val (since, acceptEncoding) = input
+    val (sendNewer, acceptEncoding) = input
     IO.blocking {
-      val logBytes = since match
+      val logBytes = sendNewer match
         case Some(cutoff) =>
-          os.read
-            .lines(logPath)
-            .filter(line => LogsEndpoints.lineIsSince(line, cutoff))
+          val lines = os.read.lines(logPath)
+          LogsEndpoints
+            .linesBeginningAfter(lines, cutoff)
+            .getOrElse(lines)
             .mkString("\n")
             .getBytes(StandardCharsets.UTF_8)
         case None =>
@@ -93,7 +95,7 @@ private object LogsEndpoints:
     endpoint
       .get
       .in("log")
-      .in(query[Option[Instant]]("since"))
+      .in(query[Option[Instant]]("sendNewer"))
       .in(header[Option[String]]("Accept-Encoding"))
       .out(logBody)
       .description("Download the current fdswarm.log file")
@@ -119,9 +121,25 @@ private object LogsEndpoints:
         }
     )
 
-  private def lineIsSince(line: String, cutoff: Instant): Boolean =
-    parse(line.trim)
-      .flatMap(_.hcursor.get[String](LogEventFieldNames.Timestamp))
-      .toOption
-      .flatMap(timestamp => scala.util.Try(Instant.parse(timestamp)).toOption)
-      .exists(timestamp => !timestamp.isBefore(cutoff))
+  private val timestampAtLineStart =
+    raw"""^\{"${LogEventFieldNames.Timestamp}":"([^"]+)"""".r
+
+  private val logTimestampFormatter =
+    DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
+
+  private def linesBeginningAfter(lines: Seq[String], cutoff: Instant): Option[Seq[String]] =
+    lines
+      .zipWithIndex
+      .collectFirst {
+        case (line, index) if timestampAtStart(line).exists(_.isAfter(cutoff)) =>
+          lines.drop(index)
+      }
+
+  private def timestampAtStart(line: String): Option[Instant] =
+    line match
+      case timestampAtLineStart(timestamp) =>
+        Try(OffsetDateTime.parse(timestamp, logTimestampFormatter).toInstant)
+          .orElse(Try(Instant.parse(timestamp)))
+          .toOption
+      case _ =>
+        None
