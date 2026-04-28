@@ -87,7 +87,7 @@ object UDPHeader:
    * @return Option[UDPHeaderData] None if the packet is from the local instance.
    */
   @throws[IllegalArgumentException]("if packet is invalid")
-  def parse(packet: DatagramPacket): Packet =
+  def parse(packet: DatagramPacket): NodeInfo =
       val data: Array[Byte] = packet.getData.take(packet.getLength)
       incomingPacketSizeBytes.update(
         data.length.toLong
@@ -106,7 +106,7 @@ object UDPHeader:
         case headerRegx(sService, udpPiece, sDataVersion) =>
           val address = packet.getAddress
           val nodeIdentity = NodeIdentity.fromUdpHeader(address, udpPiece)
-          Packet(sService, data, nodeIdentity)
+          NodeInfo(sService, data, nodeIdentity)
 //          val nodeIdentity= NodeIdentity.fromUdpHeader(address, udpPiece)
 //          UDPHeaderData(Service.valueOf(sService), nodeIdentity, payloadBytes)
         case _ =>

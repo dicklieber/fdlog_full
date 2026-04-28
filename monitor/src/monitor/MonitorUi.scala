@@ -31,7 +31,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import scala.util.control.NonFatal
 
 final class MonitorUi @Inject() (udpPacketListener: UdpPacketListener) extends LazyStructuredLogging:
-  private val queue: LinkedBlockingQueue[Packet] = udpPacketListener.incomingQueue
+  private val queue: LinkedBlockingQueue[NodeInfo] = udpPacketListener.incomingQueue
   @volatile private var stopped = false
   private val packetLoggerThread = new Thread(
     () => consumePackets(),

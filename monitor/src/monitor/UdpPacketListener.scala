@@ -33,8 +33,8 @@ final class UdpPacketListener @Inject() (config: Config)
     extends Runnable
     with LazyStructuredLogging:
 
-  val incomingQueue: LinkedBlockingQueue[Packet] =
-    new LinkedBlockingQueue[Packet]()
+  val incomingQueue: LinkedBlockingQueue[NodeInfo] =
+    new LinkedBlockingQueue[NodeInfo]()
   private val port : Int = 8090
 
   @volatile

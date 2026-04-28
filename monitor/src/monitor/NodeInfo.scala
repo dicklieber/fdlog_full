@@ -22,10 +22,10 @@ import fdswarm.util.NodeIdentity
 
 import java.time.Instant
 
-final case class Packet(service:String,
-                        bytes: Array[Byte],
-                        nodeIdentity: NodeIdentity,
-                        receivedAt: Instant = Instant.now())
+final case class NodeInfo(service:String,
+                          bytes: Array[Byte],
+                          nodeIdentity: NodeIdentity,
+                          receivedAt: Instant = Instant.now())
 
 
 
