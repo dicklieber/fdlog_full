@@ -20,6 +20,7 @@ package monitor
 
 import com.google.inject.Inject
 import fdswarm.logging.LazyStructuredLogging
+import fdswarm.replication.UDPHeaderData
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.Scene
 import scalafx.scene.control.Label
@@ -30,13 +31,14 @@ import scalafx.stage.Stage
 import java.util.concurrent.LinkedBlockingQueue
 import scala.util.control.NonFatal
 
-final class MonitorUi @Inject() (udpPacketListener: UdpPacketListener) extends LazyStructuredLogging:
-  private val queue: LinkedBlockingQueue[NodeInfo] = udpPacketListener.incomingQueue
-  @volatile private var stopped = false
+final class MonitorUi @Inject() (udpPacketListener: UdpPacketListener)
+    extends LazyStructuredLogging:
+  private val queue: LinkedBlockingQueue[UDPHeaderData] = udpPacketListener.incomingQueue
   private val packetLoggerThread = new Thread(
     () => consumePackets(),
     "Monitor-Packet-Logger"
   )
+  @volatile private var stopped = false
   packetLoggerThread.setDaemon(true)
 
   def start(primaryStage: Stage): Unit =
@@ -53,24 +55,18 @@ final class MonitorUi @Inject() (udpPacketListener: UdpPacketListener) extends L
 
     packetLoggerThread.start()
 
+  private def stop(): Unit =
+    stopped = true
+    packetLoggerThread.interrupt()
+    udpPacketListener.stop()
+
   private def consumePackets(): Unit =
     while !stopped && !Thread.currentThread().isInterrupted do
       try
-        val packet = queue.take()
-        logger.info(
-          "Received monitor packet",
-          "service" -> packet.service,
-          "nodeIdentity" -> packet.nodeIdentity.toString,
-          "bytes" -> packet.bytes.length,
-          "receivedAt" -> packet.receivedAt.toString
-        )
+        val uDPHeaderData: UDPHeaderData = queue.take()
+        logger.info(uDPHeaderData.toString)
       catch
         case _: InterruptedException =>
           Thread.currentThread().interrupt()
         case NonFatal(e) =>
           logger.error("Error handling monitor packet", e)
-
-  private def stop(): Unit =
-    stopped = true
-    packetLoggerThread.interrupt()
-    udpPacketListener.stop()

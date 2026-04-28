@@ -21,6 +21,7 @@ package monitor
 import com.google.inject.{Inject, Singleton}
 import com.typesafe.config.Config
 import fdswarm.logging.LazyStructuredLogging
+import fdswarm.replication.{UDPHeader, UDPHeaderData}
 
 import java.net.*
 import java.nio.channels.DatagramChannel
@@ -33,15 +34,13 @@ final class UdpPacketListener @Inject() (config: Config)
     extends Runnable
     with LazyStructuredLogging:
 
-  val incomingQueue: LinkedBlockingQueue[NodeInfo] =
-    new LinkedBlockingQueue[NodeInfo]()
-  private val port : Int = 8090
-
+  val incomingQueue: LinkedBlockingQueue[UDPHeaderData] =
+    new LinkedBlockingQueue[UDPHeaderData]()
+  private val port: Int = 8090
+  private val thread = new Thread(this, "Monitor-UDP-Listener")
   @volatile
   private var stopped = false
   private var socket: DatagramSocket = uninitialized
-
-  private val thread = new Thread(this, "Monitor-UDP-Listener")
 
   socket = openReusableSocket()
 
@@ -62,11 +61,8 @@ final class UdpPacketListener @Inject() (config: Config)
           datagram.getOffset + datagram.getLength
         )
         logger.info(s"Received UDP packet on port $port: ${data.mkString(",")}")
-        val packet = UDPHeader.parse(datagram)
-        incomingQueue.offer(
-          packet
-
-        )
+        val uDPHeaderData: UDPHeaderData = UDPHeader.parse(datagram)
+        incomingQueue.offer(uDPHeaderData)
       catch
         case _: SocketException if stopped =>
           Thread.currentThread().interrupt()
@@ -103,4 +99,3 @@ final class UdpPacketListener @Inject() (config: Config)
 
 object UdpPacketListener:
   private val MaxPacketSize = 65535
-
