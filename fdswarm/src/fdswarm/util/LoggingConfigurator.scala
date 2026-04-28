@@ -9,12 +9,9 @@ import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFact
 object LoggingConfigurator:
 
   def addFileAppender(fileHelper: FileHelper): Unit =
-    val logDir = fileHelper.directory / "logs"
-    os.makeDir.all(logDir)
 
-    val logFile = logDir / "fdswarm.log"
-    val logPattern = logDir / "fdswarm-%d{yyyy-MM-dd}.log.gz"
-    val accessLogFile = logDir / "access.log"
+    val logFile = fileHelper.directory / "fdswarm.log"
+    val accessLogFile = fileHelper.directory / "access.log"
 
     val builder = ConfigurationBuilderFactory.newConfigurationBuilder()
     builder.setStatusLevel(Level.WARN)
@@ -41,20 +38,11 @@ object LoggingConfigurator:
     console.add(consoleLayout)
     builder.add(console)
 
-    val rollingFile =
-      builder.newAppender("File", "RollingFile")
-    rollingFile.addAttribute("fileName", logFile.toString)
-    rollingFile.addAttribute("filePattern", logPattern.toString)
-    rollingFile.add(fileLayout)
-
-    val policies = builder.newComponent("Policies")
-    policies.addComponent(
-      builder
-        .newComponent("TimeBasedTriggeringPolicy")
-        .addAttribute("interval", 1)
-    )
-    rollingFile.addComponent(policies)
-    builder.add(rollingFile)
+    val file =
+      builder.newAppender("File", "File")
+    file.addAttribute("fileName", logFile.toString)
+    file.add(fileLayout)
+    builder.add(file)
 
     val accessFile =
       builder.newAppender("AccessFile", "File")

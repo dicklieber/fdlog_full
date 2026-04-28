@@ -47,7 +47,7 @@ final class LogsEndpoints @Inject() (fileHelper: FileHelper) extends ApiEndpoint
   private def logResponse(
       input: (Option[Instant], Option[String])
   ): IO[(String, String, Option[String], String, Array[Byte])] =
-    val (sendNewer, acceptEncoding) = input
+    val ( sendNewer, acceptEncoding) = input
     IO.blocking {
       val logBytes = sendNewer match
         case Some(cutoff) =>
@@ -76,7 +76,7 @@ final class LogsEndpoints @Inject() (fileHelper: FileHelper) extends ApiEndpoint
     }
 
   private def logPath: os.Path =
-    fileHelper.directory / "logs" / "fdswarm.log"
+    fileHelper.directory  / "fdswarm.log"
 
 private object LogsEndpoints:
   private val logBody =
