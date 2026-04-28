@@ -471,6 +471,7 @@ object monitor extends CommonSettings:
   def mvnDeps = Seq(
     mvn"org.apache.logging.log4j:log4j-api:$log4jV",
     mvn"org.apache.logging.log4j:log4j-core:$log4jV",
+    mvn"org.apache.logging.log4j:log4j-slf4j-impl:$log4jV",
     mvn"com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonV",
     mvn"org.scalafx:scalafx_3:20.0.0-R31",
     mvn"net.codingwell::scala-guice:7.0.0",

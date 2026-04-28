@@ -28,11 +28,20 @@ import scalafx.scene.text.Font
 import scalafx.stage.Stage
 
 import java.util.concurrent.LinkedBlockingQueue
+import scala.util.control.NonFatal
 
 final class MonitorUi @Inject() (udpPacketListener: UdpPacketListener) extends LazyStructuredLogging:
+  private val queue: LinkedBlockingQueue[Packet] = udpPacketListener.incomingQueue
+  @volatile private var stopped = false
+  private val packetLoggerThread = new Thread(
+    () => consumePackets(),
+    "Monitor-Packet-Logger"
+  )
+  packetLoggerThread.setDaemon(true)
 
   def start(primaryStage: Stage): Unit =
     primaryStage.title = "Monitor"
+    primaryStage.onCloseRequest = _ => stop()
     primaryStage.scene = new Scene:
       root = new StackPane:
         padding = Insets(24)
@@ -42,9 +51,26 @@ final class MonitorUi @Inject() (udpPacketListener: UdpPacketListener) extends L
             font = Font.font(28)
         )
 
-  private val queue: LinkedBlockingQueue[Packet] = udpPacketListener.incomingQueue
-  while true
-  do {
-    val packet = queue.take()
-    logger.info( "packet"-> packet.toString)
-  }
+    packetLoggerThread.start()
+
+  private def consumePackets(): Unit =
+    while !stopped && !Thread.currentThread().isInterrupted do
+      try
+        val packet = queue.take()
+        logger.info(
+          "Received monitor packet",
+          "service" -> packet.service,
+          "nodeIdentity" -> packet.nodeIdentity.toString,
+          "bytes" -> packet.bytes.length,
+          "receivedAt" -> packet.receivedAt.toString
+        )
+      catch
+        case _: InterruptedException =>
+          Thread.currentThread().interrupt()
+        case NonFatal(e) =>
+          logger.error("Error handling monitor packet", e)
+
+  private def stop(): Unit =
+    stopped = true
+    packetLoggerThread.interrupt()
+    udpPacketListener.stop()
