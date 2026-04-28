@@ -32,18 +32,9 @@ import scala.jdk.CollectionConverters.*
 @Singleton
 class NodeIdentityManager @Inject()(@Named("fdswarm.httpPort") httpPort: Int,
                                     instanceIdManager: InstanceIdManager) extends LazyStructuredLogging:
-    
-  def suitableInterfaces: Seq[AnIpAddress] = (for
-    interface: NetworkInterface <- NetworkInterface.getNetworkInterfaces.asScala
-    anIpo = AnIpAddress(interface)
-    if anIpo.hasIp
-  yield
-    logger.trace(s"anIpo: $anIpo")
-    anIpo).toSeq
 
-  private val ourIp: AnIpAddress = suitableInterfaces.headOption.getOrElse(AnIpAddress("loopback", "127.0.0.1"))
-
-  def currentIp: AnIpAddress = ourIp
+  def currentIp: String =LocalAddressPicker.bestIp
+//  def currentIp: String = LocalAddressPicker.best()
 
   // Override port with PORT env var if present
   val port: Int = sys.env.get("PORT").map { sPort =>
@@ -53,7 +44,7 @@ class NodeIdentityManager @Inject()(@Named("fdswarm.httpPort") httpPort: Int,
   private val ourHostName: String = java.net.InetAddress.getLocalHost.getHostName.split('.').head
 
   _ourNodeIdentity = NodeIdentity(
-    hostIp = currentIp.ip,
+    hostIp = currentIp,
     port = port,
     hostName = ourHostName,
     instanceId = instanceIdManager.ourInstanceId)
@@ -64,13 +55,3 @@ object NodeIdentityManager:
   def isUs(nodeIdentity: NodeIdentity): Boolean =
     nodeIdentity == NodeIdentityManager.nodeIdentity
 
-case class AnIpAddress(interfaceName: String, ip: String):
-  def hasIp:Boolean = ip.nonEmpty
-
-object AnIpAddress:
-  def apply(interface: NetworkInterface): AnIpAddress =
-    val ip = interface.getInetAddresses.asScala
-      .find(_.isInstanceOf[Inet4Address])
-      .map(_.getHostAddress)
-      .getOrElse("")
-    AnIpAddress(interface.getName, ip)
