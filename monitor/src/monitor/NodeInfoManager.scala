@@ -6,11 +6,7 @@ import fdswarm.util.NodeIdentity
 import jakarta.inject.*
 import scalafx.Includes.*
 import scalafx.application.Platform
-import scalafx.beans.property.{ObjectProperty, StringProperty}
 import scalafx.collections.ObservableBuffer
-import scalafx.geometry.Insets
-import scalafx.scene.control.*
-import scalafx.scene.layout.BorderPane
 import scalafx.stage.Window
 
 import java.util.concurrent.LinkedBlockingQueue
@@ -18,7 +14,10 @@ import scala.collection.concurrent.TrieMap
 import scala.util.control.NonFatal
 
 @Singleton
-class NodeInfoManager @Inject()(udpPacketListener:UdpPacketListener) extends LazyStructuredLogging:
+class NodeInfoManager @Inject()(
+    udpPacketListener: UdpPacketListener,
+    nodeIdentityDialog: NodeIdentityDialog
+) extends LazyStructuredLogging:
   private val queue: LinkedBlockingQueue[UDPHeaderData] = udpPacketListener.incomingQueue
   val latestHeaders: TrieMap[NodeIdentity, UDPHeaderData] = TrieMap.empty[NodeIdentity, UDPHeaderData]
   val nodeIdentities: ObservableBuffer[NodeIdentity] = ObservableBuffer.empty[NodeIdentity]
@@ -36,48 +35,7 @@ class NodeInfoManager @Inject()(udpPacketListener:UdpPacketListener) extends Laz
     thread.interrupt()
 
   def showNodeIdentityDialog(ownerWindow: Window): Unit =
-    val table = new TableView[NodeIdentity](nodeIdentities):
-      columnResizePolicy = TableView.ConstrainedResizePolicy
-      columns ++= Seq(
-        new TableColumn[NodeIdentity, String]:
-          text = "Host"
-          cellValueFactory = c => StringProperty(c.value.hostName)
-          prefWidth = 180
-        ,
-        new TableColumn[NodeIdentity, String]:
-          text = "IP"
-          cellValueFactory = c => StringProperty(c.value.hostIp)
-          prefWidth = 150
-        ,
-        new TableColumn[NodeIdentity, Int]:
-          text = "Port"
-          cellValueFactory = c => ObjectProperty(c.value.port)
-          prefWidth = 80
-        ,
-        new TableColumn[NodeIdentity, String]:
-          text = "Instance"
-          cellValueFactory = c => StringProperty(c.value.instanceId)
-          prefWidth = 180
-        ,
-        new TableColumn[NodeIdentity, String]:
-          text = "Node"
-          cellValueFactory = c => StringProperty(c.value.toString)
-          prefWidth = 320
-      )
-
-    val dialog = new Dialog[Unit]():
-      initOwner(ownerWindow)
-      title = "Node Identities"
-      headerText = "Known UDP Node Identities"
-      resizable = true
-
-    dialog.dialogPane().content = new BorderPane:
-      center = table
-      padding = Insets(10)
-      prefWidth = 800
-      prefHeight = 450
-    dialog.dialogPane().buttonTypes = Seq(ButtonType.Close)
-    dialog.showAndWait()
+    nodeIdentityDialog.show(ownerWindow, nodeIdentities)
 
   private def consumePackets(): Unit =
     while !stopped && !Thread.currentThread().isInterrupted do
