@@ -13,18 +13,19 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
  */
 
-package monitor
+package fdswarm.fx.station
 
-import com.google.inject.AbstractModule
-import com.typesafe.config.{Config, ConfigFactory}
-import net.codingwell.scalaguice.ScalaModule
+import fdswarm.model.Callsign
+import io.circe.Codec
+import sttp.tapir.Schema
 
-class MonitorModule extends AbstractModule with ScalaModule:
-  override def configure(): Unit =
-    bind[Config].toInstance(ConfigFactory.load())
-    bind[UdpPacketListener].asEagerSingleton()
-    bind[NodeInfoManager].asEagerSingleton()
-    bind[MonitorUi].asEagerSingleton()
+/**
+ * Details about this station.
+ *
+ */
+final case class StationConfig(operator: Callsign = Callsign(""),
+                               rig: String = "",
+                               antenna: String = "") derives  Codec.AsObject, Schema
+

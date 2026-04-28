@@ -19,27 +19,16 @@
 package monitor
 
 import com.google.inject.Inject
-import fdswarm.logging.LazyStructuredLogging
-import fdswarm.replication.UDPHeaderData
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.Scene
-import scalafx.scene.control.Label
+import scalafx.scene.control.Button
 import scalafx.scene.layout.StackPane
-import scalafx.scene.text.Font
 import scalafx.stage.Stage
 
-import java.util.concurrent.LinkedBlockingQueue
-import scala.util.control.NonFatal
-
-final class MonitorUi @Inject() (udpPacketListener: UdpPacketListener)
-    extends LazyStructuredLogging:
-  private val queue: LinkedBlockingQueue[UDPHeaderData] = udpPacketListener.incomingQueue
-  private val packetLoggerThread = new Thread(
-    () => consumePackets(),
-    "Monitor-Packet-Logger"
-  )
-  @volatile private var stopped = false
-  packetLoggerThread.setDaemon(true)
+final class MonitorUi @Inject() (
+    udpPacketListener: UdpPacketListener,
+    nodeInfoManager: NodeInfoManager
+):
 
   def start(primaryStage: Stage): Unit =
     primaryStage.title = "Monitor"
@@ -49,24 +38,10 @@ final class MonitorUi @Inject() (udpPacketListener: UdpPacketListener)
         padding = Insets(24)
         alignment = Pos.Center
         children = Seq(
-          new Label("hello monitor"):
-            font = Font.font(28)
+          new Button("Node Identities"):
+            onAction = _ => nodeInfoManager.showNodeIdentityDialog(primaryStage)
         )
 
-    packetLoggerThread.start()
-
   private def stop(): Unit =
-    stopped = true
-    packetLoggerThread.interrupt()
+    nodeInfoManager.stop()
     udpPacketListener.stop()
-
-  private def consumePackets(): Unit =
-    while !stopped && !Thread.currentThread().isInterrupted do
-      try
-        val uDPHeaderData: UDPHeaderData = queue.take()
-        logger.info(uDPHeaderData.toString)
-      catch
-        case _: InterruptedException =>
-          Thread.currentThread().interrupt()
-        case NonFatal(e) =>
-          logger.error("Error handling monitor packet", e)
