@@ -16,13 +16,15 @@
  *
  */
 
-package fdswarm.util
+package monitor
 
-class MockNodeIdentityManager(val mockNodeIdentity: NodeIdentity, instanceIdManager: InstanceIdManager = null) extends NodeIdentityManager(mockNodeIdentity.port, instanceIdManager):
+import com.google.inject.AbstractModule
+import com.typesafe.config.{Config, ConfigFactory}
+import net.codingwell.scalaguice.ScalaModule
 
-  override def suitableInterfaces: Seq[AnIpAddress] = Seq(AnIpAddress("mock", mockNodeIdentity.hostIp))
-  override def currentIp: AnIpAddress = AnIpAddress("mock", mockNodeIdentity.hostIp)
-
-object MockNodeIdentityManager:
-  def apply(host: String = "127.0.0.1", port: Int = 8080): MockNodeIdentityManager =
-    new MockNodeIdentityManager(mockNodeIdentity = NodeIdentity(host, port, hostName = "ccc", instanceId = "iii"))
+class MonitorModule extends AbstractModule with ScalaModule:
+  override def configure(): Unit =
+    bind[Config].toInstance(ConfigFactory.load())
+    bind[UdpPacketListener].asEagerSingleton()
+    bind[NodeInfoManager].asEagerSingleton()
+    bind[MonitorUi].asEagerSingleton()

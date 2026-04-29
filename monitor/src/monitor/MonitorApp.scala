@@ -16,13 +16,16 @@
  *
  */
 
-package fdswarm.util
+package monitor
 
-class MockNodeIdentityManager(val mockNodeIdentity: NodeIdentity, instanceIdManager: InstanceIdManager = null) extends NodeIdentityManager(mockNodeIdentity.port, instanceIdManager):
+import com.google.inject.{Guice, Injector}
+import net.codingwell.scalaguice.InjectorExtensions.*
+import scalafx.application.JFXApp3
 
-  override def suitableInterfaces: Seq[AnIpAddress] = Seq(AnIpAddress("mock", mockNodeIdentity.hostIp))
-  override def currentIp: AnIpAddress = AnIpAddress("mock", mockNodeIdentity.hostIp)
+object MonitorApp extends JFXApp3:
+  private lazy val injector: Injector =
+    Guice.createInjector(new MonitorModule)
 
-object MockNodeIdentityManager:
-  def apply(host: String = "127.0.0.1", port: Int = 8080): MockNodeIdentityManager =
-    new MockNodeIdentityManager(mockNodeIdentity = NodeIdentity(host, port, hostName = "ccc", instanceId = "iii"))
+  override def start(): Unit =
+    stage = new JFXApp3.PrimaryStage
+    injector.instance[MonitorUi].start(stage)

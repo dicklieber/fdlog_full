@@ -32,7 +32,7 @@ import java.time.Instant
 /** Represents a status message containing information about the current state of a contest communication system.
   *
   * @param hashCount
-  *   A SHA-512 hash of all the Qsos that have been loggedand how many QSOs.
+  *   A SHA-512 hash of all the Qsos that have been logged and how many QSOs.
   * @param bandNodeOperator
   *   An instance of BandModeOperator containing information about the operator, frequency band, and timestamp.
   * @param contestConfig

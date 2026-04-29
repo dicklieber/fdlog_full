@@ -1,0 +1,47 @@
+/*
+ * Copyright (c) 2026. Dick Lieber, WA9NNN
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+package monitor
+
+import com.google.inject.Inject
+import scalafx.geometry.{Insets, Pos}
+import scalafx.scene.Scene
+import scalafx.scene.control.Button
+import scalafx.scene.layout.StackPane
+import scalafx.stage.Stage
+
+final class MonitorUi @Inject() (
+    udpPacketListener: UdpPacketListener,
+    nodeInfoManager: NodeInfoManager
+):
+
+  def start(primaryStage: Stage): Unit =
+    primaryStage.title = "Monitor"
+    primaryStage.onCloseRequest = _ => stop()
+    primaryStage.scene = new Scene:
+      root = new StackPane:
+        padding = Insets(24)
+        alignment = Pos.Center
+        children = Seq(
+          new Button("Node Identities"):
+            onAction = _ => nodeInfoManager.showNodeIdentityDialog(primaryStage)
+        )
+
+  private def stop(): Unit =
+    nodeInfoManager.stop()
+    udpPacketListener.stop()

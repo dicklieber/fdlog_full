@@ -16,13 +16,33 @@
  *
  */
 
-package fdswarm.util
+package fdswarm.replication
 
-class MockNodeIdentityManager(val mockNodeIdentity: NodeIdentity, instanceIdManager: InstanceIdManager = null) extends NodeIdentityManager(mockNodeIdentity.port, instanceIdManager):
+import fdswarm.contestStart.ContestStart
+import fdswarm.fx.contest.ContestConfig
+import fdswarm.model.Qso
+import io.circe.Decoder
 
-  override def suitableInterfaces: Seq[AnIpAddress] = Seq(AnIpAddress("mock", mockNodeIdentity.hostIp))
-  override def currentIp: AnIpAddress = AnIpAddress("mock", mockNodeIdentity.hostIp)
+enum Service[T](
+  using private val payloadDecoder: Decoder[T]
+):
+  type Payload = T
+  case Status extends Service[StatusMessage]
+  case SendStatus extends Service[NoPayload]
+  case QSO extends Service[Qso]
+  case SyncContest extends Service[ContestConfig]
+  case ContestStart extends Service[ContestStart]
 
-object MockNodeIdentityManager:
-  def apply(host: String = "127.0.0.1", port: Int = 8080): MockNodeIdentityManager =
-    new MockNodeIdentityManager(mockNodeIdentity = NodeIdentity(host, port, hostName = "ccc", instanceId = "iii"))
+  def decode(
+    udpHeaderData: UDPHeaderData
+  ): T =
+    udpHeaderData.decodePayload[T](
+      using payloadDecoder
+    )
+
+final case class NoPayload()
+
+object NoPayload:
+  given Decoder[NoPayload] = Decoder.const(
+    NoPayload()
+  )

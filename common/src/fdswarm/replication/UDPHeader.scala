@@ -20,90 +20,9 @@ package fdswarm.replication
 
 import com.codahale.metrics.SharedMetricRegistries
 import com.organization.BuildInfo
-import fdswarm.contestStart.ContestStart
-import fdswarm.fx.contest.ContestConfig
-import fdswarm.model.Qso
-import fdswarm.util.{Gzip, NodeIdentity}
-import io.circe.Decoder
-import io.circe.generic.auto.deriveDecoder
-import org.slf4j.LoggerFactory
+import fdswarm.util.NodeIdentity
 
 import java.net.DatagramPacket
-import java.nio.charset.StandardCharsets
-import scala.util.Try
-
-enum Service[T](
-  using private val payloadDecoder: Decoder[T]
-):
-  type Payload = T
-  case Status extends Service[StatusMessage]
-  case SendStatus extends Service[NoPayload]
-  case QSO extends Service[Qso]
-  case SyncContest extends Service[ContestConfig]
-  case ContestStart extends Service[ContestStart]
-
-  def decode(
-    udpHeaderData: UDPHeaderData
-  ): T =
-    udpHeaderData.decodePayload[T](
-      using payloadDecoder
-    )
-
-final case class NoPayload()
-
-object NoPayload:
-  given Decoder[NoPayload] = Decoder.const(
-    NoPayload()
-  )
-
-case class UDPHeaderData(
-  service: Service[?],
-  nodeIdentity: NodeIdentity,
-  payload: Array[Byte]
-):
-
-  def decodePayload[T](
-    using Decoder[T]
-  ): T =
-    val decodedPayload = maybeDecompressGzip(payload)
-    val jsonString = new String(decodedPayload, StandardCharsets.UTF_8)
-    io.circe.parser.parse(jsonString) match
-      case Left(error) => throw new RuntimeException(s"Failed to parse JSON: ${error.getMessage}", error)
-      case Right(json) => json.as[T] match
-        case Left(error) => throw new RuntimeException(s"Failed to decode JSON to T: ${error.getMessage}", error)
-        case Right(value) => value
-
-  def decodeFor[T](
-    expectedService: Service[T]
-  ): T =
-    require(
-      service == expectedService,
-      s"Expected service $expectedService but got $service"
-    )
-    expectedService.decode(
-      this
-    )
-
-  private def maybeDecompressGzip(
-                                  input: Array[Byte]
-                                ): Array[Byte] =
-    if isGzip(input) then
-      Try(
-        Gzip.decompress(input)
-      ).getOrElse(
-        throw new RuntimeException(
-          "Failed to decompress GZIP payload"
-        )
-      )
-    else
-      input
-
-  private def isGzip(
-                      input: Array[Byte]
-                    ): Boolean =
-    input.length >= 2 &&
-      input(0) == 0x1f.toByte &&
-      input(1) == 0x8b.toByte
 
 /**
  *
@@ -120,7 +39,6 @@ case class UDPHeaderData(
  *
  */
 object UDPHeader:
-  private val logger = LoggerFactory.getLogger(getClass)
   private val metricRegistry = SharedMetricRegistries.getOrCreate(
     "default"
   )

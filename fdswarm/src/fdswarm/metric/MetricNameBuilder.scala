@@ -18,6 +18,12 @@ object MetricNameBuilder:
       : MetricNameBuilder =
     new MetricNameBuilder(nodeIdentity)(locus)(direction)(name)
 
+  def forNodeAndLocus(
+      nodeIdentity: NodeIdentity,
+      locus: Locus
+  ): Direction => String => MetricNameBuilder =
+    MetricNameBuilder(nodeIdentity)(locus)
+
   given Conversion[MetricNameBuilder, String] = _.toString
 
 enum Direction:
