@@ -9,7 +9,7 @@ import jakarta.inject.*
 @Singleton
 final class Metrics @Inject()():
   // metrics4-scala DefaultInstrumented publishes into SharedMetricRegistries "default"
-  private val registry: MetricRegistry = SharedMetricRegistries.getOrCreate(
+  val registry: MetricRegistry = SharedMetricRegistries.getOrCreate(
     "default"
   )
 

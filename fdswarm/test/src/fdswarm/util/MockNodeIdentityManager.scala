@@ -20,8 +20,7 @@ package fdswarm.util
 
 class MockNodeIdentityManager(val mockNodeIdentity: NodeIdentity, instanceIdManager: InstanceIdManager = null) extends NodeIdentityManager(mockNodeIdentity.port, instanceIdManager):
 
-  override def suitableInterfaces: Seq[AnIpAddress] = Seq(AnIpAddress("mock", mockNodeIdentity.hostIp))
-  override def currentIp: AnIpAddress = AnIpAddress("mock", mockNodeIdentity.hostIp)
+  override def currentIp: String = mockNodeIdentity.hostIp
 
 object MockNodeIdentityManager:
   def apply(host: String = "127.0.0.1", port: Int = 8080): MockNodeIdentityManager =
