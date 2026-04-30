@@ -26,6 +26,7 @@ import fdswarm.fx.discovery.ContestConfigDialog
 import fdswarm.fx.station.StationEditor
 import fdswarm.fx.tools.*
 import fdswarm.logging.LazyStructuredLogging
+import fdswarm.metric.StatsManager
 import fdswarm.replication.status.ContestConfigMismatchUi
 import fdswarm.scoring.{ContestScoreResultsDialog, ContestScoringConfigDialog}
 import io.circe.parser.decode
@@ -61,6 +62,7 @@ final class FdLogMenus @Inject() (
                                    contestScoringConfigDialog: ContestScoringConfigDialog,
                                    contestConfigManager: ContestConfigManager,
                                    metricsDialog: MetricsDialog,
+                                   statsManager: StatsManager,
                                    contestScoreResultsDialog: ContestScoreResultsDialog,
                                    startContestDialog: StartContestDialog,
                                    contestConfigMismatchUi: ContestConfigMismatchUi,
@@ -137,6 +139,12 @@ final class FdLogMenus @Inject() (
         new MenuItem("Metrics"):
           onAction = _ =>
             metricsDialog.show(
+              FdLogUi.primaryStage
+            )
+        ,
+        new MenuItem("Swarm Stats"):
+          onAction = _ =>
+            statsManager.show(
               FdLogUi.primaryStage
             )
         ,
