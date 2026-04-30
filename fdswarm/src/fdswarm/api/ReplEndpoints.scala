@@ -19,14 +19,15 @@
 package fdswarm.api
 
 import cats.effect.IO
+import fdswarm.logging.Locus
 import fdswarm.model.Qso
 import fdswarm.replication.{LocalNodeStatus, StatusMessage}
 import fdswarm.store.QsoStore
+import fdswarm.util.StatsSource
 import io.circe.generic.semiauto.deriveCodec
 import io.circe.syntax.*
 import io.circe.{Codec, Printer}
 import jakarta.inject.{Inject, Singleton}
-import nl.grons.metrics4.scala.DefaultInstrumented
 import sttp.tapir.*
 import sttp.tapir.json.circe.*
 import sttp.tapir.server.ServerEndpoint
@@ -39,14 +40,9 @@ import java.util.concurrent.atomic.AtomicLong
 final class ReplEndpoints @Inject()(
     qsoStore: QsoStore,
     localNodeStatus: LocalNodeStatus
-) extends ApiEndpoints
-    with DefaultInstrumented:
+) extends ApiEndpoints with StatsSource(Locus.Qso):
 
   private val allQsoJsonSizeValue = new AtomicLong(0L)
-  private val allQsoCount = metrics.counter("allQsoCount")
-  metrics.gauge("allQsoJsonSizeBytes")(
-    allQsoJsonSizeValue.get()
-  )
 
   override def endpoints: List[ServerEndpoint[Any, IO]] = List(
     allQsos
@@ -60,9 +56,7 @@ final class ReplEndpoints @Inject()(
             statusMessage = localNodeStatus.statusMessage,
             qsos = qsoStore.all
           )
-          allQsoCount.inc(
-            response.qsos.size.toLong
-          )
+
           val jsonSizeBytes = response.asJson
             .printWith(
               ReplEndpoints.printer

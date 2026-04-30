@@ -20,21 +20,23 @@ package fdswarm.replication
 
 import fdswarm.logging.Locus.Replication
 import fdswarm.logging.{LazyStructuredLogging, Locus}
-import fdswarm.metric.{Direction, MetricNameBuilder}
-import fdswarm.util.NodeIdentityManager
+import fdswarm.util.{NodeIdentityManager, StatsSource}
 import jakarta.inject.{Inject, Singleton}
-import nl.grons.metrics4.scala.{Counter, DefaultInstrumented, Histogram}
 
 import java.net.{DatagramPacket, DatagramSocket, InetAddress, InetSocketAddress}
 import scala.compiletime.uninitialized
 
-/** Broadcasts UDP packets to all nodes in the network. Receive any UDP packets from all nodes in
+/**
+  * Broadcasts UDP packets to all nodes in the network. Receive any UDP packets from all nodes in
   * the network. Consumers read from the shared incoming queue exposed by [[Transport]].
- * @param nodeIdentity doesnt' need this directly but needs to run to get  [[fdswarm.util.NodeIdentityManager.nodeIdentity]]
+  * @param nodeIdentity doesnt' need this directly but needs to run to get
+  *   [[fdswarm.util.NodeIdentityManager.nodeIdentity]]
   */
 @Singleton
 class BroadcastTransport @Inject() (nodeIdentity: NodeIdentityManager)
-    extends Transport with DefaultInstrumented with Runnable
+    extends Transport
+    with StatsSource(Locus.UDP)
+    with Runnable
     with LazyStructuredLogging(Replication):
 
   logger.info("Starting BroadcastTransport")
@@ -45,23 +47,8 @@ class BroadcastTransport @Inject() (nodeIdentity: NodeIdentityManager)
   val port = 8090
   val thread = new Thread(this, "Broadcast-Receiver")
 
-  // Define metrics for UDP packet statistics
-  private val metricName =
-    MetricNameBuilder.forNodeAndLocus(NodeIdentityManager.nodeIdentity, Locus.Transport)
-  private val sentMetric = metricName(Direction.Send)
-  private val sentPacketTotal = metrics.counter(sentMetric("packet.total"))
-  private val sentBytesTotal = metrics.counter(sentMetric("bytes.total"))
-  private val sentHistogram = metrics.histogram(sentMetric("packetSize"))
-  private val sentMeter = metrics.meter(sentMetric("rate"))
-
-  private val receivedMetric = metricName(Direction.Received)
-  private val receivedPacketTotal: Counter =
-    metrics.counter(receivedMetric("packet.total"))
-  private val receivedBytesTotal: Counter = metrics.counter(receivedMetric("bytes.total"))
-  private val receivedHistogram: Histogram =
-    metrics.histogram(receivedMetric("packetSize"))
-  private val receivedMeter = metrics.meter(receivedMetric("rate"))
-
+  private val sendMeter = addMeter("sendMeter")
+  private val receiveMeter = addMeter("receiveMeter")
 
   private var socket: DatagramSocket = uninitialized
   socket = new DatagramSocket(null)
@@ -77,10 +64,7 @@ class BroadcastTransport @Inject() (nodeIdentity: NodeIdentityManager)
       val packet: DatagramPacket = new DatagramPacket(buffer, buffer.length)
       logger.trace(s"Waiting for a UDP packet")
       socket.receive(packet)
-      receivedPacketTotal.inc()
-      receivedBytesTotal.inc(packet.getLength.toLong)
-      receivedHistogram += packet.getLength
-      receivedMeter.mark()
+      receiveMeter.mark()
 
       val senderAddr = packet.getAddress
       val senderPort = packet.getPort
@@ -105,10 +89,7 @@ class BroadcastTransport @Inject() (nodeIdentity: NodeIdentityManager)
       val packet =
         new DatagramPacket(packetBytes, packetBytes.length, broadcastAddr, port)
       socket.send(packet)
-      sentPacketTotal.inc()
-      sentBytesTotal.inc(packetBytes.length.toLong)
-      sentHistogram += packetBytes.length
-      sentMeter.mark()
+      sendMeter.mark()
 
     catch
       case e: Exception =>

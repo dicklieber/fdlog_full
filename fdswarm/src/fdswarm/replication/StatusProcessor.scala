@@ -21,10 +21,11 @@ package fdswarm.replication
 import cats.effect.unsafe.implicits.global
 import fdswarm.api.ReplEndpoints
 import fdswarm.logging.LazyStructuredLogging
+import fdswarm.logging.Locus.Replication
 import fdswarm.replication.status.NodeBandOpPane
 import fdswarm.store.QsoStore
+import fdswarm.util.StatsSource
 import jakarta.inject.{Inject, Singleton}
-import nl.grons.metrics4.scala.DefaultInstrumented
 
 /** This is the logic that synchronizes the local QSO store with a remote node.
   */
@@ -37,9 +38,9 @@ class StatusProcessor @Inject() (
                                   nodeBandOpPane: NodeBandOpPane,
                                   nodeStatusDispatcher: NodeStatusDispatcher)
     extends LazyStructuredLogging
-    with DefaultInstrumented:
+    with StatsSource(Replication):
 
-  private var processTimer = metrics.timer("fdswarm_process_status_duration")
+  private val processTimer = addTimer("process")
   nodeStatusDispatcher.addListener(
     service = Service.Status,
     singleListener = false
@@ -55,14 +56,15 @@ class StatusProcessor @Inject() (
   )
 
   /**
-   * If the remote node has a different hash count than the local node, then fetch all the QSOs from the remote node and add them to the local QSO store..
+   * If the remote node has a different hash count than the local node, then fetch all the QSOs from the remote node and add them to the local QSO store.
    * Note [[QsoStore.add]] handles duplicates.
     *
     * @return
     *   IO completing after the HTTP call finishes
     */
-  def processStatus(nodeStatus: NodeStatus): Unit =
-    processTimer.time {
+  private def processStatus(nodeStatus: NodeStatus): Unit =
+    val processTimerContext = processTimer.time()
+    try
       val remoteHashCount = nodeStatus.statusMessage.hashCount
       val localHashCount = localNodeStatus.statusMessage.hashCount
 
@@ -80,4 +82,4 @@ class StatusProcessor @Inject() (
         qsoStore.add(
           remoteAllQsos.qsos
         )
-    }
+    finally processTimerContext.stop()

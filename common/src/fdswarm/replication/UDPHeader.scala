@@ -18,7 +18,6 @@
 
 package fdswarm.replication
 
-import com.codahale.metrics.SharedMetricRegistries
 import com.organization.BuildInfo
 import fdswarm.util.NodeIdentity
 
@@ -39,21 +38,6 @@ import java.net.DatagramPacket
  *
  */
 object UDPHeader:
-  private val metricRegistry = SharedMetricRegistries.getOrCreate(
-    "default"
-  )
-  private val outgoingPayloadSizeBytes = metricRegistry.histogram(
-    "udp_outgoing_payload_size_bytes"
-  )
-  private val outgoingPacketSizeBytes = metricRegistry.histogram(
-    "udp_outgoing_packet_size_bytes"
-  )
-  private val incomingPayloadSizeBytes = metricRegistry.histogram(
-    "udp_incoming_payload_size_bytes"
-  )
-  private val incomingPacketSizeBytes = metricRegistry.histogram(
-    "udp_incoming_packet_size_bytes"
-  )
   private val serviceNames: String = Service.values.map(_.toString).mkString("|")
   private val headerRegx =
     """^FDSWARM\|([^|]+)\|([^|]+)\|(\d+)\|$""".r
@@ -75,12 +59,7 @@ object UDPHeader:
     val header = s"FDSWARM|$service|${nodeIdentity.udpHeaderPiece}|${BuildInfo.dataVersion}|\n"
     val headerBytes: Array[Byte] = header.getBytes("UTF-8")
     val result: Array[Byte] = headerBytes ++ payload
-    outgoingPayloadSizeBytes.update(
-      payload.length.toLong
-    )
-    outgoingPacketSizeBytes.update(
-      result.length.toLong
-    )
+
     result
 
 //  val address: InetAddress = packet.getAddress
@@ -94,18 +73,14 @@ object UDPHeader:
   @throws[IllegalArgumentException]("if packet is invalid")
   def parse(packet: DatagramPacket): UDPHeaderData =
       val data: Array[Byte] = packet.getData.take(packet.getLength)
-      incomingPacketSizeBytes.update(
-        data.length.toLong
-      )
+
       val newlineIndex = data.indexOf('\n'.toByte)
       if (newlineIndex == -1) throw new IllegalArgumentException("Invalid packet: no newline found")
 
       val headerBytes = data.take(newlineIndex)
       val headerStr = new String(headerBytes, "UTF-8")
       val payloadBytes = data.drop(newlineIndex + 1) // after newline
-      incomingPayloadSizeBytes.update(
-        payloadBytes.length.toLong
-      )
+
 
       headerStr match
         case headerRegx(sService, udpPiece, sDataVersion) =>

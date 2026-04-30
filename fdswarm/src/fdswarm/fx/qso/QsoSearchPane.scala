@@ -22,13 +22,13 @@ import fdswarm.fx.UserConfig
 import fdswarm.fx.components.{AnyComboBox, CountComboBox, OptionTextField}
 import fdswarm.fx.contest.*
 import fdswarm.fx.utils.{IconButton, MultiChangeWatcher}
-import fdswarm.logging.LazyStructuredLogging
+import fdswarm.logging.{LazyStructuredLogging, Locus}
 import fdswarm.model.{Band, ChoiceItem, Mode, Qso}
 import fdswarm.store.QsoStore
 import fdswarm.telemetry.Metrics
+import fdswarm.util.StatsSource
 import io.circe.syntax.*
 import jakarta.inject.Inject
-import nl.grons.metrics4.scala.DefaultInstrumented
 import scalafx.Includes.*
 import scalafx.beans.property.BooleanProperty
 import scalafx.collections.ObservableBuffer
@@ -46,9 +46,8 @@ class QsoSearchPane @Inject()(
                                otelMetrics: Metrics,
                                qsoStore: QsoStore,
                                qsoTablePane: QsoTablePane
-) extends DefaultInstrumented with LazyStructuredLogging:
-  private val searchTimer = metrics.timer("search_duration")
-  private val searchCountGauge = metrics.gauge("search_count") { 0 }
+) extends  LazyStructuredLogging with StatsSource(Locus.Search):
+  private val searchTimer = addTimer("duration")
   val callsignFilter = new OptionTextField {
     promptText = "Callsign"
   }

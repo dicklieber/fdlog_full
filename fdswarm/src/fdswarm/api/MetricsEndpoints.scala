@@ -22,7 +22,6 @@ import cats.effect.IO
 import fdswarm.replication.Transport
 import fdswarm.telemetry.Metrics
 import jakarta.inject.{Inject, Singleton}
-import nl.grons.metrics4.scala.DefaultInstrumented
 import sttp.tapir.*
 import sttp.tapir.server.ServerEndpoint
 
@@ -33,12 +32,12 @@ import sttp.tapir.server.ServerEndpoint
 final class MetricsEndpoints @Inject()(
                                         metrics: Metrics,
                                         transport: Transport
-) extends ApiEndpoints with DefaultInstrumented:
+) extends ApiEndpoints :
 
 
   override def endpoints: List[ServerEndpoint[Any, IO]] = List(metricsEndpoint)
 
-  val metricsEndpoint: ServerEndpoint[Any, IO] =
+  private val metricsEndpoint: ServerEndpoint[Any, IO] =
     MetricsEndpoints.metricsDef
       .serverLogicSuccess[IO] { _ =>
         IO.blocking(
@@ -46,8 +45,8 @@ final class MetricsEndpoints @Inject()(
         )
       }
 
-object MetricsEndpoints:
-  val metricsDef: PublicEndpoint[
+private object MetricsEndpoints:
+  private val metricsDef: PublicEndpoint[
     Unit,
     Unit,
     (String, String),

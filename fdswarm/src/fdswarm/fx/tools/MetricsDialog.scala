@@ -18,9 +18,9 @@
 
 package fdswarm.fx.tools
 
-import com.codahale.metrics.*
 import fdswarm.telemetry.Metrics
 import fdswarm.util.DurationFormat
+import io.dropwizard.metrics5.*
 import jakarta.inject.{Inject, Singleton}
 import javafx.scene.chart.XYChart as JfxXYChart
 import scalafx.Includes.*
@@ -45,58 +45,15 @@ import scala.jdk.CollectionConverters.*
 final class MetricsDialog @Inject() (
     metrics: Metrics
 ):
-  private final case class MetricGraphPoint(
-      epochMillis: Long,
-      p50: Double,
-      p75: Double,
-      p90: Double,
-      p95: Double,
-      p99: Double
-  )
-
+  private val metricRegistry: MetricRegistry = new MetricRegistry()
   private val maxGraphSamples = 180
   private val metricGraphHistory = mutable.Map.empty[String, Vector[MetricGraphPoint]]
-
   private val timestampFormatter = DateTimeFormatter
     .ofPattern(
       "yyyy-MM-dd HH:mm:ss"
     )
     .withZone(
       ZoneId.systemDefault()
-    )
-
-
-  final class MetricRow(
-      name: String,
-      metricType: String,
-      value: String,
-      p50: String,
-      p95: String
-  ):
-    val nameProp = new StringProperty(
-      this,
-      "name",
-      name
-    )
-    val typeProp = new StringProperty(
-      this,
-      "type",
-      metricType
-    )
-    val valueProp = new StringProperty(
-      this,
-      "value",
-      value
-    )
-    val p50Prop = new StringProperty(
-      this,
-      "p50",
-      p50
-    )
-    val p95Prop = new StringProperty(
-      this,
-      "p95",
-      p95
     )
 
   def show(
@@ -123,27 +80,31 @@ final class MetricsDialog @Inject() (
       columns ++= Seq(
         new TableColumn[MetricRow, String]:
           text = "Name"
-          cellValueFactory = { _.value.nameProp }
-          prefWidth = 420
+          cellValueFactory = _.value.nameProp
+          prefWidth =
+            420
         ,
         new TableColumn[MetricRow, String]:
           text = "Type"
-          cellValueFactory = { _.value.typeProp }
-          prefWidth = 140
+          cellValueFactory = _.value.typeProp
+          prefWidth =
+            140
         ,
         new TableColumn[MetricRow, String]:
           text = "Value"
-          cellValueFactory = { _.value.valueProp }
-          prefWidth = 240
+          cellValueFactory = _.value.valueProp
+          prefWidth =
+            240
         ,
         new TableColumn[MetricRow, String]:
           text = "P50"
-          cellValueFactory = { _.value.p50Prop }
-          prefWidth = 160
+          cellValueFactory = _.value.p50Prop
+          prefWidth =
+            160
         ,
         new TableColumn[MetricRow, String]:
           text = "P95"
-          cellValueFactory = { _.value.p95Prop }
+          cellValueFactory = _.value.p95Prop
           prefWidth = 160
       )
       columnResizePolicy = TableView.ConstrainedResizePolicy
@@ -153,15 +114,14 @@ final class MetricsDialog @Inject() (
         copyMetricNameItem.onAction = _ =>
           Option(
             row.item.value
-          ).foreach(
-            rowItem =>
-              val content = new ClipboardContent()
-              content.putString(
-                rowItem.nameProp.value
-              )
-              Clipboard.systemClipboard.setContent(
-                content
-              )
+          ).foreach(rowItem =>
+            val content = new ClipboardContent()
+            content.putString(
+              rowItem.nameProp.value
+            )
+            Clipboard.systemClipboard.setContent(
+              content
+            )
           )
         row.contextMenu = new ContextMenu(
           copyMetricNameItem
@@ -174,8 +134,8 @@ final class MetricsDialog @Inject() (
           if event.button == MouseButton.Primary && event.clickCount == 2 && !row.empty.value then
             Option(
               row.item.value
-            ).foreach(
-              rowItem => showGraphDialogForRow(
+            ).foreach(rowItem =>
+              showGraphDialogForRow(
                 ownerWindow,
                 rowItem
               )
@@ -193,11 +153,10 @@ final class MetricsDialog @Inject() (
         allTypesOption
       )
       filteredRows.setAll(
-        allRows.toSeq.filter(
-          row =>
-            row.nameProp.value.toLowerCase.contains(
-              filter
-            ) && (selectedType == allTypesOption || row.typeProp.value == selectedType)
+        allRows.toSeq.filter(row =>
+          row.nameProp.value.toLowerCase.contains(
+            filter
+          ) && (selectedType == allTypesOption || row.typeProp.value == selectedType)
         )*
       )
 
@@ -214,16 +173,17 @@ final class MetricsDialog @Inject() (
         .distinct
         .sorted
       typeFilter.items = ObservableBuffer(
-        (allTypesOption +: types)*
+        allTypesOption +: types *
       )
       typeFilter.value =
         if types.contains(
             selectedType
-          ) then selectedType
+          )
+        then selectedType
         else allTypesOption
 
     def refreshRows(): Unit =
-      val currentMetrics = metrics.registryRef.getMetrics.asScala.toMap
+      val currentMetrics: Map[MetricName, Metric] = metricRegistry.getMetrics.asScala.toMap
       recordGraphSample(
         currentMetrics
       )
@@ -292,17 +252,17 @@ final class MetricsDialog @Inject() (
     dialog.showAndWait()
 
   private def snapshotRows(
-      currentMetrics: Map[String, Metric]
+      currentMetrics: Map[MetricName, Metric]
   ): Seq[MetricRow] =
     currentMetrics.toSeq
-      .sortBy(_._1)
+      .sortBy(_._1.getKey)
       .map {
         case (name, metric) =>
           val (metricType, value, p50, p95) = formatMetric(
             metric
           )
           new MetricRow(
-            name,
+            name.getKey,
             metricType,
             value,
             p50,
@@ -310,13 +270,86 @@ final class MetricsDialog @Inject() (
           )
       }
 
+  private def formatMetric(
+      metric: Metric
+  ): (String, String, String, String) =
+    metric match
+      case gauge: Gauge[?] =>
+        (
+          "Gauge",
+          Option(
+            gauge.getValue
+          ).map(_.toString).getOrElse("null"),
+          "",
+          ""
+        )
+      case counter: Counter =>
+        (
+          "Counter",
+          counter.getCount.toString,
+          "",
+          ""
+        )
+      case histogram: Histogram =>
+        val snapshot = histogram.getSnapshot
+        (
+          "Histogram",
+          s"count=${histogram.getCount}",
+          snapshot.getMedian.toString,
+          snapshot.get95thPercentile.toString
+        )
+      case timer: Timer =>
+        val snapshot = timer.getSnapshot
+        (
+          "Timer",
+          s"count=${timer.getCount}",
+          formatNanosDuration(
+            snapshot.getMedian
+          ),
+          formatNanosDuration(
+            snapshot.get95thPercentile
+          )
+        )
+      case meter: Meter =>
+        (
+          "Meter",
+          s"count=${meter.getCount}, m1=${meter.getOneMinuteRate}, m5=${meter.getFiveMinuteRate}, m15=${meter.getFifteenMinuteRate}",
+          "",
+          ""
+        )
+      case other =>
+        (
+          other.getClass.getSimpleName,
+          other.toString,
+          "",
+          ""
+        )
+
+  private def formatNanosDuration(
+      nanos: Double
+  ): String =
+    if nanos.isNaN || nanos.isInfinite then
+      "n/a"
+    else
+      DurationFormat(
+        JDuration.ofNanos(
+          math.max(
+            0L,
+            math.round(
+              nanos
+            )
+          )
+        )
+      )
+
   private def showGraphDialogForRow(
       ownerWindow: Window,
       row: MetricRow
   ): Unit =
     if !isGraphableMetric(
-      row.typeProp.value
-    ) then
+        row.typeProp.value
+      )
+    then
       ()
     else
       showGraphDialog(
@@ -434,7 +467,8 @@ final class MetricsDialog @Inject() (
         )
         .toSet
       lineChart.data = seriesByName.collect {
-        case (name, series) if selectedNames.contains(
+        case (name, series)
+            if selectedNames.contains(
               name
             ) =>
           series.delegate
@@ -465,7 +499,8 @@ final class MetricsDialog @Inject() (
         ),
         new HBox:
           spacing = 12
-          children = toggles
+          children =
+            toggles
         ,
         lineChart
       )
@@ -488,21 +523,67 @@ final class MetricsDialog @Inject() (
     dialog.dialogPane().content = content
     dialog.showAndWait()
 
+  private def buildPercentileSeries(
+      label: String,
+      history: Vector[MetricGraphPoint],
+      startedAtMillis: Long,
+      percentile: MetricGraphPoint => Double
+  ): XYChart.Series[Number, Number] =
+    new XYChart.Series[Number, Number]:
+      name = label
+      data = Seq(
+        history.map(point =>
+          new JfxXYChart.Data[Number, Number](
+            elapsedSeconds(
+              startedAtMillis,
+              point.epochMillis
+            ),
+            percentile(
+              point
+            )
+          )
+        )*
+      )
+
   private def elapsedSeconds(
       startMillis: Long,
       epochMillis: Long
   ): Double =
     (epochMillis - startMillis).toDouble / 1000.0
 
+  private def applySeriesStyles(
+      lineChart: LineChart[Number, Number]
+  ): Unit =
+    val styles = Map(
+      "P50" -> "#1f77b4",
+      "P75" -> "#2ca02c",
+      "P90" -> "#ff7f0e",
+      "P95" -> "#d62728",
+      "P99" -> "#9467bd"
+    )
+    lineChart.data.value.foreach(series =>
+      val color = styles.getOrElse(
+        series.getName,
+        "#666666"
+      )
+      Option(
+        series.getNode
+      ).foreach(
+        _.setStyle(
+          s"-fx-stroke: $color; -fx-stroke-width: 2.4px;"
+        )
+      )
+    )
+
   private def recordGraphSample(
-      currentMetrics: Map[String, Metric]
+      currentMetrics: Map[MetricName, Metric]
   ): Unit =
     val nowMillis = Instant.now().toEpochMilli
     currentMetrics.foreach {
-      case (name, histogram: Histogram) =>
+      case (metricName, histogram: Histogram) =>
         val snapshot = histogram.getSnapshot
         appendGraphPoint(
-          metricName = name,
+          metricName = metricName.getKey,
           nowMillis = nowMillis,
           p50 = snapshot.getMedian,
           p75 = snapshot.get75thPercentile,
@@ -512,10 +593,10 @@ final class MetricsDialog @Inject() (
           p95 = snapshot.get95thPercentile,
           p99 = snapshot.get99thPercentile
         )
-      case (name, timer: Timer) =>
+      case (metricName, timer: Timer) =>
         val snapshot = timer.getSnapshot
         appendGraphPoint(
-          metricName = name,
+          metricName = metricName.getKey,
           nowMillis = nowMillis,
           p50 = nanosToMillis(
             snapshot.getMedian
@@ -540,8 +621,10 @@ final class MetricsDialog @Inject() (
     }
 
     val activeGraphMetrics = currentMetrics.collect {
-      case (name, _: Histogram) => name
-      case (name, _: Timer) => name
+      case (metricName, _: Histogram) =>
+        metricName.getKey
+      case (metricName, _: Timer) =>
+        metricName.getKey
     }.toSet
     metricGraphHistory.keys.toSeq
       .filterNot(
@@ -550,54 +633,6 @@ final class MetricsDialog @Inject() (
       .foreach(
         metricGraphHistory.remove
       )
-
-  private def buildPercentileSeries(
-      label: String,
-      history: Vector[MetricGraphPoint],
-      startedAtMillis: Long,
-      percentile: MetricGraphPoint => Double
-  ): XYChart.Series[Number, Number] =
-    new XYChart.Series[Number, Number]:
-      name = label
-      data = Seq(
-        history.map(
-          point =>
-            new JfxXYChart.Data[Number, Number](
-              elapsedSeconds(
-                startedAtMillis,
-                point.epochMillis
-              ),
-              percentile(
-                point
-              )
-            )
-        )*
-      )
-
-  private def applySeriesStyles(
-      lineChart: LineChart[Number, Number]
-  ): Unit =
-    val styles = Map(
-      "P50" -> "#1f77b4",
-      "P75" -> "#2ca02c",
-      "P90" -> "#ff7f0e",
-      "P95" -> "#d62728",
-      "P99" -> "#9467bd"
-    )
-    lineChart.data.value.foreach(
-      series =>
-        val color = styles.getOrElse(
-          series.getName,
-          "#666666"
-        )
-        Option(
-          series.getNode
-        ).foreach(
-          _.setStyle(
-            s"-fx-stroke: $color; -fx-stroke-width: 2.4px;"
-          )
-        )
-    )
 
   private def appendGraphPoint(
       metricName: String,
@@ -632,74 +667,44 @@ final class MetricsDialog @Inject() (
     if nanos.isNaN || nanos.isInfinite then 0.0
     else nanos / 1000000.0
 
-  private def formatMetric(
-      metric: Metric
-  ): (String, String, String, String) =
-    metric match
-      case gauge: Gauge[?] =>
-        (
-          "Gauge",
-          Option(
-            gauge.getValue
-          ).map(_.toString).getOrElse("null"),
-          "",
-          ""
-        )
-      case counter: Counter =>
-        (
-          "Counter",
-          counter.getCount.toString,
-          "",
-          ""
-        )
-      case histogram: Histogram =>
-        val snapshot = histogram.getSnapshot
-        (
-          "Histogram",
-          s"count=${histogram.getCount}",
-          snapshot.getMedian.toString,
-          snapshot.get95thPercentile.toString
-        )
-      case timer: Timer =>
-        val snapshot = timer.getSnapshot
-        (
-          "Timer",
-          s"count=${timer.getCount}",
-          formatNanosDuration(
-            snapshot.getMedian
-          ),
-          formatNanosDuration(
-            snapshot.get95thPercentile
-          )
-        )
-      case meter: Meter =>
-        (
-          "Meter",
-          s"count=${meter.getCount}, m1=${meter.getOneMinuteRate}, m5=${meter.getFiveMinuteRate}, m15=${meter.getFifteenMinuteRate}",
-          "",
-          ""
-        )
-      case other =>
-        (
-          other.getClass.getSimpleName,
-          other.toString,
-          "",
-          ""
-        )
+  private final class MetricRow(
+      name: String,
+      metricType: String,
+      value: String,
+      p50: String,
+      p95: String
+  ):
+    val nameProp = new StringProperty(
+      this,
+      "name",
+      name
+    )
+    val typeProp = new StringProperty(
+      this,
+      "type",
+      metricType
+    )
+    val valueProp = new StringProperty(
+      this,
+      "value",
+      value
+    )
+    val p50Prop = new StringProperty(
+      this,
+      "p50",
+      p50
+    )
+    val p95Prop = new StringProperty(
+      this,
+      "p95",
+      p95
+    )
 
-  private def formatNanosDuration(
-      nanos: Double
-  ): String =
-    if nanos.isNaN || nanos.isInfinite then
-      "n/a"
-    else
-      DurationFormat(
-        JDuration.ofNanos(
-          math.max(
-            0L,
-            math.round(
-              nanos
-            )
-          )
-        )
-      )
+  final private case class MetricGraphPoint(
+      epochMillis: Long,
+      p50: Double,
+      p75: Double,
+      p90: Double,
+      p95: Double,
+      p99: Double
+  )

@@ -18,21 +18,20 @@
 
 package fdswarm.store
 
-import com.codahale.metrics.Gauge
 import fdswarm.StartupInfo
 import fdswarm.contestStart.ContestStartManager
 import fdswarm.io.FileHelper
-import fdswarm.logging.LazyStructuredLogging
+import fdswarm.logging.{LazyStructuredLogging, Locus}
 import fdswarm.logging.Locus.LogEntry
 import fdswarm.model.*
 import fdswarm.replication.*
 import fdswarm.scoring.ContestScoringService
 import fdswarm.util.Ids.Id
+import fdswarm.util.StatsSource
 import io.circe.generic.auto.deriveDecoder
 import io.circe.parser.decode
 import jakarta.inject.*
 import javafx.application.Platform
-import nl.grons.metrics4.scala.DefaultInstrumented
 import os.Path
 import scalafx.collections.ObservableBuffer
 
@@ -49,7 +48,7 @@ class QsoStore @Inject() (
                            localNodeStatus: LocalNodeStatus,
                            contestScoringService: ContestScoringService,
                            nodeStatusDispatcher: NodeStatusDispatcher
-) extends DefaultInstrumented
+) extends StatsSource(Locus.Qso)
     with LazyStructuredLogging(LogEntry):
 
   val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()

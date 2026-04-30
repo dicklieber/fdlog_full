@@ -3,6 +3,11 @@ package fdswarm.logging
 enum Locus(
             val value: String
           ):
+  case UDP extends Locus("udp")
+  case TCP extends Locus("tcp")
+  case Qso extends Locus("qso")
+  case Search extends Locus("search")
+
   case Replication extends Locus("Replication")
   case Sync extends Locus("SyncContest")
   case LogEntry extends Locus("LogEntry")

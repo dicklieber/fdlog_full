@@ -5,7 +5,6 @@ import fdswarm.logging.LazyStructuredLogging
 import fdswarm.logging.Locus.LogEntry
 import fdswarm.model.Qso
 import jakarta.inject.*
-import nl.grons.metrics4.scala.DefaultInstrumented
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong, AtomicReference}
 
@@ -14,8 +13,8 @@ class ContestScoringService @Inject() (
                                         contestConfigManager: ContestConfigManager,
                                         contestScoringConfigManager: ContestScoringConfigManager,
                                         contestScorerRegistry: ContestScorerRegistry
-                                      ) extends DefaultInstrumented
-  with LazyStructuredLogging(LogEntry):
+                                      )
+  extends LazyStructuredLogging(LogEntry) :
 
   private var scorer: ContestScorer =
     contestScorerRegistry.forType(
@@ -39,12 +38,6 @@ class ContestScoringService @Inject() (
     new java.util.concurrent.atomic.AtomicReference[Seq[Qso]](
       Seq.empty
     )
-
-  metrics.gauge("fdswarm_contest_final_score")(finalScoreValue.get())
-  metrics.gauge("fdswarm_contest_raw_qso_points")(rawPointsValue.get())
-  metrics.gauge("fdswarm_contest_total_qsos")(totalQsosValue.get())
-  metrics.gauge("fdswarm_contest_multiplier")(multiplierValue.get())
-  metrics.gauge("fdswarm_contest_type")(contestTypeValue.get())
 
   contestConfigManager.contestConfigProperty.onChange { (_, oldConfig, newConfig) =>
     val oldType = oldConfig.contestType

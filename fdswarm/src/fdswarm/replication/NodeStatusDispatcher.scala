@@ -21,7 +21,6 @@ package fdswarm.replication
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.util.NodeIdentity
 import jakarta.inject.{Inject, Singleton}
-import nl.grons.metrics4.scala.DefaultInstrumented
 
 import scala.collection.concurrent.TrieMap
 
@@ -60,7 +59,7 @@ import scala.collection.concurrent.TrieMap
  *                  - Logs errors that occur during the processing of packets or notification of listeners.
  *                  - If the processing thread is interrupted, it exits gracefully. */
 @Singleton
-class NodeStatusDispatcher @Inject() (transport: Transport) extends LazyStructuredLogging() with DefaultInstrumented:
+class NodeStatusDispatcher @Inject() (transport: Transport) extends LazyStructuredLogging() :
 
   private val listenersByService: TrieMap[Service[?], Seq[ListenerRegistration]] = TrieMap.empty
   private val thread = new Thread(
@@ -69,7 +68,6 @@ class NodeStatusDispatcher @Inject() (transport: Transport) extends LazyStructur
         try
           val udpHeader: UDPHeaderData = transport.incomingQueue.take()
           logger.trace(s"Received UDP packet from ${udpHeader.nodeIdentity} for service ${udpHeader.service}")
-          receivedPacketCount.inc(1)
           if udpHeader.service == Service.Status then lastStatusMessagePayloadSize = udpHeader.payload.length.toDouble
           notifyFromRegistry(udpHeader = udpHeader)
         catch
@@ -82,7 +80,6 @@ class NodeStatusDispatcher @Inject() (transport: Transport) extends LazyStructur
     "Repl-Processor"
   )
 
-  private val receivedPacketCount = metrics.counter("received_packets")
   private var lastStatusMessagePayloadSize: Double = 0.0
 
   def addListener[T](service: Service[T], singleListener: Boolean = true)(listener: (NodeIdentity, T) => Unit): Unit =
@@ -130,10 +127,8 @@ class NodeStatusDispatcher @Inject() (transport: Transport) extends LazyStructur
 
   private final class TypedListenerRegistration[T](val service: Service[T], listener: (NodeIdentity, T) => Unit)
       extends ListenerRegistration:
-    private val receivedCounter = metrics.counter(s"received.$service")
 
     override def handle(udpHeader: UDPHeaderData): Unit =
 
       val value: T = udpHeader.decodeFor(expectedService = service)
-      receivedCounter.inc(1)
       listener(udpHeader.nodeIdentity, value)
