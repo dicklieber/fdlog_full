@@ -6,6 +6,27 @@ import io.dropwizard.metrics5.*
 sealed trait MetricStat:
   val metricType: MetricType[?]
 
+case class GaugeSnapshot(
+                          value: String,
+                          metricType: MetricType[GaugeSnapshot] = MetricType.Gauge
+                        ) extends MetricStat derives Codec.AsObject:
+  override def toString: String =
+    s"value:$value"
+
+object GaugeSnapshot :
+  val empty: GaugeSnapshot =
+    GaugeSnapshot(
+      value = ""
+    )
+
+  /**
+   * Build a snapshot of a gauge.
+   */
+  def apply(gauge: Gauge[?]): GaugeSnapshot =
+    GaugeSnapshot(
+      value = Option(gauge.getValue).map(_.toString).getOrElse("null")
+    )
+
 case class CounterSnapshot(
                             count: Long,
                             metricType: MetricType[CounterSnapshot] = MetricType.Counter

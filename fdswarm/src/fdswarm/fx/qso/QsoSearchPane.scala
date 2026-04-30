@@ -88,9 +88,12 @@ class QsoSearchPane @Inject()(
 
   anyChange.onChange((_, _, newVal) =>
     if contestManager.hasConfiguration.value then
-      val searchResult = searchTimer.time[ObservableBuffer[Qso]](
-       qsoStore.qsoCollection.filter (qso => filter(qso))
-      )
+      val searchTimerContext = searchTimer.time()
+      val searchResult =
+        try
+          qsoStore.qsoCollection.filter(qso => filter(qso))
+        finally
+          searchTimerContext.stop()
 
       if isSearching then
         qsoTablePane.showSearchResults(searchResult)

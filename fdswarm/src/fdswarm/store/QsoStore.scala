@@ -21,8 +21,8 @@ package fdswarm.store
 import fdswarm.StartupInfo
 import fdswarm.contestStart.ContestStartManager
 import fdswarm.io.FileHelper
-import fdswarm.logging.{LazyStructuredLogging, Locus}
 import fdswarm.logging.Locus.LogEntry
+import fdswarm.logging.{LazyStructuredLogging, Locus}
 import fdswarm.model.*
 import fdswarm.replication.*
 import fdswarm.scoring.ContestScoringService
@@ -40,14 +40,14 @@ import scala.collection.concurrent.TrieMap
 
 @Singleton
 class QsoStore @Inject() (
-                           fileHelper: FileHelper,
-                           transport: Transport,
-                           startupInfo: StartupInfo,
-                           contestStartManager: ContestStartManager,
-                           filenameStamp: fdswarm.util.FilenameStamp,
-                           localNodeStatus: LocalNodeStatus,
-                           contestScoringService: ContestScoringService,
-                           nodeStatusDispatcher: NodeStatusDispatcher
+    fileHelper: FileHelper,
+    transport: Transport,
+    startupInfo: StartupInfo,
+    contestStartManager: ContestStartManager,
+    filenameStamp: fdswarm.util.FilenameStamp,
+    localNodeStatus: LocalNodeStatus,
+    contestScoringService: ContestScoringService,
+    nodeStatusDispatcher: NodeStatusDispatcher
 ) extends StatsSource(Locus.Qso)
     with LazyStructuredLogging(LogEntry):
 
@@ -56,22 +56,9 @@ class QsoStore @Inject() (
   private val path = fileHelper.directory / "qsosJournal.json"
   private val archiveDirectory: Path = fileHelper.directory / "qsosJournal.archive"
   // Metrics
-  private val qsoEnteryCounter = metrics.counter("qsoEntries")
-  private val hashCalculatorTimer = metrics.timer("hashCalculation")
-  private val qsoCollectionSizeGaugeName = s"${this.getClass.getSimpleName}.qsoCollectionSize"
-  private val qsoCollectionSizeGauge: Gauge[Int] =
-    metricRegistry.synchronized {
-      val existing = metricRegistry.getGauges.get(qsoCollectionSizeGaugeName)
-      if existing != null then
-        logger.error(s"Gauge $qsoCollectionSizeGaugeName already exists! Means QSOStore was instantiated twice!")
-        existing.asInstanceOf[Gauge[Int]]
-      else
-        metricRegistry.register(
-          qsoCollectionSizeGaugeName,
-          new Gauge[Int]:
-            override def getValue: Int = qsoCollection.size
-        )
-    }
+  private val qsoEntryCounter = addCounter("qsoEntry")
+  private val hashCalculatorTimer = addTimer("hashCalculation")
+  private val qsoCollectionSizeGauge = addGauge("qsoCollectionSize")(map.size)
 
   def add(
       qso: Qso
@@ -81,7 +68,7 @@ class QsoStore @Inject() (
     if isDuplicateInStore then
       StyledMessage(qso.rejectedMsg, "duplicate-qso")
     else
-      qsoEnteryCounter.inc()
+      qsoEntryCounter.inc()
       val jsonString = qso.asJsonCompact
       os.write.append(path, jsonString + "\n", createFolders = true)
       logger.info("qso" -> qso)
@@ -176,25 +163,9 @@ class QsoStore @Inject() (
     }
     calculateHash()
 
-  private def calculateHash(): Unit =
-    refreshScores()
-    val idsHash: String =
-      hashCalculatorTimer.time(
-        fdswarm.replication.calcShaHash(
-          map.keys
-        )
-      )
-    localNodeStatus.updateHashCount(
-      HashCount(
-        hash = idsHash,
-        qsoCount = map.size
-      )
-    )
+  def size: Int = map.size
 
-  private def refreshScores(): Unit =
-    contestScoringService.refresh(
-      qsos = all
-    )
+  private def activeContestStart: Instant = contestStartManager.contestStart.value.start
 
   if startupInfo.info.exists(_.clearQsos) then
     logger.info("StartupInfo Clearing QSOs journal")
@@ -247,22 +218,6 @@ class QsoStore @Inject() (
   else if os.exists(path) then
     logger.error("QSO journal path exists but is not a regular file", "path" -> path.toString)
 
-  /** Thread-safe snapshot of all QSOs, sorted by stamp. Prefer this over reading `qsoCollection`
-    * from non-JavaFX threads (e.g., Cask routes).
-    */
-  def all: Seq[Qso] =
-    map.values.toSeq.sorted
-
-  private def mutateQsoCollection(
-      mutation: => Unit
-  ): Unit =
-    if Platform.isFxApplicationThread then mutation
-    else Platform.runLater(() => mutation)
-
-  def size: Int = map.size
-
-  private def activeContestStart: Instant = contestStartManager.contestStart.value.start
-
   private def removeOlderThanAndRewrite(
       cutoff: Instant
   ): Unit =
@@ -312,6 +267,37 @@ class QsoStore @Inject() (
         "removed" -> 0,
         "kept" -> currentQsos.size
       )
+
+  private def calculateHash(): Unit =
+    refreshScores()
+    val idsHash: String =
+      val context = hashCalculatorTimer.time()
+      try fdswarm.replication.calcShaHash(map.keys)
+      finally context.stop()
+    localNodeStatus.updateHashCount(
+      HashCount(
+        hash = idsHash,
+        qsoCount = map.size
+      )
+    )
+
+  private def refreshScores(): Unit =
+    contestScoringService.refresh(
+      qsos = all
+    )
+
+  /**
+    * Thread-safe snapshot of all QSOs, sorted by stamp. Prefer this over reading `qsoCollection`
+    * from non-JavaFX threads (e.g., Cask routes).
+    */
+  def all: Seq[Qso] =
+    map.values.toSeq.sorted
+
+  private def mutateQsoCollection(
+      mutation: => Unit
+  ): Unit =
+    if Platform.isFxApplicationThread then mutation
+    else Platform.runLater(() => mutation)
 
 object QsoStore:
   private[store] def sameBandMode(left: BandMode, right: BandMode): Boolean =

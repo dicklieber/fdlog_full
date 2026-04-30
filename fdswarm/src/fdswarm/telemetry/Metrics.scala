@@ -1,9 +1,5 @@
 package fdswarm.telemetry
 
-import com.codahale.metrics.{MetricRegistry, SharedMetricRegistries}
-import io.prometheus.metrics.expositionformats.{ExpositionFormats, PrometheusTextFormatWriter}
-import io.prometheus.metrics.instrumentation.dropwizard.DropwizardExports
-import io.prometheus.metrics.model.registry.PrometheusRegistry
 import jakarta.inject.*
 
 @Singleton
