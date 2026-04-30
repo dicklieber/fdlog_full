@@ -25,7 +25,6 @@ import fdswarm.fx.utils.{IconButton, MultiChangeWatcher}
 import fdswarm.logging.{LazyStructuredLogging, Locus}
 import fdswarm.model.{Band, ChoiceItem, Mode, Qso}
 import fdswarm.store.QsoStore
-import fdswarm.telemetry.Metrics
 import fdswarm.util.StatsSource
 import io.circe.syntax.*
 import jakarta.inject.Inject
@@ -43,7 +42,6 @@ class QsoSearchPane @Inject()(
                                contestManager: ContestConfigManager,
                                contestCatalog: ContestCatalog,
                                userConfig: UserConfig,
-                               otelMetrics: Metrics,
                                qsoStore: QsoStore,
                                qsoTablePane: QsoTablePane
 ) extends  LazyStructuredLogging with StatsSource(Locus.Search):

@@ -18,8 +18,7 @@
 
 package fdswarm.fx.tools
 
-import fdswarm.telemetry.Metrics
-import fdswarm.util.DurationFormat
+``import fdswarm.util.DurationFormat
 import io.dropwizard.metrics5.*
 import jakarta.inject.{Inject, Singleton}
 import javafx.scene.chart.XYChart as JfxXYChart
@@ -42,10 +41,10 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
 @Singleton
-final class MetricsDialog @Inject() (
-    metrics: Metrics
-):
-  private val metricRegistry: MetricRegistry = new MetricRegistry()
+final class MetricsDialog @Inject() ():
+  private val metricRegistry: MetricRegistry = SharedMetricRegistries.getOrCreate(
+    "default"
+  )
   private val maxGraphSamples = 180
   private val metricGraphHistory = mutable.Map.empty[String, Vector[MetricGraphPoint]]
   private val timestampFormatter = DateTimeFormatter

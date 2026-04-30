@@ -6,7 +6,9 @@ import io.dropwizard.metrics5.*
 import scala.collection.mutable
 
 trait StatsSource(locus:Locus):
-  private val metricRegistry: MetricRegistry = new MetricRegistry()
+  private val metricRegistry: MetricRegistry = SharedMetricRegistries.getOrCreate(
+    "default"
+  )
   private val ourMetrics: mutable.Set[Metric] = mutable.Set[Metric]()
   private def prefixWithLocus(name: String): String = s"${locus.value}.$name"
 
@@ -32,7 +34,7 @@ trait StatsSource(locus:Locus):
     track(metricRegistry.timer(prefixWithLocus(name)))
 
   private def addGauge[T](name: String, gauge: Gauge[T]): Gauge[T] =
-    track(metricRegistry.registerGauge(name, gauge))
+    track(metricRegistry.registerGauge(prefixWithLocus(name), gauge))
 
   def addGauge[T](name: String)(value: => T): Gauge[T] =
     addGauge(

@@ -27,7 +27,6 @@ import fdswarm.fx.utils.UiStyles
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.logging.Locus.Startup
 import fdswarm.replication.{NodeStatusDispatcher, StatusBroadcastService}
-import fdswarm.telemetry.Metrics
 import fdswarm.util.NodeIdentityManager
 import jakarta.inject.{Inject, Singleton}
 import javafx.embed.swing.SwingFXUtils
@@ -39,20 +38,16 @@ import scalafx.scene.shape.SVGPath
 import scalafx.scene.{Node, Scene, SnapshotParameters}
 import scalafx.stage.Stage
 
-import java.time.{Duration, Instant}
-
 @Singleton
 final class FdLogUi @Inject() (
                                 contestEntry: ContestEntry,
                                 menus: FdLogMenus,
                                 repl: NodeStatusDispatcher,
                                 statusBroadcastService: StatusBroadcastService,
-                                otelMetrics: Metrics,
                                 qsoStore: fdswarm.store.QsoStore,
                                 apiServer: fdswarm.api.ApiServer,
                                 startupInfo: StartupInfo,
-                                contestDiscovery:ContestDiscovery,
-                                metrics:Metrics
+                                contestDiscovery:ContestDiscovery
 ) extends LazyStructuredLogging(Startup):
 
   def start(): Unit =
@@ -117,15 +112,6 @@ final class FdLogUi @Inject() (
       () => menus.showBandModeManager()
     )
 
-    Platform.runLater {
-//      val duration = FdLogUi.startupDuration
-//      val durationNanos = duration.toNanos
-//      logger.info(s"UI responsive in ${DurationFormat(duration)}")
-//      otelMetrics.recordTimerNanos(
-//        name = "fdswarm_startup_time_seconds",
-//        nanos = durationNanos
-//      )
-    }
     contestEntry.buildUi()
 
   private def setAppIcon(): Unit =
@@ -196,14 +182,7 @@ final class FdLogUi @Inject() (
     statusBroadcastService.stop()
 
 object FdLogUi:
-  private val startTime = Instant.now()
   private var stageOpt: Option[Stage] = None
-
-  def startupDuration: Duration =
-    Duration.between(
-      startTime,
-      Instant.now()
-    )
 
   lazy val isMac: Boolean =
     System.getProperty("os.name").toLowerCase.contains("mac")
