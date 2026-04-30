@@ -74,7 +74,8 @@ class CirceSupportTest extends FunSuite:
     val status = StatusMessage(hashCount = fdswarm.replication.HashCount(),
       bandNodeOperator = bno,
       contestConfig = config,
-      contestStart = Instant.parse("2026-03-16T15:00:00Z"))
+      contestStart = Instant.parse("2026-03-16T15:00:00Z"),
+      metrics = Seq.empty)
     val json = status.asJson.noSpaces
     val decoded = decode[StatusMessage](json).toOption.get
     assertEquals(decoded, status)

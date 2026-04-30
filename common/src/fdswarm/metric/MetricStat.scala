@@ -2,14 +2,15 @@ package fdswarm.metric
 
 import io.circe.Codec
 import io.dropwizard.metrics5.*
+import sttp.tapir.Schema
 
 sealed trait MetricStat:
-  val metricType: MetricType[?]
+  val metricType: MetricType[?, ?]
 
 case class GaugeSnapshot(
                           value: String,
-                          metricType: MetricType[GaugeSnapshot] = MetricType.Gauge
-                        ) extends MetricStat derives Codec.AsObject:
+                          metricType: MetricType[GaugeSnapshot, Gauge[?]] = MetricType.Gauge
+                        ) extends MetricStat derives Codec.AsObject, Schema:
   override def toString: String =
     s"value:$value"
 
@@ -29,8 +30,8 @@ object GaugeSnapshot :
 
 case class CounterSnapshot(
                             count: Long,
-                            metricType: MetricType[CounterSnapshot] = MetricType.Counter
-                          ) extends MetricStat derives Codec.AsObject:
+                            metricType: MetricType[CounterSnapshot, Counter] = MetricType.Counter
+                          ) extends MetricStat derives Codec.AsObject, Schema:
   override def toString: String =
     s"count:$count"
 
@@ -59,8 +60,8 @@ case class MeterSnapshot(
                           m1: Double,
                           m5: Double,
                           m15: Double,
-                          metricType: MetricType[MeterSnapshot] = MetricType.Meter
-                        ) extends MetricStat derives Codec.AsObject:
+                          metricType: MetricType[MeterSnapshot, Meter] = MetricType.Meter
+                        ) extends MetricStat derives Codec.AsObject, Schema:
   override def toString: String =
     s"count:$count, m1=${m1 * 60}/min, m5=${m5 * 60}/min, m15=${m15 * 60}/min)"
 object MeterSnapshot :
@@ -93,7 +94,7 @@ case class HistogramSnapshot(count: Long,
                              p98: Double,
                              p99: Double,
                              p999: Double,
-                             metricType: MetricType[HistogramSnapshot] = MetricType.Histogram) extends MetricStat derives Codec.AsObject:
+                             metricType: MetricType[HistogramSnapshot, Histogram] = MetricType.Histogram) extends MetricStat derives Codec.AsObject, Schema:
   override def toString: String =
     s"count:$count, min:$min, max:$max, p50:$p50, p95:$p95, p99:$p99"
 
@@ -142,8 +143,8 @@ case class TimerSnapshot(
                           p98: Double,
                           p99: Double,
                           p999: Double,
-                          metricType: MetricType[TimerSnapshot] = MetricType.Timer
-                        ) extends MetricStat derives Codec.AsObject:
+                          metricType: MetricType[TimerSnapshot, Timer] = MetricType.Timer
+                        ) extends MetricStat derives Codec.AsObject, Schema:
   override def toString: String =
     s"count:$count, m1=${m1 * 60}/min, m5=${m5 * 60}/min, m15=${m15 * 60}/min, min:$min, max:$max, p50:$p50, p95:$p95, p99:$p99"
 
@@ -183,3 +184,57 @@ object TimerSnapshot :
       p99 = snapshot.get99thPercentile,
       p999 = snapshot.get999thPercentile
     )
+
+object MetricSnapshotFactory:
+  /**
+   * Build the matching fdswarm snapshot for a supported Dropwizard metric.
+   */
+  def apply(metric: Metric): MetricStat =
+    fromMetric(
+      metric
+    ).getOrElse(
+      throw new IllegalArgumentException(
+        s"Unsupported Dropwizard metric type: ${metric.getClass.getName}"
+      )
+    )
+
+  /**
+   * Build the matching fdswarm snapshot when the Dropwizard metric type is supported.
+   */
+  def fromMetric(metric: Metric): Option[MetricStat] =
+    metric match
+      case gauge: Gauge[?] =>
+        Some(
+          GaugeSnapshot(
+            gauge
+          )
+        )
+      case counter: Counter =>
+        Some(
+          CounterSnapshot(
+            counter
+          )
+        )
+      case histogram: Histogram =>
+        Some(
+          HistogramSnapshot(
+            histogram
+          )
+        )
+      case timer: Timer =>
+        Some(
+          TimerSnapshot(
+            timer
+          )
+        )
+      case meter: Meter =>
+        Some(
+          MeterSnapshot(
+            meter
+          )
+        )
+      case _ =>
+        None
+
+object MetricStat:
+  given Schema[MetricStat] = Schema.derived

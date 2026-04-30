@@ -18,7 +18,7 @@
 
 package fdswarm.fx.tools
 
-``import fdswarm.util.DurationFormat
+import fdswarm.util.DurationFormat
 import io.dropwizard.metrics5.*
 import jakarta.inject.{Inject, Singleton}
 import javafx.scene.chart.XYChart as JfxXYChart

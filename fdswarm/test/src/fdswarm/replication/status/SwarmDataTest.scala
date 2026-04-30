@@ -335,7 +335,8 @@ class SwarmDataTest extends FunSuite:
           bandMode = BandMode("20M SSB")
         ),
         contestConfig = contestConfig,
-        contestStart = Instant.parse("2026-01-01T00:00:00Z")
+        contestStart = Instant.parse("2026-01-01T00:00:00Z"),
+        metrics = Seq.empty
       ),
       nodeIdentity = NodeIdentity(
         hostIp = "10.0.0.1",

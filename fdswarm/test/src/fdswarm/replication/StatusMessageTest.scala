@@ -38,7 +38,8 @@ class StatusMessageTest extends FunSuite:
     val sm = StatusMessage(hashCount = HashCount(),
       bandNodeOperator = dummyBno,
       contestConfig = dummyContestConfig,
-      contestStart = Instant.parse("2026-03-16T20:11:04Z"))
+      contestStart = Instant.parse("2026-03-16T20:11:04Z"),
+      metrics = Seq.empty)
     
     val packet = sm.toPacket
 
@@ -51,7 +52,8 @@ class StatusMessageTest extends FunSuite:
     val sm = StatusMessage(hashCount = HashCount(),
       bandNodeOperator = dummyBno,
       contestConfig = dummyContestConfig,
-      contestStart = Instant.parse("2026-03-16T20:11:04Z"))
+      contestStart = Instant.parse("2026-03-16T20:11:04Z"),
+      metrics = Seq.empty)
     
     val packet = sm.toPacket
     val readSm = StatusMessage.apply(packet)

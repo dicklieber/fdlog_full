@@ -19,13 +19,14 @@
 package fdswarm.replication
 
 import fdswarm.fx.contest.ContestConfig
-import fdswarm.metric.MeterSnapshot
+import fdswarm.metric.{MeterSnapshot, MetricStat}
 import fdswarm.model.BandModeOperator
 import fdswarm.util.Gzip
 import io.circe.Codec
 import io.circe.generic.auto.{deriveDecoder, deriveEncoder}
 import io.circe.parser.decode
 import io.circe.syntax.EncoderOps
+import sttp.tapir.Schema
 
 import java.nio.charset.StandardCharsets
 import java.time.Instant
@@ -47,8 +48,9 @@ case class StatusMessage(
     bandNodeOperator: BandModeOperator,
     contestConfig: ContestConfig,
     contestStart: Instant,
+    metrics:Seq[MetricStat]
 )
-    derives Codec.AsObject, sttp.tapir.Schema:
+    derives Codec.AsObject, Schema:
   def toPacket: Array[Byte] =
     val jsonBytes = this.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     Gzip.compress(jsonBytes)

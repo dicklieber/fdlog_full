@@ -24,11 +24,15 @@ import fdswarm.contestStart.ContestStartManager
 import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.logging.LazyStructuredLogging
 import fdswarm.logging.Locus.Replication
+import fdswarm.metric.{MetricSnapshotFactory, MetricStat}
 import fdswarm.model.BandModeOperator
 import fdswarm.replication.status.SwarmData
 import fdswarm.util.NodeIdentityManager
+import io.dropwizard.metrics5.{Metric, MetricRegistry, SharedMetricRegistries}
 import jakarta.inject.{Inject, Singleton}
 import javafx.beans.property.{ReadOnlyObjectProperty, ReadOnlyObjectWrapper}
+
+import scala.jdk.CollectionConverters.*
 
 /**
  * This class is responsible for building the [[StatusMessage]], sent to other nodes.
@@ -43,6 +47,9 @@ final class LocalNodeStatus @Inject()(
                                        swarmData: SwarmData
                                      ) extends LazyStructuredLogging(Replication):
 
+  private val metricRegistry: MetricRegistry = SharedMetricRegistries.getOrCreate(
+    "default"
+  )
   @volatile private var lastHashCount: HashCount = HashCount()
 
   def statusMessage: StatusMessage =
@@ -55,7 +62,20 @@ final class LocalNodeStatus @Inject()(
     StatusMessage(hashCount = lastHashCount,
       bandNodeOperator = bandNodeOperator,
       contestConfig = contestConfig,
-      contestStart = contestStartManager.contestStart.value.start)
+      contestStart = contestStartManager.contestStart.value.start,
+      metrics = metricSnapshots)
+
+  private def metricSnapshots: Seq[MetricStat] =
+    metricRegistry.getMetrics.asScala.toSeq
+      .sortBy(
+        _._1.getKey
+      )
+      .flatMap {
+        case (_, metric: Metric) =>
+          MetricSnapshotFactory.fromMetric(
+            metric
+          )
+      }
 
   private val currentBuffer: ReadOnlyObjectWrapper[NodeStatus] = new ReadOnlyObjectWrapper[NodeStatus](null)
   val current: ReadOnlyObjectProperty[NodeStatus] = currentBuffer.getReadOnlyProperty
