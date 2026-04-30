@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicLong
 final class ReplEndpoints @Inject()(
     qsoStore: QsoStore,
     localNodeStatus: LocalNodeStatus
-) extends ApiEndpoints with StatsSource(Locus.Qso):
+) extends ApiEndpoints with StatsSource(Locus.TCP):
 
   private val allQsoJsonSizeValue = new AtomicLong(0L)
 

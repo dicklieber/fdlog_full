@@ -19,9 +19,9 @@
 package fdswarm.replication
 
 import cats.effect.unsafe.implicits.global
-import fdswarm.api.ReplEndpoints
+import fdswarm.api.{AllQsos, ReplEndpoints}
 import fdswarm.logging.LazyStructuredLogging
-import fdswarm.logging.Locus.Replication
+import fdswarm.logging.Locus.{Replication, TCP}
 import fdswarm.replication.status.NodeBandOpPane
 import fdswarm.store.QsoStore
 import fdswarm.util.StatsSource
@@ -38,9 +38,10 @@ class StatusProcessor @Inject() (
                                   nodeBandOpPane: NodeBandOpPane,
                                   nodeStatusDispatcher: NodeStatusDispatcher)
     extends LazyStructuredLogging
-    with StatsSource(Replication):
+    with StatsSource(TCP):
 
   private val processTimer = addTimer("process")
+  private val httpRequestCounter = addCounter("http-request")
   nodeStatusDispatcher.addListener(
     service = Service.Status,
     singleListener = false
@@ -74,11 +75,12 @@ class StatusProcessor @Inject() (
           s"HashCount mismatch for ${nodeStatus.nodeIdentity}: local=$localHashCount remote=$remoteHashCount qsoCountDiff=$qsoCountDiff"
         )
         given fdswarm.util.NodeIdentity = nodeStatus.nodeIdentity
-        val remoteAllQsos =
+        val remoteAllQsos: AllQsos =
           callEndpoint(
             ReplEndpoints.allQsosDef,
             ()
           ).unsafeRunSync()
+        httpRequestCounter.inc()
         qsoStore.add(
           remoteAllQsos.qsos
         )
