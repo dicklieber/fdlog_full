@@ -26,6 +26,7 @@ import fdswarm.util.NodeIdentityManager
 import jakarta.inject.{Inject, Singleton}
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.Router
+import org.http4s.server.middleware.Logger as HttpLogger
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import sttp.tapir.swagger.bundle.SwaggerInterpreter
 
@@ -52,6 +53,9 @@ class ApiServer @Inject()(
       "/" -> tapirRoutes
     ).orNotFound
 
+    val loggedRoutes =
+      HttpLogger.httpApp[IO](logHeaders = true, logBody = false)(finalRoutes)
+
     val port = nodeIdentityManager.port
     
     logger.info(s"Starting API server on port $port")
@@ -60,7 +64,7 @@ class ApiServer @Inject()(
       .default[IO]
       .withHost(ipv4"0.0.0.0")
       .withPort(Port.fromInt(port).getOrElse(port"8080"))
-      .withHttpApp(finalRoutes)
+      .withHttpApp(loggedRoutes)
       .build
       .useForever
       .start // Run in background
