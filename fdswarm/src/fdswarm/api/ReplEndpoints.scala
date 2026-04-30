@@ -45,6 +45,12 @@ final class ReplEndpoints @Inject()(
 ) extends ApiEndpoints with StatsSource(Locus.TCP):
 
   private val allQsoJsonSizeValue = new AtomicLong(0L)
+  private val allQsosServedMeter = addMeter("allQsos.served")
+  private val allQsosJsonBytesHistogram = addHistogram("allQsos.jsonBytes")
+  private val allQsosBuildTimer = addTimer("allQsos.build")
+  private val allQsosLastJsonBytesGauge = addGauge("allQsos.lastJsonBytes")(
+    allQsoJsonSizeValue.get()
+  )
 
   override def endpoints: List[ServerEndpoint[Any, IO]] = List(
     allQsos,
@@ -55,23 +61,28 @@ final class ReplEndpoints @Inject()(
     ReplEndpoints.allQsosDef
       .serverLogicSuccess[IO] { _ =>
         IO.delay {
-          val response = AllQsos(
-            statusMessage = localNodeStatus.statusMessage,
-            qsos = qsoStore.all
-          )
+          val context = allQsosBuildTimer.time()
+          try
+            val response = AllQsos(
+              statusMessage = localNodeStatus.statusMessage,
+              qsos = qsoStore.all
+            )
 
-          val jsonSizeBytes = response.asJson
-            .printWith(
-              ReplEndpoints.printer
+            val jsonSizeBytes = response.asJson
+              .printWith(
+                ReplEndpoints.printer
+              )
+              .getBytes(
+                StandardCharsets.UTF_8
+              )
+              .length
+            allQsoJsonSizeValue.set(
+              jsonSizeBytes.toLong
             )
-            .getBytes(
-              StandardCharsets.UTF_8
-            )
-            .length
-          allQsoJsonSizeValue.set(
-            jsonSizeBytes.toLong
-          )
-          response
+            allQsosJsonBytesHistogram.update(jsonSizeBytes)
+            allQsosServedMeter.mark()
+            response
+          finally context.stop()
         }
       }
 

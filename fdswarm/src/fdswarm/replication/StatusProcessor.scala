@@ -25,7 +25,10 @@ import fdswarm.logging.Locus.{Replication, TCP}
 import fdswarm.replication.status.NodeBandOpPane
 import fdswarm.store.QsoStore
 import fdswarm.util.StatsSource
+import io.circe.syntax.*
 import jakarta.inject.{Inject, Singleton}
+
+import java.nio.charset.StandardCharsets
 
 /** This is the logic that synchronizes the local QSO store with a remote node.
   */
@@ -42,6 +45,10 @@ class StatusProcessor @Inject() (
 
   private val processTimer = addTimer("process")
   private val httpRequestCounter = addCounter("http-request")
+  private val allQsosHttpRequestMeter = addMeter("allQsos.httpRequest")
+  private val allQsosFetchAndApplyTimer = addTimer("allQsos.fetchAndApply")
+  private val allQsosResponseBytesHistogram = addHistogram("allQsos.responseBytes")
+  private val allQsosResponseQsoCountHistogram = addHistogram("allQsos.responseQsoCount")
   nodeStatusDispatcher.addListener(
     service = Service.Status,
     singleListener = false
@@ -75,13 +82,24 @@ class StatusProcessor @Inject() (
           s"HashCount mismatch for ${nodeStatus.nodeIdentity}: local=$localHashCount remote=$remoteHashCount qsoCountDiff=$qsoCountDiff"
         )
         given fdswarm.util.NodeIdentity = nodeStatus.nodeIdentity
-        val remoteAllQsos: AllQsos =
-          callEndpoint(
-            ReplEndpoints.allQsosDef,
-            ()
-          ).unsafeRunSync()
-        httpRequestCounter.inc()
-        qsoStore.add(
-          remoteAllQsos.qsos
-        )
+        val allQsosContext = allQsosFetchAndApplyTimer.time()
+        try
+          allQsosHttpRequestMeter.mark()
+          val remoteAllQsos: AllQsos =
+            callEndpoint(
+              ReplEndpoints.allQsosDef,
+              ()
+            ).unsafeRunSync()
+          httpRequestCounter.inc()
+          allQsosResponseBytesHistogram.update(
+            remoteAllQsos.asJson
+              .printWith(ReplEndpoints.printer)
+              .getBytes(StandardCharsets.UTF_8)
+              .length
+          )
+          allQsosResponseQsoCountHistogram.update(remoteAllQsos.qsos.size)
+          qsoStore.addReplicated(
+            remoteAllQsos.qsos
+          )
+        finally allQsosContext.stop()
     finally processTimerContext.stop()

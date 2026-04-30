@@ -57,18 +57,34 @@ class QsoStore @Inject() (
   private val archiveDirectory: Path = fileHelper.directory / "qsosJournal.archive"
   // Metrics
   private val qsoEntryCounter = addCounter("qsoEntry")
+  private val qsoEnteredMeter = addMeter("entered")
+  private val qsoReplicatedUdpMeter = addMeter("replicated.udp")
+  private val qsoReplicatedAllQsosMeter = addMeter("replicated.allQsos")
   private val hashCalculatorTimer = addTimer("hashCalculation")
   private val qsoCollectionSizeGauge = addGauge("qsoCollectionSize")(map.size)
 
   def add(
       qso: Qso
   ): StyledMessage =
+    addSingle(
+      qso = qso,
+      markLocalEntry = true,
+      broadcast = true
+    )
+
+  private def addSingle(
+      qso: Qso,
+      markLocalEntry: Boolean,
+      broadcast: Boolean
+  ): StyledMessage =
     val isDuplicateInStore =
       map.values.exists(existing => existing.dupCriterion == qso.dupCriterion)
     if isDuplicateInStore then
       StyledMessage(qso.rejectedMsg, "duplicate-qso")
     else
-      qsoEntryCounter.inc()
+      if markLocalEntry then
+        qsoEntryCounter.inc()
+        qsoEnteredMeter.mark()
       val jsonString = qso.asJsonCompact
       os.write.append(path, jsonString + "\n", createFolders = true)
       logger.info("qso" -> qso)
@@ -77,17 +93,20 @@ class QsoStore @Inject() (
         qsoCollection.prepend(qso)
       }
       calculateHash()
-      val bytes: Array[Byte] = jsonString.getBytes("UTF-8")
-      transport.send(Service.QSO, bytes)
+      if broadcast then
+        val bytes: Array[Byte] = jsonString.getBytes("UTF-8")
+        transport.send(Service.QSO, bytes)
       StyledMessage(s"Added ${qso.dupCriterion} to store", "addQsoOk")
   nodeStatusDispatcher.addListener(
     service = Service.QSO
   ) {
     (_, qso) =>
-      add(
-        qso
+      val styledMessage = addSingle(
+        qso = qso,
+        markLocalEntry = false,
+        broadcast = false
       )
-//      ()
+      if styledMessage.css == "addQsoOk" then qsoReplicatedUdpMeter.mark()
   }
 
   private def addToMap(
@@ -101,6 +120,23 @@ class QsoStore @Inject() (
 
   def add(
       batch: Seq[Qso]
+  ): Unit =
+    addBatch(
+      batch = batch,
+      markLocalEntries = true
+    )
+
+  def addReplicated(
+      batch: Seq[Qso]
+  ): Unit =
+    addBatch(
+      batch = batch,
+      markLocalEntries = false
+    )
+
+  private def addBatch(
+      batch: Seq[Qso],
+      markLocalEntries: Boolean
   ): Unit = {
     val toAdd = batch.filter { qso =>
       val uuid = qso.uuid
@@ -114,6 +150,10 @@ class QsoStore @Inject() (
         qsoCollection.prependAll(toAdd)
       }
       calculateHash()
+      if markLocalEntries then
+        qsoEntryCounter.inc(toAdd.size.toLong)
+        qsoEnteredMeter.mark(toAdd.size.toLong)
+      else qsoReplicatedAllQsosMeter.mark(toAdd.size.toLong)
 
     val added = toAdd.size
     val received = batch.size
