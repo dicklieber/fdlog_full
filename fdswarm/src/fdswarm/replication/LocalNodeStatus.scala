@@ -71,9 +71,10 @@ final class LocalNodeStatus @Inject()(
         _._1.getKey
       )
       .flatMap {
-        case (_, metric: Metric) =>
+        case (metricName, metric: Metric) =>
           MetricSnapshotFactory.fromMetric(
-            metric
+            metric = metric,
+            metricName = metricName.getKey
           )
       }
 

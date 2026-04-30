@@ -5,9 +5,11 @@ import io.dropwizard.metrics5.*
 import sttp.tapir.Schema
 
 sealed trait MetricStat:
+  val metricName: String
   val metricType: MetricType[?, ?]
 
 case class GaugeSnapshot(
+                          metricName: String = "",
                           value: String,
                           metricType: MetricType[GaugeSnapshot, Gauge[?]] = MetricType.Gauge
                         ) extends MetricStat derives Codec.AsObject, Schema:
@@ -17,6 +19,7 @@ case class GaugeSnapshot(
 object GaugeSnapshot :
   val empty: GaugeSnapshot =
     GaugeSnapshot(
+      metricName = "",
       value = ""
     )
 
@@ -24,11 +27,22 @@ object GaugeSnapshot :
    * Build a snapshot of a gauge.
    */
   def apply(gauge: Gauge[?]): GaugeSnapshot =
+    apply(
+      gauge = gauge,
+      metricName = ""
+    )
+
+  /**
+   * Build a snapshot of a gauge.
+   */
+  def apply(gauge: Gauge[?], metricName: String): GaugeSnapshot =
     GaugeSnapshot(
+      metricName = metricName,
       value = Option(gauge.getValue).map(_.toString).getOrElse("null")
     )
 
 case class CounterSnapshot(
+                            metricName: String = "",
                             count: Long,
                             metricType: MetricType[CounterSnapshot, Counter] = MetricType.Counter
                           ) extends MetricStat derives Codec.AsObject, Schema:
@@ -38,6 +52,7 @@ case class CounterSnapshot(
 object CounterSnapshot :
   val empty: CounterSnapshot =
     CounterSnapshot(
+      metricName = "",
       count = 0L
     )
 
@@ -45,7 +60,17 @@ object CounterSnapshot :
    * Build a snapshot of a counter.
    */
   def apply(counter: Counter): CounterSnapshot =
+    apply(
+      counter = counter,
+      metricName = ""
+    )
+
+  /**
+   * Build a snapshot of a counter.
+   */
+  def apply(counter: Counter, metricName: String): CounterSnapshot =
     CounterSnapshot(
+      metricName = metricName,
       count = counter.getCount
     )
 
@@ -56,6 +81,7 @@ object CounterSnapshot :
  * @param m15 perSecond
  */
 case class MeterSnapshot(
+                          metricName: String = "",
                           count: Long,
                           m1: Double,
                           m5: Double,
@@ -67,6 +93,7 @@ case class MeterSnapshot(
 object MeterSnapshot :
   val empty: MeterSnapshot =
     MeterSnapshot(
+      metricName = "",
       count = 0L,
       m1 = 0.0,
       m5 = 0.0,
@@ -77,15 +104,27 @@ object MeterSnapshot :
    * Build a snapshot of a meter.
    * @return what the meter has now.
    */
-  def apply(meter:Meter): MeterSnapshot =
+  def apply(meter: Meter): MeterSnapshot =
+    apply(
+      meter = meter,
+      metricName = ""
+    )
+
+  /**
+   * Build a snapshot of a meter.
+   * @return what the meter has now.
+   */
+  def apply(meter: Meter, metricName: String): MeterSnapshot =
     MeterSnapshot(
+      metricName = metricName,
       count = meter.getCount,
       m1 = meter.getOneMinuteRate,
       m5 = meter.getFiveMinuteRate,
       m15 = meter.getFifteenMinuteRate
     )
 
-case class HistogramSnapshot(count: Long,
+case class HistogramSnapshot(metricName: String = "",
+                             count: Long,
                              min: Long,
                              max: Long,
                              p50: Double,
@@ -101,6 +140,7 @@ case class HistogramSnapshot(count: Long,
 object HistogramSnapshot :
   val empty: HistogramSnapshot =
     HistogramSnapshot(
+      metricName = "",
       count = 0L,
       min = 0L,
       max = 0L,
@@ -116,9 +156,19 @@ object HistogramSnapshot :
    * Build a snapshot of a histogram.
    */
   def apply(histogram: Histogram): HistogramSnapshot =
+    apply(
+      histogram = histogram,
+      metricName = ""
+    )
+
+  /**
+   * Build a snapshot of a histogram.
+   */
+  def apply(histogram: Histogram, metricName: String): HistogramSnapshot =
 
     val snapshot: Snapshot = histogram.getSnapshot
     HistogramSnapshot(
+      metricName = metricName,
       count = histogram.getCount,
       min = snapshot.getMin,
       max = snapshot.getMax,
@@ -131,6 +181,7 @@ object HistogramSnapshot :
     )
 
 case class TimerSnapshot(
+                          metricName: String = "",
                           count: Long,
                           m1: Double,
                           m5: Double,
@@ -151,6 +202,7 @@ case class TimerSnapshot(
 object TimerSnapshot :
   val empty: TimerSnapshot =
     TimerSnapshot(
+      metricName = "",
       count = 0L,
       m1 = 0.0,
       m5 = 0.0,
@@ -169,8 +221,18 @@ object TimerSnapshot :
    * Build a snapshot of a timer.
    */
   def apply(timer: Timer): TimerSnapshot =
+    apply(
+      timer = timer,
+      metricName = ""
+    )
+
+  /**
+   * Build a snapshot of a timer.
+   */
+  def apply(timer: Timer, metricName: String): TimerSnapshot =
     val snapshot: Snapshot = timer.getSnapshot
     TimerSnapshot(
+      metricName = metricName,
       count = timer.getCount,
       m1 = timer.getOneMinuteRate,
       m5 = timer.getFiveMinuteRate,
@@ -190,8 +252,18 @@ object MetricSnapshotFactory:
    * Build the matching fdswarm snapshot for a supported Dropwizard metric.
    */
   def apply(metric: Metric): MetricStat =
+    apply(
+      metric = metric,
+      metricName = ""
+    )
+
+  /**
+   * Build the matching fdswarm snapshot for a supported Dropwizard metric.
+   */
+  def apply(metric: Metric, metricName: String): MetricStat =
     fromMetric(
-      metric
+      metric = metric,
+      metricName = metricName
     ).getOrElse(
       throw new IllegalArgumentException(
         s"Unsupported Dropwizard metric type: ${metric.getClass.getName}"
@@ -202,35 +274,49 @@ object MetricSnapshotFactory:
    * Build the matching fdswarm snapshot when the Dropwizard metric type is supported.
    */
   def fromMetric(metric: Metric): Option[MetricStat] =
+    fromMetric(
+      metric = metric,
+      metricName = ""
+    )
+
+  /**
+   * Build the matching fdswarm snapshot when the Dropwizard metric type is supported.
+   */
+  def fromMetric(metric: Metric, metricName: String): Option[MetricStat] =
     metric match
       case gauge: Gauge[?] =>
         Some(
           GaugeSnapshot(
-            gauge
+            gauge,
+            metricName
           )
         )
       case counter: Counter =>
         Some(
           CounterSnapshot(
-            counter
+            counter,
+            metricName
           )
         )
       case histogram: Histogram =>
         Some(
           HistogramSnapshot(
-            histogram
+            histogram,
+            metricName
           )
         )
       case timer: Timer =>
         Some(
           TimerSnapshot(
-            timer
+            timer,
+            metricName
           )
         )
       case meter: Meter =>
         Some(
           MeterSnapshot(
-            meter
+            meter,
+            metricName
           )
         )
       case _ =>
