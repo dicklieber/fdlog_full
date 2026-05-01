@@ -1,7 +1,7 @@
 package fdswarm.util
 
 import fdswarm.io.FileHelper
-import fdswarm.logging.LogEventFieldNames
+import fdswarm.logging.StructuredLogger
 import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.core.config.Configurator
 import org.apache.logging.log4j.core.config.builder.api.ConfigurationBuilderFactory
@@ -10,39 +10,33 @@ object LoggingConfigurator:
 
   def addFileAppender(fileHelper: FileHelper): Unit =
 
+    os.makeDir.all(fileHelper.directory)
+
     val logFile = fileHelper.directory / "fdswarm.log"
     val accessLogFile = fileHelper.directory / "access.log"
+    os.write.append(logFile, "", createFolders = true)
+    os.write.append(accessLogFile, "", createFolders = true)
+    StructuredLogger.setJsonEventSink: eventJson =>
+      os.write.append(
+        logFile,
+        eventJson + System.lineSeparator(),
+        createFolders = true
+      )
 
     val builder = ConfigurationBuilderFactory.newConfigurationBuilder()
     builder.setStatusLevel(Level.WARN)
     builder.setConfigurationName("FdSwarmLogging")
 
-    val jsonTemplate =
-      LogEventFieldNames.log4jEventTemplateWithFlattenedMdc
-
     val consoleLayout =
       builder
-        .newLayout("JsonTemplateLayout")
-        .addAttribute("eventTemplate", jsonTemplate)
-        .addAttribute("eventEol", true)
-
-    val fileLayout =
-      builder
-        .newLayout("JsonTemplateLayout")
-        .addAttribute("eventTemplate", jsonTemplate)
-        .addAttribute("eventEol", true)
+        .newLayout("PatternLayout")
+        .addAttribute("pattern", "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [%t] %c - %msg%n")
 
     val console =
       builder.newAppender("Console", "Console")
     console.addAttribute("target", "SYSTEM_OUT")
     console.add(consoleLayout)
     builder.add(console)
-
-    val file =
-      builder.newAppender("File", "File")
-    file.addAttribute("fileName", logFile.toString)
-    file.add(fileLayout)
-    builder.add(file)
 
     val accessFile =
       builder.newAppender("AccessFile", "File")
@@ -66,7 +60,6 @@ object LoggingConfigurator:
       builder
         .newRootLogger(Level.INFO)
         .add(builder.newAppenderRef("Console"))
-        .add(builder.newAppenderRef("File"))
     )
 
     Configurator.reconfigure(builder.build())

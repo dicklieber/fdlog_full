@@ -43,7 +43,7 @@ class ConfigModule(rawArgs: Array[String]) extends AbstractModule with ScalaModu
 
     val startupInfo = new StartupInfo(rawArgs)
     bind[StartupInfo].toInstance(startupInfo)
-    fdswarm.util.LoggingConfigurator.addFileAppender(new FileHelper)
+    fdswarm.util.LoggingConfigurator.addFileAppender(fileHelper)
     loggingManager.applyInitialConfig()
 
     bind[fdswarm.util.NodeIdentityManager].asEagerSingleton()

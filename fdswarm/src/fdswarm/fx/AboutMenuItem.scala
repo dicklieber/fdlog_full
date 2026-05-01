@@ -154,12 +154,21 @@ class AboutMenuItem @Inject()(fileHelper: FileHelper,
     grid.add(new Label(dataVersion), 1, 4)
     grid.add(new Label("Data Directory:"), 0, 5)
     grid.add(new Label(dataPath.toString), 1, 5)
-    grid.add(new Label("Data Files:"), 0, 6)
-    grid.add(dataFilesNode, 1, 6)
-    grid.add(new Label("Node:"), 0, 7)
-    grid.add(new Label(NodeIdentityManager.nodeIdentity.toString), 1, 7)
-    grid.add(new Label("Transport:"), 0, 8)
-    grid.add(new Label(transport.mode), 1, 8)
+    val logFilePath = dataPath / "fdswarm.log"
+    val logFileLink = new Hyperlink(logFilePath.toString):
+      onAction = _ =>
+        try
+          java.awt.Desktop.getDesktop.open(logFilePath.toIO)
+        catch
+          case _: Throwable => ()
+    grid.add(new Label("Log File:"), 0, 6)
+    grid.add(logFileLink, 1, 6)
+    grid.add(new Label("Data Files:"), 0, 7)
+    grid.add(dataFilesNode, 1, 7)
+    grid.add(new Label("Node:"), 0, 8)
+    grid.add(new Label(NodeIdentityManager.nodeIdentity.toString), 1, 8)
+    grid.add(new Label("Transport:"), 0, 9)
+    grid.add(new Label(transport.mode), 1, 9)
 
     val docsUrl = s"http://${NodeIdentityManager.nodeIdentity.hostPort}/docs"
     val docsLink = new Hyperlink(docsUrl):
@@ -169,13 +178,13 @@ class AboutMenuItem @Inject()(fileHelper: FileHelper,
         catch
           case _: Throwable => ()
 
-    grid.add(new Label("API Docs:"), 0, 9)
-    grid.add(docsLink, 1, 9)
+    grid.add(new Label("API Docs:"), 0, 10)
+    grid.add(docsLink, 1, 10)
 
-    grid.add(new Label("Java Version:"), 0, 10)
-    grid.add(new Label(sys.props("java.version")), 1, 10)
-    grid.add(new Label("Java Home:"), 0, 11)
-    grid.add(new Label(sys.props("java.home")), 1, 11)
+    grid.add(new Label("Java Version:"), 0, 11)
+    grid.add(new Label(sys.props("java.version")), 1, 11)
+    grid.add(new Label("Java Home:"), 0, 12)
+    grid.add(new Label(sys.props("java.home")), 1, 12)
 
     val javaDetailsButton = new Hyperlink("More Java Details"):
       onAction = _ =>
@@ -244,8 +253,8 @@ class AboutMenuItem @Inject()(fileHelper: FileHelper,
             )
         alert.showAndWait()
 
-    grid.add(new Label("Java Details:"), 0, 12)
-    grid.add(javaDetailsButton, 1, 12)
+    grid.add(new Label("Java Details:"), 0, 13)
+    grid.add(javaDetailsButton, 1, 13)
 
     val configDetailsButton = new Hyperlink("Show application.conf"):
       onAction = _ =>
@@ -272,15 +281,65 @@ class AboutMenuItem @Inject()(fileHelper: FileHelper,
             )
         alert.showAndWait()
 
-    grid.add(new Label("Application Config:"), 0, 13)
-    grid.add(configDetailsButton, 1, 13)
+    grid.add(new Label("Application Config:"), 0, 14)
+    grid.add(configDetailsButton, 1, 14)
+
+    val environmentVariablesButton = new Hyperlink("Show environment variables"):
+      onAction = _ =>
+        val envVars = sys.env.toSeq.sortBy(_._1)
+        val envStr = envVars.map { case (k, v) => s"$k: $v" }.mkString("\n")
+
+        val table = new GridPane:
+          hgap = 10
+          vgap = 4
+          padding = Insets(5, 10, 10, 10)
+
+        envVars.zipWithIndex.foreach { case ((k, v), idx) =>
+          val keyLabel = new Label(k + ":") {
+            style = "-fx-font-weight: bold;"
+            minWidth = scalafx.scene.layout.Region.USE_PREF_SIZE
+          }
+          val valueLabel = new Label(v) {
+            wrapText = true
+            maxWidth = Double.MaxValue
+          }
+          GridPane.setHgrow(valueLabel, Priority.Always)
+          table.add(keyLabel, 0, idx)
+          table.add(valueLabel, 1, idx)
+        }
+
+        val contentScroll = new ScrollPane:
+          content = table
+          fitToWidth = true
+          prefViewportHeight = 400
+          prefViewportWidth = 800
+
+        val alert = new Alert(AlertType.Information):
+          initOwner(window)
+          title = "Environment Variables"
+          headerText = "Process Environment Variables"
+          val copyButton = new Button("Copy to Clipboard"):
+            onAction = _ =>
+              val content = new ClipboardContent()
+              content.putString(envStr)
+              Clipboard.systemClipboard.setContent(content)
+          dialogPane().content = new VBox:
+            spacing = 10
+            children = Seq(
+              copyButton,
+              contentScroll
+            )
+        alert.showAndWait()
+
+    grid.add(new Label("Environment:"), 0, 15)
+    grid.add(environmentVariablesButton, 1, 15)
 
     val groupAddr = if (config.hasPath("fdswarm.UDP.groupAddr")) config.getString("fdswarm.UDP.groupAddr") else "Not configured"
-    grid.add(new Label("UDP Group Addr:"), 0, 14)
-    grid.add(new Label(groupAddr), 1, 14)
+    grid.add(new Label("UDP Group Addr:"), 0, 16)
+    grid.add(new Label(groupAddr), 1, 16)
 
-    grid.add(new Label("UDP Instance ID:"), 0, 15)
-    grid.add(new Label(NodeIdentityManager.nodeIdentity.instanceId), 1, 15)
+    grid.add(new Label("UDP Instance ID:"), 0, 17)
+    grid.add(new Label(NodeIdentityManager.nodeIdentity.instanceId), 1, 17)
 
     val startupInfoNode = startupInfo.info match {
       case None =>
@@ -320,8 +379,8 @@ class AboutMenuItem @Inject()(fileHelper: FileHelper,
         }
         button
     }
-    grid.add(new Label("StartupInfo:"), 0, 16)
-    grid.add(startupInfoNode, 1, 16)
+    grid.add(new Label("StartupInfo:"), 0, 18)
+    grid.add(startupInfoNode, 1, 18)
 
     val labels = grid.children.collect { case l: javafx.scene.control.Label => l }
     labels.foreach(_.getStyleClass.add("fixed-width"))
@@ -335,6 +394,7 @@ class AboutMenuItem @Inject()(fileHelper: FileHelper,
         sb.append(s"Scala Version: $scalaVersion\n")
         sb.append(s"Data Version: $dataVersion\n")
         sb.append(s"Data Directory: $dataPath\n")
+        sb.append(s"Log File: $logFilePath\n")
         sb.append(s"Host: ${NodeIdentityManager.nodeIdentity}\n")
         sb.append(s"Java Version: ${sys.props("java.version")}\n")
         sb.append(s"Java Home: ${sys.props("java.home")}\n")
@@ -344,6 +404,8 @@ class AboutMenuItem @Inject()(fileHelper: FileHelper,
         sb.append(s"StartupInfo: ${if (startupInfo.info.isEmpty) "Not Used" else "Used"}\n")
         val configStr = config.root().render(com.typesafe.config.ConfigRenderOptions.defaults().setOriginComments(false).setComments(true).setFormatted(true).setJson(false))
         sb.append(s"\n--- Application Config ---\n$configStr\n")
+        val envStr = sys.env.toSeq.sortBy(_._1).map { case (k, v) => s"$k: $v" }.mkString("\n")
+        sb.append(s"\n--- Environment Variables ---\n$envStr\n")
         val content = new ClipboardContent()
         content.putString(sb.toString())
         Clipboard.systemClipboard.setContent(content)

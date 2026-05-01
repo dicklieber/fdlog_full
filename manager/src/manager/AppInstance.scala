@@ -27,6 +27,10 @@ class AppInstance(debugConfigJsonPath: String,
                   startupConfig: StartupConfig,
                   port: Int) extends LazyStructuredLogging:
   private val debugOpt: Option[String] = startupConfig.debugMode.javaOpt
+  private val logDir = os.home / "fdswarm" / port.toString
+  private val stdoutLog = logDir / "stdout.log"
+  private val stderrLog = logDir / "stderr.log"
+  os.makeDir.all(logDir)
 
   val args =
     Seq("java") ++
@@ -43,7 +47,11 @@ class AppInstance(debugConfigJsonPath: String,
   )
   println()
   val proc = os.proc(args)
-  val subProcess: SubProcess = proc.spawn(env = Map("PORT" -> port.toString))
+  val subProcess: SubProcess = proc.spawn(
+    env = Map("PORT" -> port.toString),
+    stdout = os.PathRedirect(stdoutLog),
+    stderr = os.PathRedirect(stderrLog)
+  )
   private val processHandle = subProcess.wrapped.toHandle
 
   def stop(): Unit =
