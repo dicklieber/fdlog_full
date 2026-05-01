@@ -19,7 +19,7 @@
 package fdswarm.replication
 
 import fdswarm.fx.contest.ContestConfig
-import fdswarm.metric.{MeterSnapshot, MetricStat}
+import fdswarm.metric.MetricStat
 import fdswarm.model.BandModeOperator
 import fdswarm.util.Gzip
 import io.circe.Codec

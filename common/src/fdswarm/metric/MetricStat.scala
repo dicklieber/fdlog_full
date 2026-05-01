@@ -74,6 +74,55 @@ object CounterSnapshot :
       count = counter.getCount
     )
 
+/**
+ * @param count how many since app started.
+ * @param m1 perSecond
+ * @param m5 perSecond
+ * @param m15 perSecond
+ */
+case class MeterSnapshot(
+                          metricName: String = "",
+                          count: Long,
+                          m1: Double,
+                          m5: Double,
+                          m15: Double,
+                          metricType: MetricType[MeterSnapshot, Meter] = MetricType.Meter
+                        ) extends MetricStat derives Codec.AsObject, Schema:
+  override def toString: String =
+    s"count:$count, m1=${m1 * 60}/min, m5=${m5 * 60}/min, m15=${m15 * 60}/min)"
+
+object MeterSnapshot :
+  val empty: MeterSnapshot =
+    MeterSnapshot(
+      metricName = "",
+      count = 0L,
+      m1 = 0.0,
+      m5 = 0.0,
+      m15 = 0.0
+    )
+
+  /**
+   * Build a snapshot of a meter.
+   * @return what the meter has now.
+   */
+  def apply(meter: Meter): MeterSnapshot =
+    apply(
+      meter = meter,
+      metricName = ""
+    )
+
+  /**
+   * Build a snapshot of a meter.
+   * @return what the meter has now.
+   */
+  def apply(meter: Meter, metricName: String): MeterSnapshot =
+    MeterSnapshot(
+      metricName = metricName,
+      count = meter.getCount,
+      m1 = meter.getOneMinuteRate,
+      m5 = meter.getFiveMinuteRate,
+      m15 = meter.getFifteenMinuteRate
+    )
 
 case class HistogramSnapshot(metricName: String = "",
                              count: Long,
@@ -261,6 +310,13 @@ object MetricSnapshotFactory:
         Some(
           TimerSnapshot(
             timer,
+            metricName
+          )
+        )
+      case meter: Meter =>
+        Some(
+          MeterSnapshot(
+            meter,
             metricName
           )
         )

@@ -9,6 +9,7 @@ enum MetricType[T <: MetricStat, D <: Metric]:
   type DropwizardMetric = D
   case Gauge extends MetricType[GaugeSnapshot, io.dropwizard.metrics5.Gauge[?]]
   case Counter extends MetricType[CounterSnapshot, io.dropwizard.metrics5.Counter]
+  case Meter extends MetricType[MeterSnapshot, io.dropwizard.metrics5.Meter]
   case Histogram extends MetricType[HistogramSnapshot, io.dropwizard.metrics5.Histogram]
   case Timer extends MetricType[TimerSnapshot, io.dropwizard.metrics5.Timer]
 

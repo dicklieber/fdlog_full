@@ -33,6 +33,24 @@ class MetricSnapshotFactoryTest extends FunSuite:
       )
     )
 
+  test("creates meter snapshot"):
+    val meter = new Meter()
+    meter.mark(
+      2
+    )
+
+    val snapshot = MetricSnapshotFactory(
+      meter
+    ).asInstanceOf[MeterSnapshot]
+
+    assertEquals(
+      snapshot.count,
+      2L
+    )
+    assertEquals(
+      snapshot.metricType,
+      MetricType.Meter
+    )
 
   test("creates histogram snapshot"):
     val histogram = new Histogram(
