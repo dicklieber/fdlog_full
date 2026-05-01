@@ -47,13 +47,9 @@ class BroadcastTransport @Inject() (nodeIdentity: NodeIdentityManager)
   val port = 8090
   val thread = new Thread(this, "Broadcast-Receiver")
 
-  private val sendMeter = addMeter("sendMeter")
-  private val receiveMeter = addMeter("receiveMeter")
-  private val statusSendMeter = addMeter("status.send")
-  private val statusReceiveMeter = addMeter("status.receive")
-  private val statusRemoteReceiveMeter = addMeter("status.receive.remote")
-  private val statusSendPayloadBytesHistogram = addHistogram("status.send.payloadBytes")
-  private val statusReceivePayloadBytesHistogram = addHistogram("status.receive.payloadBytes")
+  private val sendCounter = addCounter("send")
+  private val reciveCounter = addCounter("receive")
+  private val receiveSize = addHistogram("receiveSize")
 
   private var socket: DatagramSocket = uninitialized
   socket = new DatagramSocket(null)
@@ -69,20 +65,18 @@ class BroadcastTransport @Inject() (nodeIdentity: NodeIdentityManager)
       val packet: DatagramPacket = new DatagramPacket(buffer, buffer.length)
       logger.trace(s"Waiting for a UDP packet")
       socket.receive(packet)
-      receiveMeter.mark()
+      reciveCounter.inc()
+      receiveSize.update(packet.getLength)
 
       val senderAddr = packet.getAddress
       val senderPort = packet.getPort
       logger.trace(s"Received a UDP packet")
       val udpHeaderData = UDPHeader.parse(packet)
       if udpHeaderData.service == Service.Status then
-        statusReceiveMeter.mark()
-        statusReceivePayloadBytesHistogram.update(udpHeaderData.payload.length)
       if NodeIdentityManager.isUs(udpHeaderData.nodeIdentity) then
         logger.trace(s"Received UDP packet from $senderAddr:$senderPort: ${udpHeaderData.service}")
       else
         logger.trace(s"Received UDP packet from $senderAddr:$senderPort: ${udpHeaderData.service}")
-        if udpHeaderData.service == Service.Status then statusRemoteReceiveMeter.mark()
         incomingQueue.offer(udpHeaderData)
 
   def send(data: Array[Byte]): Unit =
@@ -98,10 +92,7 @@ class BroadcastTransport @Inject() (nodeIdentity: NodeIdentityManager)
       val packet =
         new DatagramPacket(packetBytes, packetBytes.length, broadcastAddr, port)
       socket.send(packet)
-      sendMeter.mark()
-      if service == Service.Status then
-        statusSendMeter.mark()
-        statusSendPayloadBytesHistogram.update(data.length)
+      sendCounter.inc()
 
     catch
       case e: Exception =>

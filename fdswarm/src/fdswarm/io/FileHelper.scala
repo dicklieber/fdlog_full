@@ -23,6 +23,8 @@ import io.circe.parser.*
 import io.circe.syntax.*
 import io.circe.{Decoder, Encoder, Printer}
 
+import java.nio.file.NoSuchFileException
+
 /** A utility class for handling file-related operations, such as reading and writing JSON-encoded
   * data to files, and managing application-specific directory paths.
   */
@@ -50,6 +52,9 @@ class FileHelper:
       )
       r
     catch
+      case _: NoSuchFileException =>
+        logger.debug("File not found, using default", "File" -> fileName)
+        default
       case e: Exception =>
         logger.error("Failed to read file", e, "File" -> fileName)
         default
