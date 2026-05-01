@@ -80,8 +80,6 @@ final class StatsManager @Inject() (nodeStatusDispatcher: NodeStatusDispatcher):
         gauge.value
       case counter: CounterSnapshot =>
         s"count=${counter.count}"
-      case meter: MeterSnapshot =>
-        s"count=${meter.count}, m1=${formatRatePerMinute(meter.m1)}, m5=${formatRatePerMinute(meter.m5)}, m15=${formatRatePerMinute(meter.m15)}"
       case histogram: HistogramSnapshot =>
         s"count=${histogram.count}, min=${histogram.min}, max=${histogram.max}, p50=${histogram.p50}, p95=${histogram.p95}, p99=${histogram.p99}"
       case timer: TimerSnapshot =>

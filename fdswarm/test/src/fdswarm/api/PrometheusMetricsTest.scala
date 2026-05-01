@@ -17,13 +17,6 @@ class PrometheusMetricsTest extends FunSuite:
       3
     )
 
-    val meter = registry.meter(
-      "tcp.events"
-    )
-    meter.mark(
-      2
-    )
-
     val histogram = registry.histogram(
       "tcp.payload.bytes"
     )
@@ -57,16 +50,6 @@ class PrometheusMetricsTest extends FunSuite:
     assert(
       output.contains(
         "fdswarm_tcp_requests_total 3.0"
-      )
-    )
-    assert(
-      output.contains(
-        "# TYPE fdswarm_tcp_events_rate_per_second gauge"
-      )
-    )
-    assert(
-      output.contains(
-        """fdswarm_tcp_events_rate_per_second{window="1m"}"""
       )
     )
     assert(

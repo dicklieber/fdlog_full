@@ -111,11 +111,6 @@ private[api] object PrometheusMetrics:
           name,
           histogram
         )
-      case meter: Meter =>
-        renderMeter(
-          name,
-          meter
-        )
       case _ =>
         Seq.empty
 
@@ -152,23 +147,6 @@ private[api] object PrometheusMetrics:
       )
     )
 
-  private def renderMeter(
-      name: String,
-      meter: Meter
-  ): Seq[String] =
-    val totalName = s"${name}_total"
-    typedSample(
-      name = totalName,
-      metricType = "counter",
-      help = "Dropwizard meter count",
-      sample = sample(
-        totalName,
-        meter.getCount.toDouble
-      )
-    ) ++ rateSamples(
-      name,
-      meter
-    )
 
   private def renderHistogram(
       name: String,
