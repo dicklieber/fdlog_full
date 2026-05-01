@@ -16,7 +16,8 @@ import scala.util.control.NonFatal
 @Singleton
 class NodeInfoManager @Inject()(
     udpPacketListener: UdpPacketListener,
-    nodeIdentityDialog: NodeIdentityDialog
+    nodeIdentityDialog: NodeIdentityDialog,
+    logIndexer: ElasticsearchLogIndexer
 ) extends LazyStructuredLogging:
   private val queue: LinkedBlockingQueue[UDPHeaderData] = udpPacketListener.incomingQueue
   val latestHeaders: TrieMap[NodeIdentity, UDPHeaderData] = TrieMap.empty[NodeIdentity, UDPHeaderData]
@@ -33,6 +34,7 @@ class NodeInfoManager @Inject()(
   def stop(): Unit =
     stopped = true
     thread.interrupt()
+    logIndexer.close()
 
   def showNodeIdentityDialog(ownerWindow: Window): Unit =
     nodeIdentityDialog.show(ownerWindow, nodeIdentities)
