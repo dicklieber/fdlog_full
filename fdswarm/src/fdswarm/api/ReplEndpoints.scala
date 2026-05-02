@@ -23,9 +23,11 @@ import fdswarm.logging.Locus
 import fdswarm.model.Qso
 import fdswarm.replication.{LocalNodeStatus, StatusMessage}
 import fdswarm.store.QsoStore
+import fdswarm.util.Gzip
 import fdswarm.util.StatsSource
 import io.circe.generic.auto.deriveEncoder
 import io.circe.generic.semiauto.deriveCodec
+import io.circe.parser.decode
 import io.circe.syntax.*
 import io.circe.{Codec, Printer}
 import jakarta.inject.{Inject, Singleton}
@@ -35,7 +37,6 @@ import sttp.tapir.server.ServerEndpoint
 
 import java.nio.charset.StandardCharsets
 import java.util.Locale
-import java.util.concurrent.atomic.AtomicLong
 
 /** Tapir endpoints for QSOs. */
 @Singleton
@@ -44,13 +45,9 @@ final class ReplEndpoints @Inject()(
     localNodeStatus: LocalNodeStatus
 ) extends ApiEndpoints with StatsSource(Locus.TCP):
 
-  private val allQsoJsonSizeValue = new AtomicLong(0L)
-  private val allQsosServedMeter = addMeter("allQsos.served")
-  private val allQsosJsonBytesHistogram = addHistogram("allQsos.jsonBytes")
-  private val allQsosBuildTimer = addTimer("allQsos.build")
-  private val allQsosLastJsonBytesGauge = addGauge("allQsos.lastJsonBytes")(
-    allQsoJsonSizeValue.get()
-  )
+  private val qsosRequestCounter = addCounter("qsos.request")
+  private val qsosResponseBytesHistogram = addHistogram("qsos.response_bytes")
+  private val qsosJsonBytesHistogram = addHistogram("qsos.json_bytes")
 
   override def endpoints: List[ServerEndpoint[Any, IO]] = List(
     allQsos,
@@ -59,30 +56,36 @@ final class ReplEndpoints @Inject()(
 
   private val allQsos: ServerEndpoint[Any, IO] =
     ReplEndpoints.allQsosDef
-      .serverLogicSuccess[IO] { _ =>
+      .serverLogicSuccess[IO] { acceptEncoding =>
         IO.delay {
-          val context = allQsosBuildTimer.time()
-          try
-            val response = AllQsos(
-              statusMessage = localNodeStatus.statusMessage,
-              qsos = qsoStore.all
+          qsosRequestCounter.inc()
+          val response = AllQsos(
+            statusMessage = localNodeStatus.statusMessage,
+            qsos = qsoStore.all
+          )
+          val jsonBytes = response.asJson
+            .printWith(
+              ReplEndpoints.printer
+            )
+            .getBytes(
+              StandardCharsets.UTF_8
             )
 
-            val jsonSizeBytes = response.asJson
-              .printWith(
-                ReplEndpoints.printer
-              )
-              .getBytes(
-                StandardCharsets.UTF_8
-              )
-              .length
-            allQsoJsonSizeValue.set(
-              jsonSizeBytes.toLong
-            )
-            allQsosJsonBytesHistogram.update(jsonSizeBytes)
-            allQsosServedMeter.mark()
-            response
-          finally context.stop()
+          val (contentEncoding, bytes) =
+            if ReplEndpoints.acceptsGzip(acceptEncoding) then
+              Some("gzip") -> Gzip.compress(jsonBytes)
+            else
+              None -> jsonBytes
+
+          qsosJsonBytesHistogram.update(jsonBytes.length)
+          qsosResponseBytesHistogram.update(bytes.length)
+
+          (
+            ReplEndpoints.qsosContentType,
+            contentEncoding,
+            ReplEndpoints.vary,
+            bytes
+          )
         }
       }
 
@@ -116,11 +119,23 @@ final class ReplEndpoints @Inject()(
 object ReplEndpoints:
   val printer: Printer = Printer.spaces2
 
-  val allQsosDef: PublicEndpoint[Unit, Unit, AllQsos, Any] =
+  private val allQsosBody =
+    header[String]("Content-Type")
+      .and(header[Option[String]]("Content-Encoding"))
+      .and(header[String]("Vary"))
+      .and(byteArrayBody)
+
+  val allQsosDef: PublicEndpoint[
+    Option[String],
+    Unit,
+    (String, Option[String], String, Array[Byte]),
+    Any
+  ] =
     endpoint
       .get
       .in("qsos")
-      .out(jsonBody[AllQsos])
+      .in(header[Option[String]]("Accept-Encoding"))
+      .out(allQsosBody)
 
   private val statusMessageBody =
     header[String]("Content-Disposition")
@@ -148,8 +163,32 @@ object ReplEndpoints:
   private val statusMessageContentType =
     "application/json; charset=utf-8"
 
+  private val qsosContentType =
+    "application/json; charset=utf-8"
+
   private val vary =
     "Accept-Encoding"
+
+  def decodeAllQsos(
+      contentEncoding: Option[String],
+      bytes: Array[Byte]
+  ): AllQsos =
+    val jsonBytes =
+      if contentEncoding.exists(_.equalsIgnoreCase("gzip")) then
+        Gzip.decompress(bytes)
+      else
+        bytes
+
+    decode[AllQsos](
+      new String(jsonBytes, StandardCharsets.UTF_8)
+    ) match
+      case Right(allQsos) =>
+        allQsos
+      case Left(error) =>
+        throw new RuntimeException(
+          s"Failed to decode AllQsos from JSON: ${error.getMessage}",
+          error
+        )
 
   private def acceptsGzip(acceptEncoding: Option[String]): Boolean =
     acceptEncoding.exists(

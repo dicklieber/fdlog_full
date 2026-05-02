@@ -25,10 +25,7 @@ import fdswarm.logging.Locus.{Replication, TCP}
 import fdswarm.replication.status.NodeBandOpPane
 import fdswarm.store.QsoStore
 import fdswarm.util.StatsSource
-import io.circe.syntax.*
 import jakarta.inject.{Inject, Singleton}
-
-import java.nio.charset.StandardCharsets
 
 /** This is the logic that synchronizes the local QSO store with a remote node.
   */
@@ -85,17 +82,19 @@ class StatusProcessor @Inject() (
         val allQsosContext = allQsosFetchAndApplyTimer.time()
         try
           allQsosHttpRequestMeter.mark()
-          val remoteAllQsos: AllQsos =
+          val (_, contentEncoding, _, responseBytes) =
             callEndpoint(
               ReplEndpoints.allQsosDef,
-              ()
+              Some("gzip")
             ).unsafeRunSync()
+          val remoteAllQsos: AllQsos =
+            ReplEndpoints.decodeAllQsos(
+              contentEncoding = contentEncoding,
+              bytes = responseBytes
+            )
           httpRequestCounter.inc()
           allQsosResponseBytesHistogram.update(
-            remoteAllQsos.asJson
-              .printWith(ReplEndpoints.printer)
-              .getBytes(StandardCharsets.UTF_8)
-              .length
+            responseBytes.length
           )
           allQsosResponseQsoCountHistogram.update(remoteAllQsos.qsos.size)
           qsoStore.addReplicated(
