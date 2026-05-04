@@ -13,7 +13,7 @@ import scalafx.stage.Window
 
 import java.net.URI
 import java.net.http.{HttpClient, HttpRequest, HttpResponse}
-import java.time.Duration
+import java.time.{Duration, Instant}
 import scala.util.control.NonFatal
 
 @Singleton
@@ -25,7 +25,8 @@ final class NodeIdentityDialog @Inject()(logIndexer: ElasticsearchLogIndexer):
       .build()
 
   def show(ownerWindow: Window, nodeIdentities: ObservableBuffer[NodeIdentity]): Unit =
-    val table = new TableView[NodeIdentity](nodeIdentities):
+    var refreshRows: () => Unit = () => ()
+    val table: TableView[NodeIdentity] = new TableView[NodeIdentity](nodeIdentities):
       columnResizePolicy = TableView.ConstrainedResizePolicy
       columns ++= Seq(
         new TableColumn[NodeIdentity, String]:
@@ -56,7 +57,7 @@ final class NodeIdentityDialog @Inject()(logIndexer: ElasticsearchLogIndexer):
         new TableColumn[NodeIdentity, NodeIdentity]:
           text = ""
           cellValueFactory = c => ObjectProperty(c.value)
-          prefWidth = 260
+          prefWidth = 340
           cellFactory = (_: TableColumn[NodeIdentity, NodeIdentity]) =>
             new TableCell[NodeIdentity, NodeIdentity]:
               private val requestButton = new Button("Suck Log"):
@@ -67,14 +68,28 @@ final class NodeIdentityDialog @Inject()(logIndexer: ElasticsearchLogIndexer):
               private val indexButton = new Button("Index Log"):
                 onAction = _ =>
                   val nodeIdentity = item.value
-                  if nodeIdentity != null then fetchAndIndexNodeLog(ownerWindow, nodeIdentity)
+                  if nodeIdentity != null then fetchAndIndexNodeLog(ownerWindow, nodeIdentity, refreshRows())
+
+              private val updateSinceButton = new Button("Update Since"):
+                onAction = _ =>
+                  val nodeIdentity = item.value
+                  if nodeIdentity != null then
+                    logIndexer.latestTimestampFor(nodeIdentity).foreach { latestTimestamp =>
+                      fetchAndIndexNodeLog(
+                        ownerWindow,
+                        nodeIdentity,
+                        refreshRows(),
+                        Some(latestTimestamp)
+                      )
+                    }
 
               private val buttons = new HBox:
                 spacing = 6
-                children = Seq(requestButton, indexButton)
+                children = Seq(requestButton, indexButton, updateSinceButton)
 
               private def refresh(nodeIdentity: NodeIdentity): Unit =
                 text = null
+                updateSinceButton.disable = nodeIdentity == null || logIndexer.latestTimestampFor(nodeIdentity).isEmpty
                 graphic =
                   if empty.value || nodeIdentity == null then null
                   else buttons
@@ -87,6 +102,7 @@ final class NodeIdentityDialog @Inject()(logIndexer: ElasticsearchLogIndexer):
               }
               refresh(item.value)
       )
+    refreshRows = () => table.refresh()
 
     val dialog = new Dialog[Unit]():
       initOwner(ownerWindow)
@@ -131,8 +147,13 @@ final class NodeIdentityDialog @Inject()(logIndexer: ElasticsearchLogIndexer):
         )
       )
 
-  private def fetchAndIndexNodeLog(ownerWindow: Window, nodeIdentity: NodeIdentity): Unit =
-    val logUri = URI.create(s"http://${nodeIdentity.hostIp}:${nodeIdentity.port}/log")
+  private def fetchAndIndexNodeLog(
+      ownerWindow: Window,
+      nodeIdentity: NodeIdentity,
+      afterIndex: => Unit = (),
+      sendNewer: Option[Instant] = None
+  ): Unit =
+    val logUri = nodeLogUri(nodeIdentity, sendNewer)
     val fetchRequest = HttpRequest
       .newBuilder(logUri)
       .timeout(Duration.ofSeconds(10))
@@ -157,17 +178,19 @@ final class NodeIdentityDialog @Inject()(logIndexer: ElasticsearchLogIndexer):
             s"Log fetch failed: HTTP ${fetchResponse.statusCode()}\n\n${fetchResponse.body()}"
           )
         else
-          indexLogResponse(ownerWindow, nodeIdentity, logUri, fetchResponse.body())
+          indexLogResponse(ownerWindow, nodeIdentity, logUri, fetchResponse.body(), afterIndex)
       )
 
   private def indexLogResponse(
       ownerWindow: Window,
       nodeIdentity: NodeIdentity,
       logUri: URI,
-      logText: String
+      logText: String,
+      afterIndex: => Unit
   ): Unit =
     try
       val result = logIndexer.indexLog(nodeIdentity, logText)
+      Platform.runLater(() => afterIndex)
       val failures =
         if result.hasFailures then
           "\n\nFailures:\n" + result.failures.mkString("\n")
@@ -192,6 +215,12 @@ final class NodeIdentityDialog @Inject()(logIndexer: ElasticsearchLogIndexer):
           logUri,
           s"Could not prepare Elasticsearch bulk request:\n${rootMessage(e)}"
         )
+
+  private def nodeLogUri(nodeIdentity: NodeIdentity, sendNewer: Option[Instant] = None): URI =
+    val baseUri = s"http://${nodeIdentity.hostIp}:${nodeIdentity.port}/log"
+    sendNewer match
+      case Some(timestamp) => URI.create(s"$baseUri?sendNewer=${timestamp.toString}")
+      case None => URI.create(baseUri)
 
   private def showIndexResult(
       ownerWindow: Window,
