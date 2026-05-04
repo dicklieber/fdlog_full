@@ -16,14 +16,30 @@ import java.nio.charset.StandardCharsets
 import java.time.Instant
 import java.util.Base64
 import java.util.concurrent.ConcurrentHashMap
+import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.*
 import scala.util.Try
+
+final case class LogApiMetadata(
+    from: Long,
+    to: Long,
+    size: Long,
+    logId: String,
+    truncated: Boolean
+)
+
+final case class LogCursor(
+    logId: String,
+    to: Long,
+    size: Long
+)
 
 final case class LogIndexResult(
     elasticsearchUrl: String,
     index: String,
     attemptedLines: Int,
     indexedLines: Int,
+    cursor: LogCursor,
     latestTimestamp: Option[Instant],
     failures: Seq[String]
 ):
@@ -32,7 +48,7 @@ final case class LogIndexResult(
 @Singleton
 final class ElasticsearchLogIndexer @Inject()(config: Config):
   private val timestampField = """"@timestamp":"([^"]+)"""".r
-  private val latestTimestampByNode = ConcurrentHashMap[NodeIdentity, Instant]()
+  private val cursorByNode = ConcurrentHashMap[NodeIdentity, LogCursor]()
 
   private val elasticsearchUrl: String =
     if config.hasPath("monitor.elasticsearch.url") then config.getString("monitor.elasticsearch.url")
@@ -53,29 +69,39 @@ final class ElasticsearchLogIndexer @Inject()(config: Config):
   private val client: ElasticsearchClient =
     new ElasticsearchClient(transport)
 
-  def latestTimestampFor(nodeIdentity: NodeIdentity): Option[Instant] =
-    Option(latestTimestampByNode.get(nodeIdentity))
+  def cursorFor(nodeIdentity: NodeIdentity): Option[LogCursor] =
+    Option(cursorByNode.get(nodeIdentity))
 
-  def indexLog(nodeIdentity: NodeIdentity, logText: String): LogIndexResult =
-    val lines = jsonLogLines(logText)
+  def nextFromByteFor(nodeIdentity: NodeIdentity): Long =
+    cursorFor(nodeIdentity).map(_.to).getOrElse(0L)
+
+  def forgetCursor(nodeIdentity: NodeIdentity): Unit =
+    cursorByNode.remove(nodeIdentity)
+
+  def indexLog(nodeIdentity: NodeIdentity, metadata: LogApiMetadata, logBytes: Array[Byte]): LogIndexResult =
+    val lines = jsonLogLines(metadata.from, logBytes)
+    val cursor = LogCursor(metadata.logId, metadata.to, metadata.size)
     if lines.isEmpty then
+      cursorByNode.put(nodeIdentity, cursor)
       LogIndexResult(
         elasticsearchUrl = elasticsearchUrl,
         index = elasticsearchIndex,
         attemptedLines = 0,
         indexedLines = 0,
+        cursor = cursor,
         latestTimestamp = None,
-        failures = Seq("Fetched log, but found no JSON log lines to index.")
+        failures = Seq.empty
       )
     else
       val latestTimestamp = timestampFromLastLine(lines)
       val requestBuilder = new BulkRequest.Builder()
-      lines.foreach { line =>
-        val data = BinaryData.of(line.getBytes(StandardCharsets.UTF_8), ContentType.APPLICATION_JSON)
+      lines.foreach { logLine =>
+        val data = BinaryData.of(logLine.line.getBytes(StandardCharsets.UTF_8), ContentType.APPLICATION_JSON)
         requestBuilder.operations(op =>
           op.index(idx =>
             idx
               .index(elasticsearchIndex)
+              .id(documentId(nodeIdentity, metadata.logId, logLine.offset))
               .document(data)
           )
         )
@@ -92,13 +118,14 @@ final class ElasticsearchLogIndexer @Inject()(config: Config):
         }
         .toSeq
 
-      latestTimestamp.foreach(timestamp => latestTimestampByNode.put(nodeIdentity, timestamp))
+      cursorByNode.put(nodeIdentity, cursor)
 
       LogIndexResult(
         elasticsearchUrl = elasticsearchUrl,
         index = elasticsearchIndex,
         attemptedLines = lines.size,
         indexedLines = response.items().size() - failures.size,
+        cursor = cursor,
         latestTimestamp = latestTimestamp,
         failures = failures
       )
@@ -106,17 +133,44 @@ final class ElasticsearchLogIndexer @Inject()(config: Config):
   def close(): Unit =
     transport.close()
 
-  private def jsonLogLines(logText: String): Seq[String] =
-    logText
-      .linesIterator
-      .map(_.trim)
-      .filter(line => line.nonEmpty && line.startsWith("{"))
-      .toSeq
+  private case class JsonLogLine(offset: Long, line: String)
 
-  private def timestampFromLastLine(lines: Seq[String]): Option[Instant] =
+  private def jsonLogLines(fromByte: Long, logBytes: Array[Byte]): Seq[JsonLogLine] =
+    val lines = ArrayBuffer.empty[JsonLogLine]
+    var lineStart = 0
+    var index = 0
+    while index < logBytes.length do
+      if logBytes(index) == '\n'.toByte then
+        addJsonLogLine(fromByte, logBytes, lineStart, index, lines)
+        lineStart = index + 1
+      index += 1
+    lines.toSeq
+
+  private def addJsonLogLine(
+      fromByte: Long,
+      logBytes: Array[Byte],
+      lineStart: Int,
+      lineEnd: Int,
+      lines: ArrayBuffer[JsonLogLine]
+  ): Unit =
+    val length =
+      if lineEnd > lineStart && logBytes(lineEnd - 1) == '\r'.toByte then lineEnd - lineStart - 1
+      else lineEnd - lineStart
+    if length > 0 then
+      val line = new String(logBytes, lineStart, length, StandardCharsets.UTF_8).trim
+      if line.nonEmpty && line.startsWith("{") then
+        lines += JsonLogLine(fromByte + lineStart, line)
+
+  private def timestampFromLastLine(lines: Seq[JsonLogLine]): Option[Instant] =
     lines.lastOption
-      .flatMap(line => timestampField.findFirstMatchIn(line).map(_.group(1)))
+      .flatMap(logLine => timestampField.findFirstMatchIn(logLine.line).map(_.group(1)))
       .flatMap(timestamp => Try(Instant.parse(timestamp)).toOption)
+
+  private def documentId(nodeIdentity: NodeIdentity, logId: String, offset: Long): String =
+    Base64
+      .getUrlEncoder
+      .withoutPadding()
+      .encodeToString(s"$nodeIdentity|$logId|$offset".getBytes(StandardCharsets.UTF_8))
 
   private def authHeader: Option[BasicHeader] =
     configValue("monitor.elasticsearch.apiKey")

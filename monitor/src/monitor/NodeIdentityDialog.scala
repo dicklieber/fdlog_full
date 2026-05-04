@@ -13,8 +13,10 @@ import scalafx.stage.Window
 
 import java.net.URI
 import java.net.http.{HttpClient, HttpRequest, HttpResponse}
-import java.time.{Duration, Instant}
+import java.nio.charset.StandardCharsets
+import java.time.Duration
 import scala.util.control.NonFatal
+import scala.util.Try
 
 @Singleton
 final class NodeIdentityDialog @Inject()(logIndexer: ElasticsearchLogIndexer):
@@ -70,26 +72,20 @@ final class NodeIdentityDialog @Inject()(logIndexer: ElasticsearchLogIndexer):
                   val nodeIdentity = item.value
                   if nodeIdentity != null then fetchAndIndexNodeLog(ownerWindow, nodeIdentity, refreshRows())
 
-              private val updateSinceButton = new Button("Update Since"):
+              private val resetCursorButton = new Button("Reset Cursor"):
                 onAction = _ =>
                   val nodeIdentity = item.value
                   if nodeIdentity != null then
-                    logIndexer.latestTimestampFor(nodeIdentity).foreach { latestTimestamp =>
-                      fetchAndIndexNodeLog(
-                        ownerWindow,
-                        nodeIdentity,
-                        refreshRows(),
-                        Some(latestTimestamp)
-                      )
-                    }
+                    logIndexer.forgetCursor(nodeIdentity)
+                    refreshRows()
 
               private val buttons = new HBox:
                 spacing = 6
-                children = Seq(requestButton, indexButton, updateSinceButton)
+                children = Seq(requestButton, indexButton, resetCursorButton)
 
               private def refresh(nodeIdentity: NodeIdentity): Unit =
                 text = null
-                updateSinceButton.disable = nodeIdentity == null || logIndexer.latestTimestampFor(nodeIdentity).isEmpty
+                resetCursorButton.disable = nodeIdentity == null || logIndexer.cursorFor(nodeIdentity).isEmpty
                 graphic =
                   if empty.value || nodeIdentity == null then null
                   else buttons
@@ -151,9 +147,11 @@ final class NodeIdentityDialog @Inject()(logIndexer: ElasticsearchLogIndexer):
       ownerWindow: Window,
       nodeIdentity: NodeIdentity,
       afterIndex: => Unit = (),
-      sendNewer: Option[Instant] = None
+      fromByte: Option[Long] = None,
+      retryFromStart: Boolean = true
   ): Unit =
-    val logUri = nodeLogUri(nodeIdentity, sendNewer)
+    val requestedFromByte = fromByte.getOrElse(logIndexer.nextFromByteFor(nodeIdentity))
+    val logUri = nodeLogUri(nodeIdentity, requestedFromByte)
     val fetchRequest = HttpRequest
       .newBuilder(logUri)
       .timeout(Duration.ofSeconds(10))
@@ -161,7 +159,7 @@ final class NodeIdentityDialog @Inject()(logIndexer: ElasticsearchLogIndexer):
       .build()
 
     httpClient
-      .sendAsync(fetchRequest, HttpResponse.BodyHandlers.ofString())
+      .sendAsync(fetchRequest, HttpResponse.BodyHandlers.ofByteArray())
       .handle[Unit]((fetchResponse, fetchError) =>
         if fetchError != null then
           showIndexResult(
@@ -170,26 +168,56 @@ final class NodeIdentityDialog @Inject()(logIndexer: ElasticsearchLogIndexer):
             logUri,
             s"Log fetch failed:\n${rootMessage(fetchError)}"
           )
+        else if fetchResponse.statusCode() == 409 && retryFromStart then
+          logIndexer.forgetCursor(nodeIdentity)
+          fetchAndIndexNodeLog(
+            ownerWindow,
+            nodeIdentity,
+            afterIndex,
+            fromByte = Some(0L),
+            retryFromStart = false
+          )
         else if fetchResponse.statusCode() < 200 || fetchResponse.statusCode() >= 300 then
           showIndexResult(
             ownerWindow,
             nodeIdentity,
             logUri,
-            s"Log fetch failed: HTTP ${fetchResponse.statusCode()}\n\n${fetchResponse.body()}"
+            s"Log fetch failed: HTTP ${fetchResponse.statusCode()}\n\n${utf8(fetchResponse.body())}"
           )
         else
-          indexLogResponse(ownerWindow, nodeIdentity, logUri, fetchResponse.body(), afterIndex)
+          metadataFrom(fetchResponse) match
+            case Left(message) =>
+              showIndexResult(
+                ownerWindow,
+                nodeIdentity,
+                logUri,
+                s"Log fetch failed: missing or invalid log API metadata.\n$message"
+              )
+            case Right(metadata) =>
+              val currentLogId = logIndexer.cursorFor(nodeIdentity).map(_.logId)
+              if retryFromStart && metadata.from > 0 && currentLogId.exists(_ != metadata.logId) then
+                logIndexer.forgetCursor(nodeIdentity)
+                fetchAndIndexNodeLog(
+                  ownerWindow,
+                  nodeIdentity,
+                  afterIndex,
+                  fromByte = Some(0L),
+                  retryFromStart = false
+                )
+              else
+                indexLogResponse(ownerWindow, nodeIdentity, logUri, metadata, fetchResponse.body(), afterIndex)
       )
 
   private def indexLogResponse(
       ownerWindow: Window,
       nodeIdentity: NodeIdentity,
       logUri: URI,
-      logText: String,
+      metadata: LogApiMetadata,
+      logBytes: Array[Byte],
       afterIndex: => Unit
   ): Unit =
     try
-      val result = logIndexer.indexLog(nodeIdentity, logText)
+      val result = logIndexer.indexLog(nodeIdentity, metadata, logBytes)
       Platform.runLater(() => afterIndex)
       val failures =
         if result.hasFailures then
@@ -199,13 +227,15 @@ final class NodeIdentityDialog @Inject()(logIndexer: ElasticsearchLogIndexer):
         result.latestTimestamp
           .map(value => s"\nLatest log timestamp for this node: ${value.toString}")
           .getOrElse("")
+      val cursor =
+        s"\nLog cursor: ${result.cursor.to}/${result.cursor.size} bytes."
       showIndexResult(
         ownerWindow,
         nodeIdentity,
         URI.create(s"${result.elasticsearchUrl.stripSuffix("/")}/${result.index}"),
         s"Fetched log from $logUri.\n" +
           s"Indexed ${result.indexedLines} of ${result.attemptedLines} JSON log lines " +
-          s"to ${result.elasticsearchUrl}/${result.index}.$timestamp$failures"
+          s"to ${result.elasticsearchUrl}/${result.index}.$cursor$timestamp$failures"
       )
     catch
       case NonFatal(e) =>
@@ -216,11 +246,38 @@ final class NodeIdentityDialog @Inject()(logIndexer: ElasticsearchLogIndexer):
           s"Could not prepare Elasticsearch bulk request:\n${rootMessage(e)}"
         )
 
-  private def nodeLogUri(nodeIdentity: NodeIdentity, sendNewer: Option[Instant] = None): URI =
-    val baseUri = s"http://${nodeIdentity.hostIp}:${nodeIdentity.port}/log"
-    sendNewer match
-      case Some(timestamp) => URI.create(s"$baseUri?sendNewer=${timestamp.toString}")
-      case None => URI.create(baseUri)
+  private def nodeLogUri(nodeIdentity: NodeIdentity, fromByte: Long): URI =
+    URI.create(s"http://${nodeIdentity.hostIp}:${nodeIdentity.port}/log?fromByte=$fromByte")
+
+  private def metadataFrom(response: HttpResponse[Array[Byte]]): Either[String, LogApiMetadata] =
+    for
+      from <- longHeader(response, "X-Log-From")
+      to <- longHeader(response, "X-Log-To")
+      size <- longHeader(response, "X-Log-Size")
+      truncated <- booleanHeader(response, "X-Log-Truncated")
+      logId <- stringHeader(response, "X-Log-Id")
+    yield LogApiMetadata(from, to, size, logId, truncated)
+
+  private def stringHeader(response: HttpResponse[?], name: String): Either[String, String] =
+    val value = response.headers().firstValue(name)
+    if value.isPresent then Right(value.get())
+    else Left(s"Missing $name header.")
+
+  private def longHeader(response: HttpResponse[?], name: String): Either[String, Long] =
+    stringHeader(response, name).flatMap(value =>
+      Try(value.toLong).toEither.left.map(_ => s"Invalid $name header: $value")
+    )
+
+  private def booleanHeader(response: HttpResponse[?], name: String): Either[String, Boolean] =
+    stringHeader(response, name).flatMap(value =>
+      value.toLowerCase match
+        case "true"  => Right(true)
+        case "false" => Right(false)
+        case _       => Left(s"Invalid $name header: $value")
+    )
+
+  private def utf8(bytes: Array[Byte]): String =
+    new String(bytes, StandardCharsets.UTF_8)
 
   private def showIndexResult(
       ownerWindow: Window,
