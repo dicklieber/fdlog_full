@@ -20,13 +20,10 @@ package fdswarm.api
 
 import cats.effect.IO
 import fdswarm.io.FileHelper
-import fdswarm.util.Gzip
 import jakarta.inject.{Inject, Singleton}
+import sttp.model.StatusCode
 import sttp.tapir.*
 import sttp.tapir.server.ServerEndpoint
-
-import java.time.Instant
-import java.util.Locale
 
 /** Tapir endpoints for downloading the current application log. */
 @Singleton
@@ -34,79 +31,133 @@ final class LogsEndpoints @Inject() (fileHelper: FileHelper) extends ApiEndpoint
 
   private val log: ServerEndpoint[Any, IO] =
     LogsEndpoints.logDef
-      .serverLogicSuccess[IO](logResponse)
+      .serverLogic[IO](logResponse)
 
   override def endpoints: List[ServerEndpoint[Any, IO]] = List(
     log
   )
 
   private def logResponse(
-      input: (Option[Instant], Option[String])
-  ): IO[(String, String, Option[String], String, Array[Byte])] =
-    val ( sendNewer, acceptEncoding) = input
+      fromByte: Option[Long]
+  ): IO[Either[LogsEndpoints.LogErrorOutput, LogsEndpoints.LogOutput]] =
     IO.blocking {
-      val logBytes = LogBytes(
-        logPath,
-        sendNewer
-      )
-
-      val (contentEncoding, bytes) =
-        if LogsEndpoints.acceptsGzip(acceptEncoding) then
-          Some("gzip") -> Gzip.compress(logBytes)
-        else
-          None -> logBytes
-
-      (
-        LogsEndpoints.contentDisposition,
-        LogsEndpoints.contentType,
-        contentEncoding,
-        LogsEndpoints.vary,
-        bytes
-      )
+      logFetchService.fetch(
+        fromByte.getOrElse(
+          0L
+        )
+      ) match
+        case Right(result) =>
+          Right(
+            LogsEndpoints.output(
+              statusCode =
+                if result.bytes.isEmpty && result.from == result.size then
+                  StatusCode.NoContent
+                else
+                  StatusCode.Ok,
+              from = result.from,
+              to = result.to,
+              size = result.size,
+              truncated = result.truncated,
+              logId = result.logId,
+              bytes = result.bytes
+            )
+          )
+        case Left(error: LogFetchError.NegativeFromByte) =>
+          Left(
+            LogsEndpoints.errorOutput(
+              statusCode = StatusCode.BadRequest,
+              from = error.from,
+              to = error.from,
+              size = error.size,
+              truncated = error.truncated,
+              logId = error.logId
+            )
+          )
+        case Left(error: LogFetchError.FromBeyondFileSize) =>
+          Left(
+            LogsEndpoints.errorOutput(
+              statusCode = StatusCode.Conflict,
+              from = error.from,
+              to = error.from,
+              size = error.size,
+              truncated = error.truncated,
+              logId = error.logId
+            )
+          )
     }
 
-  private def logPath: os.Path =
-    fileHelper.directory  / "fdswarm.log"
+  private lazy val logFetchService: LogFetchService =
+    FileLogFetchService(
+      (fileHelper.directory / "fdswarm.log").toNIO
+    )
 
 private object LogsEndpoints:
+  type LogOutput = (StatusCode, Long, Long, Long, String, String, String, Array[Byte])
+  type LogErrorOutput = (StatusCode, Long, Long, Long, String, String)
+
+  private val metadataHeaders =
+    header[Long]("X-Log-From")
+      .and(header[Long]("X-Log-To"))
+      .and(header[Long]("X-Log-Size"))
+      .and(header[String]("X-Log-Truncated"))
+      .and(header[String]("X-Log-Id"))
+
   private val logBody =
-    header[String]("Content-Disposition")
+    statusCode
+      .and(metadataHeaders)
       .and(header[String]("Content-Type"))
-      .and(header[Option[String]]("Content-Encoding"))
-      .and(header[String]("Vary"))
       .and(byteArrayBody)
 
   private val logDef: PublicEndpoint[
-    (Option[Instant], Option[String]),
-    Unit,
-    (String, String, Option[String], String, Array[Byte]),
+    Option[Long],
+    LogErrorOutput,
+    LogOutput,
     Any
   ] =
     endpoint
       .get
       .in("log")
-      .in(query[Option[Instant]]("sendNewer"))
-      .in(header[Option[String]]("Accept-Encoding"))
+      .in(query[Option[Long]]("fromByte"))
+      .errorOut(statusCode.and(metadataHeaders))
       .out(logBody)
-      .description("Download the current fdswarm.log file")
+      .description("Fetch complete NDJSON log records from the current fdswarm.log file")
 
-  private val contentDisposition =
-    "attachment; filename=\"fdswarm.log\""
+  private def output(
+      statusCode: StatusCode,
+      from: Long,
+      to: Long,
+      size: Long,
+      truncated: Boolean,
+      logId: String,
+      bytes: Array[Byte]
+  ): LogOutput =
+    (
+      statusCode,
+      from,
+      to,
+      size,
+      truncated.toString,
+      logId,
+      contentType,
+      bytes
+    )
+
+  private def errorOutput(
+      statusCode: StatusCode,
+      from: Long,
+      to: Long,
+      size: Long,
+      truncated: Boolean,
+      logId: String
+  ): LogErrorOutput =
+    (
+      statusCode,
+      from,
+      to,
+      size,
+      truncated.toString,
+      logId
+    )
 
   private val contentType =
-    "text/plain; charset=utf-8"
-
-  private val vary =
-    "Accept-Encoding"
-
-  private def acceptsGzip(acceptEncoding: Option[String]): Boolean =
-    acceptEncoding.exists(
-      _.split(",")
-        .iterator
-        .map(_.trim)
-        .exists { entry =>
-          val parts = entry.split(";").map(_.trim)
-          parts.headOption.exists(_.equalsIgnoreCase("gzip")) &&
-            parts.drop(1).forall(part => !part.toLowerCase(Locale.ROOT).startsWith("q=0"))
-        }
-    )
+    "application/x-ndjson; charset=utf-8"
