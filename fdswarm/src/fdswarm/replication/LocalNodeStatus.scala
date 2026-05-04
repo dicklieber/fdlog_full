@@ -50,7 +50,7 @@ final class LocalNodeStatus @Inject()(
   private val metricRegistry: MetricRegistry = SharedMetricRegistries.getOrCreate(
     "default"
   )
-  @volatile private var lastHashCount: HashCount = HashCount()
+  @volatile private var lastStoreStats: StoreStats = StoreStats()
 
   def statusMessage: StatusMessage =
     val contestConfig = contestConfigManager.contestConfigProperty.value
@@ -59,7 +59,7 @@ final class LocalNodeStatus @Inject()(
         stationManager.stationConfig.operator,
         selectedBandModeStore.selected.value
       )
-    StatusMessage(hashCount = lastHashCount,
+    StatusMessage(storeStats = lastStoreStats,
       bandNodeOperator = bandNodeOperator,
       contestConfig = contestConfig,
       contestStart = contestStartManager.contestStart.value.start,
@@ -96,8 +96,8 @@ final class LocalNodeStatus @Inject()(
 
   rebuildAndNotify()
 
-  def updateHashCount(hashCount: HashCount): Unit =
-    lastHashCount = hashCount
+  def updateStoreStats(storeStats: StoreStats): Unit =
+    lastStoreStats = storeStats
     rebuildAndNotify()
 
   private def rebuildAndNotify(): Unit =

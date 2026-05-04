@@ -447,8 +447,10 @@ class SwarmData @Inject() (
       NodeDataField.InstanceId -> nodeStatus.nodeIdentity.instanceId,
       NodeDataField.Received -> stampFormatter.format(nodeStatus.received),
       NodeDataField.IsLocal -> nodeStatus.isLocal.toString,
-      NodeDataField.QsoCount -> nodeStatus.statusMessage.hashCount.qsoCount.toString,
-      NodeDataField.Hash -> nodeStatus.statusMessage.hashCount.hash,
+      NodeDataField.QsoCount -> nodeStatus.statusMessage.storeStats.qsoCount.toString,
+      NodeDataField.OurQsoCount -> nodeStatus.statusMessage.storeStats.ourQsoCount.toString,
+      NodeDataField.QsosPerHour -> nodeStatus.statusMessage.storeStats.qsosPerHour.toString,
+      NodeDataField.Hash -> nodeStatus.statusMessage.storeStats.hash,
       NodeDataField.Operator -> bno.operator.toString,
       NodeDataField.Band -> bno.bandMode.band.name,
       NodeDataField.Mode -> bno.bandMode.mode.toString,
@@ -544,9 +546,9 @@ object SwarmData:
   ): Option[String] =
     field match
       case NodeDataField.QsoCount =>
-        Some(nodeStatus.statusMessage.hashCount.qsoCount.toString)
+        Some(nodeStatus.statusMessage.storeStats.qsoCount.toString)
       case NodeDataField.Hash =>
-        Some(nodeStatus.statusMessage.hashCount.hash)
+        Some(nodeStatus.statusMessage.storeStats.hash)
       case NodeDataField.ContestType =>
         Some(nodeStatus.statusMessage.contestConfig.contestType.toString)
       case NodeDataField.ContestCallsign =>

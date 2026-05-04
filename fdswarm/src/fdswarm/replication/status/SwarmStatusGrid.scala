@@ -90,12 +90,16 @@ class SwarmStatusGrid(
       }
     }*)
     builder("Qso Count", allNodes.map(receivedNodeStatus =>
-      receivedNodeStatus.statusMessage.hashCount.qsoCount.toString)*)
+      receivedNodeStatus.statusMessage.storeStats.qsoCount.toString)*)
+    builder("Our QSOs", allNodes.map(receivedNodeStatus =>
+      receivedNodeStatus.statusMessage.storeStats.ourQsoCount.toString)*)
+    builder("QSOs/hour", allNodes.map(receivedNodeStatus =>
+      receivedNodeStatus.statusMessage.storeStats.qsosPerHour.toString)*)
     builder(
       "Hash",
       allNodes.map(
         receivedNodeStatus =>
-          val fullHash = receivedNodeStatus.statusMessage.hashCount.hash
+          val fullHash = receivedNodeStatus.statusMessage.storeStats.hash
           new Label {
             text = fullHash.take(5)
             tooltip = Tooltip(

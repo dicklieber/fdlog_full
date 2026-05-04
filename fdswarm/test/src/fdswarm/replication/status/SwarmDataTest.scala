@@ -20,14 +20,14 @@ package fdswarm.replication.status
 
 import fdswarm.fx.contest.{ContestConfig, ContestType}
 import fdswarm.model.{BandMode, BandModeOperator, Callsign}
-import fdswarm.replication.{HashCount, NodeStatus, StatusMessage}
+import fdswarm.replication.{StoreStats, NodeStatus, StatusMessage}
 import fdswarm.util.NodeIdentity
 import munit.FunSuite
 
 import java.time.Instant
 
 class SwarmDataTest extends FunSuite:
-  test("static status fields include qsoCount, hash, and exchange columns"):
+  test("static status fields include qsoCount, ourQsoCount, qsosPerHour, hash, and exchange columns"):
     assert(
       NodeDataField.staticFields.contains(
         NodeDataField.QsoCount
@@ -38,6 +38,18 @@ class SwarmDataTest extends FunSuite:
         NodeDataField.Hash
       )
     )
+    assert(
+      NodeDataField.staticFields.contains(
+        NodeDataField.OurQsoCount
+      )
+    )
+    assert(
+      NodeDataField.staticFields.contains(
+        NodeDataField.QsosPerHour
+      )
+    )
+    assert(!NodeDataField.OurQsoCount.colorDeffCells)
+    assert(!NodeDataField.QsosPerHour.colorDeffCells)
     assert(
       NodeDataField.staticFields.contains(
         NodeDataField.Exchange
@@ -329,7 +341,7 @@ class SwarmDataTest extends FunSuite:
   ): NodeStatus =
     NodeStatus(
       statusMessage = StatusMessage(
-        hashCount = HashCount(hash = hash, qsoCount = qsoCount),
+        storeStats = StoreStats(hash = hash, qsoCount = qsoCount),
         bandNodeOperator = BandModeOperator(
           operator = Callsign("N0CALL"),
           bandMode = BandMode("20M SSB")

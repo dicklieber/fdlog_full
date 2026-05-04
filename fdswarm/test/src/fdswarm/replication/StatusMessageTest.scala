@@ -35,7 +35,7 @@ class StatusMessageTest extends FunSuite:
 
   test("gzip round trip") {
 //    val hp = NodeIdentity("localhost", 8080, name =)
-    val sm = StatusMessage(hashCount = HashCount(),
+    val sm = StatusMessage(storeStats = StoreStats(),
       bandNodeOperator = dummyBno,
       contestConfig = dummyContestConfig,
       contestStart = Instant.parse("2026-03-16T20:11:04Z"),
@@ -49,7 +49,7 @@ class StatusMessageTest extends FunSuite:
   }
 
   test("fromPacket should deserialize from gzipped packet") {
-    val sm = StatusMessage(hashCount = HashCount(),
+    val sm = StatusMessage(storeStats = StoreStats(),
       bandNodeOperator = dummyBno,
       contestConfig = dummyContestConfig,
       contestStart = Instant.parse("2026-03-16T20:11:04Z"),

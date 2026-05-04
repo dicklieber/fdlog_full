@@ -70,13 +70,13 @@ class StatusProcessor @Inject() (
   private def processStatus(nodeStatus: NodeStatus): Unit =
     val processTimerContext = processTimer.time()
     try
-      val remoteHashCount = nodeStatus.statusMessage.hashCount
-      val localHashCount = localNodeStatus.statusMessage.hashCount
+      val remoteStoreStats = nodeStatus.statusMessage.storeStats
+      val localStoreStats = localNodeStatus.statusMessage.storeStats
 
-      if remoteHashCount != localHashCount then
-        val qsoCountDiff = remoteHashCount.qsoCount - localHashCount.qsoCount
+      if remoteStoreStats != localStoreStats then
+        val qsoCountDiff = remoteStoreStats.qsoCount - localStoreStats.qsoCount
         logger.info(
-          s"HashCount mismatch for ${nodeStatus.nodeIdentity}: local=$localHashCount remote=$remoteHashCount qsoCountDiff=$qsoCountDiff"
+          s"StoreStats mismatch for ${nodeStatus.nodeIdentity}: local=$localStoreStats remote=$remoteStoreStats qsoCountDiff=$qsoCountDiff"
         )
         given fdswarm.util.NodeIdentity = nodeStatus.nodeIdentity
         val allQsosContext = allQsosFetchAndApplyTimer.time()

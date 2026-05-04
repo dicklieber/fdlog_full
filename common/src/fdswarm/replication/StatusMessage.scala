@@ -33,7 +33,7 @@ import java.time.Instant
 
 /** Represents a status message containing information about the current state of a contest communication system.
   *
-  * @param hashCount
+  * @param storeStats
   *   A SHA-512 hash of all the Qsos that have been logged and how many QSOs.
   * @param bandNodeOperator
   *   An instance of BandModeOperator containing information about the operator, frequency band, and timestamp.
@@ -44,11 +44,11 @@ import java.time.Instant
   *   When we think the contest was started.
   */
 case class StatusMessage(
-    hashCount: HashCount,
+    storeStats: StoreStats,
     bandNodeOperator: BandModeOperator,
     contestConfig: ContestConfig,
     contestStart: Instant,
-    metrics:Seq[MetricStat]
+    metrics: Seq[MetricStat]
 )
     derives Codec.AsObject, Schema:
   def toPacket: Array[Byte] =
@@ -64,4 +64,9 @@ object StatusMessage:
       case Left(error) =>
         throw new RuntimeException(s"Failed to decode StatusMessage from JSON: ${error.getMessage}", error)
 
-case class HashCount(hash: String = "", qsoCount: Int = 0) derives Codec.AsObject, sttp.tapir.Schema
+case class StoreStats(
+    hash: String = "",
+    qsoCount: Int = 0,
+    ourQsoCount: Int = 0,
+    qsosPerHour: Int = 0
+) derives Codec.AsObject, sttp.tapir.Schema
