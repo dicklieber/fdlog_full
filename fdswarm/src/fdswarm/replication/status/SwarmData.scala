@@ -449,7 +449,6 @@ class SwarmData @Inject() (
       NodeDataField.IsLocal -> nodeStatus.isLocal.toString,
       NodeDataField.QsoCount -> nodeStatus.statusMessage.storeStats.qsoCount.toString,
       NodeDataField.OurQsoCount -> nodeStatus.statusMessage.storeStats.ourQsoCount.toString,
-      NodeDataField.QsosPerHour -> nodeStatus.statusMessage.storeStats.qsosPerHour.toString,
       NodeDataField.Hash -> nodeStatus.statusMessage.storeStats.hash,
       NodeDataField.Operator -> bno.operator.toString,
       NodeDataField.Band -> bno.bandMode.band.name,

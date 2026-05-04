@@ -27,7 +27,7 @@ import munit.FunSuite
 import java.time.Instant
 
 class SwarmDataTest extends FunSuite:
-  test("static status fields include qsoCount, ourQsoCount, qsosPerHour, hash, and exchange columns"):
+  test("static status fields include qsoCount, ourQsoCount, hash, and exchange columns"):
     assert(
       NodeDataField.staticFields.contains(
         NodeDataField.QsoCount
@@ -43,13 +43,7 @@ class SwarmDataTest extends FunSuite:
         NodeDataField.OurQsoCount
       )
     )
-    assert(
-      NodeDataField.staticFields.contains(
-        NodeDataField.QsosPerHour
-      )
-    )
     assert(!NodeDataField.OurQsoCount.colorDeffCells)
-    assert(!NodeDataField.QsosPerHour.colorDeffCells)
     assert(
       NodeDataField.staticFields.contains(
         NodeDataField.Exchange

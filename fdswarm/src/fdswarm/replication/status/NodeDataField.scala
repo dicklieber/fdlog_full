@@ -27,7 +27,6 @@ enum NodeDataField(val label: String, val colorDeffCells: Boolean = false):
   case IsLocal extends NodeDataField("isLocal")
   case QsoCount extends NodeDataField("qsoCount", colorDeffCells = true)
   case OurQsoCount extends NodeDataField("ourQsoCount")
-  case QsosPerHour extends NodeDataField("qsosPerHour")
   case Hash extends NodeDataField("hash", colorDeffCells = true)
   case Operator extends NodeDataField("operator")
   case Band extends NodeDataField("band")
@@ -52,7 +51,6 @@ object NodeDataField:
     NodeDataField.IsLocal,
     NodeDataField.QsoCount,
     NodeDataField.OurQsoCount,
-    NodeDataField.QsosPerHour,
     NodeDataField.Hash,
     NodeDataField.Operator,
     NodeDataField.Band,

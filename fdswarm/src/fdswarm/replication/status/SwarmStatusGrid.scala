@@ -93,8 +93,6 @@ class SwarmStatusGrid(
       receivedNodeStatus.statusMessage.storeStats.qsoCount.toString)*)
     builder("Our QSOs", allNodes.map(receivedNodeStatus =>
       receivedNodeStatus.statusMessage.storeStats.ourQsoCount.toString)*)
-    builder("QSOs/hour", allNodes.map(receivedNodeStatus =>
-      receivedNodeStatus.statusMessage.storeStats.qsosPerHour.toString)*)
     builder(
       "Hash",
       allNodes.map(

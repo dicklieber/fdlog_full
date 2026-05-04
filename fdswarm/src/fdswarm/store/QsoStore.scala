@@ -151,16 +151,22 @@ class QsoStore @Inject() (
 
   private def calculateStats(): Unit =
     refreshScores()
-    val idsHash: String =
+    val (qsoIds, ourQsoCount) = map.valuesIterator.foldLeft((List.empty[Id], 0)) {
+      case ((ids, count), qso) =>
+        val nextCount =
+          if qso.qsoMetadata.node == NodeIdentityManager.nodeIdentity then count + 1
+          else count
+        (qso.uuid :: ids, nextCount)
+    }
+    val idsHash =
       val context = hashCalculatorTimer.time()
-      try fdswarm.replication.calcShaHash(map.keys)
+      try fdswarm.replication.calcShaHash(qsoIds)
       finally context.stop()
     localNodeStatus.updateStoreStats(
       StoreStats(
         hash = idsHash,
         qsoCount = map.size,
-        ourQsoCount = map.valuesIterator.count(_.qsoMetadata.node == NodeIdentityManager.nodeIdentity),
-        qsosPerHour = qsoEnteredMeter.getFiveMinuteRate * 60.0 * 60.0
+        ourQsoCount = ourQsoCount
       )
     )
 
