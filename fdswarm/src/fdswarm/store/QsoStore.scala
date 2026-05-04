@@ -87,7 +87,6 @@ class QsoStore @Inject() (
         qsoEnteredMeter.mark()
       val jsonString = qso.asJsonCompact
       os.write.append(path, jsonString + "\n", createFolders = true)
-      logger.info("qso" -> qso)
       addToMap(qso)
       mutateQsoCollection {
         qsoCollection.prepend(qso)
