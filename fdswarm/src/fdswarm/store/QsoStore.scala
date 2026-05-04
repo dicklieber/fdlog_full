@@ -159,18 +159,12 @@ class QsoStore @Inject() (
       StoreStats(
         hash = idsHash,
         qsoCount = map.size,
-        ourQsoCount = ourQsoCount,
-        qsosPerHour = qsosPerHour
+        ourQsoCount = map.valuesIterator.count(_.qsoMetadata.node == NodeIdentityManager.nodeIdentity),
+        qsosPerHour = qsoEnteredMeter.getFiveMinuteRate * 60.0 * 60.0
       )
     )
 
   private def refreshScores(): Unit = contestScoringService.refresh(qsos = all)
-
-  private def ourQsoCount: Int =
-    map.valuesIterator.count(_.qsoMetadata.node == NodeIdentityManager.nodeIdentity)
-
-  private def qsosPerHour: Int =
-    Math.round(qsoEnteredMeter.getFiveMinuteRate * 60.0 * 60.0).toInt
 
   if startupInfo.info.exists(_.clearQsos) then
     logger.info("StartupInfo Clearing QSOs journal")

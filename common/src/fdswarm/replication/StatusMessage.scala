@@ -68,5 +68,5 @@ case class StoreStats(
     hash: String = "",
     qsoCount: Int = 0,
     ourQsoCount: Int = 0,
-    qsosPerHour: Int = 0
+    qsosPerHour: Double = 0.0
 ) derives Codec.AsObject, sttp.tapir.Schema
