@@ -6,26 +6,34 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper
 import co.elastic.clients.transport.rest_client.RestClientTransport
 import co.elastic.clients.util.{BinaryData, ContentType}
 import com.typesafe.config.Config
+import fdswarm.util.NodeIdentity
 import jakarta.inject.{Inject, Singleton}
 import org.apache.http.HttpHost
 import org.apache.http.message.BasicHeader
 import org.elasticsearch.client.RestClient
 
 import java.nio.charset.StandardCharsets
+import java.time.Instant
 import java.util.Base64
+import java.util.concurrent.ConcurrentHashMap
 import scala.jdk.CollectionConverters.*
+import scala.util.Try
 
 final case class LogIndexResult(
     elasticsearchUrl: String,
     index: String,
     attemptedLines: Int,
     indexedLines: Int,
+    latestTimestamp: Option[Instant],
     failures: Seq[String]
 ):
   def hasFailures: Boolean = failures.nonEmpty
 
 @Singleton
 final class ElasticsearchLogIndexer @Inject()(config: Config):
+  private val timestampField = """"@timestamp":"([^"]+)"""".r
+  private val latestTimestampByNode = ConcurrentHashMap[NodeIdentity, Instant]()
+
   private val elasticsearchUrl: String =
     if config.hasPath("monitor.elasticsearch.url") then config.getString("monitor.elasticsearch.url")
     else "http://localhost:9200"
@@ -45,7 +53,10 @@ final class ElasticsearchLogIndexer @Inject()(config: Config):
   private val client: ElasticsearchClient =
     new ElasticsearchClient(transport)
 
-  def indexLog(logText: String): LogIndexResult =
+  def latestTimestampFor(nodeIdentity: NodeIdentity): Option[Instant] =
+    Option(latestTimestampByNode.get(nodeIdentity))
+
+  def indexLog(nodeIdentity: NodeIdentity, logText: String): LogIndexResult =
     val lines = jsonLogLines(logText)
     if lines.isEmpty then
       LogIndexResult(
@@ -53,9 +64,11 @@ final class ElasticsearchLogIndexer @Inject()(config: Config):
         index = elasticsearchIndex,
         attemptedLines = 0,
         indexedLines = 0,
+        latestTimestamp = None,
         failures = Seq("Fetched log, but found no JSON log lines to index.")
       )
     else
+      val latestTimestamp = timestampFromLastLine(lines)
       val requestBuilder = new BulkRequest.Builder()
       lines.foreach { line =>
         val data = BinaryData.of(line.getBytes(StandardCharsets.UTF_8), ContentType.APPLICATION_JSON)
@@ -79,11 +92,14 @@ final class ElasticsearchLogIndexer @Inject()(config: Config):
         }
         .toSeq
 
+      latestTimestamp.foreach(timestamp => latestTimestampByNode.put(nodeIdentity, timestamp))
+
       LogIndexResult(
         elasticsearchUrl = elasticsearchUrl,
         index = elasticsearchIndex,
         attemptedLines = lines.size,
         indexedLines = response.items().size() - failures.size,
+        latestTimestamp = latestTimestamp,
         failures = failures
       )
 
@@ -96,6 +112,11 @@ final class ElasticsearchLogIndexer @Inject()(config: Config):
       .map(_.trim)
       .filter(line => line.nonEmpty && line.startsWith("{"))
       .toSeq
+
+  private def timestampFromLastLine(lines: Seq[String]): Option[Instant] =
+    lines.lastOption
+      .flatMap(line => timestampField.findFirstMatchIn(line).map(_.group(1)))
+      .flatMap(timestamp => Try(Instant.parse(timestamp)).toOption)
 
   private def authHeader: Option[BasicHeader] =
     configValue("monitor.elasticsearch.apiKey")

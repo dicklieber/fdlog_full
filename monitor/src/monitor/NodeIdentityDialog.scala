@@ -167,18 +167,22 @@ final class NodeIdentityDialog @Inject()(logIndexer: ElasticsearchLogIndexer):
       logText: String
   ): Unit =
     try
-      val result = logIndexer.indexLog(logText)
+      val result = logIndexer.indexLog(nodeIdentity, logText)
       val failures =
         if result.hasFailures then
           "\n\nFailures:\n" + result.failures.mkString("\n")
         else ""
+      val timestamp =
+        result.latestTimestamp
+          .map(value => s"\nLatest log timestamp for this node: ${value.toString}")
+          .getOrElse("")
       showIndexResult(
         ownerWindow,
         nodeIdentity,
         URI.create(s"${result.elasticsearchUrl.stripSuffix("/")}/${result.index}"),
         s"Fetched log from $logUri.\n" +
           s"Indexed ${result.indexedLines} of ${result.attemptedLines} JSON log lines " +
-          s"to ${result.elasticsearchUrl}/${result.index}.$failures"
+          s"to ${result.elasticsearchUrl}/${result.index}.$timestamp$failures"
       )
     catch
       case NonFatal(e) =>
