@@ -47,20 +47,18 @@ final class UdpPacketListener @Inject() (config: Config)
   thread.setDaemon(true)
   thread.start()
 
-  logger.info(s"Monitor UDP listener started on port $port")
-
   override def run(): Unit =
     while !stopped && !Thread.currentThread().isInterrupted do
       val buffer = new Array[Byte](UdpPacketListener.MaxPacketSize)
       val datagram = new DatagramPacket(buffer, buffer.length)
       try
-        logger.info(s"Waiting for UDP packet on port $port")
+        logger.trace(s"Waiting for UDP packet on port $port")
         socket.receive(datagram)
         val data = datagram.getData.slice(
           datagram.getOffset,
           datagram.getOffset + datagram.getLength
         )
-        logger.info(s"Received UDP packet on port $port: ${data.mkString(",")}")
+        logger.trace(s"Received UDP packet on port $port: ${data.mkString(",")}")
         val uDPHeaderData: UDPHeaderData = UDPHeader.parse(datagram)
         incomingQueue.offer(uDPHeaderData)
       catch

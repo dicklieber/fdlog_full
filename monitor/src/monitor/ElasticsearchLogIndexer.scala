@@ -15,7 +15,6 @@ import org.elasticsearch.client.RestClient
 import java.nio.charset.StandardCharsets
 import java.time.Instant
 import java.util.Base64
-import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.*
 import scala.util.Try
@@ -39,7 +38,6 @@ final case class LogIndexResult(
     index: String,
     attemptedLines: Int,
     indexedLines: Int,
-    cursor: LogCursor,
     latestTimestamp: Option[Instant],
     failures: Seq[String]
 ):
@@ -48,7 +46,6 @@ final case class LogIndexResult(
 @Singleton
 final class ElasticsearchLogIndexer @Inject()(config: Config):
   private val timestampField = """"@timestamp":"([^"]+)"""".r
-  private val cursorByNode = ConcurrentHashMap[NodeIdentity, LogCursor]()
 
   private val elasticsearchUrl: String =
     if config.hasPath("monitor.elasticsearch.url") then config.getString("monitor.elasticsearch.url")
@@ -69,26 +66,14 @@ final class ElasticsearchLogIndexer @Inject()(config: Config):
   private val client: ElasticsearchClient =
     new ElasticsearchClient(transport)
 
-  def cursorFor(nodeIdentity: NodeIdentity): Option[LogCursor] =
-    Option(cursorByNode.get(nodeIdentity))
-
-  def nextFromByteFor(nodeIdentity: NodeIdentity): Long =
-    cursorFor(nodeIdentity).map(_.to).getOrElse(0L)
-
-  def forgetCursor(nodeIdentity: NodeIdentity): Unit =
-    cursorByNode.remove(nodeIdentity)
-
   def indexLog(nodeIdentity: NodeIdentity, metadata: LogApiMetadata, logBytes: Array[Byte]): LogIndexResult =
     val lines = jsonLogLines(metadata.from, logBytes)
-    val cursor = LogCursor(metadata.logId, metadata.to, metadata.size)
     if lines.isEmpty then
-      cursorByNode.put(nodeIdentity, cursor)
       LogIndexResult(
         elasticsearchUrl = elasticsearchUrl,
         index = elasticsearchIndex,
         attemptedLines = 0,
         indexedLines = 0,
-        cursor = cursor,
         latestTimestamp = None,
         failures = Seq.empty
       )
@@ -118,14 +103,11 @@ final class ElasticsearchLogIndexer @Inject()(config: Config):
         }
         .toSeq
 
-      cursorByNode.put(nodeIdentity, cursor)
-
       LogIndexResult(
         elasticsearchUrl = elasticsearchUrl,
         index = elasticsearchIndex,
         attemptedLines = lines.size,
         indexedLines = response.items().size() - failures.size,
-        cursor = cursor,
         latestTimestamp = latestTimestamp,
         failures = failures
       )

@@ -113,7 +113,7 @@ class QsoStore @Inject() (
     val received = batch.size
     val dups = received - added
     val storeStats = localNodeStatus.statusMessage.storeStats
-    logger.info(
+    logger.info("batch",
       "received" -> received,
       "added" -> added,
       "dups" -> dups,
@@ -196,8 +196,7 @@ class QsoStore @Inject() (
             mutateQsoCollection(qsoCollection.prepend(qso))
         case Left(error) => logger.error(s"Failed to decode Qso from line: $line", error)
     }
-    logger.info(
-      "event" -> "qso-journal-load",
+    logger.info("qso-journal-load",
       "contestStart" -> cutoff,
       "loaded" -> loaded,
       "ignoredOlderThanContestStart" -> ignoredOlderThanContestStart
@@ -234,8 +233,7 @@ class QsoStore @Inject() (
         qsoCollection.clear()
         orderedKept.foreach(qso => qsoCollection.prepend(qso))
       }
-      logger.info(
-        "event" -> "qso-journal-prune-for-contest-start",
+      logger.info("qso-journal-prune-for-contest-start",
         "contestStart" -> cutoff,
         "removed" -> removed.size,
         "kept" -> orderedKept.size,

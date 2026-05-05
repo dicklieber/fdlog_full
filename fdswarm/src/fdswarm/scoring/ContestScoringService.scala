@@ -2,7 +2,7 @@ package fdswarm.scoring
 
 import fdswarm.fx.contest.{ContestConfigManager, ContestType}
 import fdswarm.logging.LazyStructuredLogging
-import fdswarm.logging.Locus.LogEntry
+import fdswarm.logging.Locus.{LogEntry, Scoring}
 import fdswarm.model.Qso
 import jakarta.inject.*
 
@@ -14,7 +14,7 @@ class ContestScoringService @Inject() (
                                         contestScoringConfigManager: ContestScoringConfigManager,
                                         contestScorerRegistry: ContestScorerRegistry
                                       )
-  extends LazyStructuredLogging(LogEntry) :
+  extends LazyStructuredLogging(Scoring) :
 
   private var scorer: ContestScorer =
     contestScorerRegistry.forType(

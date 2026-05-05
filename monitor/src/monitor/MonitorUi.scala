@@ -19,10 +19,7 @@
 package monitor
 
 import com.google.inject.Inject
-import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.Scene
-import scalafx.scene.control.Button
-import scalafx.scene.layout.StackPane
 import scalafx.stage.Stage
 
 final class MonitorUi @Inject() (
@@ -34,13 +31,7 @@ final class MonitorUi @Inject() (
     primaryStage.title = "Monitor"
     primaryStage.onCloseRequest = _ => stop()
     primaryStage.scene = new Scene:
-      root = new StackPane:
-        padding = Insets(24)
-        alignment = Pos.Center
-        children = Seq(
-          new Button("Node Identities"):
-            onAction = _ => nodeInfoManager.showNodeIdentityDialog(primaryStage)
-        )
+      root = nodeInfoManager.nodeIdentityContent
 
   private def stop(): Unit =
     nodeInfoManager.stop()
