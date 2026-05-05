@@ -68,4 +68,6 @@ case class StoreStats(
     hash: String = "",
     qsoCount: Int = 0,
     ourQsoCount: Int = 0
-) derives Codec.AsObject, sttp.tapir.Schema
+) derives Codec.AsObject, sttp.tapir.Schema:
+  def needsUpdate(other: StoreStats): Boolean =
+    hash != other.hash || qsoCount != other.qsoCount

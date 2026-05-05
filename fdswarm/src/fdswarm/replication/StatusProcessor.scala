@@ -73,7 +73,7 @@ class StatusProcessor @Inject() (
       val remoteStoreStats = nodeStatus.statusMessage.storeStats
       val localStoreStats = localNodeStatus.statusMessage.storeStats
 
-      if remoteStoreStats != localStoreStats then
+      if remoteStoreStats.needsUpdate(localStoreStats) then
         val qsoCountDiff = remoteStoreStats.qsoCount - localStoreStats.qsoCount
         logger.info(
           s"StoreStats mismatch for ${nodeStatus.nodeIdentity}: local=$localStoreStats remote=$remoteStoreStats qsoCountDiff=$qsoCountDiff"
