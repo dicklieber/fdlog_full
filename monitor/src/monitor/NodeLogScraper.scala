@@ -5,7 +5,7 @@ import fdswarm.util.NodeIdentity
 import jakarta.inject.{Inject, Singleton}
 
 import java.net.URI
-import java.net.http.{HttpClient, HttpRequest, HttpResponse}
+import java.net.http.{HttpClient, HttpHeaders, HttpRequest, HttpResponse}
 import java.nio.charset.StandardCharsets
 import java.time.Duration
 import scala.util.{Failure, Try}
@@ -26,91 +26,21 @@ final class NodeLogScraper @Inject()(elasticsearchLogIndexer: ElasticsearchLogIn
    * @param offset where in the log to start scraping.
    */
   def scrapeNode(nodeIdentity: NodeIdentity, offset: Long): Try[IndexOperation] =
-    val logUri = nodeLogUri(nodeIdentity, offset)
-    val request = HttpRequest
-      .newBuilder(logUri)
-      .timeout(Duration.ofSeconds(10))
-      .GET()
-      .build()
+    Try{
+      val logUri = nodeLogUri(nodeIdentity, offset)
+      val request = HttpRequest.newBuilder(logUri).timeout(Duration.ofSeconds(10)).GET().build()
 
-    Try {
-      val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
-      response
-    }.flatMap(handleResponse(nodeIdentity, offset, logUri, _))
+      val response: HttpResponse[Array[Byte]] = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
+      val code = response.statusCode()
+      val body = response.body()
+      val headers: HttpHeaders = response.headers()
+      val logIndexResult: LogIndexResult = elasticsearchLogIndexer.indexLog(body)
+      val logTo = longHeader(response, "X-Log-To").fold(message => throw IllegalStateException(message), identity)
 
-  private def handleResponse(
-      nodeIdentity: NodeIdentity,
-      requestedOffset: Long,
-      logUri: URI,
-      response: HttpResponse[Array[Byte]]
-  ): Try[IndexOperation] =
-    metadataFrom(response) match
-      case Left(message) =>
-        logger.warn(
-          "Log fetch failed: missing or invalid log API metadata",
-          "Node" -> nodeIdentity.toString,
-          "Uri" -> logUri.toString,
-          "Status" -> response.statusCode(),
-          "Details" -> message
-        )
-        failed(message)
-
-      case Right(metadata) if response.statusCode() == 409 && metadata.truncated =>
-        logger.warn(
-          "Log offset is beyond the remote log size",
-          "Node" -> nodeIdentity.toString,
-          "Uri" -> logUri.toString,
-          "RequestedOffset" -> requestedOffset,
-          "RemoteSize" -> metadata.size,
-          "LogId" -> metadata.logId
-        )
-        failed("Log offset is beyond the remote log size.")
-
-      case Right(metadata) if response.statusCode() < 200 || response.statusCode() >= 300 =>
-        logger.warn(
-          "Log fetch failed",
-          "Node" -> nodeIdentity.toString,
-          "Uri" -> logUri.toString,
-          "Status" -> response.statusCode(),
-          "Body" -> utf8(response.body())
-        )
-        failed(s"Log fetch failed with status ${response.statusCode()}.")
-
-      case Right(metadata) =>
-        indexLogResponse(nodeIdentity, logUri, metadata, response.body())
-
-  private def indexLogResponse(
-      nodeIdentity: NodeIdentity,
-      logUri: URI,
-      metadata: LogApiMetadata,
-      logBytes: Array[Byte]
-  ): Try[IndexOperation] =
-    Try {
-      val result = elasticsearchLogIndexer.indexLog(nodeIdentity, metadata, logBytes)
-      val operation = IndexOperation(itemCount = result.indexedLines, offset = metadata.to)
-
-      if result.hasFailures then
-        logger.warn(
-          "Log indexing completed with failures",
-          "Node" -> nodeIdentity.toString,
-          "Uri" -> logUri.toString,
-          "IndexedLines" -> result.indexedLines,
-          "AttemptedLines" -> result.attemptedLines,
-          "Offset" -> operation.offset,
-          "Failures" -> result.failures.mkString("\n")
-        )
-      else
-        logger.debug(
-          "Log indexing completed",
-          "Node" -> nodeIdentity.toString,
-          "Uri" -> logUri.toString,
-          "IndexedLines" -> result.indexedLines,
-          "AttemptedLines" -> result.attemptedLines,
-          "Offset" -> operation.offset
-        )
-
-      operation
+      IndexOperation(itemCount = logIndexResult.indexedLines, offset = logTo)
     }
+
+
 
   private def failed(message: String): Try[IndexOperation] =
     Failure(IllegalStateException(message))

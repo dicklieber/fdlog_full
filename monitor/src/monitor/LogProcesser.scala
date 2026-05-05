@@ -35,7 +35,9 @@ class LogProcesser @Inject() (nodeStore: NodeStore, nodeLogScraper: NodeLogScrap
         nodeLogScraper
           .scrapeNode(nodeData.nodeIdentity, nodeData.lastIndexOp.offset)
           .fold(
-            e => logger.error(s"Error scraping discovered $nodeData", e),
-            indexOperation => nodeStore.updateNodeData(nodeData.nodeIdentity, indexOperation)
+            e =>
+              logger.error(s"Error scraping discovered $nodeData", e),
+            indexOperation =>
+              nodeStore.updateNodeData(nodeData.nodeIdentity, indexOperation)
           )
       catch case NonFatal(e) => logger.error(s"Error scraping discovered $nodeData", e)
