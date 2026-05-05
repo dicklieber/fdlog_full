@@ -13,11 +13,9 @@ import org.apache.http.message.BasicHeader
 import org.elasticsearch.client.RestClient
 
 import java.nio.charset.StandardCharsets
-import java.time.Instant
 import java.util.Base64
 import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.*
-import scala.util.Try
 
 final case class LogApiMetadata(
     from: Long,
@@ -27,26 +25,17 @@ final case class LogApiMetadata(
     truncated: Boolean
 )
 
-final case class LogCursor(
-    logId: String,
-    to: Long,
-    size: Long
-)
-
 final case class LogIndexResult(
     elasticsearchUrl: String,
     index: String,
     attemptedLines: Int,
     indexedLines: Int,
-    latestTimestamp: Option[Instant],
     failures: Seq[String]
 ):
   def hasFailures: Boolean = failures.nonEmpty
 
 @Singleton
 final class ElasticsearchLogIndexer @Inject()(config: Config):
-  private val timestampField = """"@timestamp":"([^"]+)"""".r
-
   private val elasticsearchUrl: String =
     if config.hasPath("monitor.elasticsearch.url") then config.getString("monitor.elasticsearch.url")
     else "http://localhost:9200"
@@ -74,11 +63,9 @@ final class ElasticsearchLogIndexer @Inject()(config: Config):
         index = elasticsearchIndex,
         attemptedLines = 0,
         indexedLines = 0,
-        latestTimestamp = None,
         failures = Seq.empty
       )
     else
-      val latestTimestamp = timestampFromLastLine(lines)
       val requestBuilder = new BulkRequest.Builder()
       lines.foreach { logLine =>
         val data = BinaryData.of(logLine.line.getBytes(StandardCharsets.UTF_8), ContentType.APPLICATION_JSON)
@@ -108,7 +95,6 @@ final class ElasticsearchLogIndexer @Inject()(config: Config):
         index = elasticsearchIndex,
         attemptedLines = lines.size,
         indexedLines = response.items().size() - failures.size,
-        latestTimestamp = latestTimestamp,
         failures = failures
       )
 
@@ -142,11 +128,6 @@ final class ElasticsearchLogIndexer @Inject()(config: Config):
       val line = new String(logBytes, lineStart, length, StandardCharsets.UTF_8).trim
       if line.nonEmpty && line.startsWith("{") then
         lines += JsonLogLine(fromByte + lineStart, line)
-
-  private def timestampFromLastLine(lines: Seq[JsonLogLine]): Option[Instant] =
-    lines.lastOption
-      .flatMap(logLine => timestampField.findFirstMatchIn(logLine.line).map(_.group(1)))
-      .flatMap(timestamp => Try(Instant.parse(timestamp)).toOption)
 
   private def documentId(nodeIdentity: NodeIdentity, logId: String, offset: Long): String =
     Base64

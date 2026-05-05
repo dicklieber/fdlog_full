@@ -25,6 +25,4 @@ import net.codingwell.scalaguice.ScalaModule
 class MonitorModule extends AbstractModule with ScalaModule:
   override def configure(): Unit =
     bind[Config].toInstance(ConfigFactory.load())
-    bind[UdpPacketListener].asEagerSingleton()
-    bind[NodeInfoManager].asEagerSingleton()
-    bind[MonitorUi].asEagerSingleton()
+    bind[monitor.UdpPacketListener].asEagerSingleton()

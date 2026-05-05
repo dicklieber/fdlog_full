@@ -20,19 +20,19 @@ package monitor
 
 import com.google.inject.Inject
 import scalafx.scene.Scene
+import scalafx.scene.control.Label
 import scalafx.stage.Stage
 
 final class MonitorUi @Inject() (
-    udpPacketListener: UdpPacketListener,
-    nodeInfoManager: NodeInfoManager
+//                                  udpPacketListener: UdpPacketListener,
+                                  logProcesser: LogProcesser
 ):
 
   def start(primaryStage: Stage): Unit =
     primaryStage.title = "Monitor"
-    primaryStage.onCloseRequest = _ => stop()
     primaryStage.scene = new Scene:
-      root = nodeInfoManager.nodeIdentityContent
+      root = Label("todo") //logProcesser.nodeIdentityContent
 
-  private def stop(): Unit =
-    nodeInfoManager.stop()
-    udpPacketListener.stop()
+//  private def stop(): Unit =
+//    logProcesser.stop()
+//    udpPacketListener.stop()

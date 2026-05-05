@@ -8,14 +8,10 @@ import java.net.URI
 import java.net.http.{HttpClient, HttpRequest, HttpResponse}
 import java.nio.charset.StandardCharsets
 import java.time.Duration
-import java.util.concurrent.{CompletableFuture, ConcurrentHashMap}
-import scala.util.Try
-import scala.util.control.NonFatal
+import scala.util.{Failure, Try}
 
 @Singleton
-final class NodeLogScraper @Inject()(logIndexer: ElasticsearchLogIndexer) extends LazyStructuredLogging:
-  private val activeScrapesByNode = ConcurrentHashMap[NodeIdentity, java.lang.Boolean]()
-  private val cursorByNode = ConcurrentHashMap[NodeIdentity, LogCursor]()
+final class NodeLogScraper @Inject()(elasticsearchLogIndexer: ElasticsearchLogIndexer) extends LazyStructuredLogging:
 
   private val httpClient: HttpClient =
     HttpClient
@@ -23,80 +19,76 @@ final class NodeLogScraper @Inject()(logIndexer: ElasticsearchLogIndexer) extend
       .connectTimeout(Duration.ofSeconds(5))
       .build()
 
-  def scrapeNodes(nodeIdentities: Iterable[NodeIdentity]): Unit =
-    nodeIdentities.foreach(scrapeNode)
-
-  def close(): Unit =
-    logIndexer.close()
-
-  private def scrapeNode(nodeIdentity: NodeIdentity): Unit =
-    if activeScrapesByNode.putIfAbsent(nodeIdentity, java.lang.Boolean.TRUE) == null then
-      fetchAndIndexNodeLog(nodeIdentity)
-        .whenComplete((_, _) => activeScrapesByNode.remove(nodeIdentity))
-
-  private def fetchAndIndexNodeLog(
-      nodeIdentity: NodeIdentity,
-      fromByte: Option[Long] = None,
-      retryFromStart: Boolean = true
-  ): CompletableFuture[Unit] =
-    val requestedFromByte = fromByte.getOrElse(nextFromByteFor(nodeIdentity))
-    val logUri = nodeLogUri(nodeIdentity, requestedFromByte)
-    val fetchRequest = HttpRequest
+  /**
+   * Scrape log data from a node, index it in Elasticsearch, and return the next log offset.
+   *
+   * @param nodeIdentity which node to scrape.
+   * @param offset where in the log to start scraping.
+   */
+  def scrapeNode(nodeIdentity: NodeIdentity, offset: Long): Try[IndexOperation] =
+    val logUri = nodeLogUri(nodeIdentity, offset)
+    val request = HttpRequest
       .newBuilder(logUri)
       .timeout(Duration.ofSeconds(10))
       .GET()
       .build()
 
-    httpClient
-      .sendAsync(fetchRequest, HttpResponse.BodyHandlers.ofByteArray())
-      .handle[CompletableFuture[Unit]]((fetchResponse, fetchError) =>
-        if fetchError != null then
-          logFetchFailed(nodeIdentity, logUri, s"Log fetch failed: ${rootMessage(fetchError)}")
-        else if fetchResponse.statusCode() == 409 && retryFromStart then
-          forgetCursor(nodeIdentity)
-          fetchAndIndexNodeLog(
-            nodeIdentity,
-            fromByte = Some(0L),
-            retryFromStart = false
-          )
-        else if fetchResponse.statusCode() < 200 || fetchResponse.statusCode() >= 300 then
-          logFetchFailed(
-            nodeIdentity,
-            logUri,
-            s"Log fetch failed: HTTP ${fetchResponse.statusCode()} ${utf8(fetchResponse.body())}"
-          )
-        else
-          metadataFrom(fetchResponse) match
-            case Left(message) =>
-              logFetchFailed(
-                nodeIdentity,
-                logUri,
-                s"Log fetch failed: missing or invalid log API metadata. $message"
-              )
-            case Right(metadata) =>
-              val currentLogId = cursorFor(nodeIdentity).map(_.logId)
-              if retryFromStart && metadata.from > 0 && currentLogId.exists(_ != metadata.logId) then
-                forgetCursor(nodeIdentity)
-                fetchAndIndexNodeLog(
-                  nodeIdentity,
-                  fromByte = Some(0L),
-                  retryFromStart = false
-                )
-              else
-                indexLogResponse(nodeIdentity, logUri, metadata, fetchResponse.body())
-      )
-      .thenCompose((future: CompletableFuture[Unit]) => future)
+    Try {
+      val response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray())
+      response
+    }.flatMap(handleResponse(nodeIdentity, offset, logUri, _))
+
+  private def handleResponse(
+      nodeIdentity: NodeIdentity,
+      requestedOffset: Long,
+      logUri: URI,
+      response: HttpResponse[Array[Byte]]
+  ): Try[IndexOperation] =
+    metadataFrom(response) match
+      case Left(message) =>
+        logger.warn(
+          "Log fetch failed: missing or invalid log API metadata",
+          "Node" -> nodeIdentity.toString,
+          "Uri" -> logUri.toString,
+          "Status" -> response.statusCode(),
+          "Details" -> message
+        )
+        failed(message)
+
+      case Right(metadata) if response.statusCode() == 409 && metadata.truncated =>
+        logger.warn(
+          "Log offset is beyond the remote log size",
+          "Node" -> nodeIdentity.toString,
+          "Uri" -> logUri.toString,
+          "RequestedOffset" -> requestedOffset,
+          "RemoteSize" -> metadata.size,
+          "LogId" -> metadata.logId
+        )
+        failed("Log offset is beyond the remote log size.")
+
+      case Right(metadata) if response.statusCode() < 200 || response.statusCode() >= 300 =>
+        logger.warn(
+          "Log fetch failed",
+          "Node" -> nodeIdentity.toString,
+          "Uri" -> logUri.toString,
+          "Status" -> response.statusCode(),
+          "Body" -> utf8(response.body())
+        )
+        failed(s"Log fetch failed with status ${response.statusCode()}.")
+
+      case Right(metadata) =>
+        indexLogResponse(nodeIdentity, logUri, metadata, response.body())
 
   private def indexLogResponse(
       nodeIdentity: NodeIdentity,
       logUri: URI,
       metadata: LogApiMetadata,
       logBytes: Array[Byte]
-  ): CompletableFuture[Unit] =
-    try
-      val result = logIndexer.indexLog(nodeIdentity, metadata, logBytes)
-      val cursor = LogCursor(metadata.logId, metadata.to, metadata.size)
-      cursorByNode.put(nodeIdentity, cursor)
+  ): Try[IndexOperation] =
+    Try {
+      val result = elasticsearchLogIndexer.indexLog(nodeIdentity, metadata, logBytes)
+      val operation = IndexOperation(itemCount = result.indexedLines, offset = metadata.to)
+
       if result.hasFailures then
         logger.warn(
           "Log indexing completed with failures",
@@ -104,49 +96,27 @@ final class NodeLogScraper @Inject()(logIndexer: ElasticsearchLogIndexer) extend
           "Uri" -> logUri.toString,
           "IndexedLines" -> result.indexedLines,
           "AttemptedLines" -> result.attemptedLines,
-          "Cursor" -> s"${cursor.to}/${cursor.size}",
+          "Offset" -> operation.offset,
           "Failures" -> result.failures.mkString("\n")
         )
       else
-        logger.info(
+        logger.debug(
           "Log indexing completed",
           "Node" -> nodeIdentity.toString,
           "Uri" -> logUri.toString,
           "IndexedLines" -> result.indexedLines,
           "AttemptedLines" -> result.attemptedLines,
-          "Cursor" -> s"${cursor.to}/${cursor.size}",
-          "LatestTimestamp" -> result.latestTimestamp.map(_.toString).getOrElse("")
+          "Offset" -> operation.offset
         )
-      CompletableFuture.completedFuture(())
-    catch
-      case NonFatal(e) =>
-        logger.error(
-          "Could not prepare Elasticsearch bulk request",
-          e,
-          "Node" -> nodeIdentity.toString,
-          "Uri" -> logUri.toString
-        )
-        CompletableFuture.completedFuture(())
 
-  private def logFetchFailed(nodeIdentity: NodeIdentity, logUri: URI, message: String): CompletableFuture[Unit] =
-    logger.warn(
-      message,
-      "Node" -> nodeIdentity.toString,
-      "Uri" -> logUri.toString
-    )
-    CompletableFuture.completedFuture(())
+      operation
+    }
+
+  private def failed(message: String): Try[IndexOperation] =
+    Failure(IllegalStateException(message))
 
   private def nodeLogUri(nodeIdentity: NodeIdentity, fromByte: Long): URI =
     URI.create(s"http://${nodeIdentity.hostIp}:${nodeIdentity.port}/log?fromByte=$fromByte")
-
-  private def cursorFor(nodeIdentity: NodeIdentity): Option[LogCursor] =
-    Option(cursorByNode.get(nodeIdentity))
-
-  private def nextFromByteFor(nodeIdentity: NodeIdentity): Long =
-    cursorFor(nodeIdentity).map(_.to).getOrElse(0L)
-
-  private def forgetCursor(nodeIdentity: NodeIdentity): Unit =
-    cursorByNode.remove(nodeIdentity)
 
   private def metadataFrom(response: HttpResponse[Array[Byte]]): Either[String, LogApiMetadata] =
     for
@@ -177,14 +147,3 @@ final class NodeLogScraper @Inject()(logIndexer: ElasticsearchLogIndexer) extend
 
   private def utf8(bytes: Array[Byte]): String =
     new String(bytes, StandardCharsets.UTF_8)
-
-  private def rootMessage(error: Throwable): String =
-    val root =
-      Iterator
-        .iterate(error)(_.getCause)
-        .takeWhile(_ != null)
-        .toSeq
-        .lastOption
-        .getOrElse(error)
-
-    Option(root.getMessage).filter(_.nonEmpty).getOrElse(root.getClass.getName)

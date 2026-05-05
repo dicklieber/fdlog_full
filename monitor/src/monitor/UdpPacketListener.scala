@@ -25,17 +25,15 @@ import fdswarm.replication.{UDPHeader, UDPHeaderData}
 
 import java.net.*
 import java.nio.channels.DatagramChannel
-import java.util.concurrent.LinkedBlockingQueue
 import scala.compiletime.uninitialized
 import scala.util.control.NonFatal
 
 @Singleton
-final class UdpPacketListener @Inject() (config: Config)
+final class UdpPacketListener @Inject() (config: Config, nodeStore: NodeStore)
     extends Runnable
     with LazyStructuredLogging:
 
-  val incomingQueue: LinkedBlockingQueue[UDPHeaderData] =
-    new LinkedBlockingQueue[UDPHeaderData]()
+
   private val port: Int = 8090
   private val thread = new Thread(this, "Monitor-UDP-Listener")
   @volatile
@@ -52,7 +50,6 @@ final class UdpPacketListener @Inject() (config: Config)
       val buffer = new Array[Byte](UdpPacketListener.MaxPacketSize)
       val datagram = new DatagramPacket(buffer, buffer.length)
       try
-        logger.trace(s"Waiting for UDP packet on port $port")
         socket.receive(datagram)
         val data = datagram.getData.slice(
           datagram.getOffset,
@@ -60,7 +57,7 @@ final class UdpPacketListener @Inject() (config: Config)
         )
         logger.trace(s"Received UDP packet on port $port: ${data.mkString(",")}")
         val uDPHeaderData: UDPHeaderData = UDPHeader.parse(datagram)
-        incomingQueue.offer(uDPHeaderData)
+        nodeStore.statusReceived(uDPHeaderData.nodeIdentity)
       catch
         case _: SocketException if stopped =>
           Thread.currentThread().interrupt()
@@ -96,4 +93,4 @@ final class UdpPacketListener @Inject() (config: Config)
         logger.debug("SO_REUSEPORT is not available for the monitor UDP socket")
 
 object UdpPacketListener:
-  private val MaxPacketSize = 65535
+  val MaxPacketSize = 65535
