@@ -69,7 +69,7 @@ class NodeStatusDispatcher @Inject() (transport: Transport) extends LazyStructur
           val udpHeader: UDPHeaderData = transport.incomingQueue.take()
           logger.trace(s"Received UDP packet from ${udpHeader.nodeIdentity} for service ${udpHeader.service}")
           if udpHeader.service == Service.Status then lastStatusMessagePayloadSize = udpHeader.payload.length.toDouble
-          notifyFromRegistry(udpHeader = udpHeader)
+          notifyListeners(udpHeader = udpHeader)
         catch
           case _: InterruptedException => Thread.currentThread().interrupt()
 
@@ -94,7 +94,7 @@ class NodeStatusDispatcher @Inject() (transport: Transport) extends LazyStructur
   thread.setDaemon(true)
   thread.start()
 
-  private def notifyFromRegistry(udpHeader: UDPHeaderData): Unit =
+  private def notifyListeners(udpHeader: UDPHeaderData): Unit =
     logServicesWithoutListeners()
     val registrations = listenersByService.getOrElse(udpHeader.service, Seq.empty)
     if registrations.isEmpty then

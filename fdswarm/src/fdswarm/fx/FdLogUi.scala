@@ -20,7 +20,7 @@ package fdswarm.fx
 
 import cats.effect.unsafe.implicits.global
 import fdswarm.StartupInfo
-import fdswarm.fx.FdLogUi.isMac
+import fdswarm.fx.FdLogUi.{isJdwpEnabled, isMac}
 import fdswarm.fx.discovery.ContestDiscovery
 import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.utils.UiStyles
@@ -97,7 +97,8 @@ final class FdLogUi @Inject() (
           "Could not set macOS handlers"
         )
 
-    stage.title = s"FdSwarm@${NodeIdentityManager.nodeIdentity}"
+    val debuggee = if isJdwpEnabled then "JDWP" else ""
+    stage.title = s"FdSwarm@${NodeIdentityManager.nodeIdentity} $debuggee "
     val scene = new Scene(
       root,
       1100,
@@ -200,3 +201,11 @@ object FdLogUi:
         "Primary stage has not been initialized."
       )
     )
+
+  import java.lang.management.ManagementFactory
+
+
+  lazy val isJdwpEnabled: Boolean = ManagementFactory.getRuntimeMXBean
+    .getInputArguments
+    .stream()
+    .anyMatch(arg => arg.contains("jdwp") || arg.contains("-Xrunjdwp"))

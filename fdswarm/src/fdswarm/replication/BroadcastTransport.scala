@@ -72,12 +72,8 @@ class BroadcastTransport @Inject() (nodeIdentity: NodeIdentityManager)
       val senderPort = packet.getPort
       logger.trace(s"Received a UDP packet")
       val udpHeaderData = UDPHeader.parse(packet)
-      if udpHeaderData.service == Service.Status then
-      if NodeIdentityManager.isUs(udpHeaderData.nodeIdentity) then
-        logger.trace(s"Received UDP packet from $senderAddr:$senderPort: ${udpHeaderData.service}")
-      else
-        logger.trace(s"Received UDP packet from $senderAddr:$senderPort: ${udpHeaderData.service}")
-        incomingQueue.offer(udpHeaderData)
+
+      incomingQueue.offer(udpHeaderData)
 
   def send(data: Array[Byte]): Unit =
     send(Service.QSO, data)
