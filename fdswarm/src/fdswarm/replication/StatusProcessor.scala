@@ -42,10 +42,10 @@ class StatusProcessor @Inject() (
 
   private val processTimer = addTimer("process")
   private val httpRequestCounter = addCounter("http-request")
-  private val allQsosHttpRequestMeter = addMeter("allQsos.httpRequest")
+  private val needQsosMeter = addMeter("needQsos.meter")
+  private val needQsosCounter = addCounter("needQsos.counter")
   private val allQsosFetchAndApplyTimer = addTimer("allQsos.fetchAndApply")
   private val allQsosResponseBytesHistogram = addHistogram("allQsos.responseBytes")
-  private val allQsosResponseQsoCountHistogram = addHistogram("allQsos.responseQsoCount")
   nodeStatusDispatcher.addListener(
     service = Service.Status,
     singleListener = false
@@ -75,13 +75,12 @@ class StatusProcessor @Inject() (
 
       if remoteStoreStats.needsUpdate(localStoreStats) then
         val qsoCountDiff = remoteStoreStats.qsoCount - localStoreStats.qsoCount
-        logger.info(
-          s"StoreStats mismatch for ${nodeStatus.nodeIdentity}: local=$localStoreStats remote=$remoteStoreStats qsoCountDiff=$qsoCountDiff"
-        )
+        logger.info(s"StoreStats mismatch for ${nodeStatus.nodeIdentity}: local=$localStoreStats remote=$remoteStoreStats qsoCountDiff=$qsoCountDiff")
         given fdswarm.util.NodeIdentity = nodeStatus.nodeIdentity
         val allQsosContext = allQsosFetchAndApplyTimer.time()
         try
-          allQsosHttpRequestMeter.mark()
+          needQsosMeter.mark() //Useful in code to show rate.
+          needQsosCounter.inc() // Useful for grafana to calculate rate.
           val (_, contentEncoding, _, responseBytes) =
             callEndpoint(
               ReplEndpoints.allQsosDef,
@@ -96,7 +95,6 @@ class StatusProcessor @Inject() (
           allQsosResponseBytesHistogram.update(
             responseBytes.length
           )
-          allQsosResponseQsoCountHistogram.update(remoteAllQsos.qsos.size)
           qsoStore.addReplicated(
             remoteAllQsos.qsos
           )
