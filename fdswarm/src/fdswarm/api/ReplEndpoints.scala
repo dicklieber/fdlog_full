@@ -41,7 +41,7 @@ import java.util.Locale
 final class ReplEndpoints @Inject()(
     qsoStore: QsoStore,
     localNodeStatus: LocalNodeStatus
-) extends ApiEndpoints with StatsSource(Locus.TCP):
+) extends ApiEndpoints:
 
   override def endpoints: List[ServerEndpoint[Any, IO]] = List(
     allQsos,

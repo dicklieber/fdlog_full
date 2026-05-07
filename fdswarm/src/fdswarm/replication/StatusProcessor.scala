@@ -37,8 +37,8 @@ class StatusProcessor @Inject() (
                                   callEndpoint: CallEndpoint,
                                   nodeBandOpPane: NodeBandOpPane,
                                   nodeStatusDispatcher: NodeStatusDispatcher)
-    extends LazyStructuredLogging
-    with StatsSource(TCP):
+    extends LazyStructuredLogging(Replication)
+    with StatsSource(Replication):
 
   private val processTimer = addTimer("process")
   private val httpRequestCounter = addCounter("http-request")

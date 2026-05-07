@@ -54,7 +54,7 @@ class ContestScoringService @Inject() (
   }
 
   contestScoringConfigManager.contestScoringConfigProperty.onChange { (_, _, newConfig) =>
-    logger.info(
+    logger.debug(
       "contestScoringConfigChanged" -> true,
       "powerWatts" -> newConfig.powerWatts,
       "powerSource" -> newConfig.powerSource.toString,
@@ -87,7 +87,7 @@ class ContestScoringService @Inject() (
     totalQsosValue.set(result.totalQsos.toLong)
     multiplierValue.set(result.multiplier)
 
-    logger.info(
+    logger.debug(
       "contestScoreRecomputed" -> true,
       "contestType" -> contestConfigManager.contestConfigProperty.value.contestType.toString,
       "scorer" -> scorer.name,

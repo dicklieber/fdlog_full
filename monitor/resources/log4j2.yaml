@@ -13,7 +13,7 @@ Configuration:
 
     Logger:
       - name: monitor.UdpPacketListener
-        level: trace
+        level: info
 
     Root:
       level: info

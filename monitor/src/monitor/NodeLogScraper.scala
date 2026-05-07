@@ -34,7 +34,10 @@ final class NodeLogScraper @Inject()(elasticsearchLogIndexer: ElasticsearchLogIn
       val code = response.statusCode()
       val body = response.body()
       val headers: HttpHeaders = response.headers()
+      logger.debug(s"Scraped node $nodeIdentity, status code $code, headers $headers")
       val logIndexResult: LogIndexResult = elasticsearchLogIndexer.indexLog(body)
+      if logIndexResult.indexedLines > 0 then
+        logger.info(s"Indexed ${logIndexResult.indexedLines} lines from node $nodeIdentity")
       val logTo = longHeader(response, "X-Log-To").fold(message => throw IllegalStateException(message), identity)
 
       IndexOperation(itemCount = logIndexResult.indexedLines, offset = logTo)

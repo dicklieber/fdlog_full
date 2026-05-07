@@ -22,8 +22,6 @@ import fdswarm.StationConfigManager
 import fdswarm.bandmodes.SelectedBandModeManager
 import fdswarm.contestStart.ContestStartManager
 import fdswarm.fx.contest.ContestConfigManager
-import fdswarm.logging.LazyStructuredLogging
-import fdswarm.logging.Locus.Replication
 import fdswarm.metric.{MetricSnapshotFactory, MetricStat}
 import fdswarm.model.BandModeOperator
 import fdswarm.replication.status.SwarmData
@@ -45,7 +43,7 @@ final class LocalNodeStatus @Inject()(
                                        contestConfigManager: ContestConfigManager,
                                        contestStartManager: ContestStartManager,
                                        swarmData: SwarmData
-                                     ) extends LazyStructuredLogging(Replication):
+                                     ) :
 
   private val metricRegistry: MetricRegistry = SharedMetricRegistries.getOrCreate(
     "default"

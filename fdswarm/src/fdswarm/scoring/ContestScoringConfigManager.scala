@@ -2,14 +2,14 @@ package fdswarm.scoring
 
 import fdswarm.io.FileHelper
 import fdswarm.logging.LazyStructuredLogging
-import fdswarm.logging.Locus.Scoring
+import fdswarm.logging.Locus.{Scoring, Sync}
 import io.circe.Encoder.AsObject.importedAsObjectEncoder
 import io.circe.generic.auto.{deriveDecoder, deriveEncoder}
 import jakarta.inject.*
 import scalafx.beans.property.ObjectProperty
 
 @Singleton
-class ContestScoringConfigManager @Inject() (fileHelper: FileHelper) extends LazyStructuredLogging(Scoring):
+class ContestScoringConfigManager @Inject() (fileHelper: FileHelper) extends LazyStructuredLogging(Sync):
 
   private val file = "scoringConfig.json"
 

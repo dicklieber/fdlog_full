@@ -3,7 +3,7 @@ package fdswarm.fx.contest
 import com.google.inject.name.Named
 import fdswarm.io.FileHelper
 import fdswarm.logging.LazyStructuredLogging
-import fdswarm.logging.Locus.Scoring
+import fdswarm.logging.Locus.{Scoring, Sync}
 import fdswarm.model.Callsign
 import fdswarm.replication.{NodeStatusDispatcher, Service}
 import io.circe.generic.auto.{deriveDecoder, deriveEncoder}
@@ -18,7 +18,7 @@ final class ContestConfigManager @Inject() (
                                              nodeStatusDispatcher: NodeStatusDispatcher,
                                              @Named("fdswarm.contestChangeIgnoreStatusSec")
     ignoreStatusSec: Int)
-    extends ContestConfigFields with LazyStructuredLogging(Scoring):
+    extends ContestConfigFields with LazyStructuredLogging(Sync):
   lazy val hasConfiguration: ReadOnlyBooleanProperty = _hasConfiguration.readOnlyProperty
   private val file = "contest.json"
   private val _contestConfig: ObjectProperty[ContestConfig] = ObjectProperty(load())
