@@ -23,8 +23,7 @@ import fdswarm.logging.Locus
 import fdswarm.model.Qso
 import fdswarm.replication.{LocalNodeStatus, StatusMessage}
 import fdswarm.store.QsoStore
-import fdswarm.util.Gzip
-import fdswarm.util.StatsSource
+import fdswarm.util.{Gzip, StatsSource}
 import io.circe.generic.auto.deriveEncoder
 import io.circe.generic.semiauto.deriveCodec
 import io.circe.parser.decode
@@ -32,7 +31,6 @@ import io.circe.syntax.*
 import io.circe.{Codec, Printer}
 import jakarta.inject.{Inject, Singleton}
 import sttp.tapir.*
-import sttp.tapir.json.circe.*
 import sttp.tapir.server.ServerEndpoint
 
 import java.nio.charset.StandardCharsets
@@ -45,10 +43,6 @@ final class ReplEndpoints @Inject()(
     localNodeStatus: LocalNodeStatus
 ) extends ApiEndpoints with StatsSource(Locus.TCP):
 
-  private val qsosRequestCounter = addCounter("qsos.request")
-  private val qsosResponseBytesHistogram = addHistogram("qsos.response_bytes")
-  private val qsosJsonBytesHistogram = addHistogram("qsos.json_bytes")
-
   override def endpoints: List[ServerEndpoint[Any, IO]] = List(
     allQsos,
     statusMessage
@@ -58,7 +52,6 @@ final class ReplEndpoints @Inject()(
     ReplEndpoints.allQsosDef
       .serverLogicSuccess[IO] { acceptEncoding =>
         IO.delay {
-          qsosRequestCounter.inc()
           val response = AllQsos(
             statusMessage = localNodeStatus.statusMessage,
             qsos = qsoStore.all
@@ -77,8 +70,6 @@ final class ReplEndpoints @Inject()(
             else
               None -> jsonBytes
 
-          qsosJsonBytesHistogram.update(jsonBytes.length)
-          qsosResponseBytesHistogram.update(bytes.length)
 
           (
             ReplEndpoints.qsosContentType,
