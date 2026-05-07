@@ -21,12 +21,12 @@ object IndexOperation:
 /**
   * @param nodeIdentity which node.
   */
-class NodeData(val nodeIdentity: NodeIdentity):
+class NodeData(val nodeIdentity: NodeIdentity, initialLastIndexOffset: Long = IndexOperation.Never.offset):
   // when we got a [[fdswarm.replication.StatusMessage]] fronm the node
   val lastStatus = ObjectProperty[Instant](this, "lastStatus", Instant.now())
   // what we did scraping the node log and pushing to ElasticSearch
   val lastIndexItemCount = new IntegerProperty(this, "lastIndexItemCount", IndexOperation.Never.itemCount)
-  val lastIndexOffset = new LongProperty(this, "lastIndexOffset", IndexOperation.Never.offset)
+  val lastIndexOffset = new LongProperty(this, "lastIndexOffset", initialLastIndexOffset)
   val lastIndexStamp = ObjectProperty[Instant](this, "lastIndexStamp", IndexOperation.Never.stamp)
 
   def updateLastStatus(): Unit = lastStatus.value = Instant.now()
