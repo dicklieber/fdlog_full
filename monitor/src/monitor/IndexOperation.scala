@@ -1,6 +1,7 @@
 package monitor
 
 import fdswarm.util.NodeIdentity
+import scalafx.beans.property.{IntegerProperty, LongProperty, ObjectProperty}
 
 import java.time.Instant
 
@@ -22,8 +23,14 @@ object IndexOperation:
   */
 class NodeData(val nodeIdentity: NodeIdentity):
   // when we got a [[fdswarm.replication.StatusMessage]] fronm the node
-  private var lastStatus: Instant = Instant.now()
+  val lastStatus = ObjectProperty[Instant](this, "lastStatus", Instant.now())
   // what we did scraping the node log and pushing to ElasticSearch
-  var lastIndexOp: IndexOperation = IndexOperation.Never
-  def updateLastStatus(): Unit = lastStatus = Instant.now()
-  def updateLastIndexOp(op: IndexOperation): Unit = lastIndexOp = op
+  val lastIndexItemCount = new IntegerProperty(this, "lastIndexItemCount", IndexOperation.Never.itemCount)
+  val lastIndexOffset = new LongProperty(this, "lastIndexOffset", IndexOperation.Never.offset)
+  val lastIndexStamp = ObjectProperty[Instant](this, "lastIndexStamp", IndexOperation.Never.stamp)
+
+  def updateLastStatus(): Unit = lastStatus.value = Instant.now()
+  def updateLastIndexOp(op: IndexOperation): Unit =
+    lastIndexItemCount.value = op.itemCount
+    lastIndexOffset.value = op.offset
+    lastIndexStamp.value = op.stamp

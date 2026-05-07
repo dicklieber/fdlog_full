@@ -33,7 +33,7 @@ class LogProcesser @Inject() (nodeStore: NodeStore, nodeLogScraper: NodeLogScrap
     do
       try
         nodeLogScraper
-          .scrapeNode(nodeData.nodeIdentity, nodeData.lastIndexOp.offset)
+          .scrapeNode(nodeData.nodeIdentity, nodeData.lastIndexOffset.value)
           .fold(
             e =>
               logger.error(s"Error scraping discovered $nodeData", e),

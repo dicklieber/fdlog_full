@@ -24,14 +24,15 @@ import scalafx.scene.control.Label
 import scalafx.stage.Stage
 
 final class MonitorUi @Inject() (
-//                                  udpPacketListener: UdpPacketListener,
-                                  logProcesser: LogProcesser
+    nodeStore: NodeStore,
+    nodeStatusView: NodeStatusView,
+    logProcesser: LogProcesser
 ):
 
   def start(primaryStage: Stage): Unit =
     primaryStage.title = "Monitor"
     primaryStage.scene = new Scene:
-      root = Label("todo") //logProcesser.nodeIdentityContent
+      root = nodeStatusView.content(nodeStore.observableNodes)
 
 //  private def stop(): Unit =
 //    logProcesser.stop()
