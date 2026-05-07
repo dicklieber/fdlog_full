@@ -127,8 +127,8 @@ object fdswarm
     val dest = Task.dest / "jpackage"
     os.makeDir.all(dest)
 
-    val cp = jpackageRunClasspath()
-    val (inputDir, mainJarName) = getJpackageInput(cp, Task.dest)
+    val (inputDir, mainJarName) =
+      getJpackageInput(Task.dest)(jpackageRunClasspath())
 
     val baseArgs = Seq(
       "jpackage",
@@ -172,8 +172,8 @@ object fdswarm
     val dest = Task.dest / "jpackage-app-image"
     os.makeDir.all(dest)
 
-    val cp = jpackageRunClasspath()
-    val (inputDir, mainJarName) = getJpackageInput(cp, Task.dest)
+    val (inputDir, mainJarName) =
+      getJpackageInput(Task.dest)(jpackageRunClasspath())
 
     val baseArgs = Seq(
       "jpackage",
@@ -223,8 +223,9 @@ object fdswarm
     else Seq.empty
 
   private def getJpackageInput(
-      cp: Seq[PathRef],
       dest: os.Path
+    )(
+      cp: => Seq[PathRef]
     ): (os.Path, String) =
 
     val jarFromEnv = sys.env.get("FDSWARM_ASSEMBLY_JAR").map(os.Path(_, os.pwd))
@@ -263,8 +264,8 @@ object fdswarm
     val dest = Task.dest / "jpackage"
     os.makeDir.all(dest)
 
-    val cp = jpackageRunClasspath()
-    val (inputDir, mainJarName) = getJpackageInput(cp, Task.dest)
+    val (inputDir, mainJarName) =
+      getJpackageInput(Task.dest)(jpackageRunClasspath())
 
     val baseArgs = Seq(
       "jpackage",
@@ -315,8 +316,8 @@ object fdswarm
     val dest = Task.dest / s"jpackage-win-$arch"
     os.makeDir.all(dest)
 
-    val cp = jpackageRunClasspath()
-    val (inputDir, mainJarName) = getJpackageInput(cp, Task.dest)
+    val (inputDir, mainJarName) =
+      getJpackageInput(Task.dest)(jpackageRunClasspath())
 
     val baseArgs = Seq(
       "jpackage",
