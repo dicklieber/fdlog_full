@@ -102,6 +102,11 @@ object fdswarm
     "-Dapple.awt.application.appearance=system"
   )
 
+  private val preserveNativeCommandsJlinkOptions = Seq(
+    "--jlink-options",
+    "--strip-debug --no-man-pages --no-header-files"
+  )
+
   override def moduleDeps = Seq(common)
 
   def mainClass = Some("fdswarm.FdLogApp")
@@ -346,7 +351,7 @@ object fdswarm
       mainJarName,
       "--main-class",
       jpackageMainClass()
-    ) ++ Seq(
+    ) ++ preserveNativeCommandsJlinkOptions ++ Seq(
       "--win-menu",
       "--win-shortcut"
     )
