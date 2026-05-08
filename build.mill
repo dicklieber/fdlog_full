@@ -109,13 +109,7 @@ object fdswarm
 
   private val jpackageRuntimeModules = Seq(
     "--add-modules",
-    Seq(
-      "java.se",
-      "jdk.unsupported",
-      "jdk.crypto.ec",
-      "javafx.controls",
-      "javafx.swing"
-    ).mkString(",")
+    "ALL-MODULE-PATH"
   )
 
   override def moduleDeps = Seq(common)
