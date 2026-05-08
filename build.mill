@@ -107,6 +107,11 @@ object fdswarm
     "--strip-debug --no-man-pages --no-header-files"
   )
 
+  private val jpackageRuntimeModules = Seq(
+    "--add-modules",
+    "javafx.controls,javafx.swing"
+  )
+
   override def moduleDeps = Seq(common)
 
   def mainClass = Some("fdswarm.FdLogApp")
@@ -144,7 +149,7 @@ object fdswarm
     os.makeDir.all(dest)
 
     val (inputDir, mainJarName) =
-      getJpackageInput(Task.dest)(jpackageRunClasspath())
+      getJpackageInput(Task.dest, jpackageMainClass())(jpackageRunClasspath())
 
     val baseArgs = Seq(
       "jpackage",
@@ -162,7 +167,7 @@ object fdswarm
       mainJarName,
       "--main-class",
       jpackageMainClass()
-    ) ++ macJavaOptions
+    ) ++ jpackageRuntimeModules ++ macJavaOptions
 
     val iconArgs =
       if os.exists(macIconIcns) then Seq("--icon", macIconIcns.toString)
@@ -189,7 +194,7 @@ object fdswarm
     os.makeDir.all(dest)
 
     val (inputDir, mainJarName) =
-      getJpackageInput(Task.dest)(jpackageRunClasspath())
+      getJpackageInput(Task.dest, jpackageMainClass())(jpackageRunClasspath())
 
     val baseArgs = Seq(
       "jpackage",
@@ -207,7 +212,7 @@ object fdswarm
       mainJarName,
       "--main-class",
       jpackageMainClass()
-    ) ++ macJavaOptions
+    ) ++ jpackageRuntimeModules ++ macJavaOptions
 
     val iconArgs =
       if os.exists(macIconIcns) then Seq("--icon", macIconIcns.toString)
@@ -239,7 +244,8 @@ object fdswarm
     else Seq.empty
 
   private def getJpackageInput(
-      dest: os.Path
+      dest: os.Path,
+      mainClassName: String
     )(
       cp: => Seq[PathRef]
     ): (os.Path, String) =
@@ -253,23 +259,45 @@ object fdswarm
         os.copy.over(jarPath, inputDir / jarPath.last, createFolders = true)
         (inputDir, jarPath.last)
       case _ =>
-        val mainJarName = stageJpackageInput(inputDir, cp)
+        val mainJarName =
+          stageJpackageInput(inputDir, cp, mainClassName)
         (inputDir, mainJarName)
 
   private def stageJpackageInput(
       inputDir: os.Path,
-      cp: Seq[PathRef]
+      cp: Seq[PathRef],
+      mainClassName: String
     ): String =
 
     if cp.isEmpty then
       throw new RuntimeException("jpackageRunClasspath was empty")
 
-    cp.foreach { p =>
+    val mainClassEntry = mainClassName.replace('.', '/') + ".class"
+    val staged = cp.zipWithIndex.map { (p, index) =>
       val src = os.Path(p.path.toString)
-      os.copy.over(src, inputDir / src.last, createFolders = true)
+      val stagedName = f"$index%04d-${src.last}"
+      os.copy.over(src, inputDir / stagedName, createFolders = true)
+      (src, stagedName)
     }
 
-    os.Path(cp.head.path.toString).last
+    staged
+      .find { (src, _) => jarContainsEntry(src, mainClassEntry) }
+      .map((_, stagedName) => stagedName)
+      .getOrElse {
+        throw new RuntimeException(
+          s"Could not find $mainClassEntry in jpackageRunClasspath"
+        )
+      }
+
+  private def jarContainsEntry(
+      jarPath: os.Path,
+      entryName: String
+    ): Boolean =
+    if jarPath.ext != "jar" then false
+    else
+      val jar = new java.util.jar.JarFile(jarPath.toIO)
+      try jar.getEntry(entryName) != null
+      finally jar.close()
 
   def macPkg = Task {
     if !isMac then
@@ -281,7 +309,7 @@ object fdswarm
     os.makeDir.all(dest)
 
     val (inputDir, mainJarName) =
-      getJpackageInput(Task.dest)(jpackageRunClasspath())
+      getJpackageInput(Task.dest, jpackageMainClass())(jpackageRunClasspath())
 
     val baseArgs = Seq(
       "jpackage",
@@ -299,7 +327,7 @@ object fdswarm
       mainJarName,
       "--main-class",
       jpackageMainClass()
-    ) ++ macJavaOptions
+    ) ++ jpackageRuntimeModules ++ macJavaOptions
 
     val iconArgs =
       if os.exists(macIconIcns) then Seq("--icon", macIconIcns.toString)
@@ -333,7 +361,16 @@ object fdswarm
     os.makeDir.all(dest)
 
     val (inputDir, mainJarName) =
-      getJpackageInput(Task.dest)(jpackageRunClasspath())
+      getJpackageInput(Task.dest, jpackageMainClass())(jpackageRunClasspath())
+
+    val consoleLauncher = Task.dest / "FdSwarmConsole.properties"
+    os.write.over(
+      consoleLauncher,
+      s"""main-jar=$mainJarName
+         |main-class=${jpackageMainClass()}
+         |win-console=true
+         |""".stripMargin
+    )
 
     val baseArgs = Seq(
       "jpackage",
@@ -351,7 +388,9 @@ object fdswarm
       mainJarName,
       "--main-class",
       jpackageMainClass()
-    ) ++ preserveNativeCommandsJlinkOptions ++ Seq(
+    ) ++ jpackageRuntimeModules ++ preserveNativeCommandsJlinkOptions ++ Seq(
+      "--add-launcher",
+      s"${jpackageName()}Console=$consoleLauncher",
       "--win-menu",
       "--win-shortcut"
     )
