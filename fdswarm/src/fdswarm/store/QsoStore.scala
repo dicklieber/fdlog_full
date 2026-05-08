@@ -21,7 +21,6 @@ package fdswarm.store
 import fdswarm.StartupInfo
 import fdswarm.contestStart.ContestStartManager
 import fdswarm.io.FileHelper
-import fdswarm.logging.Locus.LogEntry
 import fdswarm.logging.{LazyStructuredLogging, Locus}
 import fdswarm.model.*
 import fdswarm.replication.*
@@ -48,7 +47,7 @@ class QsoStore @Inject() (
     localNodeStatus: LocalNodeStatus,
     contestScoringService: ContestScoringService,
     nodeStatusDispatcher: NodeStatusDispatcher
-) extends StatsSource(Locus.Qso) with LazyStructuredLogging(LogEntry):
+) extends StatsSource(Locus.Qso) with LazyStructuredLogging():
 
   val qsoCollection: ObservableBuffer[Qso] = new ObservableBuffer[Qso]()
   protected val map: TrieMap[Id, Qso] = new TrieMap

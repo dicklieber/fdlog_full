@@ -25,7 +25,6 @@ import fdswarm.fx.discovery.ContestDiscovery
 import fdswarm.fx.qso.ContestEntry
 import fdswarm.fx.utils.UiStyles
 import fdswarm.logging.LazyStructuredLogging
-import fdswarm.logging.Locus.Startup
 import fdswarm.replication.{NodeStatusDispatcher, StatusBroadcastService}
 import fdswarm.util.NodeIdentityManager
 import jakarta.inject.{Inject, Singleton}
@@ -48,7 +47,7 @@ final class FdLogUi @Inject() (
                                 apiServer: fdswarm.api.ApiServer,
                                 startupInfo: StartupInfo,
                                 contestDiscovery:ContestDiscovery
-) extends LazyStructuredLogging(Startup):
+) extends LazyStructuredLogging():
 
   def start(): Unit =
     contestDiscovery.start()

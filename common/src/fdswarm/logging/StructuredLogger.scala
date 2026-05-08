@@ -422,13 +422,10 @@ final class StructuredLogger private (private val logger: Logger):
                               contextValues: Seq[(String, String)]
                             ): String =
     val topLevelFields =
-      LogEventFieldNames
-        .topLevelStringFields(
-          timestamp = DateTimeFormatter.ISO_INSTANT.format(Instant.now()),
+      LogEventFieldNames.topLevelStringFields(timestamp = DateTimeFormatter.ISO_INSTANT.format(Instant.now()),
           level = level.name(),
-          locus = logger.getName,
-          message = message
-        )
+          logger = logger.getName,
+          message = message)
         .map: (key, value) =>
           key -> Json.fromString(value)
 

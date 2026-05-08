@@ -28,7 +28,7 @@ import os.*
  *
  * @param rawArgs from command line.
  */
-class StartupInfo(rawArgs: Array[String]) extends LazyStructuredLogging:
+class StartupInfo(rawArgs: Array[String]) extends LazyStructuredLogging():
   val info: Option[StartupConfig] =
     logger.debug(s"Raw command line arguments: [${rawArgs.mkString(", ")}]")
     val startupInfoIdx = rawArgs.indexOf("--startupInfo")

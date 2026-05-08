@@ -3,8 +3,8 @@ package fdswarm.replication.status
 import fdswarm.fx.contest.ContestConfigManager
 import fdswarm.fx.utils.{IconButton, StyledDialog}
 import fdswarm.logging.LazyStructuredLogging
-import fdswarm.logging.Locus.Sync
 import fdswarm.replication.{Service, Transport}
+import io.circe.generic.auto.deriveEncoder
 import io.circe.syntax.EncoderOps
 import jakarta.inject.{Inject, Singleton}
 import scalafx.Includes.*
@@ -16,7 +16,7 @@ import java.nio.charset.StandardCharsets
 @Singleton
 class ContestConfigMismatchUi @Inject() (swarmData: SwarmData,
                                          transport: Transport,
-                                         contestConfigManager: ContestConfigManager) extends LazyStructuredLogging(Sync):
+                                         contestConfigManager: ContestConfigManager) extends LazyStructuredLogging():
 
   def warningButton(size: Double = 18): Button =
     val button = IconButton(

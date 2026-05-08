@@ -21,7 +21,6 @@ package fdswarm.replication.status
 import fdswarm.fx.station.StationEditor
 import fdswarm.fx.{FdLogUi, GridBuilder}
 import fdswarm.logging.LazyStructuredLogging
-import fdswarm.logging.Locus.Replication
 import fdswarm.replication.{NodeStatus, NodeStatusDispatcher, Service}
 import fdswarm.util.{NodeIdentity, NodeIdentityManager}
 import jakarta.inject.{Inject, Singleton}
@@ -49,7 +48,7 @@ class SwarmData @Inject() (
     stationEditor: StationEditor,
     ageCellStyleRefresher: AgeCellStyleRefresher,
     nodeStatusDispatcher: NodeStatusDispatcher
-) extends LazyStructuredLogging(Replication):
+) extends LazyStructuredLogging():
   type CellNodeListener = (NodeStatus, String, Node) => Unit
   val knownNodeIdentity: ObservableBuffer[NodeIdentity] = ObservableBuffer.empty[NodeIdentity]
   val nodeMap: TrieMap[NodeIdentity, NodeStatus] = TrieMap.empty[NodeIdentity, NodeStatus]

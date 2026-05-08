@@ -3,19 +3,14 @@ package fdswarm.logging
 object LogEventFieldNames:
   val Timestamp = "@timestamp"
   val Level = "level"
-  val Locus = "locus"
+  val Logger = "logger"
   val Message = "message"
 
-  def topLevelStringFields(
-                            timestamp: String,
-                            level: String,
-                            locus: String,
-                            message: Option[String]
-                          ): Seq[(String, String)] =
+  def topLevelStringFields(timestamp: String, level: String, logger: String, message: Option[String]): Seq[(String, String)] =
     Seq(
       Timestamp -> timestamp,
       Level -> level,
-      Locus -> locus
+      Logger -> logger
     ) ++ message.map(
       Message -> _
     )
@@ -24,7 +19,7 @@ object LogEventFieldNames:
     s"""{
       "$Timestamp": {"$$resolver": "timestamp"},
       "$Level": {"$$resolver": "level", "field": "name"},
-      "$Locus": {"$$resolver": "logger", "field": "name"},
+      "$Logger": {"$$resolver": "logger", "field": "name"},
       "$Message": {"$$resolver": "message", "stringified": true},
       "mdc": {"$$resolver": "mdc", "flatten": true}
     }"""

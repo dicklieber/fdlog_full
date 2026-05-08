@@ -21,7 +21,7 @@ package fdswarm.replication
 import cats.effect.unsafe.implicits.global
 import fdswarm.api.{AllQsos, ReplEndpoints}
 import fdswarm.logging.LazyStructuredLogging
-import fdswarm.logging.Locus.{Replication, TCP}
+import fdswarm.logging.Locus.Replication
 import fdswarm.replication.status.NodeBandOpPane
 import fdswarm.store.QsoStore
 import fdswarm.util.StatsSource
@@ -37,7 +37,7 @@ class StatusProcessor @Inject() (
                                   callEndpoint: CallEndpoint,
                                   nodeBandOpPane: NodeBandOpPane,
                                   nodeStatusDispatcher: NodeStatusDispatcher)
-    extends LazyStructuredLogging(Replication)
+    extends LazyStructuredLogging()
     with StatsSource(Replication):
 
   private val processTimer = addTimer("process")

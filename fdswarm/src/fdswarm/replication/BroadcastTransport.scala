@@ -18,7 +18,6 @@
 
 package fdswarm.replication
 
-import fdswarm.logging.Locus.Replication
 import fdswarm.logging.{LazyStructuredLogging, Locus}
 import fdswarm.util.{NodeIdentityManager, StatsSource}
 import jakarta.inject.{Inject, Singleton}
@@ -37,7 +36,7 @@ class BroadcastTransport @Inject() (nodeIdentity: NodeIdentityManager)
     extends Transport
     with StatsSource(Locus.UDP)
     with Runnable
-    with LazyStructuredLogging(Replication):
+    with LazyStructuredLogging():
 
   logger.info("Starting BroadcastTransport")
 

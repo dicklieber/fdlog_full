@@ -88,7 +88,7 @@ class QsoEntryPanel @Inject()(
                                sectionField: fdswarm.fx.sections.SectionField,
                                dupPanel: DupPanel,
                                contestConfigMismatchUi: ContestConfigMismatchUi
-                             ) extends LazyStructuredLogging:
+                             ) extends LazyStructuredLogging():
 
   private val _node = new VBox()
   def node: Node = _node
@@ -225,6 +225,7 @@ class QsoEntryPanel @Inject()(
       bandMode = selectedBandModeStore.selected.value,
       qsoMetadata = qsoMetadata
     )
+    logger.debug("Submitting QSO", "qso" -> qso)
 
     val styledMessage: StyledMessage = qsoStore.add(qso)
     clearControls()
