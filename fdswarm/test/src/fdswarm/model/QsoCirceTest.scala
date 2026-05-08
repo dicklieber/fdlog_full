@@ -18,6 +18,7 @@
 
 package fdswarm.model
 
+import com.organization.BuildInfo
 import fdswarm.fx.station.StationConfig
 import io.circe.parser.decode
 import io.circe.syntax.*
@@ -42,7 +43,7 @@ class QsoCirceTest extends FunSuite:
     // Encode to JSON
     val json = qso.asJson.noSpaces
     val withSpaces = qso.asJson.spaces2
-    assertEquals(withSpaces, """{
+    assertEquals(withSpaces, s"""{
                                |  "callsign" : "K1ABC",
                                |  "exchange" : "1A CT",
                                |  "bandMode" : "40m CW",
@@ -59,7 +60,7 @@ class QsoCirceTest extends FunSuite:
                                |      "instanceId" : "qO-"
                                |    },
                                |    "contest" : "WFD",
-                               |    "v" : "0.0.0"
+                               |    "v" : "${BuildInfo.version}"
                                |  },
                                |  "stamp" : "1970-01-01T00:00:00Z",
                                |  "uuid" : "unique-id-123"
