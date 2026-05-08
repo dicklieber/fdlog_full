@@ -12,8 +12,19 @@ import mill.javalib.Assembly.*
 import mill.scalalib.*
 
 trait CommonSettings extends ScalaModule:
-  val majorVersion = "0"
-  val version = s"$majorVersion.0.0"
+  private val releaseVersion =
+    sys.env.get("FDSWARM_VERSION").map(_.trim.stripPrefix("v")).filter(_.nonEmpty)
+  private val releaseVersionPattern = raw"\d+\.\d+\.\d+"
+
+  val version = releaseVersion.getOrElse("0.0.0-dev")
+  val installerVersion = releaseVersion match
+    case Some(v) if v.matches(releaseVersionPattern) => v
+    case Some(v) =>
+      throw new RuntimeException(
+        s"FDSWARM_VERSION must be a numeric major.minor.patch version for installers, got: $v"
+      )
+    case None => "0.0.0"
+  val majorVersion = installerVersion.takeWhile(_ != '.')
   val name = "fdswarm"
 
   val log4jV = "2.24.2"
@@ -134,7 +145,7 @@ object fdswarm
   }
 
   def jpackageAppVersion = Task {
-    val v = version
+    val v = installerVersion
     val parts = v.split("\\.")
     if parts.headOption.contains("0") then ("1" +: parts.drop(1)).mkString(".")
     else v
@@ -380,7 +391,7 @@ object fdswarm
       "--name",
       jpackageName(),
       "--app-version",
-      version,
+      installerVersion,
       "--dest",
       dest.toString,
       "--input",
@@ -414,7 +425,7 @@ object fdswarm
       os.list(dest).filter(_.ext == "msi").sortBy(_.last).lastOption
 
     produced.foreach { msi =>
-      val renamed = dest / s"${jpackageName()}-${version}-windows-$arch.msi"
+      val renamed = dest / s"${jpackageName()}-${installerVersion}-windows-$arch.msi"
       os.move(msi, renamed, replaceExisting = true)
       println(s"MSI: $renamed")
     }
