@@ -9,6 +9,7 @@ import io.circe.generic.auto.{deriveDecoder, deriveEncoder}
 import jakarta.inject.{Inject, Singleton}
 import scalafx.application.Platform
 import scalafx.beans.property.{ObjectProperty, ReadOnlyBooleanProperty, ReadOnlyBooleanWrapper}
+import scalafx.scene.Node
 
 @Singleton
 final class ContestConfigManager @Inject() (
@@ -42,6 +43,8 @@ final class ContestConfigManager @Inject() (
       handleContestConfigUpdate(newConfig = newConfig))
 
   override def ourSection: String = contestConfigProperty.value.ourSection
+
+  override def toolTip: Node = contestConfigProperty.value.toolTip
 
   def clearContestConfig(): Unit = setConfig(ContestConfig.noContest)
 

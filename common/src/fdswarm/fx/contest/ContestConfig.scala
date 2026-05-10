@@ -18,9 +18,16 @@
 
 package fdswarm.fx.contest
 
+import com.typesafe.config.ConfigFactory
 import fdswarm.model.Callsign
 import fdswarm.util.HamPhonetic.fromString
 import io.circe.Codec
+import scalafx.geometry.Insets
+import scalafx.scene.Node
+import scalafx.scene.control.Label
+import scalafx.scene.layout.GridPane
+
+import scala.jdk.CollectionConverters.*
 
 trait ContestConfigFields:
   def contestType: ContestType
@@ -28,6 +35,7 @@ trait ContestConfigFields:
   def transmitters: Int
   def ourClass: String
   def ourSection: String
+  def toolTip: Node
 
 /**
  * @param transmitters number of transmitters
@@ -48,6 +56,22 @@ case class ContestConfig(
   require(ourSection.nonEmpty, "ourSection must not be empty")
   val exchange: String =
     s"$transmitters$ourClass $ourSection"
+
+  def toolTip: Node =
+    ContestConfig.toolTipGrid(
+      "contestType" -> contestType.toString,
+      "callsign" -> Option(ourCallsign).map(_.toString).getOrElse(""),
+      "transmitters" -> transmitters.toString,
+      "ourClass" -> ContestConfig.withDetails(
+        ourClass,
+        ContestConfig.classDescription(contestType, ourClass)
+      ),
+      "ourSection" -> ContestConfig.withDetails(
+        ourSection,
+        ContestConfig.sectionName(ourSection)
+      )
+    )
+
   def weAre(usePhonetic: Boolean): String =
     val callsignValue = Option(ourCallsign).map(_.toString).getOrElse("")
     if usePhonetic then
@@ -58,8 +82,9 @@ case class ContestConfig(
   val display: String =
     exchange
 
-
 object ContestConfig:
+  private lazy val config = ConfigFactory.load()
+
   val noContest: ContestConfig = ContestConfig(
     contestType = ContestType.NONE,
     ourCallsign = Callsign(""),
@@ -67,3 +92,52 @@ object ContestConfig:
     ourClass = "-",
     ourSection = "-"
   )
+
+  private[contest] def withDetails(
+      value: String,
+      details: Option[String]
+  ): String =
+    details.filter(_.nonEmpty).map(detail => s"$value ($detail)").getOrElse(value)
+
+  private[contest] def toolTipGrid(rows: (String, String)*): GridPane =
+    val grid = new GridPane:
+      hgap = 8
+      vgap = 2
+      padding = Insets(6)
+      styleClass += "contest-config-tooltip"
+
+    rows.zipWithIndex.foreach { case ((key, value), row) =>
+      val keyLabel = new Label(key):
+        styleClass += "tooltip-key"
+      val valueLabel = new Label(value):
+        styleClass += "tooltip-value"
+      grid.add(keyLabel, 0, row)
+      grid.add(valueLabel, 1, row)
+    }
+
+    grid
+
+  private[contest] def classDescription(
+      contestType: ContestType,
+      ourClass: String
+  ): Option[String] =
+    val classCode = ourClass.dropWhile(_.isDigit)
+    Option.when(config.hasPath("fdswarm.contests")) {
+      config.getConfigList("fdswarm.contests").asScala
+    }.toSeq
+      .flatten
+      .find(_.getString("name") == contestType.toString)
+      .flatMap { contestConfig =>
+        contestConfig.getConfigList("classChoices").asScala
+          .find(_.getString("ch") == classCode)
+          .map(_.getString("description"))
+      }
+
+  private[contest] def sectionName(ourSection: String): Option[String] =
+    Option.when(config.hasPath("fdswarm.sections")) {
+      config.getConfigList("fdswarm.sections").asScala
+    }.toSeq
+      .flatten
+      .flatMap(_.getConfigList("sections").asScala)
+      .find(_.getString("code") == ourSection)
+      .map(_.getString("name"))

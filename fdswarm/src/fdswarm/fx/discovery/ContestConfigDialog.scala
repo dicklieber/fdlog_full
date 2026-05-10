@@ -7,6 +7,7 @@ import fdswarm.fx.utils.editor.{CallsignCustomField, CaseClassPropertyEditor, In
 import fdswarm.replication.{Service, Transport}
 import io.circe.syntax.EncoderOps
 import jakarta.inject.Inject
+import javafx.stage.Modality
 import scalafx.Includes.*
 import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
 import scalafx.geometry.Pos
@@ -61,6 +62,7 @@ class ContestConfigDialog @Inject() (
     )
 
   title = "Contest Configuration"
+  initModality(Modality.APPLICATION_MODAL)
   resizable = true
   dialogPane().content = new VBox(spacing = 8):
     children ++= Seq(

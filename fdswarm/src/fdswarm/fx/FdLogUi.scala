@@ -46,7 +46,8 @@ final class FdLogUi @Inject() (
                                 qsoStore: fdswarm.store.QsoStore,
                                 apiServer: fdswarm.api.ApiServer,
                                 startupInfo: StartupInfo,
-                                contestDiscovery:ContestDiscovery
+                                contestDiscovery:ContestDiscovery,
+                                welcomeDialog: WelcomeDialog
 ) extends LazyStructuredLogging():
 
   def start(): Unit =
@@ -113,6 +114,9 @@ final class FdLogUi @Inject() (
     )
 
     contestEntry.buildUi()
+    Platform.runLater {
+      welcomeDialog.show(stage)
+    }
 
   private def setAppIcon(): Unit =
     val stage = FdLogUi.primaryStage

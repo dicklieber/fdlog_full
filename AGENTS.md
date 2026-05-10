@@ -5,5 +5,5 @@
 
 - This project uses Mill, not sbt.
 - Never run `sbt` commands in this repository.
-- Use `./mill -i __.compile` for compile validation.
-- Use `./mill __.test` for test validation unless a task asks for a narrower test scope.
+- Never run `mill` or `./mill` commands in this repository.
+- Do not run compile or test validation commands unless the user explicitly asks for a specific non-Mill command.
