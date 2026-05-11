@@ -1,0 +1,29 @@
+@startuml
+scale 0.75
+skinparam monochrome true
+skinparam shadowing false
+
+title QSO Entry and Replication Flow
+
+participant "User" as User
+participant "QSO Entry Panel" as Entry
+participant "Origin QsoStore" as StoreA
+participant "Origin qsojournal.json" as JournalA
+participant "Transport" as TransportA
+participant "UDP LAN" as Lan
+participant "Node B QsoStore" as StoreB
+participant "Node B qsojournal.json" as JournalB
+
+User -> Entry: Enter QSO details
+Entry -> StoreA: add(qso)
+StoreA -> JournalA: Append QSO JSON line
+StoreA -> StoreA: Add QSO to in-memory store
+StoreA -> TransportA: send(Service.QSO, qso JSON)
+TransportA -> Lan: Broadcast QSO
+
+Lan -> StoreB: Service.QSO received
+StoreB -> JournalB: Append QSO JSON line
+StoreB -> StoreB: Add QSO to in-memory store
+StoreB -> StoreB: Do not re-broadcast
+
+@enduml
