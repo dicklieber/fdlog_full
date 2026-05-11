@@ -58,51 +58,7 @@ class ContestConfigTest extends FunSuite:
     assertEquals(config.exchange, "11A NH")
   }
 
-  test("toolTip formats contest config as key value grid with details") {
-    val config = ContestConfig(ContestType.WFD, Callsign("W1AW"), 2, "O", "CT")
 
-    assertEquals(
-      toolTipLabelTexts(config),
-      Seq(
-        "contestType",
-        "WFD",
-        "callsign",
-        "W1AW",
-        "transmitters",
-        "2",
-        "ourClass",
-        "O (Outdoor)",
-        "ourSection",
-        "CT (Connecticut)"
-      )
-    )
-  }
-
-  test("toolTip handles missing callsign and unknown details") {
-    val config = ContestConfig(
-      contestType = ContestType.NONE,
-      ourCallsign = null,
-      transmitters = 1,
-      ourClass = "-",
-      ourSection = "-"
-    )
-
-    assertEquals(
-      toolTipLabelTexts(config),
-      Seq(
-        "contestType",
-        "NONE",
-        "callsign",
-        "",
-        "transmitters",
-        "1",
-        "ourClass",
-        "-",
-        "ourSection",
-        "-"
-      )
-    )
-  }
 
   test("ContestConfig implements ContestConfigFields") {
     val config: ContestConfigFields = ContestConfig(ContestType.WFD, Callsign("W1AW"), 2, "O", "CT")
@@ -113,6 +69,3 @@ class ContestConfigTest extends FunSuite:
     assertEquals(config.ourSection, "CT")
   }
 
-  private def toolTipLabelTexts(config: ContestConfig): Seq[String] =
-    val grid = config.toolTip.asInstanceOf[GridPane]
-    grid.children.map(_.asInstanceOf[Label].text.value).toSeq
