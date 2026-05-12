@@ -1,0 +1,56 @@
+package build
+
+import mill.*
+import mill.scalalib.*
+
+trait CommonSettings extends ScalaModule:
+  private val releaseVersion =
+    sys.env.get("FDSWARM_VERSION").map(_.trim.stripPrefix("v")).filter(_.nonEmpty)
+  private val releaseVersionPattern = raw"\d+\.\d+\.\d+"
+
+  val version = releaseVersion.getOrElse("0.0.0-dev")
+  val installerVersion = releaseVersion match
+    case Some(v) if v.matches(releaseVersionPattern) => v
+    case Some(v) =>
+      throw new RuntimeException(
+        s"FDSWARM_VERSION must be a numeric major.minor.patch version for installers, got: $v"
+      )
+    case None => "0.0.0"
+  val majorVersion = installerVersion.takeWhile(_ != '.')
+  val name = "fdswarm"
+
+  val log4jV = Versions.log4j
+  val scalaV = Versions.scala
+  val jacksonV = Versions.jackson
+  val elastic4sV = Versions.elastic4s
+  val tapirV = Versions.tapir
+  val http4sV = Versions.http4s
+  val otelV = Versions.otel
+  val otelAlphaV = Versions.otelAlpha
+  val scoverageV = Versions.scoverage
+  val munitV = Versions.munit
+  val scalaFxDep =
+    mvn"org.scalafx:scalafx_3:${Versions.scalaFx}"
+      .exclude(
+        "org.openjfx" -> "javafx-base",
+        "org.openjfx" -> "javafx-controls",
+        "org.openjfx" -> "javafx-fxml",
+        "org.openjfx" -> "javafx-graphics",
+        "org.openjfx" -> "javafx-media",
+        "org.openjfx" -> "javafx-swing",
+        "org.openjfx" -> "javafx-web"
+      )
+
+  def scalaVersion = scalaV
+
+  def scalacOptions =
+    Seq(
+      "-feature",
+      "-deprecation",
+      "-Wconf:msg=Implicit parameters should be provided with a `using` clause:s"
+    )
+
+  override def javacOptions =
+    Seq(
+      "-Xlint:-options"
+    )

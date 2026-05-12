@@ -71,7 +71,7 @@ jobs:
           path: |
             ~/.cache/coursier
             ~/.mill
-          key: ${{ runner.os }}-mill-${{ hashFiles('build.mill', '.mill-version', '.mill-jvm-version') }}
+          key: ${{ runner.os }}-mill-${{ hashFiles('*.mill', '.mill-version', '.mill-jvm-version') }}
           restore-keys: |
             ${{ runner.os }}-mill-
 
@@ -181,7 +181,7 @@ jobs:
           path: |
             ~/.cache/coursier
             ~/.mill
-          key: ${{ runner.os }}-mill-${{ hashFiles('build.mill', '.mill-version', '.mill-jvm-version') }}
+          key: ${{ runner.os }}-mill-${{ hashFiles('*.mill', '.mill-version', '.mill-jvm-version') }}
           restore-keys: |
             ${{ runner.os }}-mill-
 
@@ -274,7 +274,7 @@ jobs:
           path: |
             ~\.cache\coursier
             ~\.mill
-          key: ${{ runner.os }}-mill-${{ hashFiles('build.mill', '.mill-version', '.mill-jvm-version') }}
+          key: ${{ runner.os }}-mill-${{ hashFiles('*.mill', '.mill-version', '.mill-jvm-version') }}
           restore-keys: |
             ${{ runner.os }}-mill-
 
@@ -346,7 +346,7 @@ jobs:
           path: |
             ~\.cache\coursier
             ~\.mill
-          key: ${{ runner.os }}-arm64-mill-${{ hashFiles('build.mill', '.mill-version', '.mill-jvm-version') }}
+          key: ${{ runner.os }}-arm64-mill-${{ hashFiles('*.mill', '.mill-version', '.mill-jvm-version') }}
           restore-keys: |
             ${{ runner.os }}-arm64-mill-
 
@@ -439,7 +439,7 @@ jobs:
           path: |
             ~/.cache/coursier
             ~/.mill
-          key: ${{ runner.os }}-mill-${{ hashFiles('build.mill', '.mill-version', '.mill-jvm-version') }}
+          key: ${{ runner.os }}-mill-${{ hashFiles('*.mill', '.mill-version', '.mill-jvm-version') }}
           restore-keys: |
             ${{ runner.os }}-mill-
 
