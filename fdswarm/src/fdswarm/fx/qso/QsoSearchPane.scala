@@ -25,14 +25,15 @@ import fdswarm.fx.utils.{IconButton, MultiChangeWatcher}
 import fdswarm.logging.{LazyStructuredLogging, Locus}
 import fdswarm.model.{Band, ChoiceItem, Mode, Qso}
 import fdswarm.store.QsoStore
-import fdswarm.util.StatsSource
+import fdswarm.util.{NodeIdentity, StatsSource}
 import io.circe.syntax.*
 import jakarta.inject.Inject
+import javafx.collections.ListChangeListener
 import scalafx.Includes.*
 import scalafx.beans.property.BooleanProperty
 import scalafx.collections.ObservableBuffer
 import scalafx.scene.control.*
-import scalafx.scene.layout.{HBox, VBox}
+import scalafx.scene.layout.{FlowPane, HBox, VBox}
 import scalafx.scene.paint.Color
 import scalafx.stage.FileChooser
 
@@ -52,10 +53,9 @@ class QsoSearchPane @Inject()(
   val bandFilter = new AnyComboBox[Band](Band.values.toIndexedSeq.map(ChoiceItem(_)))
   val modeFilter = new AnyComboBox[Mode](Mode.values.toIndexedSeq.map(ChoiceItem(_)))
   val classFilter = new AnyComboBox[Char](Seq.empty)
-  val operatorFilter = new OptionTextField() {
-    promptText = "Operator"
-  }
+  val operatorFilter = new AnyComboBox[String](Seq.empty)
   val transmittersFilter = new CountComboBox()
+  val nodeFilter = new AnyComboBox[NodeIdentity](Seq.empty)
   /**
    * is the pane expanded?
    */
@@ -66,7 +66,8 @@ class QsoSearchPane @Inject()(
     modeFilter.value,
     transmittersFilter.value,
     classFilter.value,
-    operatorFilter.optionValueProperty,
+    operatorFilter.value,
+    nodeFilter.value,
     expandedProperty)
   val node: VBox = new VBox()
 
@@ -82,7 +83,12 @@ class QsoSearchPane @Inject()(
       comboSelection(
         classFilter
       ).isDefined ||
-      operatorFilter.optionValueProperty.value.isDefined)
+      comboSelection(
+        operatorFilter
+      ).isDefined ||
+      comboSelection(
+        nodeFilter
+      ).isDefined)
 
   anyChange.onChange((_, _, newVal) =>
     if contestManager.hasConfiguration.value then
@@ -108,7 +114,8 @@ class QsoSearchPane @Inject()(
       modeFilter.value = None
       classFilter.value = None
       transmittersFilter.value = None
-      operatorFilter.text = ""
+      operatorFilter.value = None
+      nodeFilter.value = None
     btn
   }
   private var uiBuilt = false
@@ -125,16 +132,22 @@ class QsoSearchPane @Inject()(
     val classFilterVal = comboSelection(
       classFilter
     )
-    val operatorFilterVal = Option(operatorFilter.text.value).getOrElse("").toUpperCase
+    val nodeFilterVal = comboSelection(
+      nodeFilter
+    )
+    val operatorFilterVal = comboSelection(
+      operatorFilter
+    )
 
     val matchesCallsign = callSignFilterVal.isEmpty || qso.callsign.value.toUpperCase.contains(callSignFilterVal)
     val matchesBand = bandFilterVal.isEmpty || qso.bandMode.band == bandFilterVal.get
     val matchesMode = modeFilterVal.isEmpty || qso.bandMode.mode == modeFilterVal.get
     val matchesClass = classFilterVal.isEmpty || qso.exchange.fdClass.classLetter.toString.toUpperCase == classFilterVal.get.toString.toUpperCase
     val matchesTransmitters = transmittersFilter.check(qso.exchange.fdClass.transmitters)
-    val matchesOperator = operatorFilterVal.isEmpty || qso.qsoMetadata.station.operator.value.toUpperCase.contains(operatorFilterVal)
+    val matchesOperator = operatorFilterVal.isEmpty || qso.qsoMetadata.station.operator.value == operatorFilterVal.get
+    val matchesNode = nodeFilterVal.isEmpty || qso.qsoMetadata.node == nodeFilterVal.get
 
-    matchesCallsign && matchesBand && matchesMode && matchesClass && matchesTransmitters && matchesOperator
+    matchesCallsign && matchesBand && matchesMode && matchesClass && matchesTransmitters && matchesOperator && matchesNode
   }
 
   private def comboSelection[T](
@@ -193,14 +206,16 @@ class QsoSearchPane @Inject()(
     updateClassChoices(
       contestManager.contestConfigProperty.value.contestType
     )
+    updateQsoChoiceFilters()
 
     val titledPane = new TitledPane {
       text = "Search"
       content = new VBox {
         spacing = 10
         children = Seq(
-          new HBox {
-            spacing = 10
+          new FlowPane {
+            hgap = 10
+            vgap = 10
             alignment = scalafx.geometry.Pos.CenterLeft
             children = Seq(
               new VBox { children = Seq(new Label("Callsign"), callsignFilter) },
@@ -209,6 +224,7 @@ class QsoSearchPane @Inject()(
               new VBox { children = Seq(new Label("Class"), classFilter) },
               new VBox { children = Seq(new Label("Transmitters"), transmittersFilter) },
               new VBox { children = Seq(new Label("Operator"), operatorFilter) },
+              new VBox { children = Seq(new Label("Node"), nodeFilter) },
               new VBox {
                 alignment = scalafx.geometry.Pos.BottomLeft
                 spacing = 10
@@ -228,6 +244,10 @@ class QsoSearchPane @Inject()(
     }
     node.children = Seq(titledPane)
     uiBuilt = true
+
+  private val qsoCollectionListener: ListChangeListener[Qso] =
+    (_: ListChangeListener.Change[? <: Qso]) => updateQsoChoiceFilters()
+  qsoStore.qsoCollection.delegate.addListener(qsoCollectionListener)
 
   contestManager.contestConfigProperty.onChange(
     (_, _, newConfig) =>
@@ -256,3 +276,30 @@ class QsoSearchPane @Inject()(
         )
         classFilter.setChoices()
         classFilter.value = None
+
+  private def updateQsoChoiceFilters(): Unit =
+    updateOperatorChoices()
+    updateNodeChoices()
+
+  private def updateOperatorChoices(): Unit =
+    val selected = comboSelection(operatorFilter)
+    val operators = qsoStore.qsoCollection
+      .map(_.qsoMetadata.station.operator.value)
+      .filter(_.nonEmpty)
+      .toSet
+      .toSeq
+      .sorted
+
+    operatorFilter.setChoices(operators.map(ChoiceItem(_))*)
+    operatorFilter.value = selected.filter(operators.contains)
+
+  private def updateNodeChoices(): Unit =
+    val selected = comboSelection(nodeFilter)
+    val nodes = qsoStore.qsoCollection
+      .map(_.qsoMetadata.node)
+      .toSet
+      .toSeq
+      .sortBy(node => (node.hostName, node.port, node.instanceId))
+
+    nodeFilter.setChoices(nodes.map(ChoiceItem(_))*)
+    nodeFilter.value = selected.filter(nodes.contains)
