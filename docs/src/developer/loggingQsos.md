@@ -13,3 +13,5 @@ In summary the QSO is:
 When a node receives a QSO, it is added to its own QsoStore and appended to its qsoJournal.json file.
 
 This works nicely for all the nodes currently in the swarm, however nodes can come and go. When I node joins the swarm, such added nodes will have missed updates.
+
+[fdswarm.model.Qso](../api/fdswarm/model/Qso.html)

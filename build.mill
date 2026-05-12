@@ -646,10 +646,13 @@ object docs extends ScalaModule:
 
   def site() = Task.Command {
     val source = sources().head.path
+    val stagedSource = Task.dest / "src-with-scaladoc-links"
     val diagramSource = source / "diagrams"
     val diagramDest = moduleDir / "generated" / "diagrams"
     val dest = Task.dest / "site"
     os.makeDir.all(dest)
+    os.copy.over(source, stagedSource, createFolders = true)
+    rewriteScaladocApiLinksForLaika(stagedSource)
     renderPlantUmlDiagrams(diagramSource, diagramDest)
 
     // Generate Scaladoc from docs module (which aggregates others)
@@ -697,7 +700,7 @@ object docs extends ScalaModule:
 
     transformer
       .use(
-        _.fromDirectory(source.toString)
+        _.fromDirectory(stagedSource.toString)
           .toDirectory(dest.toString)
           .transform
       )
@@ -708,6 +711,19 @@ object docs extends ScalaModule:
 
     PathRef(dest)
   }
+
+  private def rewriteScaladocApiLinksForLaika(source: os.Path): Unit =
+    os.walk(source)
+      .filter(path => os.isFile(path) && path.ext == "md")
+      .foreach { path =>
+        val markdown = os.read(path)
+        val depth = path.relativeTo(source).segments.toList.dropRight(1).length
+        val apiPrefix = "../" * depth + "api/"
+        val rewritten = markdown
+          .replaceAll("""\]\(api/""", s"""](ext:$apiPrefix""")
+          .replaceAll("""\]\(((?:\.\./)+api/)""", """](ext:$1""")
+        if rewritten != markdown then os.write.over(path, rewritten)
+      }
 
   private def renderPlantUmlDiagrams(source: os.Path, dest: os.Path): Unit =
     if os.exists(source) then
