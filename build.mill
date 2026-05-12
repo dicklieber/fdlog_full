@@ -2,16 +2,19 @@
 //| mvnDeps:
 //| - com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION
 //| - com.lihaoyi::mill-contrib-scoverage:$MILL_VERSION
+//| - net.sourceforge.plantuml:plantuml:1.2026.2
 //| - org.typelevel::laika-io:1.3.2
 
 package build
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
+import net.sourceforge.plantuml.{FileFormat, FileFormatOption, SourceFileReader}
 import laika.api.Transformer
+import laika.config.MessageFilters
 import laika.api.format.TagFormatter
 import laika.ast.Path.Root
-import laika.ast.{ExternalTarget, InternalTarget, SpanLink, Target}
+import laika.ast.{ExternalTarget, InternalTarget, Path, SpanLink, Target}
 import laika.helium.config.{HeliumIcon, IconLink}
 import laika.format.{HTML, Markdown}
 import laika.helium.Helium
@@ -136,6 +139,10 @@ object fdswarm
   )
 
   override def moduleDeps = Seq(common)
+
+  override def docSources = Task {
+    super.docSources() ++ Seq(common.compile().classes)
+  }
 
   def mainClass = Some("fdswarm.FdLogApp")
 
@@ -609,13 +616,51 @@ object manager extends CommonSettings:
 //      "--add-opens=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED"
 //    )
 
-object docs extends Module:
-  def sources = Task.Source(moduleDir / "src")
+object docs extends ScalaModule:
+  def scalaVersion = common.scalaVersion
+  override def moduleDeps = Seq(common, monitor, manager)
 
-  def site = Task {
-    val source = sources().path
+  override def docSources = Task {
+    super.docSources() ++
+      common.docSources() ++
+      monitor.docSources() ++
+      manager.docSources()
+  }
+
+  override def docResources = Task {
+    super.docResources() ++
+      common.docResources() ++
+      monitor.docResources() ++
+      manager.docResources()
+  }
+
+  override def compileClasspath = Task {
+    super.compileClasspath() ++
+      common.compileClasspath() ++
+      monitor.compileClasspath() ++
+      manager.compileClasspath() ++
+      fdswarm.compileClasspath()
+  }
+
+  override def sources = Task.Sources(moduleDir / "src")
+
+  def site() = Task.Command {
+    val source = sources().head.path
+    val stagedSource = Task.dest / "src-with-scaladoc-links"
+    val diagramSource = source / "diagrams"
+    val diagramDest = moduleDir / "generated" / "diagrams"
     val dest = Task.dest / "site"
     os.makeDir.all(dest)
+    os.copy.over(source, stagedSource, createFolders = true)
+    rewriteScaladocApiLinksForLaika(stagedSource)
+    renderPlantUmlDiagrams(diagramSource, diagramDest)
+
+    // Generate Scaladoc from docs module (which aggregates others)
+    val scaladocJar = docJar().path
+    // Unpack the docJar to the site's api directory
+    val apiDest = dest / "api"
+    os.makeDir.all(apiDest)
+    os.proc("jar", "xf", scaladocJar.toString).call(cwd = apiDest)
 
     val theme = Helium.defaults
       .all
@@ -639,7 +684,8 @@ object docs extends Module:
             fmt.pathTranslator.translate(target) match
               case external: ExternalTarget => external.url
               case internal: InternalTarget =>
-                internal.relativeTo(fmt.path).relativePath.toString
+                val relPath = internal.relativeTo(fmt.path).relativePath
+                relPath.toString
 
           val attributes = fmt.optAttributes(
             "href" -> Some(renderTarget(link.target)),
@@ -647,17 +693,71 @@ object docs extends Module:
           )
           fmt.element("a", link, attributes *)
       }
+      .withMessageFilters(MessageFilters.forVisualDebugging)
       .parallel[IO]
       .withTheme(theme)
       .build
 
     transformer
       .use(
-        _.fromDirectory(source.toString)
+        _.fromDirectory(stagedSource.toString)
           .toDirectory(dest.toString)
           .transform
       )
       .unsafeRunSync()
 
+    copyGeneratedDiagrams(diagramDest, dest / "generated" / "diagrams")
+    rewriteGeneratedDiagramLinks(dest)
+
     PathRef(dest)
   }
+
+  private def rewriteScaladocApiLinksForLaika(source: os.Path): Unit =
+    os.walk(source)
+      .filter(path => os.isFile(path) && path.ext == "md")
+      .foreach { path =>
+        val markdown = os.read(path)
+        val depth = path.relativeTo(source).segments.toList.dropRight(1).length
+        val apiPrefix = "../" * depth + "api/"
+        val rewritten = markdown
+          .replaceAll("""\]\(api/""", s"""](ext:$apiPrefix""")
+          .replaceAll("""\]\(((?:\.\./)+api/)""", """](ext:$1""")
+        if rewritten != markdown then os.write.over(path, rewritten)
+      }
+
+  private def renderPlantUmlDiagrams(source: os.Path, dest: os.Path): Unit =
+    if os.exists(source) then
+      System.setProperty("java.awt.headless", "true")
+      os.makeDir.all(dest)
+      os.list(source)
+        .filter(path => os.isFile(path) && path.ext == "puml")
+        .foreach { path =>
+          val reader = new SourceFileReader(
+            true,
+            path.toIO,
+            dest.toIO,
+            new FileFormatOption(FileFormat.PNG)
+          )
+          reader.getGeneratedImages
+        }
+
+  private def copyGeneratedDiagrams(source: os.Path, dest: os.Path): Unit =
+    if os.exists(source) then
+      os.copy.over(source, dest, createFolders = true)
+
+  private def rewriteGeneratedDiagramLinks(site: os.Path): Unit =
+    os.walk(site)
+      .filter(path => os.isFile(path) && path.ext == "html")
+      .foreach { path =>
+        val html = os.read(path)
+        val rewritten = html
+          .replace(
+            """src="../../generated/diagrams/""",
+            """src="../generated/diagrams/"""
+          )
+          .replace(
+            "src=\"../generated/diagrams/qsoFlow.png\"",
+            "src=\"../generated/diagrams/qsoFlow.png\" style=\"max-width: 680px; width: 100%; height: auto;\""
+          )
+        if rewritten != html then os.write.over(path, rewritten)
+      }
