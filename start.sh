@@ -54,7 +54,7 @@ fi
 echo "Building fat jar..."
 ./mill fdswarm.assembly
 
-JAR="out/fdswarm/assembly.dest/fdswarm-all.jar"
+JAR="out/fdswarm/assembly.dest/fdswarm.jar"
 
 if [ ! -f "$JAR" ]; then
   echo "ERROR: fat jar not found: $JAR"

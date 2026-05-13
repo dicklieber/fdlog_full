@@ -64,4 +64,4 @@ class AppInstance(debugConfigJsonPath: String,
       }
       processHandle.destroyForcibly()
 object AppInstance:
-  val jarPath: String = "out/fdswarm/assembly.dest/fdswarm-all.jar"
+  val jarPath: String = "out/fdswarm/assembly.dest/fdswarm.jar"

@@ -12,7 +12,7 @@ class FdswarmJarManager(
                        ) extends LazyStructuredLogging:
 
   def jarPath: os.Path =
-    outDir / "fdswarm" / "assembly.dest" / "fdswarm-all.jar"
+    outDir / "fdswarm" / "assembly.dest" / "fdswarm.jar"
 
   def jarInfo(): Option[Instant] =
     if os.exists(jarPath) && os.isFile(jarPath) then

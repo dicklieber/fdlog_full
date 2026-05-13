@@ -346,7 +346,7 @@ trait FdSwarmPackaging extends JpackageModule:
   )
 
   override def assembly = Task {
-    val dest = Task.dest / "fdswarm-all.jar"
+    val dest = Task.dest / "fdswarm.jar"
     val assemblyRes = super.assembly()
     os.copy.over(assemblyRes.path, dest, replaceExisting = true)
     PathRef(dest)
@@ -356,7 +356,7 @@ trait FdSwarmPackaging extends JpackageModule:
     val jar = assembly()
     val destDir = parallelsShareDir
     os.makeDir.all(destDir)
-    val dest = destDir / "fdswarm-all.jar"
+    val dest = destDir / "fdswarm.jar"
     os.copy.over(jar.path, dest, replaceExisting = true)
     println(s"Copied fat jar to: $dest")
     PathRef(dest)
@@ -372,7 +372,7 @@ trait FdSwarmPackaging extends JpackageModule:
     println()
     println("Windows watch command:")
     println(
-      raw"watchexec --restart --watch C:\Mac\Home\ParallelsShare --filter fdswarm-all.jar -- java -jar C:\Mac\Home\ParallelsShare\fdswarm-all.jar"
+      raw"watchexec --restart --watch C:\Mac\Home\ParallelsShare --filter fdswarm.jar -- java -jar C:\Mac\Home\ParallelsShare\fdswarm.jar"
     )
     println()
     dest
