@@ -360,7 +360,7 @@ final class MetricsDialog @Inject() ():
   private def isGraphableMetric(
       metricType: String
   ): Boolean =
-    metricType == "Timer" || metricType == "Histogram"
+    metricType == "Timer" || metricType == "Histogram" || metricType == "Meter"
 
   private def showGraphDialog(
       ownerWindow: Window,
@@ -373,6 +373,7 @@ final class MetricsDialog @Inject() ():
     )
     val yLabel =
       if metricType == "Timer" then "Duration (ms)"
+      else if metricType == "Meter" then "Events per minute / count"
       else "Value"
 
     val xAxis = new NumberAxis:
@@ -400,61 +401,37 @@ final class MetricsDialog @Inject() ():
         Instant.now().toEpochMilli
       )
 
-    val p50Series = buildPercentileSeries(
-      label = "P50",
-      history = history,
-      startedAtMillis = startedAtMillis,
-      percentile = _.p50
-    )
-    val p75Series = buildPercentileSeries(
-      label = "P75",
-      history = history,
-      startedAtMillis = startedAtMillis,
-      percentile = _.p75
-    )
-    val p90Series = buildPercentileSeries(
-      label = "P90",
-      history = history,
-      startedAtMillis = startedAtMillis,
-      percentile = _.p90
-    )
-    val p95Series = buildPercentileSeries(
-      label = "P95",
-      history = history,
-      startedAtMillis = startedAtMillis,
-      percentile = _.p95
-    )
-    val p99Series = buildPercentileSeries(
-      label = "P99",
-      history = history,
-      startedAtMillis = startedAtMillis,
-      percentile = _.p99
-    )
-    val seriesByName = Seq(
-      "P50" -> p50Series,
-      "P75" -> p75Series,
-      "P90" -> p90Series,
-      "P95" -> p95Series,
-      "P99" -> p99Series
-    )
+    val seriesDefinitions =
+      if metricType == "Meter" then
+        Seq(
+          "M1/min" -> ((point: MetricGraphPoint) => point.p50),
+          "M5/min" -> ((point: MetricGraphPoint) => point.p75),
+          "M15/min" -> ((point: MetricGraphPoint) => point.p90),
+          "Count" -> ((point: MetricGraphPoint) => point.p95)
+        )
+      else
+        Seq(
+          "P50" -> ((point: MetricGraphPoint) => point.p50),
+          "P75" -> ((point: MetricGraphPoint) => point.p75),
+          "P90" -> ((point: MetricGraphPoint) => point.p90),
+          "P95" -> ((point: MetricGraphPoint) => point.p95),
+          "P99" -> ((point: MetricGraphPoint) => point.p99)
+        )
+    val seriesByName = seriesDefinitions.map {
+      case (label, value) =>
+        label -> buildMetricSeries(
+          label = label,
+          history = history,
+          startedAtMillis = startedAtMillis,
+          value = value
+        )
+    }
 
-    val p50Check = new CheckBox("P50"):
-      selected = true
-    val p75Check = new CheckBox("P75"):
-      selected = true
-    val p90Check = new CheckBox("P90"):
-      selected = true
-    val p95Check = new CheckBox("P95"):
-      selected = true
-    val p99Check = new CheckBox("P99"):
-      selected = true
-    val toggles = Seq(
-      p50Check,
-      p75Check,
-      p90Check,
-      p95Check,
-      p99Check
-    )
+    val toggles = seriesDefinitions.map {
+      case (label, _) =>
+        new CheckBox(label):
+          selected = true
+    }
 
     def refreshVisibleSeries(): Unit =
       val selectedNames = toggles
@@ -522,11 +499,11 @@ final class MetricsDialog @Inject() ():
     dialog.dialogPane().content = content
     dialog.showAndWait()
 
-  private def buildPercentileSeries(
+  private def buildMetricSeries(
       label: String,
       history: Vector[MetricGraphPoint],
       startedAtMillis: Long,
-      percentile: MetricGraphPoint => Double
+      value: MetricGraphPoint => Double
   ): XYChart.Series[Number, Number] =
     new XYChart.Series[Number, Number]:
       name = label
@@ -537,7 +514,7 @@ final class MetricsDialog @Inject() ():
               startedAtMillis,
               point.epochMillis
             ),
-            percentile(
+            value(
               point
             )
           )
@@ -558,7 +535,11 @@ final class MetricsDialog @Inject() ():
       "P75" -> "#2ca02c",
       "P90" -> "#ff7f0e",
       "P95" -> "#d62728",
-      "P99" -> "#9467bd"
+      "P99" -> "#9467bd",
+      "M1/min" -> "#1f77b4",
+      "M5/min" -> "#2ca02c",
+      "M15/min" -> "#ff7f0e",
+      "Count" -> "#d62728"
     )
     lineChart.data.value.foreach(series =>
       val color = styles.getOrElse(
@@ -615,6 +596,16 @@ final class MetricsDialog @Inject() ():
             snapshot.get99thPercentile
           )
         )
+      case (metricName, meter: Meter) =>
+        appendGraphPoint(
+          metricName = metricName.getKey,
+          nowMillis = nowMillis,
+          p50 = meter.getOneMinuteRate * 60.0,
+          p75 = meter.getFiveMinuteRate * 60.0,
+          p90 = meter.getFifteenMinuteRate * 60.0,
+          p95 = meter.getCount.toDouble,
+          p99 = 0.0
+        )
       case _ =>
         ()
     }
@@ -623,6 +614,8 @@ final class MetricsDialog @Inject() ():
       case (metricName, _: Histogram) =>
         metricName.getKey
       case (metricName, _: Timer) =>
+        metricName.getKey
+      case (metricName, _: Meter) =>
         metricName.getKey
     }.toSet
     metricGraphHistory.keys.toSeq

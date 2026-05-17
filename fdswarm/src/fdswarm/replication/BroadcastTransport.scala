@@ -49,7 +49,7 @@ class BroadcastTransport @Inject() (nodeIdentity: NodeIdentityManager)
   private val sendCounter = addCounter("send")
   private val reciveCounter = addCounter("receive")
   private val receiveSize = addHistogram("receiveSize")
-udop meter  private val udpMeters = addMeter("udp")
+  private val udpMeters = addMeter("udp")
 
   private var socket: DatagramSocket = uninitialized
   socket = new DatagramSocket(null)
