@@ -341,30 +341,27 @@ trait FdSwarmPackaging extends JpackageModule:
   }
 
   def distWindowsX64 = Task {
-    val runtime = requiredRuntime("FDSWARM_RUNTIME_WINDOWS_X64")
     buildZipDist(
       platform = "windows-x64",
-      runtime = runtime,
+      runtime = runtimeWindowsX64().path,
       dest = Task.dest,
       jar = assembly().path
     )
   }
 
   def distMacosAarch64 = Task {
-    val runtime = requiredRuntime("FDSWARM_RUNTIME_MACOS_AARCH64")
     buildZipDist(
       platform = "macos-aarch64",
-      runtime = runtime,
+      runtime = runtimeMacosAarch64().path,
       dest = Task.dest,
       jar = assembly().path
     )
   }
 
   def distLinuxX64 = Task {
-    val runtime = requiredRuntime("FDSWARM_RUNTIME_LINUX_X64")
     buildZipDist(
       platform = "linux-x64",
-      runtime = runtime,
+      runtime = runtimeLinuxX64().path,
       dest = Task.dest,
       jar = assembly().path
     )
@@ -395,7 +392,7 @@ trait FdSwarmPackaging extends JpackageModule:
     os.copy.over(jar, stage / "lib" / "fdswarm-all.jar", createFolders = true)
     os.copy(runtime, stage / "runtime", createFolders = true, mergeFolders = true)
     stageApplicationConf(stage)
-    writeLaunchers(stage)
+    writeLaunchers(stage, platform)
     zipDirectory(stageRoot, distName, zipPath)
 
     println(s"ZIP: $zipPath")
@@ -427,7 +424,8 @@ trait FdSwarmPackaging extends JpackageModule:
       case None => ()
 
   private def writeLaunchers(
-      stage: os.Path
+      stage: os.Path,
+      platform: String
     ): Unit =
     os.write.over(
       stage / "bin" / "fdswarm.bat",
@@ -436,6 +434,31 @@ trait FdSwarmPackaging extends JpackageModule:
         |"%APP_HOME%\runtime\bin\java.exe" -jar "%APP_HOME%\lib\fdswarm-all.jar" %*
         |""".stripMargin
     )
+
+    if platform.startsWith("windows-") then
+      os.write.over(
+        stage / "bin" / "install-start-menu-shortcut.bat",
+        """@echo off
+          |setlocal
+          |
+          |set "APP_HOME=%~dp0.."
+          |set "LAUNCHER=%~dp0fdswarm.bat"
+          |set "START_MENU=%APPDATA%\Microsoft\Windows\Start Menu\Programs"
+          |set "SHORTCUT=%START_MENU%\FdSwarm.lnk"
+          |
+          |if not exist "%START_MENU%" mkdir "%START_MENU%"
+          |
+          |powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+          |  "$shell = New-Object -ComObject WScript.Shell; $shortcut = $shell.CreateShortcut($env:SHORTCUT); $shortcut.TargetPath = $env:LAUNCHER; $shortcut.WorkingDirectory = $env:APP_HOME; $shortcut.Description = 'FdSwarm'; $shortcut.Save()"
+          |
+          |if errorlevel 1 (
+          |  echo Failed to create Start Menu shortcut.
+          |  exit /b 1
+          |)
+          |
+          |echo Created Start Menu shortcut: %SHORTCUT%
+          |""".stripMargin
+      )
 
     val launcher = stage / "bin" / "fdswarm"
     os.write.over(
@@ -458,6 +481,18 @@ trait FdSwarmPackaging extends JpackageModule:
         .exitCode
     if exit != 0 then
       throw new RuntimeException(s"zip failed with exit code $exit")
+
+  private def runtimeWindowsX64 = Task.Input {
+    PathRef(requiredRuntime("FDSWARM_RUNTIME_WINDOWS_X64"))
+  }
+
+  private def runtimeMacosAarch64 = Task.Input {
+    PathRef(requiredRuntime("FDSWARM_RUNTIME_MACOS_AARCH64"))
+  }
+
+  private def runtimeLinuxX64 = Task.Input {
+    PathRef(requiredRuntime("FDSWARM_RUNTIME_LINUX_X64"))
+  }
 
   def copyFatJarToParallels = Task {
     val jar = assembly()

@@ -127,6 +127,7 @@ FdSwarm/
   bin/
     fdswarm
     fdswarm.bat
+    install-start-menu-shortcut.bat on Windows
   lib/
     fdswarm-all.jar
   runtime/
@@ -135,17 +136,27 @@ FdSwarm/
     application.conf if present
 ```
 
+On Windows, run `bin\install-start-menu-shortcut.bat` from the extracted `FdSwarm`
+folder to add a per-user `FdSwarm` shortcut to the Windows Start Menu.
+
 Use BellSoft Liberica JDK 21 Full archives from https://bell-sw.com/pages/downloads/#jdk-21-lts. Use the Full JDK because FdSwarm is a JavaFX app and the Full bundle includes LibericaFX.
 
 ### Local Zip Builds
 
-Download and unpack these Liberica JDK 21 Full archives:
+Fetch the Liberica JDK 21 Full runtimes:
+
+```bash
+scripts/fetch-liberica-runtimes.sh --env-file .fdswarm-runtimes/env.sh
+source .fdswarm-runtimes/env.sh
+```
+
+The script downloads and unpacks these archives under `.fdswarm-runtimes/`:
 
 - Windows x64 ZIP
 - macOS ARM64 TAR.GZ
 - Linux x64 TAR.GZ
 
-Then point the distribution tasks at the unpacked JDK directories:
+Or set the variables manually if you downloaded and unpacked the JDKs yourself:
 
 ```bash
 export FDSWARM_RUNTIME_WINDOWS_X64=/path/to/unpacked/windows-jdk-full
@@ -177,7 +188,7 @@ out/fdswarm/distLinuxX64.dest/FdSwarm-<version>-linux-x64.zip
 
 ### GitHub Zip Builds
 
-The `Zip Distributions` workflow runs on `workflow_dispatch` and tags matching `v*`. It builds `fdswarm.assembly` once, downloads the current BellSoft Liberica JDK 21 Full archives with the BellSoft discovery API, builds all three zip distributions, and uploads them as the `FdSwarm-Zip-Distributions` artifact.
+The `Zip Distributions` workflow runs on `workflow_dispatch` and tags matching `v*`. It builds `fdswarm.assembly` once, runs `scripts/fetch-liberica-runtimes.sh` to download the current BellSoft Liberica JDK 21 Full archives with the BellSoft discovery API, builds all three zip distributions, and uploads them as the `FdSwarm-Zip-Distributions` artifact.
 
 To run it manually:
 
