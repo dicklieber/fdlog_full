@@ -124,16 +124,23 @@ current_branch="$(git branch --show-current)"
 echo "Checking for a clean worktree..."
 require_clean_worktree
 
-echo "Updating local $BRANCH from GitHub..."
-gh repo sync --branch "$BRANCH"
-
-echo "Rechecking for a clean worktree after update..."
-require_clean_worktree
-
 local_branch_sha="$(git rev-parse HEAD)"
 remote_main_sha="$(remote_branch_sha)"
 if [[ "$local_branch_sha" != "$remote_main_sha" ]]; then
-  die "local $BRANCH is not at the GitHub $BRANCH commit after sync. Local: $local_branch_sha GitHub: $remote_main_sha"
+  echo "Updating local $BRANCH from GitHub..."
+  if ! gh repo sync --branch "$BRANCH"; then
+    die "could not update local $BRANCH from GitHub. The branch likely has diverging local commits; resolve that before releasing."
+  fi
+
+  echo "Rechecking for a clean worktree after update..."
+  require_clean_worktree
+
+  local_branch_sha="$(git rev-parse HEAD)"
+  remote_main_sha="$(remote_branch_sha)"
+fi
+
+if [[ "$local_branch_sha" != "$remote_main_sha" ]]; then
+  die "local $BRANCH differs from GitHub $BRANCH. Resolve the divergence before releasing. Local: $local_branch_sha GitHub: $remote_main_sha"
 fi
 
 latest_tag="$(latest_release_tag_or_empty)"
