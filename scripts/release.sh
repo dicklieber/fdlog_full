@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 #
-# Prepare a release by updating from origin/main, creating a version tag,
-# and pushing the branch and tag. The GitHub Actions workflow performs the
-# actual build and GitHub Release creation after the tag is pushed.
+# Prepare a release by updating main, creating a version tag on GitHub,
+# and letting the GitHub Actions workflow perform the actual build and
+# GitHub Release creation after the tag is created.
 
 set -euo pipefail
 
-REMOTE="${REMOTE:-origin}"
 BRANCH="${BRANCH:-main}"
 
 die() {
@@ -24,9 +23,66 @@ require_clean_worktree() {
   fi
 }
 
+require_gh() {
+  command -v gh >/dev/null ||
+    die "GitHub CLI is required. Install gh and authenticate with 'gh auth login'."
+
+  gh auth status >/dev/null ||
+    die "GitHub CLI is not authenticated. Run 'gh auth login' first."
+}
+
 latest_release_tag() {
-  git tag --sort=-v:refname |
+  gh api --paginate repos/{owner}/{repo}/tags --jq '.[].name' |
     grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
+    sort -t. -k1.2,1n -k2,2n -k3,3n |
+    tail -n 1
+}
+
+latest_release_tag_or_empty() {
+  latest_release_tag ||
+    true
+}
+
+remote_tag_exists() {
+  local tag="$1"
+
+  gh api "repos/{owner}/{repo}/git/ref/tags/$tag" --silent >/dev/null 2>&1
+}
+
+create_release_tag() {
+  local tag="$1"
+  local commit_sha="$2"
+  local tag_sha
+
+  tag_sha="$(
+    gh api repos/{owner}/{repo}/git/tags \
+      -f tag="$tag" \
+      -f message="Release $tag" \
+      -f object="$commit_sha" \
+      -f type=commit \
+      --jq .sha
+  )"
+
+  gh api repos/{owner}/{repo}/git/refs \
+    -f ref="refs/tags/$tag" \
+    -f sha="$tag_sha" \
+    --silent
+}
+
+start_release_workflow() {
+  local tag="$1"
+
+  gh workflow run ci.yaml \
+    --ref "$tag" \
+    -f release_version="$tag"
+}
+
+remote_branch_sha() {
+  gh api "repos/{owner}/{repo}/git/ref/heads/$BRANCH" --jq .object.sha
+}
+
+local_tag_exists() {
+  git tag --list "$1" |
     head -n 1
 }
 
@@ -50,14 +106,16 @@ validate_tag() {
   [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] ||
     die "release tags must look like v1.2.3, got: $tag"
 
-  if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+  if [[ -n "$(local_tag_exists "$tag")" ]]; then
     die "tag already exists locally: $tag"
   fi
 
-  if git ls-remote --exit-code --tags "$REMOTE" "refs/tags/$tag" >/dev/null 2>&1; then
-    die "tag already exists on $REMOTE: $tag"
+  if remote_tag_exists "$tag"; then
+    die "tag already exists on GitHub: $tag"
   fi
 }
+
+require_gh
 
 current_branch="$(git branch --show-current)"
 [[ "$current_branch" == "$BRANCH" ]] ||
@@ -66,16 +124,19 @@ current_branch="$(git branch --show-current)"
 echo "Checking for a clean worktree..."
 require_clean_worktree
 
-echo "Fetching $REMOTE/$BRANCH and tags..."
-git fetch "$REMOTE" "$BRANCH" --tags
-
-echo "Updating local $BRANCH from $REMOTE/$BRANCH..."
-git pull --ff-only "$REMOTE" "$BRANCH"
+echo "Updating local $BRANCH from GitHub..."
+gh repo sync --branch "$BRANCH"
 
 echo "Rechecking for a clean worktree after update..."
 require_clean_worktree
 
-latest_tag="$(latest_release_tag || true)"
+local_branch_sha="$(git rev-parse HEAD)"
+remote_main_sha="$(remote_branch_sha)"
+if [[ "$local_branch_sha" != "$remote_main_sha" ]]; then
+  die "local $BRANCH is not at the GitHub $BRANCH commit after sync. Local: $local_branch_sha GitHub: $remote_main_sha"
+fi
+
+latest_tag="$(latest_release_tag_or_empty)"
 default_tag="$(next_patch_tag "$latest_tag")"
 
 if [[ -n "${1:-}" ]]; then
@@ -90,11 +151,11 @@ validate_tag "$release_tag"
 
 echo
 echo "Release tag: $release_tag"
-echo "This will push $BRANCH and $release_tag to $REMOTE."
+echo "This will create $release_tag on GitHub at the current $BRANCH commit."
 read -r -p "Continue? [y/N] " answer
 [[ "$answer" =~ ^[Yy]$ ]] || die "aborted"
 
-git tag -a "$release_tag" -m "Release $release_tag"
-git push "$REMOTE" "$BRANCH" "$release_tag"
+create_release_tag "$release_tag" "$remote_main_sha"
+start_release_workflow "$release_tag"
 
-echo "Pushed $release_tag. GitHub Actions will build packages and create the release."
+echo "Created $release_tag on GitHub and started the release workflow."

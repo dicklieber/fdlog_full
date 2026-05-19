@@ -39,10 +39,11 @@ The report will be available at: `out/fdswarm/scoverage/htmlReport.dest/index.ht
 ## Releases and Artifacts
 
 To create a new release with downloadable artifacts (JAR, Windows MSI, macOS PKG):
-1. Run `./scripts/release.sh`.
-2. Accept the suggested release tag or enter another tag with three numeric version components, such as `v1.0.0`.
-3. The script updates `main` from GitHub, including the latest `README.md` badge changes, creates the tag, and pushes `main` and the tag.
-4. The GitHub Action will automatically build the project, run tests, and create a GitHub Release with the artifacts.
+1. Make sure the GitHub CLI is installed and authenticated with `gh auth login`.
+2. Run `./scripts/release.sh`.
+3. Accept the suggested release tag or enter another tag with three numeric version components, such as `v1.0.0`.
+4. The script updates `main` from GitHub, including the latest `README.md` badge changes, creates the tag on GitHub, and starts the tag-based release workflow.
+5. The GitHub Action will automatically build the project, run tests, and create a GitHub Release with the artifacts.
 
 To skip the prompt for the version number, pass the tag explicitly:
 ```bash
