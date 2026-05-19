@@ -135,6 +135,10 @@ jobs:
         if: success()
         run: ./mill --no-daemon fdswarm.assembly
 
+      - name: Verify docs in JAR
+        if: success()
+        run: ./scripts/ci/verify-docs-in-jar.sh out/fdswarm/assembly.dest/fdswarm.jar
+
       - name: Name release JAR
         if: success()
         shell: bash

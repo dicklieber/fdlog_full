@@ -12,6 +12,7 @@ echo "FDSWARM_ASSEMBLY_JAR: $assembly_jar"
 
 test -f "$assembly_jar"
 ls -lh "$assembly_jar"
+./scripts/ci/verify-docs-in-jar.sh "$assembly_jar"
 
 chmod +x ./mill
 FDSWARM_ASSEMBLY_JAR="$assembly_jar" ./mill --no-daemon fdswarm.macPkg

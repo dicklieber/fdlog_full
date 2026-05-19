@@ -18,6 +18,11 @@ if (-not (Test-Path -LiteralPath $assemblyJar)) {
 
 Get-Item -LiteralPath $assemblyJar | Format-List FullName,Length,LastWriteTime
 
+& bash ./scripts/ci/verify-docs-in-jar.sh $assemblyJar
+if ($LASTEXITCODE -ne 0) {
+  exit $LASTEXITCODE
+}
+
 $env:FDSWARM_ASSEMBLY_JAR = $assemblyJar
 & .\mill.bat --no-daemon fdswarm.winMsi
 if ($LASTEXITCODE -ne 0) {

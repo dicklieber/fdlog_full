@@ -147,7 +147,7 @@ trait FdSwarmPackaging extends JpackageModule:
 
   private def getJpackageInput(
       dest: os.Path,
-      assemblyJar: PathRef
+      assemblyJar: => PathRef
     ): (os.Path, String) =
 
     val jarFromEnv = sys.env.get("FDSWARM_ASSEMBLY_JAR").map(envPath)
