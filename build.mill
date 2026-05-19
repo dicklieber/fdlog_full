@@ -54,6 +54,23 @@ object fdswarm
 
   override def moduleDeps = Seq(common)
 
+  def generatedDocsSite = Task.Input {
+    PathRef(moduleDir / os.up / "out" / "docs" / "site.dest" / "site")
+  }
+
+  override def resources = Task {
+    val generatedDocs = generatedDocsSite().path
+    val docsResources =
+      if os.exists(generatedDocs) then
+        val staged = Task.dest / "FDSwarmDocs"
+        os.copy.over(generatedDocs, staged, createFolders = true)
+        Seq(PathRef(Task.dest))
+      else
+        Seq.empty
+
+    super.resources() ++ docsResources
+  }
+
   override def docSources = Task {
     super.docSources() ++ Seq(common.compile().classes)
   }

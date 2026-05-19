@@ -19,7 +19,8 @@
 
 set -euo pipefail
 
-# Build the assembly jar
+# Build the documentation site and assembly jar
+./mill docs.site
 ./mill fdswarm.assembly
 
 # The assembly JAR name is defined in build.mill as ${jpackageName()}-${version}-assembly.jar

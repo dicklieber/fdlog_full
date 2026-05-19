@@ -71,3 +71,5 @@ Documentation sources live in `docs/src` and are rendered with Laika.
 ```
 
 The generated site is available at `out/docs/site.dest/site/index.html`.
+When `fdswarm.jar` is built after `./mill docs.site`, the generated site is
+packaged into the jar and served from the Help > FDSwarmDocs menu item.

@@ -46,6 +46,7 @@ import scalafx.scene.web.WebView
 import scalafx.stage.{Stage, Window}
 
 import scala.io.Source
+import java.net.URI
 final class FdSwarmMenus @Inject()(
                                    bandModeManagerPane: BandsAndModesPane,
                                    stationEditor: StationEditor,
@@ -228,7 +229,26 @@ final class FdSwarmMenus @Inject()(
 
   private def helpMenu: Menu =
     new Menu("Help"):
-      items = Seq(aboutMenuItem)
+      items = Seq(
+        new MenuItem("FDSwarmDocs"):
+          onAction = _ => showFdSwarmDocs()
+        ,
+        aboutMenuItem
+      )
+
+  private def showFdSwarmDocs(): Unit =
+    val docsUrl = s"http://${util.NodeIdentityManager.nodeIdentity.hostPort}/fdswarmDocs/"
+    try
+      java.awt.Desktop.getDesktop.browse(
+        new URI(docsUrl)
+      )
+    catch
+      case e: Throwable =>
+        logger.warn(
+          "Could not open FDSwarmDocs",
+          "url" -> docsUrl,
+          "error" -> e.toString
+        )
 
   val menuBar: MenuBar =
     new MenuBar:

@@ -20,6 +20,7 @@
 set -euo pipefail
 
 echo "Building fdswarm JAR..."
+./mill docs.site
 ./mill fdswarm.assembly
 
 echo "Copying JAR to current directory..."
