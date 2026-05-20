@@ -34,6 +34,9 @@ object ReleaseApp {
       case "publish-release" :: Nil =>
         Github.publishRelease()
 
+      case "commit-next-development" :: Nil =>
+        Git.commitNextDevelopment()
+
       case _ =>
         usage()
   }
@@ -46,6 +49,15 @@ object ReleaseApp {
       Versioning.prepareReleaseVersion()
 
     Versioning.writePreparedRelease(rv)
+
+    println()
+    println("Next commands:")
+    println("  ./mill fdswarm.assembly")
+    println("  ./mill releaseTool.run build-zips")
+    println("  ./mill releaseTool.run commit-release")
+    println("  ./mill releaseTool.run publish-release")
+    println("  ./mill releaseTool.run finish-release")
+    println("  ./mill releaseTool.run commit-next-development")
   }
 
   private def usage(): Unit = {
@@ -62,6 +74,17 @@ object ReleaseApp {
         |  build-zips
         |  commit-release
         |  publish-release
+        |  commit-next-development
+        |
+        |Normal flow:
+        |
+        |  ./mill releaseTool.run prepare-release
+        |  ./mill fdswarm.assembly
+        |  ./mill releaseTool.run build-zips
+        |  ./mill releaseTool.run commit-release
+        |  ./mill releaseTool.run publish-release
+        |  ./mill releaseTool.run finish-release
+        |  ./mill releaseTool.run commit-next-development
         |""".stripMargin
     )
   }

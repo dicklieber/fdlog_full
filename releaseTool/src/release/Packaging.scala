@@ -18,15 +18,17 @@ object Packaging {
 
     Jdks.checkJdks()
 
+    val version =
+      Versioning.currentVersion()
+
     os.remove.all(stagingDir)
     os.makeDir.all(stagingDir)
     os.makeDir.all(artifactsDir)
 
+    removeOldArtifactsForVersion(version)
+
     val assemblyJar =
       findAssemblyJar()
-
-    val version =
-      Versioning.currentVersion()
 
     println(s"[assembly] $assemblyJar")
     println(s"[version] $version")
@@ -34,6 +36,21 @@ object Packaging {
     Platforms.all.foreach { platform =>
       buildPlatformZip(platform, version, assemblyJar)
     }
+
+    println()
+    println(s"Artifacts written to: $artifactsDir")
+  }
+
+  private def removeOldArtifactsForVersion(
+      version: String
+  ): Unit = {
+
+    if !os.exists(artifactsDir) then
+      return
+
+    os.list(artifactsDir)
+      .filter(p => p.last.startsWith(s"fdswarm-$version-") && p.last.endsWith(".zip"))
+      .foreach(os.remove)
   }
 
   private def findAssemblyJar(): os.Path = {
@@ -41,9 +58,18 @@ object Packaging {
     val assemblyDir =
       os.pwd / "out" / "fdswarm" / "assembly.dest"
 
-    os.walk(assemblyDir)
-      .filter(p => os.isFile(p) && p.last.endsWith(".jar"))
-      .maxBy(p => os.size(p))
+    if !os.exists(assemblyDir) then
+      sys.error(s"assembly output directory does not exist: $assemblyDir")
+
+    val jars =
+      os.walk(assemblyDir)
+        .filter(p => os.isFile(p) && p.last.endsWith(".jar"))
+        .toSeq
+
+    if jars.isEmpty then
+      sys.error(s"no jar found under $assemblyDir")
+
+    jars.maxBy(p => os.size(p))
   }
 
   private def buildPlatformZip(
@@ -72,14 +98,14 @@ object Packaging {
     os.makeDir.all(appLibDir)
 
     os.copy.over(
-      assemblyJar,
-      appLibDir / "fdswarm.jar",
+      from = assemblyJar,
+      to = appLibDir / "fdswarm.jar",
       createFolders = true
     )
 
     os.copy.over(
-      runtimeDir,
-      appDir / "runtime",
+      from = runtimeDir,
+      to = appDir / "runtime",
       createFolders = true
     )
 

@@ -32,6 +32,7 @@ object Git {
       os.proc(
         "git",
         "rev-parse",
+        "--verify",
         tag
       ).call(
         stdout = os.Pipe,
@@ -50,9 +51,7 @@ object Git {
       Versioning.currentVersion()
 
     if version.endsWith("-SNAPSHOT") then
-      sys.error(
-        s"cannot commit snapshot version: $version"
-      )
+      sys.error(s"cannot commit snapshot version: $version")
 
     val tag =
       s"v$version"
@@ -97,6 +96,43 @@ object Git {
 
     println()
     println(s"[ok] committed and pushed release $version")
+  }
+
+  def commitNextDevelopment(): Unit = {
+
+    val version =
+      Versioning.currentVersion()
+
+    if !version.endsWith("-SNAPSHOT") then
+      sys.error(s"version.txt is not a snapshot: $version")
+
+    Process.run(
+      Seq(
+        "git",
+        "add",
+        "version.txt"
+      )
+    )
+
+    val status =
+      statusPorcelain()
+
+    if status.nonEmpty then
+      Process.run(
+        Seq(
+          "git",
+          "commit",
+          "-m",
+          s"Begin ${version.stripSuffix("-SNAPSHOT")} development"
+        )
+      )
+    else
+      println("[skip] nothing to commit")
+
+    Process.run(Seq("git", "push"))
+
+    println()
+    println(s"[ok] committed and pushed next development version $version")
   }
 
 }

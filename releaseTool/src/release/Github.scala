@@ -20,18 +20,38 @@ object Github {
       s"v$version"
 
     val artifacts =
-      os.list(artifactsDir)
-        .filter(p => os.isFile(p) && p.last.endsWith(".zip"))
-        .sortBy(_.last)
+      releaseArtifacts(version)
 
     if artifacts.isEmpty then
-      sys.error(s"no zip artifacts found in $artifactsDir")
+      sys.error(
+        s"no zip artifacts found for version $version in $artifactsDir"
+      )
 
     println(s"[tag] $tag")
 
     createReleaseIfMissing(tag)
 
     artifacts.foreach(uploadArtifact(tag, _))
+
+    println()
+    println(s"[ok] github release published: $tag")
+  }
+
+  private def releaseArtifacts(
+      version: String
+  ): Seq[os.Path] = {
+
+    if !os.exists(artifactsDir) then
+      Seq.empty
+    else
+      os.list(artifactsDir)
+        .filter(p =>
+          os.isFile(p) &&
+            p.last.startsWith(s"fdswarm-$version-") &&
+            p.last.endsWith(".zip")
+        )
+        .toSeq
+        .sortBy(_.last)
   }
 
   private def ensureGhInstalled(): Unit =
@@ -76,6 +96,8 @@ object Github {
         "--generate-notes"
       )
     )
+
+    println(s"[created] github release $tag")
   }
 
   private def uploadArtifact(

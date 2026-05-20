@@ -52,6 +52,8 @@ object Jdks {
     val archiveFile =
       platformDir / archiveName
 
+    println(s"[download] ${platform.id}")
+
     Process.run(
       Seq(
         "curl",
@@ -86,7 +88,9 @@ object Jdks {
     val extracted =
       os.list(platformDir)
         .find(p => os.isDir(p) && p.last != "runtime")
-        .get
+        .getOrElse(
+          sys.error(s"unable to locate extracted dir for ${platform.id}")
+        )
 
     os.move(extracted, runtimeDir)
 
