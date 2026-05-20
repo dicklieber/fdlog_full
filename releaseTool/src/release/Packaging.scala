@@ -30,6 +30,8 @@ object Packaging {
     val assemblyJar =
       findAssemblyJar()
 
+    copyReleaseJar(version, assemblyJar)
+
     println(s"[assembly] $assemblyJar")
     println(s"[version] $version")
 
@@ -49,8 +51,33 @@ object Packaging {
       return
 
     os.list(artifactsDir)
-      .filter(p => p.last.startsWith(s"fdswarm-$version-") && p.last.endsWith(".zip"))
+      .filter { p =>
+        os.isFile(p) && (
+          p.last == s"fdswarm-$version.jar" ||
+            (
+              p.last.startsWith(s"fdswarm-$version-") &&
+                p.last.endsWith(".zip")
+            )
+        )
+      }
       .foreach(os.remove)
+  }
+
+  private def copyReleaseJar(
+      version: String,
+      assemblyJar: os.Path
+  ): Unit = {
+
+    val jarFile =
+      artifactsDir / s"fdswarm-$version.jar"
+
+    os.copy.over(
+      from = assemblyJar,
+      to = jarFile,
+      createFolders = true
+    )
+
+    println(s"[jar] $jarFile")
   }
 
   private def findAssemblyJar(): os.Path = {

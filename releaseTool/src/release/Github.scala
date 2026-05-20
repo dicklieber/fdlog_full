@@ -24,7 +24,7 @@ object Github {
 
     if artifacts.isEmpty then
       sys.error(
-        s"no zip artifacts found for version $version in $artifactsDir"
+        s"no release artifacts found for version $version in $artifactsDir"
       )
 
     println(s"[tag] $tag")
@@ -45,11 +45,15 @@ object Github {
       Seq.empty
     else
       os.list(artifactsDir)
-        .filter(p =>
-          os.isFile(p) &&
-            p.last.startsWith(s"fdswarm-$version-") &&
-            p.last.endsWith(".zip")
-        )
+        .filter { p =>
+          os.isFile(p) && (
+            p.last == s"fdswarm-$version.jar" ||
+              (
+                p.last.startsWith(s"fdswarm-$version-") &&
+                  p.last.endsWith(".zip")
+              )
+          )
+        }
         .toSeq
         .sortBy(_.last)
   }
