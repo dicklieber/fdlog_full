@@ -117,7 +117,9 @@ object Versioning {
     println(s"[version] $version -> $next")
   }
 
-  private def defaultNextSnapshot(releaseVersion: String): String = {
+  private def defaultNextSnapshot(
+      releaseVersion: String
+  ): String = {
 
     val base =
       releaseVersion.replaceFirst("-[0-9]+$", "")

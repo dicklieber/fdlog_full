@@ -5,10 +5,15 @@ object Github {
   private val artifactsDir =
     os.pwd / "release" / "artifacts"
 
-  def publishRelease(): Unit = {
+  def ensureGh(): Unit = {
 
     ensureGhInstalled()
     ensureGhAuthenticated()
+  }
+
+  def publishRelease(): Unit = {
+
+    ensureGh()
 
     val version =
       Versioning.currentVersion()
@@ -29,6 +34,8 @@ object Github {
       sys.error(s"no zip artifacts found in $artifactsDir")
 
     println(s"[tag] $tag")
+
+    pushGit()
 
     createReleaseIfMissing(tag)
 
@@ -56,11 +63,26 @@ object Github {
         sys.error("GitHub CLI is not authenticated. Run: gh auth login")
   }
 
-  private def createReleaseIfMissing(tag: String): Unit = {
+  private def pushGit(): Unit = {
+
+    Process.run(Seq("git", "push"))
+    Process.run(Seq("git", "push", "--tags"))
+  }
+
+  private def createReleaseIfMissing(
+      tag: String
+  ): Unit = {
 
     val exists =
       try {
-        Process.run(Seq("gh", "release", "view", tag))
+        Process.run(
+          Seq(
+            "gh",
+            "release",
+            "view",
+            tag
+          )
+        )
         true
       } catch {
         case _: Throwable =>
