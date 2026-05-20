@@ -2,11 +2,8 @@ package release
 
 object Jdks {
 
-  private val releaseDir =
-    os.pwd / "release"
-
   private val jdksDir =
-    releaseDir / "jdks"
+    os.pwd / "release" / "jdks"
 
   def fetchJdks(): Unit = {
 
@@ -31,7 +28,9 @@ object Jdks {
     }
   }
 
-  private def fetchJdk(platform: Platform): Unit = {
+  private def fetchJdk(
+      platform: Platform
+  ): Unit = {
 
     val platformDir =
       jdksDir / platform.id
@@ -52,8 +51,6 @@ object Jdks {
 
     val archiveFile =
       platformDir / archiveName
-
-    println(s"[download] ${platform.id}")
 
     Process.run(
       Seq(
@@ -89,9 +86,7 @@ object Jdks {
     val extracted =
       os.list(platformDir)
         .find(p => os.isDir(p) && p.last != "runtime")
-        .getOrElse(
-          sys.error(s"unable to locate extracted dir for ${platform.id}")
-        )
+        .get
 
     os.move(extracted, runtimeDir)
 

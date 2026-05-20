@@ -34,9 +34,6 @@ object Packaging {
     Platforms.all.foreach { platform =>
       buildPlatformZip(platform, version, assemblyJar)
     }
-
-    println()
-    println(s"Artifacts written to: $artifactsDir")
   }
 
   private def findAssemblyJar(): os.Path = {
@@ -44,18 +41,9 @@ object Packaging {
     val assemblyDir =
       os.pwd / "out" / "fdswarm" / "assembly.dest"
 
-    if !os.exists(assemblyDir) then
-      sys.error(s"assembly output directory does not exist: $assemblyDir")
-
-    val jars =
-      os.walk(assemblyDir)
-        .filter(p => os.isFile(p) && p.last.endsWith(".jar"))
-        .toSeq
-
-    if jars.isEmpty then
-      sys.error(s"no jar found under $assemblyDir")
-
-    jars.maxBy(p => os.size(p))
+    os.walk(assemblyDir)
+      .filter(p => os.isFile(p) && p.last.endsWith(".jar"))
+      .maxBy(p => os.size(p))
   }
 
   private def buildPlatformZip(
@@ -84,14 +72,14 @@ object Packaging {
     os.makeDir.all(appLibDir)
 
     os.copy.over(
-      from = assemblyJar,
-      to = appLibDir / "fdswarm.jar",
+      assemblyJar,
+      appLibDir / "fdswarm.jar",
       createFolders = true
     )
 
     os.copy.over(
-      from = runtimeDir,
-      to = appDir / "runtime",
+      runtimeDir,
+      appDir / "runtime",
       createFolders = true
     )
 
@@ -129,16 +117,24 @@ object Packaging {
       val launcher =
         binDir / "fdswarm"
 
-      os.write.over(launcher, unixLauncher)
+      os.write.over(
+        launcher,
+        unixLauncher
+      )
 
-      Process.run(Seq("chmod", "+x", launcher.toString))
+      Process.run(
+        Seq(
+          "chmod",
+          "+x",
+          launcher.toString
+        )
+      )
     }
   }
 
   private val unixLauncher =
     """#!/usr/bin/env sh
       |set -eu
-      |
       |APP_HOME="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
       |exec "$APP_HOME/runtime/bin/java" -jar "$APP_HOME/app/lib/fdswarm.jar" "$@"
       |""".stripMargin
